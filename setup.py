@@ -18,6 +18,7 @@ try:
 except:
     long_description = "\n".join(short_description[2:])
 
+# !!!! Note that we have fortran modules that need to be compiled with "f2py3 -m solv_assoc -c solve_assoc.f90" and the same with solve_assoc_matrix.f90
 
 setup(
     # Self-descriptive entries which should always be present
@@ -56,4 +57,6 @@ setup(
     # Manual control if final package is compressible or not, set False to prevent the .egg from being made
     # zip_safe=False,
 
+    # !!!!!! Added by me!!!!!!!
+    entry_points = {'console_scripts': ['despasito=despasito.run']}
 )

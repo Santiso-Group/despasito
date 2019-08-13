@@ -12,8 +12,11 @@ Welcome to DESPASITO's documentation!
 
    getting_started
    api
+   eos
 
-
+Modules
+=======
+list my modules
 
 Indices and tables
 ==================
