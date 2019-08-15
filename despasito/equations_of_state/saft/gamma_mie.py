@@ -13,7 +13,7 @@ import numpy as np
 from . import constants
 from . import gamma_mie_funcs as funcs
 # Later this line will be in an abstract class file in this directroy, and all versions of SAFT will reference it
-from despasito.lib_eos.interface import EOStemplate
+from despasito.equations_of_state.interface import EOStemplate
 
 # ________________ Saft Family ______________
 # NoteHere: Insert SAFT family abstract class in this directory to clean up
@@ -63,6 +63,7 @@ class saft_gamma_mie(EOStemplate):
         self.epsilonHB = epsilonHB
         self.Kklab = Kklab
         self.nk = nk
+        self.T = np.nan
 
     def temp_dependent_variables(self, T):
         dkk, dkl, x0kl = funcs.calc_hard_sphere_matricies(self.beads, self.beadlibrary, self.sigmakl, T)
@@ -151,8 +152,10 @@ class saft_gamma_mie(EOStemplate):
         return maxrho
 
     def __str__(self):
-        print("Beads:" + str(self.beads))
-        if self.T:
-            print("T:" + str(self.T))
+        string = "Beads:" + str(self.beads) + "\n"
+        if np.isnan(self.T):
+            string += "Temperature dependent variables haven't been specified."
         else:
-            print("Temperature dependent variables haven't been specified.")
+            string += "T:" + str(self.T)
+        return string
+

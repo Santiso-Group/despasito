@@ -4,7 +4,6 @@ DESPASITO: Determining Equilibrium State and Parametrization Application for SAF
 """
 
 # Add imports here
-from .run import *
 
 # Handle versioneer
 from ._version import get_versions

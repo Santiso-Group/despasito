@@ -4,7 +4,7 @@
     
     This thermo module contains a series of wrappers to handle the inputs and outputs of these functions. The calc module contains the thermodynamic calculations. Calculation of pressure, chemical potential, and max density are handled by an eos object so that these functions can be used with any EOS.
     
-    None of the functions in this folder need to be handled directly, as a function factory is included in our __init__.py file. Add "from lib_thermo import thermo" and use "thermo("calc_type",eos,input_dict)" to get started.
+    None of the functions in this folder need to be handled directly, as a function factory is included in our __init__.py file. Add "from thermodynamics import thermo" and use "thermo("calc_type",eos,input_dict)" to get started.
     
 """
 

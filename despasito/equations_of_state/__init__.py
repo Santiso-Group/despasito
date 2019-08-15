@@ -30,7 +30,7 @@ def eos(eos_type, **kwargs):
         raise Exception("Input should be in the form EOSfamily.EOSname (e.g. saft.gamme_mie).")
 
     try:
-        eos_module = import_module('.' + eos, package="despasito.lib_eos." + eos_fam)
+        eos_module = import_module('.' + eos, package="despasito.equations_of_state." + eos_fam)
         class_name = "_".join([eos_fam, eos])
         eos_class = getattr(eos_module, class_name)
         instance = eos_class(kwargs)
@@ -40,3 +40,4 @@ def eos(eos_type, **kwargs):
             % (eos_type, class_name, eos, eos_fam))
 
     return instance
+

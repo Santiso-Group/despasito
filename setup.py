@@ -58,5 +58,5 @@ setup(
     # zip_safe=False,
 
     # !!!!!! Added by me!!!!!!!
-    entry_points = {'console_scripts': ['despasito=despasito.run']}
+    entry_points = {'console_scripts': ['despasitos=despasito.run']}
 )

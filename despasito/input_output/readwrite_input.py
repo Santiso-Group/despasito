@@ -87,7 +87,7 @@ def extract_calc_data(input_fname,density_fname='input_density_params.txt'):
 
     try:
         rho_dic = file2paramdict(density_fname)
-        thermo_dict['rhodic'] = rho_dic
+        thermo_dict['rhodict'] = rho_dic
         print('Note: Density plot parameters have been accepted from '+density_fname)
     except:
         pass
