@@ -3,8 +3,9 @@ DESPASITO
 DESPASITO: Determining Equilibrium State and Parametrization Application for SAFT, Intended for Thermodynamic Output
 """
 import sys
-from setuptools import setup, find_packages
+from setuptools import find_packages
 import versioneer
+from numpy.distutils.core import Extension, setup
 
 short_description = __doc__.split("\n")
 
@@ -18,6 +19,10 @@ try:
 except:
     long_description = "\n".join(short_description[2:])
 
+fpath = "despasito/equations_of_state/saft/"
+ext1 = Extension(name="solv_assoc",sources=[fpath+"solv_assoc.f90"],include_dirs=['despasito/equations_of_state/saft'])
+ext2 = Extension(name="solv_assoc_matrix",sources=[fpath+"solv_assoc_matrix.f90"])
+# try Extension and compile
 # !!!! Note that we have fortran modules that need to be compiled with "f2py3 -m solv_assoc -c solve_assoc.f90" and the same with solve_assoc_matrix.f90
 
 setup(
@@ -43,11 +48,13 @@ setup(
     include_package_data=True,
 
     # Allows `setup.py test` to work correctly with pytest
-    setup_requires=[] + pytest_runner,
+    setup_requires=["numpy","scipy","deap"] + pytest_runner,
+    ext_package=fpath,
+    ext_modules = [ext1,ext2],
 
     # Additional entries you may want simply uncomment the lines you want and fill in the data
     # url='http://www.my_package.com',  # Website
-    # install_requires=[],              # Required packages, pulls from pip if needed; do not use for Conda deployment
+    install_requires=["numpy","scipy","deap","matplotlib"],              # Required packages, pulls from pip if needed; do not use for Conda deployment
     # platforms=['Linux',
     #            'Mac OS-X',
     #            'Unix',
@@ -55,8 +62,6 @@ setup(
     # python_requires=">=3.5",          # Python version restrictions
 
     # Manual control if final package is compressible or not, set False to prevent the .egg from being made
-    # zip_safe=False,
+    zip_safe=False,
 
-    # !!!!!! Added by me!!!!!!!
-    entry_points = {'console_scripts': ['despasitos=despasito.run']}
 )
