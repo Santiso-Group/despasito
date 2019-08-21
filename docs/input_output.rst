@@ -1,5 +1,5 @@
 
-Equations of State
+Program Input and Output
 =========================================================
 
 .. autosummary::
@@ -9,4 +9,6 @@ Equations of State
    :maxdepth: 2
    :caption: Contents:
 
-despasito.equations_of_state
+
+despasito.input_output
+

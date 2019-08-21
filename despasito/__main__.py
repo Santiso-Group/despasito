@@ -1,8 +1,8 @@
 """
-run.py
-DESPASITO: Determining Equilibrium State and Parametrization Application for SAFT, Intended for Thermodynamic Output
-
 Handles the primary functions
+
+In any directory with the appropriate .json input files, run DESPASITO with ``python -m despasito input.json``
+
 """
 
 import sys

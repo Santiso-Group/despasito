@@ -1,8 +1,6 @@
 """
-    despasito
-    DESPASITO: Determining Equilibrium State and Parameters Applied to SAFT, Intended for Thermodynamic Output
-    
-    Routines for pasing input files from .json files to dictionaries and extracting relaven information.
+
+    Routines for pasing input files from .json files to dictionaries and extracting relaven information for program use.
     
 """
 

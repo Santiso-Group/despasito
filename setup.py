@@ -19,9 +19,12 @@ try:
 except:
     long_description = "\n".join(short_description[2:])
 
-fpath = "despasito/equations_of_state/saft/"
-ext1 = Extension(name="solv_assoc",sources=[fpath+"solv_assoc.f90"],include_dirs=['despasito/equations_of_state/saft'])
-ext2 = Extension(name="solv_assoc_matrix",sources=[fpath+"solv_assoc_matrix.f90"])
+try:
+    fpath = "despasito/equations_of_state/saft/"
+    ext1 = Extension(name="solv_assoc",sources=[fpath+"solv_assoc.f90"],include_dirs=['despasito/equations_of_state/saft'])
+    ext2 = Extension(name="solv_assoc_matrix",sources=[fpath+"solv_assoc_matrix.f90"])
+except:
+    raise OSError("Fortran compiler is not found")
 # try Extension and compile
 # !!!! Note that we have fortran modules that need to be compiled with "f2py3 -m solv_assoc -c solve_assoc.f90" and the same with solve_assoc_matrix.f90
 
