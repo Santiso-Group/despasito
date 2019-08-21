@@ -1,5 +1,5 @@
 
-Equations of State
+Thermodynamic Calculations
 =========================================================
 
 .. autosummary::
@@ -9,4 +9,5 @@ Equations of State
    :maxdepth: 2
    :caption: Contents:
 
-despasito.equations_of_state
+despasito.thermodynamics
+
