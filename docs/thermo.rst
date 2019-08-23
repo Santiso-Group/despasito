@@ -2,12 +2,15 @@
 Thermodynamic Calculations
 =========================================================
 
-.. autosummary::
-   :toctree: autosummary
+Available Calculation Types
+---------------------------
+.. currentmodule:: despasito.thermodynamics.calc_types
+
+.. autofunction:: phase_xiT
+.. autofunction:: phase_yiT
+.. autofunction:: sat_props
+.. autofunction:: liquid_properties
+.. autofunction:: vapor_properties
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
-
-despasito.thermodynamics
-
+   autosummary/thermo_funcs
