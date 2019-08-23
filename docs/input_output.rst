@@ -1,14 +1,16 @@
 
-Program Input and Output
+Input/Output
 =========================================================
 
-.. autosummary::
-   :toctree: autosummary
+Package Inputs
+--------------
+Inputs are .json files of the intructions for thermodynamic calculations and paths to the .json files containing parameters for the eos object. 
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+   autosummary/input_json
 
-
-despasito.input_output
+Package Outputs
+---------------
+Outputs are files saved to the current working directory containing thermodynamic calculati
+ons. Default file names are used, but can be defined in the input.json file for command line use or thermodynamics dictionary for imported use.
 

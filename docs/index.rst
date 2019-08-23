@@ -12,11 +12,14 @@ Welcome to DESPASITO's documentation!
 
    getting_started
    api
-   eos
 
-Modules
-=======
-list my modules
+.. toctree::
+   :maxdepth: 2
+   :caption: Modules:
+   
+   input_output
+   eos
+   thermo
 
 Indices and tables
 ==================
