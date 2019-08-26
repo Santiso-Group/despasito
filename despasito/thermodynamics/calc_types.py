@@ -1,7 +1,4 @@
 """
-    despasito
-    DESPASITO: Determining Equilibrium State and Parameters Applied to SAFT, Intended for Thermodynamic Output
-    
     This thermo module contains a series of wrappers to handle the inputs and outputs of these functions. The calc module contains the thermodynamic calculations. Calculation of pressure, chemical potential, and max density are handled by an eos object so that these functions can be used with any EOS.
     
     None of the functions in this folder need to be handled directly, as a function factory is included in our __init__.py file. Add "from thermodynamics import thermo" and use "thermo("calc_type",eos,input_dict)" to get started.
@@ -21,6 +18,22 @@ from . import calc
 #                                                                    #
 ######################################################################
 def phase_xiT(eos, sys_dict, rhodict={}, output_file="phase_xiT_output.txt"):
+
+    """
+    Placeholder function to show example docstring (NumPy format)
+    
+    Replace this function and doc string for your own project
+    
+    Parameters
+    ----------
+    with_attribution : bool, Optional, default: True
+        Set whether or not to display who the quote is from
+    
+    Returns
+    -------
+    quote : str
+        Compiled string including quote and optional attribution
+    """
 
     #computes P and yi from xi and T
 
@@ -96,6 +109,22 @@ def phase_xiT(eos, sys_dict, rhodict={}, output_file="phase_xiT_output.txt"):
 ######################################################################
 def phase_yiT(eos, sys_dict, rhodict={}, output_file="phase_yiT_output.txt"):
 
+    """
+    Placeholder function to show example docstring (NumPy format)
+    
+    Replace this function and doc string for your own project
+    
+    Parameters
+    ----------
+    with_attribution : bool, Optional, default: True
+        Set whether or not to display who the quote is from
+    
+    Returns
+    -------
+    quote : str
+        Compiled string including quote and optional attribution
+    """
+
     #computes P and yi from xi and T
 
     ## Exctract and check input data
@@ -134,6 +163,22 @@ def phase_yiT(eos, sys_dict, rhodict={}, output_file="phase_yiT_output.txt"):
 #                                                                    #
 ######################################################################
 def sat_props(eos, sys_dict, rhodict={}, output_file="saturation_output.txt"):
+
+    """
+    Placeholder function to show example docstring (NumPy format)
+    
+    Replace this function and doc string for your own project
+    
+    Parameters
+    ----------
+    with_attribution : bool, Optional, default: True
+        Set whether or not to display who the quote is from
+    
+    Returns
+    -------
+    quote : str
+        Compiled string including quote and optional attribution
+    """
 
     #compute the saturated pressure, liquid, and gas density a 1 component phase at a temperature.
 
@@ -177,6 +222,22 @@ def sat_props(eos, sys_dict, rhodict={}, output_file="saturation_output.txt"):
 #                                                                    #
 ######################################################################
 def liquid_properties(eos, sys_dict, rhodict={}, output_file="liquid_properties_output.txt"):
+
+    """
+    Placeholder function to show example docstring (NumPy format)
+    
+    Replace this function and doc string for your own project
+    
+    Parameters
+    ----------
+    with_attribution : bool, Optional, default: True
+        Set whether or not to display who the quote is from
+    
+    Returns
+    -------
+    quote : str
+        Compiled string including quote and optional attribution
+    """
 
     ## Extract and check input data
     try:
@@ -227,6 +288,22 @@ def liquid_properties(eos, sys_dict, rhodict={}, output_file="liquid_properties_
 ######################################################################
 def vapor_properties(eos, sys_dict, rhodict={}, output_file="vapor_properties_output.txt"):
 
+    """
+    Placeholder function to show example docstring (NumPy format)
+    
+    Replace this function and doc string for your own project
+    
+    Parameters
+    ----------
+    with_attribution : bool, Optional, default: True
+        Set whether or not to display who the quote is from
+    
+    Returns
+    -------
+    quote : str
+        Compiled string including quote and optional attribution
+    """
+
     ## Extract and check input data
     try:
         T_list = np.array(input_dict['Tlist'])
@@ -266,3 +343,4 @@ def vapor_properties(eos, sys_dict, rhodict={}, output_file="vapor_properties_ou
             f.write(", ".join([str(x) for x in tmp]) + '\n')
 
     print("--- Calculation vapor_density Complete ---")
+

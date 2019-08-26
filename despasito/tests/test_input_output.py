@@ -3,21 +3,19 @@ Unit and regression test for the despasito package.
 """
 
 # Import package, test suite, and other packages as needed
-import despasito
+import despasito.input_output as d_io
 import pytest
 import sys
 
-xi = [0.2 0.2]
-beads = ['CO2', 'benzene']
-nui = [[1. 0.],[0. 1.]]
-beadlibrary = {'CO2': {'epsilon': 361.69, 'l_a': 6.66, 'l_r': 23.0, 'sigma': 3.741e-10, 'Sk': 1.0, 'Vks': 1.0, 'mass': 0.04401}, 'baCH': {'epsilon': 371.53, 'l_a': 6.0, 'l_r': 14.756, 'sigma': 4.0578e-10, 'Sk': 0.32184, 'Vks': 1.0, 'mass': 0.01302}, 'baCHCH': {'epsilon': 243.88, 'l_a': 6.0, 'l_r': 11.58, 'sigma': 3.482e-10, 'Sk': 1.0, 'Vks': 1.0, 'mass': 0.02604}, 'baCHCHCH': {'epsilon': 353.93, 'l_a': 6.0, 'l_r': 14.23, 'sigma': 3.978e-10, 'Sk': 1.0, 'Vks': 1.0, 'mass': 0.03905}, 'benzene': {'epsilon': 658.17, 'l_a': 6.0, 'l_r': 32.0, 'sigma': 3.842e-10, 'Sk': 1.0, 'Vks': 1.0, 'mass': 0.07811}}
+@pytest.mark.parametrize('key, answer', [("rhoinc",2.0),("minrhofrac",2.5e-06)])
+def test_file2paramdict(key,answer):
+    """Test conversion of txt file to dictionary"""
+    rho_dict = d_io.readwrite_input.file2paramdict("examples/dens_params.txt")
+    assert rho_dict[key] == pytest.approx(answer,abs=1e-7)
 
-def test_despasito_imported():
-    """Sample test, will always pass so long as import statement worked"""
-    assert "despasito" in sys.modules
 
-#def test_saft_gamma_mie_class():
-    
-#    eos_class = despasito.equations_of_state.eos("saft.gamma_mie",)
-    
-#    assert "saft.gamma_mie" in sys.modules
+#def test_extract_calc_data(fname):
+#    """Unit test of extracting all data"""
+#    calctype, eos_dict, thermo_dict = extract_calc_data(input_fname)
+#    assert 
+

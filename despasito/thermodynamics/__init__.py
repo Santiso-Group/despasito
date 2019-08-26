@@ -46,3 +46,4 @@ def thermo(calctype, eos, thermo_dict):
         func(eos, sys_dict, **kwargs)
     except:
         raise ImportError("The calculation type, '"+calctype+"', was not found\nThe following calculation types are supported: "+", ".join(calc_list))
+

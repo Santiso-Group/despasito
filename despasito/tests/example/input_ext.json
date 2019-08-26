@@ -1,0 +1,11 @@
+{
+    "beadconfig": [[0.2, [["CH4_2", 1]]],[0.2, [["eCH3" , 2]]]],
+    "SAFTgroup": "example/SAFTgroup.json",
+    "SAFTcross": "example/SAFTcross_ext.json",
+    "output_file": "example/out_ch4_ethane_270_ext.txt",
+    "calculation_type" : "phase_xiT",
+    "Tlist" : [270.0, 270.0, 270.0],
+    "xilist": [[0.02, 0.98], [0.04, 0.96], [0.06, 0.94]],
+    "CriticalProp": [[190.58, 305.42], [4604000, 4880000], [0.011, 0.099], [24180, 16790], [0.288, 0.284], [0.006189615, 0.00492], [0.016043, 0.03007]],
+    "Pguess": 1000000
+}

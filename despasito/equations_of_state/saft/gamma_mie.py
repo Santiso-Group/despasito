@@ -20,7 +20,40 @@ from despasito.equations_of_state.interface import EOStemplate
 
 
 class saft_gamma_mie(EOStemplate):
+
+    """
+    Placeholder function to show example docstring (NumPy format)
+
+    Replace this function and doc string for your own project
+
+    Parameters
+    ----------
+    with_attribution : bool, Optional, default: True
+        Set whether or not to display who the quote is from
+
+    Attributes
+    ----------
+    quote : str
+        Compiled string including quote and optional attribution
+    """
+
     def __init__(self, kwargs):
+
+        """
+        Placeholder function to show example docstring (NumPy format)
+    
+        Replace this function and doc string for your own project
+    
+        Parameters
+        ----------
+        with_attribution : bool, Optional, default: True
+            Set whether or not to display who the quote is from
+    
+        Returns
+        -------
+        quote : str
+            Compiled string including quote and optional attribution
+        """
 
         # Self interaction parameters
         xi = kwargs['xi']
@@ -66,6 +99,23 @@ class saft_gamma_mie(EOStemplate):
         self.T = np.nan
 
     def temp_dependent_variables(self, T):
+
+        """
+        Placeholder function to show example docstring (NumPy format)
+    
+        Replace this function and doc string for your own project
+    
+        Parameters
+        ----------
+        with_attribution : bool, Optional, default: True
+            Set whether or not to display who the quote is from
+    
+        Returns
+        -------
+        quote : str
+            Compiled string including quote and optional attribution
+        """
+
         dkk, dkl, x0kl = funcs.calc_hard_sphere_matricies(self.beads, self.beadlibrary, self.sigmakl, T)
         self.T = T
         self.dkk = dkk
@@ -91,6 +141,22 @@ class saft_gamma_mie(EOStemplate):
         return (A[:nrho]-A[nrho:])*((constants.kb*T)/(2.0*step))*(rho**2)
 
     def chemicalpotential(self, P, rho, xi, T):
+
+        """
+        Placeholder function to show example docstring (NumPy format)
+    
+        Replace this function and doc string for your own project
+    
+        Parameters
+        ----------
+        with_attribution : bool, Optional, default: True
+            Set whether or not to display who the quote is from
+    
+        Returns
+        -------
+        quote : str
+            Compiled string including quote and optional attribution
+        """
 
         if not self.dkl.any():
             raise Exception("Temperature dependent variables haven't been specified.")
@@ -127,6 +193,22 @@ class saft_gamma_mie(EOStemplate):
 
     def density_max(self, xi, maxpack=0.65):
 
+        """
+        Placeholder function to show example docstring (NumPy format)
+    
+        Replace this function and doc string for your own project
+    
+        Parameters
+        ----------
+        with_attribution : bool, Optional, default: True
+            Set whether or not to display who the quote is from
+    
+        Returns
+        -------
+        quote : str
+            Compiled string including quote and optional attribution
+        """
+
         if not self.dkl.any():
             raise Exception("Temperature dependent variables haven't been specified.")
 
@@ -152,6 +234,23 @@ class saft_gamma_mie(EOStemplate):
         return maxrho
 
     def __str__(self):
+
+        """
+        Placeholder function to show example docstring (NumPy format)
+    
+        Replace this function and doc string for your own project
+    
+        Parameters
+        ----------
+        with_attribution : bool, Optional, default: True
+            Set whether or not to display who the quote is from
+    
+        Returns
+        -------
+        quote : str
+            Compiled string including quote and optional attribution
+        """
+
         string = "Beads:" + str(self.beads) + "\n"
         if np.isnan(self.T):
             string += "Temperature dependent variables haven't been specified."

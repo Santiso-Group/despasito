@@ -36,7 +36,22 @@ def calc_CC_Pguess(xilist, Tlist, CriticalProp):
     """
        Computes the mie parameters of a mixture from the mixed critical properties of the pure components. 
        From: Mejia, A., C. Herdes, E. Muller. Ind. Eng. Chem. Res. 2014, 53, 4131-4141
+
+    Placeholder function to show example docstring (NumPy format)
+    
+    Replace this function and doc string for your own project
+    
+    Parameters
+    ----------
+    with_attribution : bool, Optional, default: True
+        Set whether or not to display who the quote is from
+    
+    Returns
+    -------
+    quote : str
+        Compiled string including quote and optional attribution
     """
+
     Tc, Pc, omega, rho_7, Zc, Vc, M = CriticalProp
 
     ############## Calculate Mixed System Mie Parameters
@@ -144,7 +159,23 @@ def calc_CC_Pguess(xilist, Tlist, CriticalProp):
 #                      Pressure-Density Curve                        #
 #                                                                    #
 ######################################################################
-def PvsRho(T, xi, eos, minrhofrac=(1.0 / 200000.0), rhoinc=10.0, vspacemax=1.0E-4, Pmax=1000.0 * 101325, maxpack=0.65):
+def PvsRho(T, xi, eos, minrhofrac=(1.0 / 200000.0), rhoinc=5.0, vspacemax=1.0E-4, Pmax=1000.0 * 101325, maxpack=0.65):
+
+    """
+    Placeholder function to show example docstring (NumPy format)
+    
+    Replace this function and doc string for your own project
+    
+    Parameters
+    ----------
+    with_attribution : bool, Optional, default: True
+        Set whether or not to display who the quote is from
+    
+    Returns
+    -------
+    quote : str
+        Compiled string including quote and optional attribution
+    """
 
     # Update temperature dependent variables
     if T != eos.T:
@@ -181,6 +212,21 @@ def PvsRho(T, xi, eos, minrhofrac=(1.0 / 200000.0), rhoinc=10.0, vspacemax=1.0E-
 ######################################################################
 def PvsV_spline(vlist, Plist):
 
+    """
+    Placeholder function to show example docstring (NumPy format)
+    
+    Replace this function and doc string for your own project
+    
+    Parameters
+    ----------
+    with_attribution : bool, Optional, default: True
+        Set whether or not to display who the quote is from
+    
+    Returns
+    -------
+    quote : str
+        Compiled string including quote and optional attribution
+    """
 
     Psmoothed = gaussian_filter1d(Plist, sigma=.1)
 
@@ -200,6 +246,22 @@ def PvsV_spline(vlist, Plist):
 ######################################################################
 def PvsV_plot(vlist, Plist, Pvspline, markers=[]):
 
+    """
+    Placeholder function to show example docstring (NumPy format)
+    
+    Replace this function and doc string for your own project
+    
+    Parameters
+    ----------
+    with_attribution : bool, Optional, default: True
+        Set whether or not to display who the quote is from
+    
+    Returns
+    -------
+    quote : str
+        Compiled string including quote and optional attribution
+    """
+
     plt.plot(vlist,Plist,label="Orig.")
     plt.plot(vlist,Pvspline(vlist),label="Smoothed")
     plt.plot([vlist[0], vlist[-1]],[0,0],"k")
@@ -216,6 +278,7 @@ def PvsV_plot(vlist, Plist, Pvspline, markers=[]):
 #                                                                    #
 ######################################################################
 def calc_Psat(T, xi, eos, rhodict={}):
+
     """
     Computes the saturated pressure, gas and liquid densities for a single component system given Temperature and Mie parameters
     T: Saturated Temperature in Kelvin
@@ -223,7 +286,18 @@ def calc_Psat(T, xi, eos, rhodict={}):
     rhoinc: spacing densities for rholist in mol/m^3. Smaller values will generate a more accurate curve at increasing computational cost
     Pmax: maximum needed pressure in Pascals
     Returns Saturated Pressure in Pa, liquid denisty, and gas density in mol/m^3
+
+    Parameters
+    ----------
+    with_attribution : bool, Optional, default: True
+        Set whether or not to display who the quote is from
+    
+    Returns
+    -------
+    quote : str
+        Compiled string including quote and optional attribution
     """
+
     #print sitenames
     #print crosslibrary
 
@@ -265,9 +339,21 @@ def calc_Psat(T, xi, eos, rhodict={}):
 #                                                                    #
 ######################################################################
 def eq_area(shift, Pv, vlist):
+
     """
     Computes the area below and above Psat guess line
+    
+    Parameters
+    ----------
+    with_attribution : bool, Optional, default: True
+        Set whether or not to display who the quote is from
+    
+    Returns
+    -------
+    quote : str
+        Compiled string including quote and optional attribution
     """
+
     Pvspline = interpolate.InterpolatedUnivariateSpline(vlist, Pv - shift)
 
     roots = Pvspline.roots()
@@ -283,6 +369,7 @@ def eq_area(shift, Pv, vlist):
 #                                                                    #
 ######################################################################
 def calc_rhov(P, T, xi, eos, rhodict={}):
+
     """
     Computes the saturated pressure, gas and liquid densities for a single component system given Temperature and Mie parameters
     T: Saturated Temperature in Kelvin
@@ -290,6 +377,16 @@ def calc_rhov(P, T, xi, eos, rhodict={}):
     rhoinc: spacing densities for rholist in mol/m^3. Smaller values will generate a more accurate curve at increasing computational cost
     Pmax: maximum needed pressure in Pascals
     Returns Saturated Pressure in Pa, liquid denisty, and gas density in mol/m^3
+
+    Parameters
+    ----------
+    with_attribution : bool, Optional, default: True
+        Set whether or not to display who the quote is from
+    
+    Returns
+    -------
+    quote : str
+        Compiled string including quote and optional attribution
     """
 
     vlist, Plist = PvsRho(T, xi, eos, **rhodict)
@@ -350,6 +447,7 @@ def calc_rhov(P, T, xi, eos, rhodict={}):
 #                                                                    #
 ######################################################################
 def calc_rhol(P, T, xi, eos, rhodict={}):
+
     """
     Computes the saturated pressure, gas and liquid densities for a single component system given Temperature and Mie parameters
     T: Saturated Temperature in Kelvin
@@ -357,6 +455,16 @@ def calc_rhol(P, T, xi, eos, rhodict={}):
     rhoinc: spacing densities for rholist in mol/m^3. Smaller values will generate a more accurate curve at increasing computational cost
     Pmax: maximum needed pressure in Pascals
     Returns Saturated Pressure in Pa, liquid denisty, and gas density in mol/m^3
+
+    Parameters
+    ----------
+    with_attribution : bool, Optional, default: True
+        Set whether or not to display who the quote is from
+    
+    Returns
+    -------
+    quote : str
+        Compiled string including quote and optional attribution
     """
 
     # Get roots and local minima and maxima 
@@ -398,6 +506,16 @@ def calc_rhol(P, T, xi, eos, rhodict={}):
 def Pdiff(rho, Pset, T, xi, eos):
     """
     Calculate difference between setpoint pressure and computed pressure for a given density
+    
+    Parameters
+    ----------
+    with_attribution : bool, Optional, default: True
+        Set whether or not to display who the quote is from
+    
+    Returns
+    -------
+    quote : str
+        Compiled string including quote and optional attribution
     """
     # Update temperature dependent variables
     if T != eos.T:
@@ -413,9 +531,21 @@ def Pdiff(rho, Pset, T, xi, eos):
 #                                                                    #
 ######################################################################
 def calc_phiv(P, T, yi, eos, rhodict={}):
+
     """
     Calculate fugacity coefficient
+    
+    Parameters
+    ----------
+    with_attribution : bool, Optional, default: True
+        Set whether or not to display who the quote is from
+    
+    Returns
+    -------
+    quote : str
+        Compiled string including quote and optional attribution
     """
+
     # Update temperature dependent variables
     if T != eos.T:
         eos.temp_dependent_variables(T)
@@ -435,9 +565,21 @@ def calc_phiv(P, T, yi, eos, rhodict={}):
 #                                                                    #
 ######################################################################
 def calc_phil(P, T, xi, eos, rhodict={}):
+
     """
     Calculate fugacity coefficient
+    
+    Parameters
+    ----------
+    with_attribution : bool, Optional, default: True
+        Set whether or not to display who the quote is from
+    
+    Returns
+    -------
+    quote : str
+        Compiled string including quote and optional attribution
     """
+
     # Update temperature dependent variables
     if T != eos.T:
         eos.temp_dependent_variables(T)
@@ -454,6 +596,7 @@ def calc_phil(P, T, xi, eos, rhodict={}):
 #                                                                    #
 ######################################################################
 def calc_Prange(T, xi, yi, eos, rhodict={}, Pmin=1000):
+
     """
     Computes the pressure range given Temperature and Mie parameters
     T: Saturated Temperature in Kelvin
@@ -461,6 +604,16 @@ def calc_Prange(T, xi, yi, eos, rhodict={}, Pmin=1000):
     rhoinc: spacing densities for rholist in mol/m^3. Smaller values will generate a more accurate curve at increasing computational cost
     Pmax: maximum needed pressure in Pascals
     Returns Saturated Pressure in Pa, liquid denisty, and gas density in mol/m^3
+
+    Parameters
+    ----------
+    with_attribution : bool, Optional, default: True
+        Set whether or not to display who the quote is from
+    
+    Returns
+    -------
+    quote : str
+        Compiled string including quote and optional attribution
     """
 
     global yi_global
@@ -545,6 +698,22 @@ def calc_Prange(T, xi, yi, eos, rhodict={}, Pmin=1000):
 ######################################################################
 def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxitr=50):
 
+    """
+    Placeholder function to show example docstring (NumPy format)
+    
+    Replace this function and doc string for your own project
+    
+    Parameters
+    ----------
+    with_attribution : bool, Optional, default: True
+        Set whether or not to display who the quote is from
+    
+    Returns
+    -------
+    quote : str
+        Compiled string including quote and optional attribution
+    """
+
     global yi_global
     yi /= np.sum(yi)
 
@@ -625,6 +794,22 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxitr=50):
 
 def sum_yi(P, yi, xi, T, phil, eos, rhodict={}, maxitr=50):
 
+    """
+    Placeholder function to show example docstring (NumPy format)
+    
+    Replace this function and doc string for your own project
+    
+    Parameters
+    ----------
+    with_attribution : bool, Optional, default: True
+        Set whether or not to display who the quote is from
+    
+    Returns
+    -------
+    quote : str
+        Compiled string including quote and optional attribution
+    """
+
     global yi_global
 
     y_total = np.sum(yi)
@@ -657,6 +842,22 @@ def sum_yi(P, yi, xi, T, phil, eos, rhodict={}, maxitr=50):
 
 
 def find_new_yi(P, T, phil, xi, eos, rhodict={}, maxitr=50):
+
+    """
+    Placeholder function to show example docstring (NumPy format)
+    
+    Replace this function and doc string for your own project
+    
+    Parameters
+    ----------
+    with_attribution : bool, Optional, default: True
+        Set whether or not to display who the quote is from
+    
+    Returns
+    -------
+    quote : str
+        Compiled string including quote and optional attribution
+    """
 
     # Update temperature dependent variables
     if T != eos.T:
@@ -756,6 +957,22 @@ def find_new_yi(P, T, phil, xi, eos, rhodict={}, maxitr=50):
 ######################################################################
 def yi_obj(yi,P,T,phil,xi,eos,rhodict={}):
 
+    """
+    Placeholder function to show example docstring (NumPy format)
+    
+    Replace this function and doc string for your own project
+    
+    Parameters
+    ----------
+    with_attribution : bool, Optional, default: True
+        Set whether or not to display who the quote is from
+    
+    Returns
+    -------
+    quote : str
+        Compiled string including quote and optional attribution
+    """
+
     if type(yi) != list:
         yi = [yi, 1-yi]
 
@@ -772,6 +989,22 @@ def yi_obj(yi,P,T,phil,xi,eos,rhodict={}):
 #                                                                    #
 ######################################################################
 def solve_xi_root(xi0, yi, phiv, P, T, eos, rhodict):
+
+    """
+    Placeholder function to show example docstring (NumPy format)
+    
+    Replace this function and doc string for your own project
+    
+    Parameters
+    ----------
+    with_attribution : bool, Optional, default: True
+        Set whether or not to display who the quote is from
+    
+    Returns
+    -------
+    quote : str
+        Compiled string including quote and optional attribution
+    """
 
     # !!!!!!!!!!!!!!! This isn't working !!!!!!!!!!!!!!!!
     # Check calc_phase_test_3.py for old version named "solve_xi"
@@ -816,6 +1049,22 @@ def solve_xi_root(xi0, yi, phiv, P, T, eos, rhodict):
 
 def solve_yi_root(yi0, xi, phil, P, T, eos, rhodict={}, maxitr=50):
 
+    """
+    Placeholder function to show example docstring (NumPy format)
+    
+    Replace this function and doc string for your own project
+    
+    Parameters
+    ----------
+    with_attribution : bool, Optional, default: True
+        Set whether or not to display who the quote is from
+    
+    Returns
+    -------
+    quote : str
+        Compiled string including quote and optional attribution
+    """
+
     # Update temperature dependent variables
     if T != eos.T:
         eos.temp_dependent_variables(T)
@@ -845,6 +1094,22 @@ def solve_yi_root(yi0, xi, phil, P, T, eos, rhodict={}, maxitr=50):
 #                                                                    #
 ######################################################################
 def solve_P_xiT(P, xi, T, eos, rhodict):
+
+    """
+    Placeholder function to show example docstring (NumPy format)
+    
+    Replace this function and doc string for your own project
+    
+    Parameters
+    ----------
+    with_attribution : bool, Optional, default: True
+        Set whether or not to display who the quote is from
+    
+    Returns
+    -------
+    quote : str
+        Compiled string including quote and optional attribution
+    """
 
     global yi_global
 
@@ -880,6 +1145,22 @@ def solve_P_xiT(P, xi, T, eos, rhodict):
 #                                                                    #
 ######################################################################
 def solve_P_xiT_inerp(P, Psat, xi, T, eos, rhodict):
+
+    """
+    Placeholder function to show example docstring (NumPy format)
+    
+    Replace this function and doc string for your own project
+    
+    Parameters
+    ----------
+    with_attribution : bool, Optional, default: True
+        Set whether or not to display who the quote is from
+    
+    Returns
+    -------
+    quote : str
+        Compiled string including quote and optional attribution
+    """
 
     # Update temperature dependent variables
     if T != eos.T:
@@ -944,6 +1225,22 @@ def solve_P_xiT_inerp(P, Psat, xi, T, eos, rhodict):
 #                                                                    #
 ######################################################################
 def calc_yT_phase(yi, T, eos, rhodict):
+
+    """
+    Placeholder function to show example docstring (NumPy format)
+    
+    Replace this function and doc string for your own project
+    
+    Parameters
+    ----------
+    with_attribution : bool, Optional, default: True
+        Set whether or not to display who the quote is from
+    
+    Returns
+    -------
+    quote : str
+        Compiled string including quote and optional attribution
+    """
 
     # Update temperature dependent variables
     if T != eos.T:
@@ -1027,6 +1324,23 @@ def calc_yT_phase(yi, T, eos, rhodict):
 #                                                                    #
 ######################################################################
 def test_calc_xT_phase(xi, T, eos, rhodict={}, Pguess=[]):
+
+    """
+    Placeholder function to show example docstring (NumPy format)
+    
+    Replace this function and doc string for your own project
+    
+    Parameters
+    ----------
+    with_attribution : bool, Optional, default: True
+        Set whether or not to display who the quote is from
+    
+    Returns
+    -------
+    quote : str
+        Compiled string including quote and optional attribution
+    """
+
     return Pguess, np.array([0.7, 0.1, 0.2])
 
 
@@ -1036,6 +1350,22 @@ def test_calc_xT_phase(xi, T, eos, rhodict={}, Pguess=[]):
 #                                                                    #
 ######################################################################
 def calc_xT_phase(xi, T, eos, rhodict={}, Pguess=[],meth="broyden1"):
+
+    """
+    Placeholder function to show example docstring (NumPy format)
+    
+    Replace this function and doc string for your own project
+    
+    Parameters
+    ----------
+    with_attribution : bool, Optional, default: True
+        Set whether or not to display who the quote is from
+    
+    Returns
+    -------
+    quote : str
+        Compiled string including quote and optional attribution
+    """
 
     global yi_global
 
@@ -1205,6 +1535,22 @@ def calc_xT_phase(xi, T, eos, rhodict={}, Pguess=[],meth="broyden1"):
 ######################################################################
 def calc_xT_phase_dir(xi, T, eos, rhodict={}, Pguess=[]):
 
+    """
+    Placeholder function to show example docstring (NumPy format)
+    
+    Replace this function and doc string for your own project
+    
+    Parameters
+    ----------
+    with_attribution : bool, Optional, default: True
+        Set whether or not to display who the quote is from
+    
+    Returns
+    -------
+    quote : str
+        Compiled string including quote and optional attribution
+    """
+
     global yi_global
     # Update temperature dependent variables
     if T != eos.T:
@@ -1282,6 +1628,22 @@ def calc_xT_phase_dir(xi, T, eos, rhodict={}, Pguess=[]):
 ######################################################################
 def calc_PT_phase(xi, T, eos, rhodict={}):
 
+    """
+    Placeholder function to show example docstring (NumPy format)
+    
+    Replace this function and doc string for your own project
+    
+    Parameters
+    ----------
+    with_attribution : bool, Optional, default: True
+        Set whether or not to display who the quote is from
+    
+    Returns
+    -------
+    quote : str
+        Compiled string including quote and optional attribution
+    """
+
     nui = saft_args[1]
     beads = saft_args[2]
     Psat = np.zeros_like(xi)
@@ -1316,8 +1678,19 @@ def calc_PT_phase(xi, T, eos, rhodict={}):
 ######################################################################
 def calc_dadT(rho, T, xi, eos, rhodict={}):
     """
-        Given rho N/m3 and T compute denstiy given SAFT parameters
-        """
+    Given rho N/m3 and T compute denstiy given SAFT parameters
+    
+    Parameters
+    ----------
+    with_attribution : bool, Optional, default: True
+        Set whether or not to display who the quote is from
+    
+    Returns
+    -------
+    quote : str
+        Compiled string including quote and optional attribution
+    """
+
     step = np.sqrt(np.finfo(float).eps) * T * 1000.0
     nrho = np.size(rho)
 
@@ -1326,3 +1699,4 @@ def calc_dadT(rho, T, xi, eos, rhodict={}):
     Am = calchelmholtz.calc_A(np.array([rho]), xi, T - step, eos)
 
     return (Ap - Am) / (2.0 * step)
+
