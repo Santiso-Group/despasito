@@ -24,6 +24,9 @@ addons:
   apt:
     packages:
       - gfortran
+  homebrew:
+    packages:
+      - gcc
       
 before_install:
     # Additional info about the build
