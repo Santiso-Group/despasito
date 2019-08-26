@@ -8,7 +8,7 @@ DESPASITO
 
 DESPASITO: Determining Equilibrium State and Parametrization Application for SAFT, Intended for Thermodynamic Output
 
-.. warning:: This package is not ready for distribution.
+**WARNING!** This package is not ready for distribution.
 
 First open-source application for thermodynamic calculations and parameter fitting for the Statistical Associating Fluid Theory (SAFT) EOS and SAFT-𝛾-Mie coarse-grained simulations. This software has two primary facets. 
 
@@ -18,7 +18,7 @@ The second facet is parameterization, not only of the equation of state (EOS) bu
 
 Installation
 ------------
-.. note:: DESPASITO is not yet available on pip or conda-forge, but it is a package that can be installed in your python environment.
+**NOTE:** DESPASITO is not yet available on pip or conda-forge, but it is a package that can be installed in your python environment.
 
 **Step 1:** Download the master branch from our github page as a zip file, or clone it with gitand save in your desired directory.
 
@@ -30,7 +30,7 @@ This package has been primarily designed as a command line tool but can be used 
 
 In any directory with the appropriate .json input files, run DESPASITO with ``python -m despasito input.json``
 
-See examples directory or Input/Output documentation for input file structures.
+See examples directory for input file structures.
 
 ### Copyright
 
