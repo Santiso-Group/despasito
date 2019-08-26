@@ -40,3 +40,8 @@ conda update --quiet --all
 
 # Restore original directory
 popd
+
+cd docs
+conda install sphinx sphinx_rtd_theme
+make clean html
+cd ../
