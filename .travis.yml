@@ -1,4 +1,5 @@
 language: python
+sudo: required
 
 # Run jobs on container-based infrastructure, can be overridden per job
 
@@ -20,13 +21,9 @@ matrix:
       language: generic
       env: PYTHON_VER=3.7
 
-addons:
-  apt:
-    packages:
-    - gfortran
-
 before_install:
     # Additional info about the build
+  - sudo apt-get install gfortran
   - uname -a
   - df -h
   - ulimit -a
