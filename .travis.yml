@@ -19,14 +19,6 @@ matrix:
     - os: linux
       language: generic
       env: PYTHON_VER=3.7
-
-addons:
-  apt:
-    packages:
-      - gfortran
-  homebrew:
-    packages:
-      - gcc
       
 before_install:
     # Additional info about the build
@@ -37,6 +29,14 @@ before_install:
     # Install the Python environment
   - source devtools/travis-ci/before_install.sh
   - python -V
+  
+addons:
+  apt:
+    packages:
+      - gfortran
+  homebrew:
+    packages:
+      - gcc
 
 install:
 
