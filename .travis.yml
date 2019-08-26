@@ -2,6 +2,8 @@ language: python
 
 # Run jobs on container-based infrastructure, can be overridden per job
 
+env: FC=gfortran
+
 matrix:
   include:
     # Extra includes for OSX since python language is not available by default on OSX
@@ -34,9 +36,6 @@ addons:
   apt:
     packages:
       - gfortran
-  homebrew:
-    packages:
-      - gcc
 
 install:
 
