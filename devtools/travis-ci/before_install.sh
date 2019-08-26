@@ -11,6 +11,8 @@ if [ "$TRAVIS_OS_NAME" == "osx" ]; then
         command md5 -r "$@"
     }
     MINICONDA=Miniconda3-latest-MacOSX-x86_64.sh
+    export FC=gfortran-6
+    ln -s `which gfortran-6` gfortran
 else
     MINICONDA=Miniconda3-latest-Linux-x86_64.sh
 fi
