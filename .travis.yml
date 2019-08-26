@@ -20,6 +20,10 @@ matrix:
       language: generic
       env: PYTHON_VER=3.7
 
+addons:
+  apt:
+    packages:
+    - gfortran
 
 before_install:
     # Additional info about the build
