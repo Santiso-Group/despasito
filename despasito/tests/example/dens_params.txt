@@ -1,2 +1,0 @@
-minrhofrac 1.0/400000.0
-rhoinc 2.0

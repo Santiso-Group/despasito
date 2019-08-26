@@ -161,9 +161,11 @@ def file2paramdict(filename,delimiter=" "):
 
     dictionary = {}
     with  open(filename, "r") as filedata:
+        print(filedata)
         for line in filedata:
             line.rstrip()
-            linearray = line.split(':')
+            linearray = line.split(delimiter)
+            print(linearray)
             if len(linearray) == 2:
                 try:
                     dictionary[linearray[0]] = eval(linearray[1])
@@ -246,7 +248,7 @@ def process_bead_data(bead_data):
 
     Parameters
     ----------
-    bead_data : list
+    bead_data : list[list]
         List of strings and dictionaries from .json file
 
     Returns
@@ -256,8 +258,7 @@ def process_bead_data(bead_data):
     beads : list[str]
         List of unique bead names used among components
     nui : numpy.array
-        Array of number of components by number of bead types. Defines the number of each t
-ype of group in each component.
+        Array of number of components by number of bead types. Defines the number of each type of group in each component.
     """
 
     #find list of unique beads
