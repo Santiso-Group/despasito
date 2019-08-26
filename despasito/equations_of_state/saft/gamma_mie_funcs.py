@@ -1,6 +1,4 @@
 """
-    despasito
-    DESPASITO: Determining Equilibrium State and Parameters Applied to SAFT, Intended for Thermodynamic Output
     
     Routines for calculating the Helmoltz energy for the SAFT-gamma equation of state.
     Equations referenced in this code are from V. Papaioannou et al J. Chem. Phys. 140 054107 2014
@@ -17,8 +15,10 @@ from . import solv_assoc
 
 
 def calc_Aideal(xi, rho, massi, T):
-    """ Return a vector of Aideal/(N*kb*T) (number of densities) as defined in eq. 4 
-        Input:
+    """ 
+    Return a vector of Aideal/(N*kb*T) (number of densities) as defined in eq. 4 
+    Parameters
+    ----------
             xi: (number of components) numpy array of mol fractions sum(xi) should equal 1.0
             rho: (number of densities) number density of system N/V in m^-3
             massi: (number of components) numpy array of mass for each component in kg/mol
@@ -51,13 +51,14 @@ def calc_Aideal(xi, rho, massi, T):
 
 
 def dkk_int(r, Ce_kT, sigma, l_r, l_a):
-    """ Return integrand of eq. 10 for a value r
-        Input:
-            r: bead distance
-            Ce_kT: C*epsilon/(kT), Mie prefactor normalized by kT
-            sigma: bead diameter in Angstroms (or same units as r)
-            l_r: repulsive exponent Mie potential
-            l_a: attractive exponent Mie potential
+    """ 
+    Return integrand of eq. 10 for a value r
+    Input:
+        r: bead distance
+        Ce_kT: C*epsilon/(kT), Mie prefactor normalized by kT
+        sigma: bead diameter in Angstroms (or same units as r)
+        l_r: repulsive exponent Mie potential
+        l_a: attractive exponent Mie potential
     """
     return 1.0 - np.exp(-Ce_kT * (np.power(sigma / r, l_r) - np.power(sigma / r, l_a)))
 
