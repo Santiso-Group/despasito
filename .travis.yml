@@ -50,7 +50,9 @@ install:
 
 script:
   - pytest -v --cov=despasito despasito/tests/
+  - cd docs
   - make html
+  - cd ../
 
 notifications:
     email: false
