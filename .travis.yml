@@ -49,6 +49,7 @@ install:
 
 script:
   - pytest -v --cov=despasito despasito/tests/
+  - make clean docs/html
 
 notifications:
     email: false
