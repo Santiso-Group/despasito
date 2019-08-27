@@ -45,11 +45,12 @@ install:
   - conda activate test
     # Build and install package
   - python setup.py develop --no-deps
+  - conda install sphinx sphinx_rtd_theme
 
 
 script:
   - pytest -v --cov=despasito despasito/tests/
-  - make clean docs/html
+  - make docs/html
 
 notifications:
     email: false
