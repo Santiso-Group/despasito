@@ -1,4 +1,5 @@
 environment:
+  MINGW_DIR: C:\mingw-w64\x86_64-7.2.0-posix-seh-rt_v5-rev1\mingw64\bin
 
   matrix:
     - PYTHON: "C:\\Miniconda36-x64"
@@ -8,7 +9,9 @@ environment:
     - PYTHON: "C:\\Miniconda37-x64"
       PYTHON_VERSION: "3.7"
       PYTHON_ARCH: "64"
-  
+      
+init:
+- cmd: set PATH=%MINGW_DIR%;%PATH%
 
 install:
     # Make sure pip is around
@@ -33,12 +36,16 @@ install:
 
     # Build and install package
   - python setup.py develop --no-deps
+  - conda install sphinx sphinx_rtd_theme
 
   
 build: false
 
 test_script:
   - pytest -v --cov=despasito despasito\\tests
+  - cd docs
+  - make html
+  - cd ../
 
 on_success:
   - codecov
