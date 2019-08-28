@@ -1,3 +1,3 @@
 
 conda:
-    file: devtools/conda-envs/test_env.yaml
+    file: devtools/conda-envs/readthedocs_env.yaml
