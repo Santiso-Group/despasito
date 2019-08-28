@@ -18,10 +18,6 @@ import sys
 sys.path.insert(0, os.path.abspath('..'))
 
 import despasito
-import numpy
-import deap
-import matplotlib
-import scipy
 
 
 # -- Project information -----------------------------------------------------
