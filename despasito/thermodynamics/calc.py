@@ -177,12 +177,8 @@ def PvsRho(T, xi, eos, minrhofrac=(1.0 / 200000.0), rhoinc=5.0, vspacemax=1.0E-4
         Compiled string including quote and optional attribution
     """
 
-    # Update temperature dependent variables
-    if T != eos.T:
-        eos.temp_dependent_variables(T)
-
-    #estimate the maximum density based on the hard spher packing fraction, part of EOS
-    maxrho = eos.density_max(xi, maxpack=maxpack)
+    #estimate the maximum density based on the hard sphere packing fraction, part of EOS
+    maxrho = eos.density_max(xi, T, maxpack=maxpack)
     #min rho is a fraction of max rho, such that minrho << rhogassat
     minrho = maxrho * minrhofrac
     #list of densities for P,rho and P,v
@@ -517,9 +513,6 @@ def Pdiff(rho, Pset, T, xi, eos):
     quote : str
         Compiled string including quote and optional attribution
     """
-    # Update temperature dependent variables
-    if T != eos.T:
-        eos.temp_dependent_variables(T)
 
     Pguess = eos.P(rho * const.Nav, T, xi)
 
@@ -545,10 +538,6 @@ def calc_phiv(P, T, yi, eos, rhodict={}):
     quote : str
         Compiled string including quote and optional attribution
     """
-
-    # Update temperature dependent variables
-    if T != eos.T:
-        eos.temp_dependent_variables(T)
 
     rhov, flagv = calc_rhov(P, T, yi, eos, rhodict)
     if flagv == 3:
@@ -579,10 +568,6 @@ def calc_phil(P, T, xi, eos, rhodict={}):
     quote : str
         Compiled string including quote and optional attribution
     """
-
-    # Update temperature dependent variables
-    if T != eos.T:
-        eos.temp_dependent_variables(T)
 
     rhol, flagl = calc_rhol(P, T, xi, eos, rhodict)
     muil = eos.chemicalpotential(P, np.array([rhol]), xi, T)
@@ -617,10 +602,6 @@ def calc_Prange(T, xi, yi, eos, rhodict={}, Pmin=1000):
     """
 
     global yi_global
-
-    # Update temperature dependent variables
-    if T != eos.T:
-        eos.temp_dependent_variables(T)
 
     # Guess a range from Pmin to the local max of the liquid curve
     vlist, Plist = PvsRho(T, xi, eos, **rhodict)
@@ -716,10 +697,6 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxitr=50):
 
     global yi_global
     yi /= np.sum(yi)
-
-    # Update temperature dependent variables
-    if T != eos.T:
-        eos.temp_dependent_variables(T)
 
 # Option 1
 #    yimin=root(solve_yi_root,yi,args=(xi,phil,P,T,eos,rhodict),method='broyden1',options={'fatol':0.0001,'maxiter':15})
@@ -858,10 +835,6 @@ def find_new_yi(P, T, phil, xi, eos, rhodict={}, maxitr=50):
     quote : str
         Compiled string including quote and optional attribution
     """
-
-    # Update temperature dependent variables
-    if T != eos.T:
-        eos.temp_dependent_variables(T)
 
     #    # have three functions, make sum close to zero, mui isn't np.nan, and rho is a vapor
     #    deap.creator.create("FitnessMulti",deap.base.Fitness,weights=(-1.0, -1.0, 0.5))
@@ -1009,10 +982,6 @@ def solve_xi_root(xi0, yi, phiv, P, T, eos, rhodict):
     # !!!!!!!!!!!!!!! This isn't working !!!!!!!!!!!!!!!!
     # Check calc_phase_test_3.py for old version named "solve_xi"
 
-    # Update temperature dependent variables
-    if T != eos.T:
-        eos.temp_dependent_variables(T)
-
     for i in range(np.size(xi0)):
         if xi0[i] < 0.0:
             return -1.0
@@ -1065,10 +1034,6 @@ def solve_yi_root(yi0, xi, phil, P, T, eos, rhodict={}, maxitr=50):
         Compiled string including quote and optional attribution
     """
 
-    # Update temperature dependent variables
-    if T != eos.T:
-        eos.temp_dependent_variables(T)
-
     yi0 /= np.sum(yi0)
     yi = yi0
 
@@ -1112,10 +1077,6 @@ def solve_P_xiT(P, xi, T, eos, rhodict):
     """
 
     global yi_global
-
-    # Update temperature dependent variables
-    if T != eos.T:
-        eos.temp_dependent_variables(T)
 
     if P < 0:
         return 10.0
@@ -1161,10 +1122,6 @@ def solve_P_xiT_inerp(P, Psat, xi, T, eos, rhodict):
     quote : str
         Compiled string including quote and optional attribution
     """
-
-    # Update temperature dependent variables
-    if T != eos.T:
-        eos.temp_dependent_variables(T)
 
     #print 'P',P
     if P < 0:
@@ -1241,10 +1198,6 @@ def calc_yT_phase(yi, T, eos, rhodict):
     quote : str
         Compiled string including quote and optional attribution
     """
-
-    # Update temperature dependent variables
-    if T != eos.T:
-        eos.temp_dependent_variables(T)
 
     #estimate pure component vapor pressures
     nui = saft_args[1]
@@ -1369,21 +1322,17 @@ def calc_xT_phase(xi, T, eos, rhodict={}, Pguess=[],meth="broyden1"):
 
     global yi_global
 
-    # Update temperature dependent variables
-    if T != eos.T:
-        eos.temp_dependent_variables(T)
-
     Psat = np.zeros_like(xi)
     for i in range(np.size(xi)):
-        for j in range(np.size(eos.nui[i])):
-            if eos.nui[i][j] > 0.0 and eos.beads[j] == "CO2":
+        for j in range(np.size(eos._nui[i])):
+            if eos._nui[i][j] > 0.0 and eos._beads[j] == "CO2":
                 Psat[i] = 7377000.0
                 #Psat[i]=691000000.0
-            elif eos.nui[i][j] > 0.0 and eos.beads[j] == "N2":
+            elif eos._nui[i][j] > 0.0 and eos._beads[j] == "N2":
                 Psat[i] = 7377000.0
-            elif eos.nui[i][j] > 0.0 and ("CH4" in eos.beads[j]):
+            elif eos._nui[i][j] > 0.0 and ("CH4" in eos._beads[j]):
                 Psat[i] = 6377000.0
-            elif eos.nui[i][j] > 0.0 and ("CH3CH3" in eos.beads[j]):
+            elif eos._nui[i][j] > 0.0 and ("CH3CH3" in eos._beads[j]):
                 Psat[i] = 7377000.0
         if Psat[i] == 0.0:
             Psat[i], rholsat, rhogsat = calc_Psat(T, np.array([1.0]), eos, rhodict)
@@ -1552,9 +1501,6 @@ def calc_xT_phase_dir(xi, T, eos, rhodict={}, Pguess=[]):
     """
 
     global yi_global
-    # Update temperature dependent variables
-    if T != eos.T:
-        eos.temp_dependent_variables(T)
 
     nui = saft_args[1]
     beads = saft_args[2]
