@@ -1,7 +1,10 @@
 """
 
-    Routines for pasing input files from .json files to dictionaries and extracting relaven information for program use, as well as write properly structures .json files for later calculations.
+Routines for passing input files from .json files to dictionaries and extracting relevant information for program use, as well as write properly structures .json files for later calculations.
     
+.. todo::
+    * extract_calc_data input_fname: Add link to available thermodynamic calculations
+    * extract_calc_data density_fname: Add link to available density options
 """
 
 import json
@@ -66,10 +69,8 @@ def extract_calc_data(input_fname,density_fname='input_density_params.txt'):
     ----------
     input_fname : str
         The file name of a .json file in the current directory containing (1) the paths to equation of state parameters, (2) calculation type and inputs for thermodynamic calculations.
-        .. todo:: Add link to available thermodynamic calculations
     density_fname : str, Optional, default: input_density_params.txt
         This file is converted directly into a dictionary where each line is a key followed by a value, with a space in between. 
-        .. todo:: Add link to available density options
 
     Returns
     -------
@@ -119,7 +120,7 @@ def extract_calc_data(input_fname,density_fname='input_density_params.txt'):
 
     ## Make dictionary of data needed for thermodynamic calculation
     thermo_dict = {}
-    # Extract relevent system state inputs
+    # Extract relevant system state inputs
     EOS_dict_keys = ['beadconfig', 'SAFTgroup', 'SAFTcross']
     for key, value in input_dict.items():
         if key not in EOS_dict_keys:
@@ -223,10 +224,10 @@ def make_xi_matrix(filename):
     Returns
     -------
     xi : list[float]
-        Mole fraction of component, only relevent for parameter fitting
+        Mole fraction of component, only relevant for parameter fitting
     beads : list[str]
         List of unique bead names used among components
-    nui : numpy.array
+    nui : numpy.ndarray
         Array of number of components by number of bead types. Defines the number of each type of group in each component.
     """
 
@@ -254,10 +255,10 @@ def process_bead_data(bead_data):
     Returns
     -------
     xi : list[float]
-        Mole fraction of component, only relevent for parameter fitting
+        Mole fraction of component, only relevant for parameter fitting
     beads : list[str]
         List of unique bead names used among components
-    nui : numpy.array
+    nui : numpy.ndarray
         Array of number of components by number of bead types. Defines the number of each type of group in each component.
     """
 

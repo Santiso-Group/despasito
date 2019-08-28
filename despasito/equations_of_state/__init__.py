@@ -1,8 +1,6 @@
 """
-despasito
-DESPASITO: Determining Equilibrium State and Parameters Applied to SAFT, Intended for Thermodynamic Output
 
-This vision for this library is that this file will define an EOS class, and import sublibraries of each EOS family.
+This vision for this library is that this file will define an EOS class, and import sub-libraries of each EOS family
 
 """
 
@@ -12,16 +10,19 @@ from importlib import import_module
 
 def eos(eos_type, **kwargs):
     """
-    Use factory design pattern with a dictionary to allow easy implementation of new equations of state (EOS).
+    This function acts as an interface between the user and our library of equations of state (EOS). Input the name of a desired EOS and a factory design pattern with a dictionary will search available classes to allow easy implementation of new EOS.
 
     Parameters
     ----------
-        eos_types$ [str]: Input should be in the form EOSfamily.EOSname (e.g. saft.gamme_mie). Note that the name of the class is the same as the module name,
+        eos_types : str
+            Input should be in the form EOSfamily.EOSname (e.g. saft.gamme_mie). Note that the name of the class is EOSfamily_EOSname.
+        kwargs : dict, Optional
+            A dictionary of inputs for the desired EOS. See specific EOS documentation for required inputs.
                 
-
     Returns
     -------
-        cls_instance [obj] : An instance of the defined EOS class to be used in later computations.
+        instance : obj
+            An instance of the defined EOS class to be used in thermodynamic computations.
     """
 
     try:

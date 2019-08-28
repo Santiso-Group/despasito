@@ -83,7 +83,6 @@ def phase_xiT(eos, sys_dict, rhodict={}, output_file="phase_xiT_output.txt"):
     P_list = np.zeros_like(T_list)
     yi_list = np.zeros_like(xi_list)
     for i in range(np.size(T_list)):
-        eos.temp_dependent_variables(T_list[i])
         print("T (K), xi", T_list[i], xi_list[i][0], xi_list[i][1], "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 
         if flag_gss == 0:
@@ -144,7 +143,6 @@ def phase_yiT(eos, sys_dict, rhodict={}, output_file="phase_yiT_output.txt"):
     P_list = np.zeros_like(T_list)
     xi_list = np.zeros_like(yi_list)
     for i in range(np.size(T_list)):
-        eos.temp_dependent_variables(T_list[i])
         print(yi_list[i], T_list[i])
         P_list[i], xi_list[i] = calc.calc_yT_phase(yi_list[i], T_list[i], eos, rhodict=rhodict)
         print(P[i], xi_list[i])
@@ -199,7 +197,6 @@ def sat_props(eos, sys_dict, rhodict={}, output_file="saturation_output.txt"):
     rhogsat = np.zeros_like(T_list)
 
     for i in range(np.size(T_list)):
-        eos.temp_dependent_variables(T_list[i])
         try:
             Psat[i], rholsat[i], rhogsat[i] = calc.calc_Psat(T_list[i], np.array([1.0]), eos, rhodict=rhodict)
         except:
@@ -262,7 +259,6 @@ def liquid_properties(eos, sys_dict, rhodict={}, output_file="liquid_properties_
     rhol = np.zeros_like(T_list)
     phil = np.zeros_like(T_list)
     for i in range(np.size(T_list)):
-        eos.temp_dependent_variables(T_list[i])
         rhol[i], flagl = calc.calc_rhol_full(P_list[i], T_list[i], xi_list[i], eos, rhodict=rhodict)
 
         if np.isnan(rhol[i]):
@@ -327,7 +323,6 @@ def vapor_properties(eos, sys_dict, rhodict={}, output_file="vapor_properties_ou
     rhov = np.zeros_like(T_list)
     phiv = np.zeros_like(T_list)
     for i in range(np.size(T_list)):
-        eos.temp_dependent_variables(T_list[i])
         rhov[i], flagv = calc.calc_rhov_full(P_list[i], T_list[i], yi_list[i], eos, rhodict=rhodict)
         if np.isnan(rhov[i]):
             print('Failed to calculate rhov at', T_list[i])
