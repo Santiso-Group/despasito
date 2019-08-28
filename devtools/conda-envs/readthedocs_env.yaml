@@ -7,5 +7,4 @@ dependencies:
   - numpy
   - scipy
   - matplotlib
-  - importlib
 
