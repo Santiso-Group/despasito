@@ -1,0 +1,3 @@
+
+conda:
+    file: devtools/conda-envs/test_env.yaml
