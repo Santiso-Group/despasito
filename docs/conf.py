@@ -58,7 +58,7 @@ napoleon_use_param = False
 napoleon_use_ivar = True
 todo_include_todos = True
 
-autodoc_mock_imports = ['deap', 'solv_assoc', 'solv_assoc_matrix',"importlib"]
+autodoc_mock_imports = ['importlib', 'solv_assoc', "deap"]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
