@@ -19,6 +19,16 @@ sys.path.insert(0, os.path.abspath('..'))
 
 import despasito
 
+from unittest.mock import MagicMock
+
+class Mock(MagicMock):
+    @classmethod
+    def __getattr__(cls, name):
+        return MagicMock()
+
+MOCK_MODULES = ['importlib', 'solv_assoc', "deap"]
+sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
+
 # -- Project information -----------------------------------------------------
 
 project = 'DESPASITO'
@@ -58,7 +68,7 @@ napoleon_use_param = False
 napoleon_use_ivar = True
 todo_include_todos = True
 
-autodoc_mock_imports = ['importlib', 'solv_assoc', "deap"]
+#autodoc_mock_imports = ['importlib', 'solv_assoc', "deap"]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
