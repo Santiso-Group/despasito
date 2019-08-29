@@ -20,9 +20,9 @@ from . import solv_assoc
 ############################################################
 
 def calc_Aideal(xi, rho, massi, T):
-    """ 
+    r""" 
     Return a vector of ideal contribution of Helmholtz energy.
-    :math:`\\frac{A^{ideal}}{N k_{B} T}`
+    :math:`\frac{A^{ideal}}{N k_{B} T}`
     
     Parameters
     ----------
@@ -226,15 +226,15 @@ def calc_interaction_matrices(beads, beadlibrary, crosslibrary={}):
     return epsilonkl, sigmakl, l_akl, l_rkl, Ckl
 
 def calc_composition_dependent_variables(xi, nui, beads, beadlibrary):
-    """ 
-    Return conversion factor from molecular number density, :math:`\\rho`, to segment (i.e. group) number density, :math:`\\rho_S`. Shown in eq. 13
+    r""" 
+    Return conversion factor from molecular number density, :math:`\rho`, to segment (i.e. group) number density, :math:`\rho_S`. Shown in eq. 13
 
     Parameters
     ----------
     xi : numpy.ndarray
         Mole fraction of each component, sum(xi) should equal 1.0
     nui : numpy.array
-        :math:`\\nu_{i,k}/k_B`, Array of number of components by number of bead types. Defines the number of each type of group in each component. 
+        :math:`\nu_{i,k}/k_B`, Array of number of components by number of bead types. Defines the number of each type of group in each component. 
         Defined for eq. 11. Note that indices are flipped from definition in reference.
     beads : list[str]
         List of unique bead names used among components
@@ -252,7 +252,7 @@ def calc_composition_dependent_variables(xi, nui, beads, beadlibrary):
     Returns
     -------
     Cmol2seg : float
-        Conversion factor from from molecular number density, :math:`\\rho`, to segment (i.e. group) number density, :math:`\\rho_S`. Shown in eq. 13
+        Conversion factor from from molecular number density, :math:`\rho`, to segment (i.e. group) number density, :math:`\rho_S`. Shown in eq. 13
     xsk : numpy.ndarray
         Mole fraction of each bead (i.e. segment or group), sum(xsk) should equal 1.0
     xskl : numpy.ndarray
@@ -329,7 +329,7 @@ def calc_hard_sphere_matricies(beads, beadlibrary, sigmakl, T):
     return dkk, dkl, x0kl
 
 def calc_Bkl(rho, l_kl, Cmol2seg, dkl, epsilonkl, x0kl, zetax):
-    """ 
+    r""" 
     Return Bkl(rho*Cmol2seg,l_kl) in K as defined in eq. 20, used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy.
 
     Parameters
@@ -339,7 +339,7 @@ def calc_Bkl(rho, l_kl, Cmol2seg, dkl, epsilonkl, x0kl, zetax):
     l_kl : numpy.ndarray
         :math:`\lambda_{k,l}` Matrix of Mie potential exponents for k,l groups
     Cmol2seg : float
-        Conversion factor from from molecular number density, :math:`\\rho`, to segment (i.e. group) number density, :math:`\\rho_S`. Shown in eq. 13
+        Conversion factor from from molecular number density, :math:`\rho`, to segment (i.e. group) number density, :math:`\rho_S`. Shown in eq. 13
     dkl : numpy.ndarray
         Matrix of hardsphere diameters for groups (k,l)
     epsilonkl : numpy.ndarray
@@ -383,7 +383,7 @@ def calc_Bkl(rho, l_kl, Cmol2seg, dkl, epsilonkl, x0kl, zetax):
 
 
 def calc_a1s(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
-    """ 
+    r""" 
     Return a1s,kl(rho*Cmol2seg,l_kl) in K as defined in eq. 25, used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy.
 
     Parameters
@@ -391,7 +391,7 @@ def calc_a1s(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
     rho : numpy.ndarray
         Number density of system [molecules/m^3]
     Cmol2seg : float
-        Conversion factor from from molecular number density, :math:`\\rho`, to segment (i.e. group) number density, :math:`\\rho_S`. Shown in eq. 13
+        Conversion factor from from molecular number density, :math:`\rho`, to segment (i.e. group) number density, :math:`\rho_S`. Shown in eq. 13
     l_kl : numpy.ndarray
         Matrix of mie potential exponents for k,l groups
     zetax : numpy.ndarray
@@ -475,7 +475,7 @@ def calc_fm(alphakl, mlist):
     return fmlist
 
 def calc_Amono(rho, xi, nui, Cmol2seg, xsk, xskl, dkk, T, epsilonkl, sigmakl, dkl, l_akl, l_rkl, Ckl, x0kl):
-    """ 
+    r""" 
     Outputs :math:`A^{HS}, A_1, A_2`, and :math:`A_3` (number of densities) :math:`A^{mono.}` components as well as some related quantities. Note these quantities are normalized by NkbT. Eta is really zeta
 
     Parameters
@@ -485,9 +485,9 @@ def calc_Amono(rho, xi, nui, Cmol2seg, xsk, xskl, dkk, T, epsilonkl, sigmakl, dk
     xi : numpy.ndarray
         Mole fraction of each component, sum(xi) should equal 1.0
     nui : numpy.array
-        :math:`\\nu_{i,k}/k_B`, Array of number of components by number of bead types. Defines the number of each type of group in each component. 
+        :math:`\nu_{i,k}/k_B`, Array of number of components by number of bead types. Defines the number of each type of group in each component. 
     Cmol2seg : float
-        Conversion factor from from molecular number density, :math:`\\rho`, to segment (i.e. group) number density, :math:`\\rho_S`. Shown in eq. 13
+        Conversion factor from from molecular number density, :math:`\rho`, to segment (i.e. group) number density, :math:`\rho_S`. Shown in eq. 13
     xsk : numpy.ndarray
         Mole fraction of each bead (i.e. segment or group), sum(xsk) should equal 1.0
     xskl : numpy.ndarray
@@ -642,15 +642,15 @@ def calc_Amono(rho, xi, nui, Cmol2seg, xsk, xskl, dkk, T, epsilonkl, sigmakl, dk
 ############################################################
 
 def calc_a1ii(rho, Cmol2seg, dii_eff, l_aii_avg, l_rii_avg, x0ii, epsilonii_avg, zetax):
-    """ 
-    Calculate effective first-order perturbation term :math:`\\bar{a}_{1,ii}` for the contribution of the monomeric interactions to the free energy per segment.
+    r""" 
+    Calculate effective first-order perturbation term :math:`\bar{a}_{1,ii}` for the contribution of the monomeric interactions to the free energy per segment.
 
     Parameters
     ----------
     rho : numpy.ndarray
         Number density of system [molecules/m^3]
     Cmol2seg : float
-        Conversion factor from from molecular number density, :math:`\\rho`, to segment (i.e. group) number density, :math:`\\rho_S`. Shown in eq. 13
+        Conversion factor from from molecular number density, :math:`\rho`, to segment (i.e. group) number density, :math:`\rho_S`. Shown in eq. 13
     dii_eff : numpy.ndarray
         Effective hard sphere diameter of the beads (i.e. groups or segments) in component (i.e. molecule) i.
     l_aii_avg : numpy.ndarray
@@ -681,15 +681,15 @@ def calc_a1ii(rho, Cmol2seg, dii_eff, l_aii_avg, l_rii_avg, x0ii, epsilonii_avg,
     
 def calc_da1iidrhos(rho, Cmol2seg, dii_eff, l_aii_avg, l_rii_avg, x0ii, epsilonii_avg, zetax, stepmult=1.0):
 
-    """ 
-    Compute derivative of the term, :math:`\\bar{a}_{1,ii}` with respect to :math:`\\rho_s`
+    r""" 
+    Compute derivative of the term, :math:`\bar{a}_{1,ii}` with respect to :math:`\rho_s`
 
     Parameters
     ----------
     rho : numpy.ndarray
         Number density of system [molecules/m^3]
     Cmol2seg : float
-        Conversion factor from from molecular number density, :math:`\\rho`, to segment (i.e. group) number density, :math:`\\rho_S`. Shown in eq. 13
+        Conversion factor from from molecular number density, :math:`\rho`, to segment (i.e. group) number density, :math:`\rho_S`. Shown in eq. 13
     dii_eff : numpy.ndarray
         Effective hard sphere diameter of the beads (i.e. groups or segments) in component (i.e. molecule) i.
     l_aii_avg : numpy.ndarray
@@ -704,7 +704,7 @@ def calc_da1iidrhos(rho, Cmol2seg, dii_eff, l_aii_avg, l_rii_avg, x0ii, epsiloni
         Matrix of hypothetical packing fraction based on hard sphere diameter for groups (k,l)
     stepmult : float, Optional, default: 1.0
         Factor, :math:`f_{step}`, used to change the step size used in derivative that is computed from the smallest representable positive number on the machine being used, where:
-        :math:`step = f_{step} \\sqrt{\\epsilon_{smallest}}\\rho_s`
+        :math:`step = f_{step} \sqrt{\epsilon_{smallest}}\rho_s`
 
     Returns
     -------
@@ -720,15 +720,15 @@ def calc_da1iidrhos(rho, Cmol2seg, dii_eff, l_aii_avg, l_rii_avg, x0ii, epsiloni
 
 def calc_a2ii_1pchi(rho, Cmol2seg, epsilonii_avg, dii_eff, x0ii, l_rii_avg, l_aii_avg, zetax):
 
-    """ 
-    Calculate the term, :math:`\\frac{\\bar{a_{2,ii}}{1+\\bar{\\Chi}_{ii}}`, used in the calculation of the second-order term from the macroscopic compressibility approximation based on the fluctuation term of the Sutherland potential.
+    r""" 
+    Calculate the term, :math:`\frac{\bar{a}_{2,ii}}{1+\bar{\chi}_{ii}}`, used in the calculation of the second-order term from the macroscopic compressibility approximation based on the fluctuation term of the Sutherland potential.
 
     Parameters
     ----------
     rho : numpy.ndarray
         Number density of system [molecules/m^3]
     Cmol2seg : float
-        Conversion factor from from molecular number density, :math:`\\rho`, to segment (i.e. group) number density, :math:`\\rho_S`. Shown in eq. 13
+        Conversion factor from from molecular number density, :math:`\rho`, to segment (i.e. group) number density, :math:`\rho_S`. Shown in eq. 13
     epsilonii_avg : numpy.ndarray
         Average bead (i.e. group or segment) potential well depth in component (i.e. molecule) i.
     dii_eff : numpy.ndarray
@@ -768,15 +768,15 @@ def calc_a2ii_1pchi(rho, Cmol2seg, epsilonii_avg, dii_eff, x0ii, l_rii_avg, l_ai
 
 def calc_da2ii_1pchi_drhos(rho, Cmol2seg, epsilonii_avg, dii_eff, x0ii, l_rii_avg, l_aii_avg, zetax, stepmult=1.0):
 
-    """
-    Compute derivative of the term, :math:`\\frac{\\bar{a_{2,ii}}{1+\\bar{\\Chi}_{ii}}` with respect to :math:`\\rho_s`
+    r"""
+    Compute derivative of the term, :math:`\frac{\bar{a}_{2,ii}}{1+\bar{\chi}_{ii}}` with respect to :math:`\rho_s`
 
     Parameters
     ----------
     rho : numpy.ndarray
         Number density of system [molecules/m^3]
     Cmol2seg : float
-        Conversion factor from from molecular number density, :math:`\\rho`, to segment (i.e. group) number density, :math:`\\rho_S`. Shown in eq. 13
+        Conversion factor from from molecular number density, :math:`\rho`, to segment (i.e. group) number density, :math:`\rho_S`. Shown in eq. 13
     epsilonii_avg : numpy.ndarray
         Average bead (i.e. group or segment) potential well depth in component (i.e. molecule) i.
     dii_eff : numpy.ndarray
@@ -791,7 +791,7 @@ def calc_da2ii_1pchi_drhos(rho, Cmol2seg, epsilonii_avg, dii_eff, x0ii, l_rii_av
         Matrix of hypothetical packing fraction based on hard sphere diameter for groups (k,l)
     stepmult : float, Optional, default: 1.0
         Factor, :math:`f_{step}`, used to change the step size used in derivative that is computed from the smallest representable positive number on the machine being used, where:
-        :math:`step = f_{step} \\sqrt{\\epsilon_{smallest}}\\rho_s`
+        :math:`step = f_{step} \sqrt{\epsilon_{smallest}}\rho_s`
 
     Returns
     -------
@@ -807,7 +807,7 @@ def calc_da2ii_1pchi_drhos(rho, Cmol2seg, epsilonii_avg, dii_eff, x0ii, l_rii_av
     return np.einsum("ij,i->ij", (a2ii_1pchi_p - a2ii_1pchi_m), 0.5 / step)
 
 def calc_Achain(rho, Cmol2seg, xi, T, nui, sigmakl, epsilonkl, dkl, xskl, l_rkl, l_akl, beads, beadlibrary, zetax, zetaxstar, KHS):
-    """
+    r"""
     Calculation of chain contribution of Helmholtz energy, :math:`A^{chain}`.
 
     Parameters
@@ -815,13 +815,13 @@ def calc_Achain(rho, Cmol2seg, xi, T, nui, sigmakl, epsilonkl, dkl, xskl, l_rkl,
     rho : numpy.ndarray
         Number density of system [molecules/m^3]
     Cmol2seg : float
-        Conversion factor from from molecular number density, :math:`\\rho`, to segment (i.e. group) number density, :math:`\\rho_S`. Shown in eq. 13
+        Conversion factor from from molecular number density, :math:`\rho`, to segment (i.e. group) number density, :math:`\rho_S`. Shown in eq. 13
     xi : numpy.ndarray
         Mole fraction of each component, sum(xi) should equal 1.0
     T : float
         Temperature of the system [K]
     nui : numpy.array
-        :math:`\\nu_{i,k}/k_B`, Array of number of components by number of bead types. Defines the number of each type of group in each component. 
+        :math:`\nu_{i,k}/k_B`, Array of number of components by number of bead types. Defines the number of each type of group in each component. 
         Defined for eq. 11. Note that indices are flipped from definition in reference.
     sigmakl : numpy.ndarray
         Matrix of mie diameter for groups (k,l)
@@ -1082,7 +1082,7 @@ def calc_assoc_matrices(beads, beadlibrary, sitenames=["H", "e1", "e2"], crossli
     return epsilonHB, Kklab, nk
 
 def calc_Xika_wrap(Xika0, xi, rho, nui, nk, delta):
-    """
+    r"""
     Uses Fortran modules to calculate the fraction of molecules of component i that are not bonded at a site of type a on group k.
 
     Parameters
@@ -1092,7 +1092,7 @@ def calc_Xika_wrap(Xika0, xi, rho, nui, nk, delta):
     rho : numpy.ndarray
         Number density of system [molecules/m^3]
     nui : numpy.array
-        :math:`\\nu_{i,k}/k_B`, Array of number of components by number of bead types. Defines the number of each type of group in each component. 
+        :math:`\nu_{i,k}/k_B`, Array of number of components by number of bead types. Defines the number of each type of group in each component. 
         Defined for eq. 11. Note that indices are flipped from definition in reference.
     nk : numpy.ndarray
         For each bead the number of each type of site
@@ -1112,7 +1112,7 @@ def calc_Xika_wrap(Xika0, xi, rho, nui, nk, delta):
     return obj_func
 
 def calc_A_assoc(rho, xi, T, nui, Cmol2seg, xskl, sigmakl, sigmaii_avg, epsilonii_avg, epsilonHB, Kklab, nk):
-    """
+    r"""
     Calculates the association contribution of the Helmholtz energy, :math:`A^{assoc.}`.
 
     Parameters
@@ -1124,9 +1124,9 @@ def calc_A_assoc(rho, xi, T, nui, Cmol2seg, xskl, sigmakl, sigmaii_avg, epsiloni
     T : float
         Temperature of the system [K]
     nui : numpy.array
-        :math:`\\nu_{i,k}/k_B`, Array of number of components by number of bead types. Defines the number of each type of group in each component. 
+        :math:`\nu_{i,k}/k_B`, Array of number of components by number of bead types. Defines the number of each type of group in each component. 
     Cmol2seg : float
-        Conversion factor from from molecular number density, :math:`\\rho`, to segment (i.e. group) number density, :math:`\\rho_S`. Shown in eq. 13
+        Conversion factor from from molecular number density, :math:`\rho`, to segment (i.e. group) number density, :math:`\rho_S`. Shown in eq. 13
     xskl : numpy.ndarray
         Matrix of mole fractions of bead (i.e. segment or group) k multiplied by bead l
     sigmakl : numpy.ndarray
@@ -1220,8 +1220,8 @@ def calc_A_assoc(rho, xi, T, nui, Cmol2seg, xskl, sigmakl, sigmaii_avg, epsiloni
 ############################################################
 
 def calc_A(rho, xi, T, beads, beadlibrary, massi, nui, Cmol2seg, xsk, xskl, dkk, epsilonkl, sigmakl, dkl, l_akl, l_rkl, Ckl, x0kl,epsilonHB, Kklab, nk):
-    """
-    Calculates total Helmholtz energy, :math:`\\frac{A}{N k_{B} T}`.
+    r"""
+    Calculates total Helmholtz energy, :math:`\frac{A}{N k_{B} T}`.
 
     Parameters
     ----------
@@ -1246,9 +1246,9 @@ def calc_A(rho, xi, T, beads, beadlibrary, massi, nui, Cmol2seg, xsk, xskl, dkk,
     massi : numpy.ndarray
         Mass for each component [kg/mol]
     nui : numpy.array
-        :math:`\\nu_{i,k}/k_B`, Array of number of components by number of bead types. Defines the number of each type of group in each component. 
+        :math:`\nu_{i,k}/k_B`, Array of number of components by number of bead types. Defines the number of each type of group in each component. 
     Cmol2seg : float
-        Conversion factor from from molecular number density, :math:`\\rho`, to segment (i.e. group) number density, :math:`\\rho_S`. Shown in eq. 13
+        Conversion factor from from molecular number density, :math:`\rho`, to segment (i.e. group) number density, :math:`\rho_S`. Shown in eq. 13
     xsk : numpy.ndarray
         Mole fraction of each bead (i.e. segment or group), sum(xsk) should equal 1.0
     xskl : numpy.ndarray
@@ -1315,8 +1315,8 @@ def calc_A(rho, xi, T, beads, beadlibrary, massi, nui, Cmol2seg, xsk, xskl, dkk,
 
 
 def calc_Ares(rho, xi, T, beads, beadlibrary, massi, nui, Cmol2seg, xsk, xskl, dkk, epsilonkl, sigmakl, dkl, l_akl, l_rkl, Ckl, x0kl, epsilonHB, Kklab, nk):
-    """
-    Calculates residual Helmholtz energy, :math:`\\frac{A^{res.}}{N k_{B} T}` that deviates from ideal
+    r"""
+    Calculates residual Helmholtz energy, :math:`\frac{A^{res.}}{N k_{B} T}` that deviates from ideal
 
     Parameters
     ----------
@@ -1341,9 +1341,9 @@ def calc_Ares(rho, xi, T, beads, beadlibrary, massi, nui, Cmol2seg, xsk, xskl, d
     massi : numpy.ndarray
         Mass for each component [kg/mol]
     nui : numpy.array
-        :math:`\\nu_{i,k}/k_B`, Array of number of components by number of bead types. Defines the number of each type of group in each component. 
+        :math:`\nu_{i,k}/k_B`, Array of number of components by number of bead types. Defines the number of each type of group in each component. 
     Cmol2seg : float
-        Conversion factor from from molecular number density, :math:`\\rho`, to segment (i.e. group) number density, :math:`\\rho_S`. Shown in eq. 13
+        Conversion factor from from molecular number density, :math:`\rho`, to segment (i.e. group) number density, :math:`\rho_S`. Shown in eq. 13
     xsk : numpy.ndarray
         Mole fraction of each bead (i.e. segment or group), sum(xsk) should equal 1.0
     xskl : numpy.ndarray
