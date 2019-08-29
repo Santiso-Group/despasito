@@ -11,6 +11,5 @@ Inputs are .json files of the intructions for thermodynamic calculations and pat
 
 Package Outputs
 ---------------
-Outputs are files saved to the current working directory containing thermodynamic calculati
-ons. Default file names are used, but can be defined in the input.json file for command line use or thermodynamics dictionary for imported use.
+Outputs are files saved to the current working directory containing thermodynamic calculations. Default file names are used, but can be defined in the input.json file for command line use or thermodynamics dictionary for imported use.
 
