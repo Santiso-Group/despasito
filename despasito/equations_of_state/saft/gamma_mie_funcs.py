@@ -643,7 +643,7 @@ def calc_Amono(rho, xi, nui, Cmol2seg, xsk, xskl, dkk, T, epsilonkl, sigmakl, dk
 
 def calc_a1ii(rho, Cmol2seg, dii_eff, l_aii_avg, l_rii_avg, x0ii, epsilonii_avg, zetax):
     """ 
-    Calculate effective first-order perturbation term :math:`\bar{a}_{1,ii}` for the contribution of the monomeric interactions to the free energy per segment.
+    Calculate effective first-order perturbation term :math:`\\bar{a}_{1,ii}` for the contribution of the monomeric interactions to the free energy per segment.
 
     Parameters
     ----------
@@ -682,7 +682,7 @@ def calc_a1ii(rho, Cmol2seg, dii_eff, l_aii_avg, l_rii_avg, x0ii, epsilonii_avg,
 def calc_da1iidrhos(rho, Cmol2seg, dii_eff, l_aii_avg, l_rii_avg, x0ii, epsilonii_avg, zetax, stepmult=1.0):
 
     """ 
-    Compute derivative of the term, :math:`\\bar{\\a}_{1,ii}` with respect to :math:`\\rho_s`
+    Compute derivative of the term, :math:`\\bar{a}_{1,ii}` with respect to :math:`\\rho_s`
 
     Parameters
     ----------
@@ -721,7 +721,7 @@ def calc_da1iidrhos(rho, Cmol2seg, dii_eff, l_aii_avg, l_rii_avg, x0ii, epsiloni
 def calc_a2ii_1pchi(rho, Cmol2seg, epsilonii_avg, dii_eff, x0ii, l_rii_avg, l_aii_avg, zetax):
 
     """ 
-    Calculate the term, :math:`\\frac{\\bar{\\a}_{2,ii}}{1+\\bar{\\Chi}_{ii}`, used in the calculation of the second-order term from the macroscopic compressibility approximation based on the fluctuation term of the Sutherland potential.
+    Calculate the term, :math:`\\frac{\\bar{a_{2,ii}}{1+\\bar{\\Chi}_{ii}}`, used in the calculation of the second-order term from the macroscopic compressibility approximation based on the fluctuation term of the Sutherland potential.
 
     Parameters
     ----------
@@ -769,7 +769,7 @@ def calc_a2ii_1pchi(rho, Cmol2seg, epsilonii_avg, dii_eff, x0ii, l_rii_avg, l_ai
 def calc_da2ii_1pchi_drhos(rho, Cmol2seg, epsilonii_avg, dii_eff, x0ii, l_rii_avg, l_aii_avg, zetax, stepmult=1.0):
 
     """
-    Compute derivative of the term, :math:`\\frac{\\bar{\\a}_{2,ii}}{1+\\bar{\\Chi}_{ii}` with respect to :math:`\\rho_s`
+    Compute derivative of the term, :math:`\\frac{\\bar{a_{2,ii}}{1+\\bar{\\Chi}_{ii}}` with respect to :math:`\\rho_s`
 
     Parameters
     ----------
