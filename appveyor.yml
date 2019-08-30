@@ -37,6 +37,9 @@ install:
     # Build and install package
   - python setup.py develop --no-deps
   - conda install sphinx sphinx_rtd_theme
+  
+  - echo $LD_LIBRARY_PATH
+  - echo $PYTHONPATH
 
   
 build: false
