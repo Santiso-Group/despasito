@@ -1,4 +1,4 @@
-"""
+r"""
     
     Routines for calculating the Helmholtz energy for the SAFT-gamma equation of state.
     Equations referenced in this code are from V. Papaioannou et al J. Chem. Phys. 140 054107 2014
@@ -82,7 +82,7 @@ def calc_Aideal(xi, rho, massi, T):
 ############################################################
 
 def _dkk_int(r, Ce_kT, sigma, l_r, l_a):
-    """ 
+    r""" 
     Return integrand used to calculate the hard sphere diameter, :math:`d_{k,k}` of a group k. See eq. 10.
     
     Parameters
@@ -110,7 +110,7 @@ def _dkk_int(r, Ce_kT, sigma, l_r, l_a):
 
 
 def calc_dkk(epsilon, sigma, T, l_r, l_a=6.0):
-    """ 
+    r""" 
     Calculates hard sphere diameter of a group, :math:`d_{k,k}`. Defined in eq. 10.
 
     Parameters
@@ -139,7 +139,7 @@ def calc_dkk(epsilon, sigma, T, l_r, l_a=6.0):
     return results[0]
 
 def C(l_r, l_a):
-    """ 
+    r""" 
     Calculations C, the Mie potential prefactor, defined in eq. 2
 
     Parameters
@@ -158,7 +158,7 @@ def C(l_r, l_a):
     return (l_r / (l_r - l_a)) * (l_r / l_a)**(l_a / (l_r - l_a))
 
 def calc_interaction_matrices(beads, beadlibrary, crosslibrary={}):
-    """
+    r"""
     Computes matrices of cross interaction parameters epsilonkl, sigmakl, l_akl, l_rkl (attractive and repulsive exponents), Ckl
 
     Parameters
@@ -295,7 +295,7 @@ def calc_composition_dependent_variables(xi, nui, beads, beadlibrary):
     return Cmol2seg, xsk, xskl
 
 def calc_hard_sphere_matricies(beads, beadlibrary, sigmakl, T):
-    """
+    r"""
     Computes matrix of hard sphere interaction parameters dkk, dkl, and x0kl
     This does not include function specific or association terms
 
@@ -453,7 +453,7 @@ def calc_a1s(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
 
 
 def calc_fm(alphakl, mlist):
-    """ 
+    r""" 
     Calculate fm(alphakl) where a list of m values are specified in mlist eq. 39
 
     Parameters
@@ -987,7 +987,7 @@ def calc_Achain(rho, Cmol2seg, xi, T, nui, sigmakl, epsilonkl, dkl, xskl, l_rkl,
 ############################################################
 
 def calc_assoc_matrices(beads, beadlibrary, sitenames=["H", "e1", "e2"], crosslibrary={}):
-    """
+    r"""
 
     Generate matrices used for association site calculations.  Compute epsilonHB (interaction energy for association term),Kklab (association interaction bonding volume,nk (number of sites )
 

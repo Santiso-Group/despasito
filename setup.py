@@ -51,7 +51,7 @@ setup(
     include_package_data=True,
 
     # Allows `setup.py test` to work correctly with pytest
-    setup_requires=["numpy","scipy","deap"] + pytest_runner,
+    setup_requires=["numpy","scipy","deap","matplotlib"] + pytest_runner,
     ext_package=fpath,
     ext_modules = [ext1,ext2],
 

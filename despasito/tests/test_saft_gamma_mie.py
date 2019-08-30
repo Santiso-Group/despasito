@@ -5,6 +5,7 @@ Unit and regression test for the despasito package.
 # Import package, test suite, and other packages as needed
 import despasito.equations_of_state.saft.gamma_mie
 import despasito.equations_of_state.saft.gamma_mie_funcs
+import despasito.equations_of_state.saft.solv_assoc
 import pytest
 import sys
 import numpy as np
