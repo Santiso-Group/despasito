@@ -41,24 +41,37 @@ def calc_Aideal(xi, rho, massi, T):
         Helmholtz energy of ideal gas for each density given.
     """
 
+    # Check for mole fractions of zero and remove those components
+    ind = np.where(xi==0.0)[0]
+    xi_tmp = []
+    massi_tmp = []
+    for i in range(len(xi)):
+        if i not in ind:
+            xi_tmp.append(xi[i])
+            massi_tmp.append(massi[i])
+    xi_tmp = np.array(xi_tmp)
+    massi_tmp = np.array(massi_tmp)
+
     # rhoi: (number of components,number of densities) number density of each component for each density
-    rhoi = np.outer(rho, xi)
-    Lambda3 = (constants.h / np.sqrt(2.0 * np.pi * (massi / constants.Nav) * constants.kb * T))**3
+    rhoi = np.outer(rho, xi_tmp)
+    Lambda3 = (constants.h / np.sqrt(2.0 * np.pi * (massi_tmp / constants.Nav) * constants.kb * T))**3
     Aideal_tmp = rhoi*Lambda3
-    if not any(np.sum(xi * np.log(Aideal_tmp), axis=1)):
+
+#    if not any(np.sum(xi_tmp * np.log(Aideal_tmp), axis=1)):
+    if np.isnan(np.sum(np.sum(xi_tmp * np.log(Aideal_tmp), axis=1))):
         print(np.array(Aideal_tmp).T)
         print("lambda",Lambda3)
-        print(xi, massi)
+        print(xi_tmp, massi_tmp)
         Aideal = []
         for a in Aideal_tmp:
-            if not any(np.sum(xi * np.log(a), axis=1)): 
-                Aideal.append(np.sum(xi * np.log(a), axis=1) - 1.0)
+            if not any(np.sum(xi_tmp * np.log(a), axis=1)): 
+                Aideal.append(np.sum(xi_tmp * np.log(a), axis=1) - 1.0)
             else:
                 print("Aideal",a)
                 Aideal.append(0.0)
         Aideal = np.array(Aideal)
     else:
-        Aideal = np.sum(xi * np.log(Aideal_tmp), axis=1) - 1.0
+        Aideal = np.sum(xi_tmp * np.log(Aideal_tmp), axis=1) - 1.0
 
     return Aideal
 
@@ -548,15 +561,6 @@ def calc_Amono(rho, xi, nui, Cmol2seg, xsk, xskl, dkk, T, epsilonkl, sigmakl, dk
     AHS = (6.0 / (np.pi * rho)) * (np.log(1.0 - eta[:, 3]) * (((eta[:, 2]**3) / (eta[:, 3]**2)) - eta[:, 0]) +
                                    (3.0 * eta[:, 1] * eta[:, 2] /
                                     (1 - eta[:, 3])) + ((eta[:, 2]**3) / (eta[:, 3] * ((1.0 - eta[:, 3])**2))))
-    # print xi
-    # print eta
-    # print rho
-    # print rhos
-    # print dkk
-    # print xsk
-    # print xsk*(dkk**3)
-    # print np.sum(xsk*(dkk**3))*(np.pi/6.0)*rhos
-    # print 'end section ahs'
 
     ##### compute a1kl, eq. 19 #####
 
@@ -630,8 +634,6 @@ def calc_Amono(rho, xi, nui, Cmol2seg, xsk, xskl, dkk, T, epsilonkl, sigmakl, dk
     A1 = (Cmol2seg / T) * a1
     A2 = (Cmol2seg / (T**2)) * a2
     A3 = (Cmol2seg / (T**3)) * a3
-
-    # print 'ACOMP',AHS, A1, A2, A3
 
     return AHS, A1, A2, A3, zetax, zetaxstar, KHS
 
@@ -954,17 +956,15 @@ def calc_Achain(rho, Cmol2seg, xi, T, nui, sigmakl, epsilonkl, dkl, xskl, l_rkl,
 
     g2MCA = (1.0 / (2.0 * np.pi * (epsilonii_avg**2) * dii_eff**3)) * ((3.0 * da2iidrhos) - (eKC2 * l_rii_avg * (x0ii**(2.0 * l_rii_avg))) * (a1sii_2l_rii_avg + Bii_2l_rii_avg) + eKC2 * (l_rii_avg + l_aii_avg) * (x0ii**(l_rii_avg + l_aii_avg)) * (a1sii_l_rii_avgl_aii_avg + Bii_l_aii_avgl_rii_avg) - eKC2 * l_aii_avg * (x0ii**(2.0 * l_aii_avg)) * (a1sii_2l_aii_avg + Bii_2l_aii_avg))
 
-    #print np.size(g2MCA,axis=0),np.size(g2MCA,axis=1)
-    #print np.size(gammacii,axis=0),np.size(gammacii,axis=1)
     g2 = (1.0 + gammacii) * g2MCA
     #g2=np.einsum("i,ij->ij",1.0+gammacii,g2MCA)
 
-    #print np.exp((epsilonii_avg*g1/(kT*gdHS))+(((epsilonii_avg/kT)**2)*g2/gdHS))
+    #print(np.exp((epsilonii_avg*g1/(kT*gdHS))+(((epsilonii_avg/kT)**2)*g2/gdHS)))
     #try:
     gii = gdHS * np.exp((epsilonii_avg * g1 / (kT * gdHS)) + (((epsilonii_avg / kT)**2) * g2 / gdHS))
     tmp = [(epsilonii_avg * g1 / (kT * gdHS)), (((epsilonii_avg / kT)**2) * g2 / gdHS)]
     #except:
-    #    print gdHS,epsilonii_avg,g1,kT,gdHS,epsilonii_avg,kT,g2,gdHS
+    #    print(gdHS,epsilonii_avg,g1,kT,gdHS,epsilonii_avg,kT,g2,gdHS)
     Achain = 0.0
     tmp_A = [0, 0]
     for i in range(ncomp):
@@ -1105,11 +1105,8 @@ def calc_Xika_wrap(Xika0, xi, rho, nui, nk, delta):
         Used in calculation of association term of Helmholtz energy
     """
     # val=solv_assoc.calc_xika(Xika0,xi,rho,nui,nk,delta)
-    # print np.size(rho)
-    # print np.size(Xika0)
     obj_func, Xika = solv_assoc.calc_xika(Xika0, xi, rho, nui, nk, delta)
-    print(obj_func)
-    return obj_func
+    return obj_funh
 
 def calc_A_assoc(rho, xi, T, nui, Cmol2seg, xskl, sigmakl, sigmaii_avg, epsilonii_avg, epsilonHB, Kklab, nk):
     r"""
@@ -1151,7 +1148,6 @@ def calc_A_assoc(rho, xi, T, nui, Cmol2seg, xskl, sigmakl, sigmaii_avg, epsiloni
     nbeads = list(nui.shape)[1]
     ncomp = np.size(xi)
     nsitesmax = np.size(nk, axis=1)
-    # print nsitesmax
     Fklab = np.zeros((nbeads, nbeads, nsitesmax, nsitesmax))
     epsilonij = np.zeros((ncomp, ncomp))
     Iij = np.zeros((np.size(rho), ncomp, ncomp))
@@ -1169,7 +1165,6 @@ def calc_A_assoc(rho, xi, T, nui, Cmol2seg, xskl, sigmakl, sigmaii_avg, epsiloni
                 (sigmaii_avg[i] + sigmaii_avg[j]) / 2.0)**3)
             epsilonij[j, i] = epsilonij[i, j]
 
-    # print 'epsilonij',epsilonij
     # compute sigmax3
     sigmax3 = Cmol2seg * np.sum(xskl * (sigmakl**3))
 
@@ -1178,9 +1173,8 @@ def calc_A_assoc(rho, xi, T, nui, Cmol2seg, xskl, sigmakl, sigmaii_avg, epsiloni
         for q in range(11 - i):
             # temp=np.einsum("i,jk->ijk",constants.cij[p,q]*((sigmax3*rho)**p),((kT/epsilonij)**q))
             # temp=constants.cij[p,q]*((sigmax3*rho[0])**p)*((kT/epsilonij)**q)
-            # print p,q
             Iij += np.einsum("i,jk->ijk", constants.cij[p, q] * ((sigmax3 * rho)**p), ((kT / epsilonij)**q))
-    # print Iij
+
     # compute deltaijklab
     for i in range(ncomp):
         for j in range(ncomp):
@@ -1188,13 +1182,12 @@ def calc_A_assoc(rho, xi, T, nui, Cmol2seg, xskl, sigmakl, sigmaii_avg, epsiloni
                 for l in range(nbeads):
                     for a in range(nsitesmax):
                         for b in range(nsitesmax):
-                            # print Fklab[k,l,a,b],Kklab[k,l,a,b],Iij[i,j]
+                            # print(Fklab[k,l,a,b],Kklab[k,l,a,b],Iij[i,j])
                             if nui[i, k] and nui[j, l] > 0:
                                 delta[:, i, j, k, l, a, b] = Fklab[k, l, a, b] * Kklab[k, l, a, b] * Iij[:, i, j]
 
     Xika0 = np.zeros((ncomp, nbeads, nsitesmax))
     Xika0[:, :, :] = 1.0
-
     Xika = solv_assoc.min_xika(rho, Xika0, xi, nui, nk, delta, 500, 1.0E-12)
     if np.any(Xika < 0.0):
         Xika0[:, :, :] = 0.5
@@ -1287,9 +1280,9 @@ def calc_A(rho, xi, T, beads, beadlibrary, massi, nui, Cmol2seg, xsk, xskl, dkk,
     Achain, sigmaii_avg, epsilonii_avg = calc_Achain(rho, Cmol2seg, xi, T, nui, sigmakl, epsilonkl, dkl, xskl, l_rkl, l_akl, beads, beadlibrary, zetax, zetaxstar, KHS)
     # t2=time.time()
     # print t2-t1
+
     if np.sum(nk) > 0.0:
-        Aassoc = calc_A_assoc(rho, xi, T, nui,  Cmol2seg, xskl, sigmakl, sigmaii_avg, epsilonii_avg, epsilonHB,
-                              Kklab, nk)
+        Aassoc = calc_A_assoc(rho, xi, T, nui,  Cmol2seg, xskl, sigmakl, sigmaii_avg, epsilonii_avg, epsilonHB, Kklab, nk)
         A = Aideal + AHS + A1 + A2 + A3 + Achain + Aassoc
     else:
         A = Aideal + AHS + A1 + A2 + A3 + Achain
@@ -1386,7 +1379,6 @@ def calc_Ares(rho, xi, T, beads, beadlibrary, massi, nui, Cmol2seg, xsk, xskl, d
         Ares = AHS + A1 + A2 + A3 + Achain + Aassoc
     else:
         Ares = AHS + A1 + A2 + A3 + Achain
-    # print Aideal,AHS,A1,A2,A3,Achain
-    # print Ares
+
     return Ares
 

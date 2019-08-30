@@ -1,4 +1,4 @@
-"""
+r"""
     
     EOS object for SAFT-:math:`\gamma`-Mie
     Equations referenced in this code are from V. Papaioannou et al J. Chem. Phys. 140 054107 2014
@@ -19,7 +19,7 @@ from despasito.equations_of_state.interface import EOStemplate
 
 class saft_gamma_mie(EOStemplate):
 
-    """
+    r"""
     Initialize EOS with system component parameters so that methods may be used by thermodynamic calculations. All input and calculated parameters are defined as hidden attributes.
     
     Parameters
@@ -75,9 +75,7 @@ class saft_gamma_mie(EOStemplate):
         else:
             crosslibrary = {}
 
-        epsilonkl, sigmakl, l_akl, l_rkl, Ckl = funcs.calc_interaction_matrices(self._beads,
-                                                                                self._beadlibrary,
-                                                                                crosslibrary=crosslibrary)
+        epsilonkl, sigmakl, l_akl, l_rkl, Ckl = funcs.calc_interaction_matrices(self._beads, self._beadlibrary, crosslibrary=crosslibrary)
 
         self._epsilonkl = epsilonkl
         self._sigmakl = sigmakl
@@ -98,7 +96,7 @@ class saft_gamma_mie(EOStemplate):
         self._epsilonHB = epsilonHB
         self._Kklab = Kklab
         self._nk = nk
-        
+
         # Initialize temperature attribute
         self.T = np.nan
 
@@ -175,7 +173,7 @@ class saft_gamma_mie(EOStemplate):
         A = funcs.calc_A(np.append(rho + step, rho - step), xi, T, self._beads, self._beadlibrary, self._massi, self._nui, self._Cmol2seg, self._xsk, self._xskl, self._dkk, self._epsilonkl, self._sigmakl, self._dkl, self._l_akl, self._l_rkl, self._Ckl,self._x0kl, self._epsilonHB, self._Kklab, self._nk)
         
         P_tmp = (A[:nrho]-A[nrho:])*((constants.kb*T)/(2.0*step))*(rho**2)
-        
+
         return P_tmp
 
     def chemicalpotential(self, P, rho, xi, T):
@@ -226,6 +224,15 @@ class saft_gamma_mie(EOStemplate):
         xjdaresdxj = np.sum(xi * daresdxi)
         for i in range(np.size(mui)):
             mui[i] = ares + Z - 1.0 + daresdxi[i] - xjdaresdxj - np.log(Z)
+    
+        try:
+            len(rho)
+        except:
+            ind = int(len(rho)/100)
+            print(mui[ind],P, rho[ind], xi, T)
+        else:
+            print(mui,P, rho, xi, T)
+
         return mui
 
     def density_max(self, xi, T, maxpack=0.65):

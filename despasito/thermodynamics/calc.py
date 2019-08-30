@@ -1,7 +1,4 @@
 """
-    despasito
-    DESPASITO: Determining Equilibrium State and Parameters Applied to SAFT, Intended for Thermodynamic Output
-    
     This module contains our thermodynamic calculations. Calculation of pressure, chemical potential, and max density are handled by an eos object so that these functions can be used with any EOS. The thermo module contains a series of wrapper to handle the inputs and outputs of these functions.
     
 """
@@ -75,7 +72,6 @@ def calc_CC_Pguess(xilist, Tlist, CriticalProp):
 
     ## Mixture alpha
     #omegaij = (omega[i]+omega[jj])/2.
-    #print omegaij
     #tmp1 = np.sum([a[ii]*omegaij**ii for ii in range(6)])
     #tmp2 = np.sum([b[ii]*omegaij**ii for ii in range(6)])
     #l_r = tmp1/(1.+tmp2)
@@ -120,10 +116,10 @@ def calc_CC_Pguess(xilist, Tlist, CriticalProp):
         sig_tmp = (rho_star / rho_tmp / Nav)**(1. / 3.)
 
         # Calculate Psat
-        massi = np.array([Mij])
-        nui = np.array([[1]])
-        beads = ['bead']
-        beadlibrary = {
+        eos_dict['massi'] = np.array([Mij])
+        eos_dict['nui'] = np.array([[1]])
+        eos_dict['beads'] = ['bead']
+        eos_dict['beadlibrary'] = {
             'bead': {
                 'l_r': l_r,
                 'epsilon': eps_tmp,
@@ -134,6 +130,7 @@ def calc_CC_Pguess(xilist, Tlist, CriticalProp):
                 'sigma': sig_tmp
             }
         }
+        eos = eos("saft.gamma_mie",**eos_dict)
 
         if (Tlist[kk] < Tc_tmp):
             Psat_tmp, rholsat_tmp, rhogsat_tmp = calc_Psat(Tlist[kk], np.array([1.0]), eos)
@@ -294,14 +291,18 @@ def calc_Psat(T, xi, eos, rhodict={}):
         Compiled string including quote and optional attribution
     """
 
-    #print sitenames
-    #print crosslibrary
+    if np.count_nonzero(xi) != 1:
+        if np.count_nonzero(xi>0.1) != 1:
+            raise ValueError("Multiple components have compositions greater than 10%, check code for source")
+        else:
+            ind = np.where((xi>0.1)==True)[0]
+            raise ValueError("Multiple components have compositions greater than 0. Do you mean to obtain the saturation pressure of %s with a mole fraction of %g?" % (eos._beads[ind],xi[ind]))
 
     vlist, Plist = PvsRho(T, xi, eos, **rhodict)
     Pvspline, roots, extrema = PvsV_spline(vlist, Plist)
 
     tmp = np.argwhere(np.diff(Plist) > 0)
-    #print tmp
+
     if not tmp.any():
         print('Error: One of the components is above its critical point, add exception to functions calc_xT_phase, calc_PT_phase, or calc_yT_phase')
         Psat = np.nan
@@ -764,6 +765,87 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxitr=50):
 
 ######################################################################
 #                                                                    #
+#                       Solve Yi for xi and T                        #
+#                                                                    #
+######################################################################
+def solve_xi_yiT(xi, yi, phiv, P, T, eos, rhodict={}, maxitr=50):
+
+    """
+    Placeholder function to show example docstring (NumPy format)
+    
+    Replace this function and doc string for your own project
+    
+    Parameters
+    ----------
+    with_attribution : bool, Optional, default: True
+        Set whether or not to display who the quote is from
+    
+    Returns
+    -------
+    quote : str
+        Compiled string including quote and optional attribution
+    """
+
+    global xi_global
+    xi /= np.sum(xi)
+
+    xi_tmp = []
+    for z in range(maxitr):
+
+        print("xi guess", xi)
+
+        xi /= np.sum(xi)
+# Please
+        # Try xi
+        phil, rhol = calc_phil(P, T, xi, eos, rhodict={})
+        
+        if any(np.isnan(phil)): # If vapor density doesn't exist
+            raise ValueError("Contingency methods of determining xi haven't been written yet")
+            xinew = find_new_xi(P, T, phiv, yi, eos, rhodict=rhodict, maxitr=1000)
+            phil, rhol = calc_phil(P, T, xinew, eos, rhodict={})
+            if any(np.isnan(xinew)): 
+                phil = np.nan
+                sys.exit("This shouldn't be happening")
+
+        xinew = yi * phiv / phil
+        xinew = xinew / np.sum(xinew)
+        
+        # Check convergence
+        ind_tmp = np.where(xi == min(xi))[0]
+        if np.abs(xinew[ind_tmp] - xi[ind_tmp]) / xi[ind_tmp] < 1e-5:
+            xi_global = xi
+            print("!!!!!!! Found xi !!!!!!")
+            break
+
+        # Check for bouncing between values, then updated xi to xinew
+        if len(xi_tmp) > 4:
+            if all(np.abs((xi - xi_tmp[-3]) / xi + (xinew - xi_tmp[-2]) / xinew) < 1e-2):
+                xi = (xi + xinew) / 2
+                print("New guess:", xi)
+            else:
+                xi = xinew
+        else:
+            xi = xinew
+        xi_tmp.append(xi)
+
+    ## If xi wasn't found in defined number of iterations
+    if z == maxitr - 1:
+        print('More than ', maxitr, ' iterations needed, % error: ', np.sum(np.abs((xinew - xi)[0:] / xi[0:])))
+        xi_tmp = np.array(xi_tmp).T
+        #NoteHere Benzene
+        for i in range(len(xi)):
+            plt.plot(xi_tmp[i], label="$x_{%g}$" % i)
+            plt.xlabel("Iteration")
+            plt.ylabel("Liquid Fraction")
+            plt.legend(loc="best")
+            plt.show()
+
+    print("Final xi: ", xi)
+
+    return xi, phil
+
+######################################################################
+#                                                                    #
 #                       Sum of Yi                                    #
 #                                                                    #
 ######################################################################
@@ -1081,9 +1163,6 @@ def solve_P_xiT(P, xi, T, eos, rhodict):
     if P < 0:
         return 10.0
 
-#    if P > 1000.0*101325.0:
-#        return 10.0
-
     #yi=np.array([0.99,0.01])
     #find liquid density
     phil, rhol = calc_phil(P, T, xi, eos, rhodict={})
@@ -1098,6 +1177,49 @@ def solve_P_xiT(P, xi, T, eos, rhodict):
     print('Obj Func', (np.sum(xi * phil / phiv) - 1.0), "Pset", P, "Pcalcv",Pv_test[0])
 
     return (np.sum(xi * phil / phiv) - 1.0)
+
+######################################################################
+#                                                                    #
+#                              Solve P yT                            #
+#                                                                    #
+######################################################################
+def solve_P_yiT(P, yi, T, eos, rhodict):
+
+    """
+    Placeholder function to show example docstring (NumPy format)
+    
+    Replace this function and doc string for your own project
+    
+    Parameters
+    ----------
+    with_attribution : bool, Optional, default: True
+        Set whether or not to display who the quote is from
+    
+    Returns
+    -------
+    quote : str
+        Compiled string including quote and optional attribution
+    """
+
+    global xi_global
+
+    if P < 0:
+        return 10.0
+
+    #yi=np.array([0.99,0.01])
+    #find liquid density
+    phiv, rhov = calc_phiv(P, T, yi, eos, rhodict={})
+
+    xinew, phil = solve_xi_yiT(xi_global, yi, phiv, P, T, eos, rhodict=rhodict, maxitr=50)
+    xi_global = xi_global / np.sum(xi_global)
+
+    #given final yi recompute
+    phil, rhol = calc_phil(P, T, xi_global, eos, rhodict={})
+
+    Pv_test = eos.P(rhov*const.Nav, T, xi_global)
+    print('Obj Func', (np.sum(yi * phiv / phil) - 1.0), "Pset", P, "Pcalcv",Pv_test[0])
+
+    return (np.sum(yi * phiv / phil) - 1.0)
 
 
 ######################################################################
@@ -1169,19 +1291,18 @@ def solve_P_xiT_inerp(P, Psat, xi, T, eos, rhodict):
     #yi[-1]=1.0-np.sum(yi)
     #yi=np.array([1.0])
     #massi=massi[0]
-    #nui=np.array([nui[0]])
+    #eos._nui=np.array([eos._nui[0]])
     #given final yi recompute
     phiv, rhov = calc_phiv(P, T, yi, eos, rhodict={})
     print('Pconv', (np.sum(xi * phil / phiv) - 1.0), P, rhov)
     return (np.sum(xi * phil / phiv) - 1.0)
 
-
 ######################################################################
 #                                                                    #
-#                              Calc yT phase                         #
+#                   Set Psat for Critical Components                 #
 #                                                                    #
 ######################################################################
-def calc_yT_phase(yi, T, eos, rhodict):
+def setPsat(ind, eos):
 
     """
     Placeholder function to show example docstring (NumPy format)
@@ -1199,35 +1320,77 @@ def calc_yT_phase(yi, T, eos, rhodict):
         Compiled string including quote and optional attribution
     """
 
-    #estimate pure component vapor pressures
-    nui = saft_args[1]
-    beads = saft_args[2]
+    for j in range(np.size(eos._nui[ind])):
+        if eos._nui[ind][j] > 0.0 and eos._beads[j] == "CO2":
+            Psat = 10377000.0
+        elif eos._nui[ind][j] > 0.0 and eos._beads[j] == "N2":
+            Psat = 7377000.0
+        elif eos._nui[ind][j] > 0.0 and ("CH4" in eos._beads[j]):
+            Psat = 6377000.0
+        elif eos._nui[ind][j] > 0.0 and ("CH3CH3" in eos._beads[j]):
+            Psat = 7377000.0
+        elif eos._nui[ind][j] > 0.0:
+            Psat = np.nan
+            NaNbead = eos._beads[j]
+    try:
+        NaNbead
+    except:
+       NaNbead = "No NaNbead"
+
+    return Psat, NaNbead 
+
+######################################################################
+#                                                                    #
+#                              Calc yT phase                         #
+#                                                                    #
+######################################################################
+def calc_yT_phase(yi, T, eos, rhodict, Pguess=[],meth="broyden1"):
+
+    """
+    Placeholder function to show example docstring (NumPy format)
+    
+    Replace this function and doc string for your own project
+    
+    Parameters
+    ----------
+    with_attribution : bool, Optional, default: True
+        Set whether or not to display who the quote is from
+    
+    Returns
+    -------
+    quote : str
+        Compiled string including quote and optional attribution
+    """
+
+    global xi_global
+
+    # Estimate pure component vapor pressures
     Psat = np.zeros_like(yi)
-    saft_args_tmp = saft_args
     for i in range(np.size(yi)):
-        for j in range(np.size(nui[i])):
-            if nui[i][j] == 1.0 and beads[j] == "CO2":
-                Psat[i] = 7377000.0
-            elif nui[i][j] == 1.0 and beads[j] == "N2":
-                Psat[i] = 7377000.0
-            elif nui[i][j] == 1.0 and ("CH4" in beads[j]):
-                Psat[i] = 7377000.0
-        if Psat[i] == 0.0:
-            saft_args_tmp[0] = massi[i]
-            saft_args_tmp[1] = np.array([nui[i]])
-            Psat[i], rholsat, rhogsat = calc_Psat(T, np.array([1.0]), saft_args_tmp, saft_dic, rhodict)
+        yi_tmp = np.zeros_like(yi)
+        yi_tmp[i] = 1.0
+        Psat[i], rholsat, rhogsat = calc_Psat(T, yi_tmp, eos, rhodict)
+        if np.isnan(Psat[i]):
+            Psat[i], NaNbead = setPsat(i, eos)
             if np.isnan(Psat[i]):
-                sys.exit(
-                    "calc_Psat outputs a nan if something is over it's critical point and I haven't changed calc_yT_phase to deal with it"
-                )
+                sys.exit("Component, %s, is beyond it's critical point at %g K. Add an exception to setPsat" % (NaNbead,T))
 
-    #estimate initial pressure
-    P = 1.0 / np.sum(yi / Psat)
-    #P=4050000.0
+    # Estimate initial pressure
+    if not Pguess:
+        P=1.0/np.sum(yi/Psat)
+    else:
+        P = Pguess
 
-    Pfinal = root(solve_P,
+    # Estimate initial xi
+    if ("xi_global" not in globals() or "True" in np.isnan(xi_global)):
+        xi_global = P * (yi / Psat)
+        xi_global /= np.sum(xi_global)
+        xi_global = copy.deepcopy(xi_global)
+    xi = xi_global 
+
+    Pfinal = root(solve_P_yiT,
                   P,
-                  args=(Psat, yi, T, eos, rhodict),
+                  args=(yi, T, eos, rhodict),
                   method='broyden1',
                   options={
                       'fatol': 0.0001,
@@ -1236,9 +1399,6 @@ def calc_yT_phase(yi, T, eos, rhodict):
 
     #Given final P estimate
     P = Pfinal.x
-    #estimate initial xi
-    xi = P * (yi / Psat)
-    xi /= np.sum(xi)
 
     phiv, rhov = calc_phiv(P, T, yi, eos, rhodict={})
 
@@ -1270,33 +1430,6 @@ def calc_yT_phase(yi, T, eos, rhodict):
     #xi=xinew
     return P, xi
 
-
-######################################################################
-#                                                                    #
-#                              test Calc xT phase                    #
-#                                                                    #
-######################################################################
-def test_calc_xT_phase(xi, T, eos, rhodict={}, Pguess=[]):
-
-    """
-    Placeholder function to show example docstring (NumPy format)
-    
-    Replace this function and doc string for your own project
-    
-    Parameters
-    ----------
-    with_attribution : bool, Optional, default: True
-        Set whether or not to display who the quote is from
-    
-    Returns
-    -------
-    quote : str
-        Compiled string including quote and optional attribution
-    """
-
-    return Pguess, np.array([0.7, 0.1, 0.2])
-
-
 ######################################################################
 #                                                                    #
 #                              Calc xT phase                         #
@@ -1324,20 +1457,13 @@ def calc_xT_phase(xi, T, eos, rhodict={}, Pguess=[],meth="broyden1"):
 
     Psat = np.zeros_like(xi)
     for i in range(np.size(xi)):
-        for j in range(np.size(eos._nui[i])):
-            if eos._nui[i][j] > 0.0 and eos._beads[j] == "CO2":
-                Psat[i] = 7377000.0
-                #Psat[i]=691000000.0
-            elif eos._nui[i][j] > 0.0 and eos._beads[j] == "N2":
-                Psat[i] = 7377000.0
-            elif eos._nui[i][j] > 0.0 and ("CH4" in eos._beads[j]):
-                Psat[i] = 6377000.0
-            elif eos._nui[i][j] > 0.0 and ("CH3CH3" in eos._beads[j]):
-                Psat[i] = 7377000.0
-        if Psat[i] == 0.0:
-            Psat[i], rholsat, rhogsat = calc_Psat(T, np.array([1.0]), eos, rhodict)
+        xi_tmp = np.zeros_like(xi)
+        xi_tmp[i] = 1.0
+        Psat[i], rholsat, rhogsat = calc_Psat(T, xi_tmp, eos, rhodict)
+        if np.isnan(Psat[i]):
+            Psat[i], NaNbead = setPsat(i, eos)
             if np.isnan(Psat[i]):
-                sys.exit("Component, %s, is beyond it's critical point. Add an exception to calc_xT_phase" % (beads[j]))
+                sys.exit("Component, %s, is beyond it's critical point. Add an exception to setPsat" % (NaNbead))
 
 #estimate initial pressure
     if not Pguess:
@@ -1502,27 +1628,16 @@ def calc_xT_phase_dir(xi, T, eos, rhodict={}, Pguess=[]):
 
     global yi_global
 
-    nui = saft_args[1]
-    beads = saft_args[2]
     Psat = np.zeros_like(xi)
     saft_args_tmp = saft_args
     for i in range(np.size(xi)):
-        for j in range(np.size(nui[i])):
-            if nui[i][j] == 1.0 and beads[j] == "CO2":
-                #Psat[i]=7377000.0
-                Psat[i] = 691000000.0
-            elif nui[i][j] == 1.0 and beads[j] == "N2":
-                Psat[i] = 7377000.0
-            elif nui[i][j] == 1.0 and ("CH4" in beads[j]):
-                Psat[i] = 7377000.0
-        if Psat[i] == 0.0:
-            saft_args_tmp[0] = massi[i]
-            saft_args_tmp[1] = np.array([nui[i]])
-            Psat[i], rholsat, rhogsat = calc_Psat(T, np.array([1.0]), saft_args_tmp, saft_dic, rhodict)
+        xi_tmp = np.zeros_like(xi)
+        xi_tmp[i] = 1.0
+        Psat[i], rholsat, rhogsat = calc_Psat(T, xi_tmp, eos, rhodict)
+        if np.isnan(Psat[i]):
+            Psat[i], NaNbead = setPsat(i, eos)
             if np.isnan(Psat[i]):
-                sys.exit(
-                    "calc_Psat outputs a nan if something is over it's critical point and I haven't changed calc_xT_phase_dir  to deal with it"
-                )
+                sys.exit("Component, %s, is beyond it's critical point. Add an exception to setPsat" % (NaNbead))
 
     #estimate initial pressure
     if not Pguess:
@@ -1590,23 +1705,15 @@ def calc_PT_phase(xi, T, eos, rhodict={}):
         Compiled string including quote and optional attribution
     """
 
-    nui = saft_args[1]
-    beads = saft_args[2]
     Psat = np.zeros_like(xi)
     for i in range(np.size(xi)):
-        for j in range(np.size(nui[i])):
-            if nui[i][j] == 1.0 and beads[j] == "CO2":
-                Psat[i] = 7377000.0
-            elif nui[i][j] == 1.0 and beads[j] == "N2":
-                Psat[i] = 7377000.0
-            elif nui[i][j] == 1.0 and ("CH4" in beads[j]):
-                Psat[i] = 7377000.0
-        if Psat[i] == 0.0:
-            Psat[i], rholsat, rhogsat = calc_Psat(T, np.array([1.0]), massi[i], np.array([nui[i]]), eos,rhodict)  # FixThis
+        xi_tmp = np.zeros_like(xi)
+        xi_tmp[i] = 1.0
+        Psat[i], rholsat, rhogsat = calc_Psat(T, xi_tmp, eos, rhodict)
+        if np.isnan(Psat[i]):
+            Psat[i], NaNbead = setPsat(i, eos)
             if np.isnan(Psat[i]):
-                sys.exit(
-                    "calc_Psat outputs a nan if something is over it's critical point and I haven't changed calc_PT_phase to deal with it"
-                )
+                sys.exit("Component, %s, is beyond it's critical point. Add an exception to setPsat" % (NaNbead))
 
     zi = np.array([0.5, 0.5])
 

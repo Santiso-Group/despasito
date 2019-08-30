@@ -83,7 +83,7 @@ def phase_xiT(eos, sys_dict, rhodict={}, output_file="phase_xiT_output.txt"):
     P_list = np.zeros_like(T_list)
     yi_list = np.zeros_like(xi_list)
     for i in range(np.size(T_list)):
-        print("T (K), xi", T_list[i], xi_list[i][0], xi_list[i][1], "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        print("T (K), xi", T_list[i], xi_list[i], "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 
         if flag_gss == 0:
             P_list[i], yi_list[i] = calc.calc_xT_phase(xi_list[i], T_list[i], eos, rhodict=rhodict)
@@ -143,7 +143,7 @@ def phase_yiT(eos, sys_dict, rhodict={}, output_file="phase_yiT_output.txt"):
     P_list = np.zeros_like(T_list)
     xi_list = np.zeros_like(yi_list)
     for i in range(np.size(T_list)):
-        print(yi_list[i], T_list[i])
+        print("T (K), yi", T_list[i], yi_list[i], "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         P_list[i], xi_list[i] = calc.calc_yT_phase(yi_list[i], T_list[i], eos, rhodict=rhodict)
         print(P[i], xi_list[i])
 
