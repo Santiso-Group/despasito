@@ -3,6 +3,7 @@ DESPASITO
 DESPASITO: Determining Equilibrium State and Parametrization Application for SAFT, Intended for Thermodynamic Output
 """
 import sys
+import os
 from setuptools import find_packages
 import versioneer
 from numpy.distutils.core import Extension, setup
@@ -20,9 +21,9 @@ except:
     long_description = "\n".join(short_description[2:])
 
 try:
-    fpath = "despasito/equations_of_state/saft/"
-    ext1 = Extension(name="solv_assoc",sources=[fpath+"solv_assoc.f90"],include_dirs=['despasito/equations_of_state/saft'])
-    ext2 = Extension(name="solv_assoc_matrix",sources=[fpath+"solv_assoc_matrix.f90"])
+    fpath = os.path.join("despasito","equations_of_state","saft")
+    ext1 = Extension(name="solv_assoc",sources=[os.path.join(fpath,"solv_assoc.f90")],include_dirs=[fpath])
+    ext2 = Extension(name="solv_assoc_matrix",sources=[os.path.join(fpath,"solv_assoc_matrix.f90")])
 except:
     raise OSError("Fortran compiler is not found")
 # try Extension and compile
