@@ -225,14 +225,6 @@ class saft_gamma_mie(EOStemplate):
         for i in range(np.size(mui)):
             mui[i] = ares + Z - 1.0 + daresdxi[i] - xjdaresdxj - np.log(Z)
     
-        try:
-            len(rho)
-        except:
-            ind = int(len(rho)/100)
-            print(mui[ind],P, rho[ind], xi, T)
-        else:
-            print(mui,P, rho, xi, T)
-
         return mui
 
     def density_max(self, xi, T, maxpack=0.65):

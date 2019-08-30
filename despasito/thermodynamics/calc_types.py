@@ -145,7 +145,7 @@ def phase_yiT(eos, sys_dict, rhodict={}, output_file="phase_yiT_output.txt"):
     for i in range(np.size(T_list)):
         print("T (K), yi", T_list[i], yi_list[i], "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         P_list[i], xi_list[i] = calc.calc_yT_phase(yi_list[i], T_list[i], eos, rhodict=rhodict)
-        print(P[i], xi_list[i])
+        print("Final P, xi:",P_list[i], xi_list[i])
 
         ## Generate Output
         with open(output_file, 'a') as f:

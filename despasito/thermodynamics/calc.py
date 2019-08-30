@@ -711,7 +711,7 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxitr=50):
     yi_tmp = []
     for z in range(maxitr):
 
-        print("yi guess", yi)
+        print("    yi guess", yi)
 
         yi /= np.sum(yi)
 # Please
@@ -719,7 +719,7 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxitr=50):
         phiv, rhov = calc_phiv(P, T, yi, eos, rhodict={})
         
         if any(np.isnan(phiv)): # If vapor density doesn't exist
-            print("Let's find it!")
+            print("    Let's find it!")
             yinew = find_new_yi(P, T, phil, xi, eos, rhodict=rhodict, maxitr=1000)
             phiv, rhov = calc_phiv(P, T, yinew, eos, rhodict={})
             if any(np.isnan(yinew)): 
@@ -733,14 +733,14 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxitr=50):
         ind_tmp = np.where(yi == min(yi))[0]
         if np.abs(yinew[ind_tmp] - yi[ind_tmp]) / yi[ind_tmp] < 1e-5:
             yi_global = yi
-            print("!!!!!!! Found yi !!!!!!")
+            print("    Found yi")
             break
 
         # Check for bouncing between values, then updated yi to yinew
         if len(yi_tmp) > 4:
             if all(np.abs((yi - yi_tmp[-3]) / yi + (yinew - yi_tmp[-2]) / yinew) < 1e-2):
                 yi = (yi + yinew) / 2
-                print("New guess:", yi)
+                print("    New guess:", yi)
             else:
                 yi = yinew
         else:
@@ -749,7 +749,7 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxitr=50):
 
     ## If yi wasn't found in defined number of iterations
     if z == maxitr - 1:
-        print('More than ', maxitr, ' iterations needed, % error: ', np.sum(np.abs((yinew - yi)[0:] / yi[0:])))
+        print('    More than ', maxitr, ' iterations needed, % error: ', np.sum(np.abs((yinew - yi)[0:] / yi[0:])))
         yi_tmp = np.array(yi_tmp).T
         #NoteHere Benzene
         for i in range(len(yi)):
@@ -759,7 +759,7 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxitr=50):
             plt.legend(loc="best")
             plt.show()
 
-    print("Final yi: ", yi)
+    print("    Inner Loop Final yi: ", yi)
 
     return yi, phiv
 
@@ -792,7 +792,7 @@ def solve_xi_yiT(xi, yi, phiv, P, T, eos, rhodict={}, maxitr=50):
     xi_tmp = []
     for z in range(maxitr):
 
-        print("xi guess", xi)
+        print("    xi guess", xi)
 
         xi /= np.sum(xi)
 # Please
@@ -814,7 +814,7 @@ def solve_xi_yiT(xi, yi, phiv, P, T, eos, rhodict={}, maxitr=50):
         ind_tmp = np.where(xi == min(xi))[0]
         if np.abs(xinew[ind_tmp] - xi[ind_tmp]) / xi[ind_tmp] < 1e-5:
             xi_global = xi
-            print("!!!!!!! Found xi !!!!!!")
+            print("    Found xi")
             break
 
         # Check for bouncing between values, then updated xi to xinew
@@ -840,7 +840,7 @@ def solve_xi_yiT(xi, yi, phiv, P, T, eos, rhodict={}, maxitr=50):
             plt.legend(loc="best")
             plt.show()
 
-    print("Final xi: ", xi)
+    print("    Inner Loop Final xi: ", xi)
 
     return xi, phil
 
@@ -1210,7 +1210,7 @@ def solve_P_yiT(P, yi, T, eos, rhodict):
     #find liquid density
     phiv, rhov = calc_phiv(P, T, yi, eos, rhodict={})
 
-    xinew, phil = solve_xi_yiT(xi_global, yi, phiv, P, T, eos, rhodict=rhodict, maxitr=50)
+    xi_global, phil = solve_xi_yiT(xi_global, yi, phiv, P, T, eos, rhodict=rhodict, maxitr=50)
     xi_global = xi_global / np.sum(xi_global)
 
     #given final yi recompute
@@ -1396,38 +1396,26 @@ def calc_yT_phase(yi, T, eos, rhodict, Pguess=[],meth="broyden1"):
                       'fatol': 0.0001,
                       'maxiter': 15
                   })
-
-    #Given final P estimate
     P = Pfinal.x
 
+    # Option 1
     phiv, rhov = calc_phiv(P, T, yi, eos, rhodict={})
+    xi_global, phil = solve_xi_yiT(xi_global, yi, phiv, P, T, eos, rhodict=rhodict, maxitr=50)
+    xi = xi_global / np.sum(xi_global)
+    
+    # Option 2
+#    ximin = root(solve_xi_root,
+#                 xi[0:-1],
+#                 args=(yi, phiv, P, T, eos, rhodict),
+#                 method='broyden1',
+#                 options={
+#                     'fatol': 0.00001,
+#                     'maxiter': 20
+#                 })
+#    xi = np.zeros_like(yi)
+#    xi[0:np.size(ximin.x)] = ximin.x
+#    xi[-1] = 1.0 - np.sum(xi)
 
-    ximin = root(solve_xi_root,
-                 xi[0:-1],
-                 args=(yi, phiv, P, T, eos, rhodict),
-                 method='broyden1',
-                 options={
-                     'fatol': 0.00001,
-                     'maxiter': 20
-                 })
-
-    xi = np.zeros_like(yi)
-    xi[0:np.size(ximin.x)] = ximin.x
-    xi[-1] = 1.0 - np.sum(xi)
-    phil, rhol = calc_phil(P, T, xi, eos, rhodict={})
-
-    #xitol=0.1
-    #xitol=0.0001
-    #for z in range(50):
-    #find rhol
-    #phil, rhol = calc_phil(P, T, xi, eos, rhodict={})
-    #xinew=yi*phiv/phil
-    #xinew=xinew/np.sum(xinew)
-    #if np.sum(abs(xinew-xi)) < xitol:
-    #xi=xinew
-    #break
-    #else:
-    #xi=xinew
     return P, xi
 
 ######################################################################

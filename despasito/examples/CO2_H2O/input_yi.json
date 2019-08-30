@@ -1,0 +1,10 @@
+{
+    "beadconfig": [[0.2, [["CO2", 1]]], [0.8, [["H2O", 1]]]], 
+    "SAFTgroup": "../library/SAFTgroup.json",
+    "SAFTcross": "../library/SAFTcross.json",
+    "output_file": "out_yi.txt",
+    "calculation_type" : "phase_yiT",
+    "association_site_names": ["H","e1","a1"],
+    "Tlist" : [323.2,323.2],
+    "yilist": [[0.9954,	0.0046],[0.9963,0.0037]]
+}
