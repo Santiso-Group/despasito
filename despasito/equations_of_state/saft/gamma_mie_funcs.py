@@ -11,7 +11,7 @@ from scipy import integrate
 import scipy.optimize as spo
 
 from . import constants
-from . import solv_assoc
+import solv_assoc
 
 ############################################################
 #                                                          #
