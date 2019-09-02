@@ -11,7 +11,13 @@ from scipy import integrate
 import scipy.optimize as spo
 
 from . import constants
-import solv_assoc
+try:
+    import despasito.equations_of_state.saft.solv_assoc
+except:
+    try:
+        import solv_assoc # for windows
+    except:
+        raise ModuleNotFoundError
 
 ############################################################
 #                                                          #

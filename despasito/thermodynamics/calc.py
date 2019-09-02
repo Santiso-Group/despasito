@@ -1,5 +1,10 @@
 """
-    This module contains our thermodynamic calculations. Calculation of pressure, chemical potential, and max density are handled by an eos object so that these functions can be used with any EOS. The thermo module contains a series of wrapper to handle the inputs and outputs of these functions.
+This module contains our thermodynamic calculations. Calculation of pressure, chemical potential, and max density are handled by an eos object so that these functions can be used with any EOS. The thermo module contains a series of wrapper to handle the inputs and outputs of these functions.
+
+.. todo:: 
+    Add types of scipy solving methods and the types available
+    
+    Update if statement to generalize as a factory
     
 """
 
@@ -30,23 +35,23 @@ from . import fund_constants as const
 #                                                                    #
 ######################################################################
 def calc_CC_Pguess(xilist, Tlist, CriticalProp):
-    """
-       Computes the mie parameters of a mixture from the mixed critical properties of the pure components. 
-       From: Mejia, A., C. Herdes, E. Muller. Ind. Eng. Chem. Res. 2014, 53, 4131-4141
-
-    Placeholder function to show example docstring (NumPy format)
-    
-    Replace this function and doc string for your own project
+    r"""
+    Computes the Mie parameters of a mixture from the mixed critical properties of the pure components. 
+    From: Mejia, A., C. Herdes, E. Muller. Ind. Eng. Chem. Res. 2014, 53, 4131-4141
     
     Parameters
     ----------
-    with_attribution : bool, Optional, default: True
-        Set whether or not to display who the quote is from
+    xilist : list[list[xi]]
+        List of different Mole fractions of each component, sum(xi) should equal 1.0 for each set. Each set of components corresponds to a temperature in Tlist.
+    Tlist : list[float]
+        Temperature of the system corresponding to composition in xilist [K]
+    CriticalProp : list[list]
+        List of critical properties :math:`T_C`, :math:`P_C`, :math:`\omega`, :math:`\rho_{0.7}`, :math:`Z_C`, :math:`V_C`, and molecular weight, where each of these properties is a list of values for each bead.
     
     Returns
     -------
-    quote : str
-        Compiled string including quote and optional attribution
+    Psatm : list[float]
+        A list of guesses in pressure based on critical properties, of the same length as xilist and Tlist [Pa]
     """
 
     Tc, Pc, omega, rho_7, Zc, Vc, M = CriticalProp
@@ -156,22 +161,35 @@ def calc_CC_Pguess(xilist, Tlist, CriticalProp):
 #                      Pressure-Density Curve                        #
 #                                                                    #
 ######################################################################
-def PvsRho(T, xi, eos, minrhofrac=(1.0 / 200000.0), rhoinc=5.0, vspacemax=1.0E-4, Pmax=1000.0 * 101325, maxpack=0.65):
+def PvsRho(T, xi, eos, minrhofrac=(1.0 / 200000.0), rhoinc=5.0, vspacemax=1.0E-4, maxpack=0.65):
 
-    """
-    Placeholder function to show example docstring (NumPy format)
-    
-    Replace this function and doc string for your own project
+    r"""
+    Computes the Mie parameters of a mixture from the mixed critical properties of the pure components. 
+    From: Mejia, A., C. Herdes, E. Muller. Ind. Eng. Chem. Res. 2014, 53, 4131-4141
     
     Parameters
     ----------
-    with_attribution : bool, Optional, default: True
-        Set whether or not to display who the quote is from
-    
+    T : float
+        Temperature of the system [K]
+    xi : numpy.ndarray
+        Mole fraction of each component, sum(xi) should equal 1.0
+    eos : obj
+        An instance of the defined EOS class to be used in thermodynamic computations.
+    minrhofrac : float, Optional, default: (1.0/200000.0)
+        Fraction of the maximum density used to calculate, and is equal to, the minimum density of the density array. The minimum density is the reciprocal of the maximum specific volume used to calculate the roots. Passed from inputs to through the dictionary rhodict.
+    rhoinc : float, Optional, default: 5.0
+        The increment between density values in the density array. Passed from inputs to through the dictionary rhodict.
+    vspacemax : float, Optional, default: 1.0E-4
+        Maximum increment between specific volume array values. After conversion from density to specific volume, the increment values are compared to this value. Passed from inputs to through the dictionary rhodict.
+    maxpack : float, Optional, default: 0.65
+        Maximum packing fraction. Passed from inputs to through the dictionary rhodict.
+
     Returns
     -------
-    quote : str
-        Compiled string including quote and optional attribution
+    vlist : numpy.ndarray
+        Specific volume array. Length depends on values in rhodict [:math:`m^3`/mol]
+    Plist : numpy.ndarray
+        Pressure associated with specific volume of system with given temperature and composition [Pa]
     """
 
     #estimate the maximum density based on the hard sphere packing fraction, part of EOS
@@ -204,21 +222,24 @@ def PvsRho(T, xi, eos, minrhofrac=(1.0 / 200000.0), rhoinc=5.0, vspacemax=1.0E-4
 #                                                                    #
 ######################################################################
 def PvsV_spline(vlist, Plist):
-
-    """
-    Placeholder function to show example docstring (NumPy format)
-    
-    Replace this function and doc string for your own project
+    r"""
+    Fit arrays of specific volume and pressure values to a cubic Univariate Spline.
     
     Parameters
     ----------
-    with_attribution : bool, Optional, default: True
-        Set whether or not to display who the quote is from
+    vlist : numpy.ndarray
+        Specific volume array. Length depends on values in rhodict [:math:`m^3`/mol]
+    Plist : numpy.ndarray
+        Pressure associated with specific volume of system with given temperature and composition [Pa]
     
     Returns
     -------
-    quote : str
-        Compiled string including quote and optional attribution
+    Pvspline : obj
+        Function object of pressure vs. specific volume
+    roots : list
+        List of specific volume roots. Subtract a system pressure from the output of Pvsrho to find density of vapor and/or liquid densities.
+    extrema : list
+        List of specific volume values corresponding to local minima and maxima.
     """
 
     Psmoothed = gaussian_filter1d(Plist, sigma=.1)
@@ -238,21 +259,19 @@ def PvsV_spline(vlist, Plist):
 #                                                                    #
 ######################################################################
 def PvsV_plot(vlist, Plist, Pvspline, markers=[]):
-
-    """
-    Placeholder function to show example docstring (NumPy format)
-    
-    Replace this function and doc string for your own project
+    r"""
+    Plot pressure vs. specific volume.
     
     Parameters
     ----------
-    with_attribution : bool, Optional, default: True
-        Set whether or not to display who the quote is from
-    
-    Returns
-    -------
-    quote : str
-        Compiled string including quote and optional attribution
+    vlist : numpy.ndarray
+        Specific volume array. Length depends on values in rhodict [:math:`m^3`/mol]
+    Plist : numpy.ndarray
+        Pressure associated with specific volume of system with given temperature and composition [Pa]
+    Pvspline : obj
+        Function object of pressure vs. specific volume
+    markers : list, Optional, default: []
+        List of plot markers used in plot
     """
 
     plt.plot(vlist,Plist,label="Orig.")
@@ -271,24 +290,32 @@ def PvsV_plot(vlist, Plist, Pvspline, markers=[]):
 #                                                                    #
 ######################################################################
 def calc_Psat(T, xi, eos, rhodict={}):
-
-    """
+    r"""
     Computes the saturated pressure, gas and liquid densities for a single component system given Temperature and Mie parameters
     T: Saturated Temperature in Kelvin
     minrhofrac: Fraction of maximum hard sphere packing fraction for gas density
     rhoinc: spacing densities for rholist in mol/m^3. Smaller values will generate a more accurate curve at increasing computational cost
-    Pmax: maximum needed pressure in Pascals
     Returns Saturated Pressure in Pa, liquid denisty, and gas density in mol/m^3
-
+    
     Parameters
     ----------
-    with_attribution : bool, Optional, default: True
-        Set whether or not to display who the quote is from
-    
+    T : float
+        Temperature of the system [K]
+    xi : numpy.ndarray
+        Mole fraction of each component, sum(xi) should equal 1.0
+    eos : obj
+        An instance of the defined EOS class to be used in thermodynamic computations.
+    rhodict : dict, Optional, default: {}
+        Dictionary of options used in calculating pressure vs. mole 
+
     Returns
     -------
-    quote : str
-        Compiled string including quote and optional attribution
+    Psat : float
+        Saturation pressure given system information [Pa]
+    rhov : float
+        Density of vapor at saturation pressure [mol/:math:`m^3`]
+    rhol : float
+        Density of liquid at saturation pressure [mol/:math:`m^3`]
     """
 
     if np.count_nonzero(xi) != 1:
@@ -336,19 +363,22 @@ def calc_Psat(T, xi, eos, rhodict={}):
 #                                                                    #
 ######################################################################
 def eq_area(shift, Pv, vlist):
-
-    """
-    Computes the area below and above Psat guess line
+    r"""
+    Objective function used to calculate the saturation pressure.
     
     Parameters
     ----------
-    with_attribution : bool, Optional, default: True
-        Set whether or not to display who the quote is from
-    
+    shift : float
+        Guess in Psat value used to translate the pressure vs. specific volume curve [Pa]
+    Pv : numpy.ndarray
+        Pressure associated with specific volume of system with given temperature and composition [Pa]
+    vlist : numpy.ndarray
+        Specific volume array. Length depends on values in rhodict [:math:`m^3`/mol]
+
     Returns
     -------
-    quote : str
-        Compiled string including quote and optional attribution
+    obj_value : float
+        Output of objective function, the addition of the positive area between first two roots, and negative area between second and third roots, quantity squared.
     """
 
     Pvspline = interpolate.InterpolatedUnivariateSpline(vlist, Pv - shift)
@@ -366,24 +396,28 @@ def eq_area(shift, Pv, vlist):
 #                                                                    #
 ######################################################################
 def calc_rhov(P, T, xi, eos, rhodict={}):
-
-    """
-    Computes the saturated pressure, gas and liquid densities for a single component system given Temperature and Mie parameters
-    T: Saturated Temperature in Kelvin
-    minrhofrac: Fraction of maximum hard sphere packing fraction for gas density
-    rhoinc: spacing densities for rholist in mol/m^3. Smaller values will generate a more accurate curve at increasing computational cost
-    Pmax: maximum needed pressure in Pascals
-    Returns Saturated Pressure in Pa, liquid denisty, and gas density in mol/m^3
-
+    r"""
+    Computes vapor density under system conditions.
+    
     Parameters
     ----------
-    with_attribution : bool, Optional, default: True
-        Set whether or not to display who the quote is from
-    
+    P : float
+        Pressure of the system [Pa]
+    T : float
+        Temperature of the system [K]
+    xi : numpy.ndarray
+        Mole fraction of each component, sum(xi) should equal 1.0
+    eos : obj
+        An instance of the defined EOS class to be used in thermodynamic computations.
+    rhodict : dict, Optional, default: {}
+        Dictionary of options used in calculating pressure vs. mole 
+
     Returns
     -------
-    quote : str
-        Compiled string including quote and optional attribution
+    rhov : float
+        Density of vapor at system pressure [mol/:math:`m^3`]
+    flag : int
+        A value of 0 is gas, 1 is liquid, 2 mean a critical fluid, 3 means we should assume ideal, 4 means that neither is true
     """
 
     vlist, Plist = PvsRho(T, xi, eos, **rhodict)
@@ -444,24 +478,28 @@ def calc_rhov(P, T, xi, eos, rhodict={}):
 #                                                                    #
 ######################################################################
 def calc_rhol(P, T, xi, eos, rhodict={}):
-
-    """
-    Computes the saturated pressure, gas and liquid densities for a single component system given Temperature and Mie parameters
-    T: Saturated Temperature in Kelvin
-    minrhofrac: Fraction of maximum hard sphere packing fraction for gas density
-    rhoinc: spacing densities for rholist in mol/m^3. Smaller values will generate a more accurate curve at increasing computational cost
-    Pmax: maximum needed pressure in Pascals
-    Returns Saturated Pressure in Pa, liquid denisty, and gas density in mol/m^3
-
+    r"""
+    Computes liquid density under system conditions.
+    
     Parameters
     ----------
-    with_attribution : bool, Optional, default: True
-        Set whether or not to display who the quote is from
-    
+    P : float
+        Pressure of the system [Pa]
+    T : float
+        Temperature of the system [K]
+    xi : numpy.ndarray
+        Mole fraction of each component, sum(xi) should equal 1.0
+    eos : obj
+        An instance of the defined EOS class to be used in thermodynamic computations.
+    rhodict : dict, Optional, default: {}
+        Dictionary of options used in calculating pressure vs. mole 
+
     Returns
     -------
-    quote : str
-        Compiled string including quote and optional attribution
+    rhol : float
+        Density of liquid at system pressure [mol/:math:`m^3`]
+    flag : int
+        A value of 0 is liquid, 1 is gas, 2 means that neither is true.
     """
 
     # Get roots and local minima and maxima 
@@ -502,17 +540,25 @@ def calc_rhol(P, T, xi, eos, rhodict={}):
 ######################################################################
 def Pdiff(rho, Pset, T, xi, eos):
     """
-    Calculate difference between setpoint pressure and computed pressure for a given density
+    Calculate difference between set point pressure and computed pressure for a given density
     
     Parameters
     ----------
-    with_attribution : bool, Optional, default: True
-        Set whether or not to display who the quote is from
+    rho : float
+        Density of system [mol/:math:`m^3`]
+    Pset : float
+        Guess in pressure of the system [Pa]
+    T : float
+        Temperature of the system [K]
+    xi : numpy.ndarray
+        Mole fraction of each component, sum(xi) should equal 1.0
+    eos : obj
+        An instance of the defined EOS class to be used in thermodynamic computations.
     
     Returns
     -------
-    quote : str
-        Compiled string including quote and optional attribution
+    Pdiff : float
+        Difference in set pressure and predicted pressure given system conditions.
     """
 
     Pguess = eos.P(rho * const.Nav, T, xi)
@@ -525,19 +571,28 @@ def Pdiff(rho, Pset, T, xi, eos):
 #                                                                    #
 ######################################################################
 def calc_phiv(P, T, yi, eos, rhodict={}):
-
-    """
-    Calculate fugacity coefficient
+    r"""
+    Computes vapor fugacity coefficient under system conditions.
     
     Parameters
     ----------
-    with_attribution : bool, Optional, default: True
-        Set whether or not to display who the quote is from
-    
+    P : float
+        Pressure of the system [Pa]
+    T : float
+        Temperature of the system [K]
+    yi : numpy.ndarray
+        Mole fraction of each component, sum(xi) should equal 1.0
+    eos : obj
+        An instance of the defined EOS class to be used in thermodynamic computations.
+    rhodict : dict, Optional, default: {}
+        Dictionary of options used in calculating pressure vs. mole 
+
     Returns
     -------
-    quote : str
-        Compiled string including quote and optional attribution
+    phiv : float
+        Fugacity coefficient of vapor at system pressure
+    rhov : float
+        Density of vapor at system pressure [mol/:math:`m^3`]
     """
 
     rhov, flagv = calc_rhov(P, T, yi, eos, rhodict)
@@ -555,19 +610,28 @@ def calc_phiv(P, T, yi, eos, rhodict={}):
 #                                                                    #
 ######################################################################
 def calc_phil(P, T, xi, eos, rhodict={}):
-
-    """
-    Calculate fugacity coefficient
+    r"""
+    Computes liquid fugacity coefficient under system conditions.
     
     Parameters
     ----------
-    with_attribution : bool, Optional, default: True
-        Set whether or not to display who the quote is from
-    
+    P : float
+        Pressure of the system [Pa]
+    T : float
+        Temperature of the system [K]
+    xi : numpy.ndarray
+        Mole fraction of each component, sum(xi) should equal 1.0
+    eos : obj
+        An instance of the defined EOS class to be used in thermodynamic computations.
+    rhodict : dict, Optional, default: {}
+        Dictionary of options used in calculating pressure vs. mole 
+
     Returns
     -------
-    quote : str
-        Compiled string including quote and optional attribution
+    phil : float
+        Fugacity coefficient of liquid at system pressure
+    rhol : float
+        Density of liquid at system pressure [mol/:math:`m^3`]
     """
 
     rhol, flagl = calc_rhol(P, T, xi, eos, rhodict)
@@ -582,24 +646,28 @@ def calc_phil(P, T, xi, eos, rhodict={}):
 #                                                                    #
 ######################################################################
 def calc_Prange(T, xi, yi, eos, rhodict={}, Pmin=1000):
-
-    """
-    Computes the pressure range given Temperature and Mie parameters
-    T: Saturated Temperature in Kelvin
-    minrhofrac: Fraction of maximum hard sphere packing fraction for gas density
-    rhoinc: spacing densities for rholist in mol/m^3. Smaller values will generate a more accurate curve at increasing computational cost
-    Pmax: maximum needed pressure in Pascals
-    Returns Saturated Pressure in Pa, liquid denisty, and gas density in mol/m^3
-
+    r"""
+    Obtain min and max pressure values, where the objective function at each of those values is of opposite sign.
+    
     Parameters
     ----------
-    with_attribution : bool, Optional, default: True
-        Set whether or not to display who the quote is from
-    
+    T : float
+        Temperature of the system [K]
+    xi : numpy.ndarray
+        Liquid mole fraction of each component, sum(xi) should equal 1.0
+    yi : numpy.ndarray
+        Vapor mole fraction of each component, sum(xi) should equal 1.0
+    eos : obj
+        An instance of the defined EOS class to be used in thermodynamic computations.
+    rhodict : dict, Optional, default: {}
+        Dictionary of options used in calculating pressure vs. mole 
+    Pmin : float, Optional, default: 1000.0
+        Minimum pressure in pressure range that restricts searched space.
+
     Returns
     -------
-    quote : str
-        Compiled string including quote and optional attribution
+    Prange : list
+        List of min and max pressure range
     """
 
     global yi_global
@@ -679,21 +747,34 @@ def calc_Prange(T, xi, yi, eos, rhodict={}, Pmin=1000):
 #                                                                    #
 ######################################################################
 def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxitr=50):
-
-    """
-    Placeholder function to show example docstring (NumPy format)
-    
-    Replace this function and doc string for your own project
+    r"""
+    Solve bubble point for vapor mole fraction given liquid mole fraction and temperature.
     
     Parameters
     ----------
-    with_attribution : bool, Optional, default: True
-        Set whether or not to display who the quote is from
-    
+    yi : numpy.ndarray
+        Guess in vapor mole fraction of each component, sum(xi) should equal 1.0
+    xi : numpy.ndarray
+        Liquid mole fraction of each component, sum(xi) should equal 1.0
+    phil : float
+        Fugacity coefficient of liquid at system pressure
+    P : float
+        Pressure of the system [Pa]
+    T : float
+        Temperature of the system [K]
+    eos : obj
+        An instance of the defined EOS class to be used in thermodynamic computations.
+    rhodict : dict, Optional, default: {}
+        Dictionary of options used in calculating pressure vs. mole 
+    maxitr : int, Optional, default: 50
+        Maximum number of iteration for both the outer pressure and inner vapor mole fraction loops
+
     Returns
     -------
-    quote : str
-        Compiled string including quote and optional attribution
+    yi : numpy.ndarray
+        Vapor mole fraction of each component, sum(xi) should equal 1.0
+    phiv : float
+        Fugacity coefficient of vapor at system pressure
     """
 
     global yi_global
@@ -769,21 +850,34 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxitr=50):
 #                                                                    #
 ######################################################################
 def solve_xi_yiT(xi, yi, phiv, P, T, eos, rhodict={}, maxitr=50):
-
-    """
-    Placeholder function to show example docstring (NumPy format)
-    
-    Replace this function and doc string for your own project
+    r"""
+    Solve dew point for liquid mole fraction given vapor mole fraction and temperature.
     
     Parameters
     ----------
-    with_attribution : bool, Optional, default: True
-        Set whether or not to display who the quote is from
-    
+    xi : numpy.ndarray
+        Guess in liquid mole fraction of each component, sum(xi) should equal 1.0
+    yi : numpy.ndarray
+        Vapor mole fraction of each component, sum(xi) should equal 1.0
+    phiv : float
+        Fugacity coefficient of liquid at system pressure
+    P : float
+        Pressure of the system [Pa]
+    T : float
+        Temperature of the system [K]
+    eos : obj
+        An instance of the defined EOS class to be used in thermodynamic computations.
+    rhodict : dict, Optional, default: {}
+        Dictionary of options used in calculating pressure vs. mole 
+    maxitr : int, Optional, default: 50
+        Maximum number of iteration for both the outer pressure and inner vapor mole fraction loops
+
     Returns
     -------
-    quote : str
-        Compiled string including quote and optional attribution
+    xi : numpy.ndarray
+        Liquid mole fraction of each component, sum(xi) should equal 1.0
+    phil : float
+        Fugacity coefficient of liquid at system pressure
     """
 
     global xi_global
@@ -852,21 +946,32 @@ def solve_xi_yiT(xi, yi, phiv, P, T, eos, rhodict={}, maxitr=50):
 
 
 def sum_yi(P, yi, xi, T, phil, eos, rhodict={}, maxitr=50):
-
-    """
-    Placeholder function to show example docstring (NumPy format)
-    
-    Replace this function and doc string for your own project
+    r"""
+    Objective function used to find vapor mole fractions in inner loop of bubble point calculations
     
     Parameters
     ----------
-    with_attribution : bool, Optional, default: True
-        Set whether or not to display who the quote is from
-    
+    P : float
+        Pressure of the system [Pa]
+    yi : numpy.ndarray
+        Vapor mole fraction of each component, sum(xi) should equal 1.0
+    xi : numpy.ndarray
+        Liquid mole fraction of each component, sum(xi) should equal 1.0
+    T : float
+        Temperature of the system [K]
+    phil : float
+        Fugacity coefficient of liquid at system pressure
+    eos : obj
+        An instance of the defined EOS class to be used in thermodynamic computations.
+    rhodict : dict, Optional, default: {}
+        Dictionary of options used in calculating pressure vs. mole 
+    maxitr : int, Optional, default: 50
+        Maximum number of iteration for both the outer pressure and inner vapor mole fraction loops
+
     Returns
     -------
-    quote : str
-        Compiled string including quote and optional attribution
+    obj_value : float
+        Sum of vapor mole fraction values minus one.
     """
 
     global yi_global
@@ -901,21 +1006,30 @@ def sum_yi(P, yi, xi, T, phil, eos, rhodict={}, maxitr=50):
 
 
 def find_new_yi(P, T, phil, xi, eos, rhodict={}, maxitr=50):
-
-    """
-    Placeholder function to show example docstring (NumPy format)
-    
-    Replace this function and doc string for your own project
+    r"""
+    Search vapor mole fraction combinations for a new estimate that produces a vapor density.
     
     Parameters
     ----------
-    with_attribution : bool, Optional, default: True
-        Set whether or not to display who the quote is from
-    
+    P : float
+        Pressure of the system [Pa]
+    T : float
+        Temperature of the system [K]
+    phil : float
+        Fugacity coefficient of liquid at system pressure
+    xi : numpy.ndarray
+        Liquid mole fraction of each component, sum(xi) should equal 1.0
+    eos : obj
+        An instance of the defined EOS class to be used in thermodynamic computations.
+    rhodict : dict, Optional, default: {}
+        Dictionary of options used in calculating pressure vs. mole 
+    maxitr : int, Optional, default: 50
+        Maximum number of iteration for both the outer pressure and inner vapor mole fraction loops
+
     Returns
     -------
-    quote : str
-        Compiled string including quote and optional attribution
+    yi : numpy.ndarray
+        Vapor mole fraction of each component, sum(yi) should equal 1.0
     """
 
     #    # have three functions, make sum close to zero, mui isn't np.nan, and rho is a vapor
@@ -1011,21 +1125,30 @@ def find_new_yi(P, T, phil, xi, eos, rhodict={}, maxitr=50):
 #                                                                    #
 ######################################################################
 def yi_obj(yi,P,T,phil,xi,eos,rhodict={}):
-
-    """
-    Placeholder function to show example docstring (NumPy format)
-    
-    Replace this function and doc string for your own project
+    r"""
+    Objective function used to evaluate system parameters used in bubble point calculation.
     
     Parameters
     ----------
-    with_attribution : bool, Optional, default: True
-        Set whether or not to display who the quote is from
-    
+    yi : numpy.ndarray
+        Vapor mole fraction of each component, sum(yi) should equal 1.0
+    P : float
+        Pressure of the system [Pa]
+    T : float
+        Temperature of the system [K]
+    phil : float
+        Fugacity coefficient of liquid at system pressure
+    xi : numpy.ndarray
+        Liquid mole fraction of each component, sum(xi) should equal 1.0
+    eos : obj
+        An instance of the defined EOS class to be used in thermodynamic computations.
+    rhodict : dict, Optional, default: {}
+        Dictionary of options used in calculating pressure vs. mole 
+
     Returns
     -------
-    quote : str
-        Compiled string including quote and optional attribution
+    obj_value : float
+        :math:`\sum\frac{x_{i}\{phi_l}{\phi_v}-1`
     """
 
     if type(yi) != list:
@@ -1044,21 +1167,30 @@ def yi_obj(yi,P,T,phil,xi,eos,rhodict={}):
 #                                                                    #
 ######################################################################
 def solve_xi_root(xi0, yi, phiv, P, T, eos, rhodict):
-
-    """
-    Placeholder function to show example docstring (NumPy format)
-    
-    Replace this function and doc string for your own project
+    r"""
+    Objective function used to search liquid mole fraction and solve inner loop of dew point calculations.
     
     Parameters
     ----------
-    with_attribution : bool, Optional, default: True
-        Set whether or not to display who the quote is from
-    
+    xi : numpy.ndarray
+        Guess in liquid mole fraction of each component, sum(xi) should equal 1.0
+    yi : numpy.ndarray
+        Vapor mole fraction of each component, sum(yi) should equal 1.0
+    phiv : float
+        Fugacity coefficient of vapor at system pressure
+    P : float
+        Pressure of the system [Pa]
+    T : float
+        Temperature of the system [K]
+    eos : obj
+        An instance of the defined EOS class to be used in thermodynamic computations.
+    rhodict : dict, Optional, default: {}
+        Dictionary of options used in calculating pressure vs. mole 
+
     Returns
     -------
-    quote : str
-        Compiled string including quote and optional attribution
+    obj_value : list
+        List of percent change between guess that is input and the updated version from recalculating with fugacity coefficients.
     """
 
     # !!!!!!!!!!!!!!! This isn't working !!!!!!!!!!!!!!!!
@@ -1099,21 +1231,32 @@ def solve_xi_root(xi0, yi, phiv, P, T, eos, rhodict):
 
 
 def solve_yi_root(yi0, xi, phil, P, T, eos, rhodict={}, maxitr=50):
-
-    """
-    Placeholder function to show example docstring (NumPy format)
-    
-    Replace this function and doc string for your own project
+    r"""
+    Objective function used to search vapor mole fraction and solve inner loop of bubble point calculations.
     
     Parameters
     ----------
-    with_attribution : bool, Optional, default: True
-        Set whether or not to display who the quote is from
-    
+    yi0 : numpy.ndarray
+        Guess in vapor mole fraction of each component, sum(yi) should equal 1.0
+    xi : numpy.ndarray
+        Liquid mole fraction of each component, sum(xi) should equal 1.0
+    phil : float
+        Fugacity coefficient of liquid at system pressure
+    P : float
+        Pressure of the system [Pa]
+    T : float
+        Temperature of the system [K]
+    eos : obj
+        An instance of the defined EOS class to be used in thermodynamic computations.
+    rhodict : dict, Optional, default: {}
+        Dictionary of options used in calculating pressure vs. mole 
+    maxitr : int, Optional, default: 50
+        Maximum number of iteration for both the outer pressure and inner vapor mole fraction loops
+
     Returns
     -------
-    quote : str
-        Compiled string including quote and optional attribution
+    obj_value : list
+        List of absolute change between guess that is input and the updated version from recalculating with fugacity coefficients.
     """
 
     yi0 /= np.sum(yi0)
@@ -1141,21 +1284,26 @@ def solve_yi_root(yi0, xi, phil, P, T, eos, rhodict={}, maxitr=50):
 #                                                                    #
 ######################################################################
 def solve_P_xiT(P, xi, T, eos, rhodict):
-
-    """
-    Placeholder function to show example docstring (NumPy format)
-    
-    Replace this function and doc string for your own project
+    r"""
+    Objective function used to search pressure values and solve outer loop of P bubble point calculations.
     
     Parameters
     ----------
-    with_attribution : bool, Optional, default: True
-        Set whether or not to display who the quote is from
-    
+    P : float
+        Guess in pressure of the system [Pa]
+    xi : numpy.ndarray
+        Liquid mole fraction of each component, sum(xi) should equal 1.0
+    T : float
+        Temperature of the system [K]
+    eos : obj
+        An instance of the defined EOS class to be used in thermodynamic computations.
+    rhodict : dict, Optional, default: {}
+        Dictionary of options used in calculating pressure vs. mole 
+
     Returns
     -------
-    quote : str
-        Compiled string including quote and optional attribution
+    obj_value : list
+        :math:`\sum\frac{x_{i}\{phi_l}{\phi_v}-1`
     """
 
     global yi_global
@@ -1184,21 +1332,26 @@ def solve_P_xiT(P, xi, T, eos, rhodict):
 #                                                                    #
 ######################################################################
 def solve_P_yiT(P, yi, T, eos, rhodict):
-
-    """
-    Placeholder function to show example docstring (NumPy format)
-    
-    Replace this function and doc string for your own project
+    r"""
+    Objective function used to search pressure values and solve outer loop of P dew point calculations.
     
     Parameters
     ----------
-    with_attribution : bool, Optional, default: True
-        Set whether or not to display who the quote is from
-    
+    P : float
+        Guess in pressure of the system [Pa]
+    yi : numpy.ndarray
+        Vapor mole fraction of each component, sum(yi) should equal 1.0
+    T : float
+        Temperature of the system [K]
+    eos : obj
+        An instance of the defined EOS class to be used in thermodynamic computations.
+    rhodict : dict, Optional, default: {}
+        Dictionary of options used in calculating pressure vs. mole 
+
     Returns
     -------
-    quote : str
-        Compiled string including quote and optional attribution
+    obj_value : list
+        :math:`\sum\frac{y_{i}\{phi_v}{\phi_l}-1`
     """
 
     global xi_global
@@ -1228,21 +1381,28 @@ def solve_P_yiT(P, yi, T, eos, rhodict):
 #                                                                    #
 ######################################################################
 def solve_P_xiT_inerp(P, Psat, xi, T, eos, rhodict):
-
-    """
-    Placeholder function to show example docstring (NumPy format)
-    
-    Replace this function and doc string for your own project
+    r"""
+    Objective function used to search pressure values and solve outer loop of P bubble point calculations.
     
     Parameters
     ----------
-    with_attribution : bool, Optional, default: True
-        Set whether or not to display who the quote is from
-    
+    P : float
+        Guess in pressure of the system [Pa]
+    Psat : float
+        Saturation pressure of the system used to estimate initial vapor mole fraction values [Pa]
+    xi : numpy.ndarray
+        Liquid mole fraction of each component, sum(xi) should equal 1.0
+    T : float
+        Temperature of the system [K]
+    eos : obj
+        An instance of the defined EOS class to be used in thermodynamic computations.
+    rhodict : dict, Optional, default: {}
+        Dictionary of options used in calculating pressure vs. mole 
+
     Returns
     -------
-    quote : str
-        Compiled string including quote and optional attribution
+    obj_value : list
+        :math:`\sum\frac{x_{i}\{phi_l}{\phi_v}-1`
     """
 
     #print 'P',P
@@ -1303,21 +1463,22 @@ def solve_P_xiT_inerp(P, Psat, xi, T, eos, rhodict):
 #                                                                    #
 ######################################################################
 def setPsat(ind, eos):
-
-    """
-    Placeholder function to show example docstring (NumPy format)
-    
-    Replace this function and doc string for your own project
+    r"""
+    Generate dummy value for component saturation pressure if it is above its critical point.
     
     Parameters
     ----------
-    with_attribution : bool, Optional, default: True
-        Set whether or not to display who the quote is from
-    
+    ind : int
+        Index of bead that is above critical point
+    eos : obj
+        An instance of the defined EOS class to be used in thermodynamic computations.
+
     Returns
     -------
-    quote : str
-        Compiled string including quote and optional attribution
+    Psat : float
+        Dummy value of saturation pressure [Pa]
+    NaNbead : str
+        Bead name of the component that is above it's critical point
     """
 
     for j in range(np.size(eos._nui[ind])):
@@ -1344,22 +1505,31 @@ def setPsat(ind, eos):
 #                              Calc yT phase                         #
 #                                                                    #
 ######################################################################
-def calc_yT_phase(yi, T, eos, rhodict, Pguess=[],meth="broyden1"):
-
-    """
-    Placeholder function to show example docstring (NumPy format)
-    
-    Replace this function and doc string for your own project
+def calc_yT_phase(yi, T, eos, rhodict, Pguess=-1,meth="broyden1"):
+    r"""
+    Calculate dew point mole fraction and pressure given system vapor mole fraction and temperature.
     
     Parameters
     ----------
-    with_attribution : bool, Optional, default: True
-        Set whether or not to display who the quote is from
-    
+    yi : numpy.ndarray
+        Vapor mole fraction of each component, sum(yi) should equal 1.0
+    T : float
+        Temperature of the system [K]
+    eos : obj
+        An instance of the defined EOS class to be used in thermodynamic computations.
+    rhodict : dict, Optional, default: {}
+        Dictionary of options used in calculating pressure vs. mole 
+    Pguess : float, Optional, default: -1
+        Guess the system pressure at the dew point. A negative value will force an estimation based on the saturation pressure of each component.
+    meth : str, Optional, default: "broyden1"
+        Choose the method used to solve the dew point calculation
+
     Returns
     -------
-    quote : str
-        Compiled string including quote and optional attribution
+    P : float
+        Pressure of the system [Pa]
+    xi : numpy.ndarray
+        Mole fraction of each component, sum(xi) should equal 1.0
     """
 
     global xi_global
@@ -1376,7 +1546,7 @@ def calc_yT_phase(yi, T, eos, rhodict, Pguess=[],meth="broyden1"):
                 sys.exit("Component, %s, is beyond it's critical point at %g K. Add an exception to setPsat" % (NaNbead,T))
 
     # Estimate initial pressure
-    if not Pguess:
+    if Pguess < 0:
         P=1.0/np.sum(yi/Psat)
     else:
         P = Pguess
@@ -1424,21 +1594,30 @@ def calc_yT_phase(yi, T, eos, rhodict, Pguess=[],meth="broyden1"):
 #                                                                    #
 ######################################################################
 def calc_xT_phase(xi, T, eos, rhodict={}, Pguess=[],meth="broyden1"):
-
-    """
-    Placeholder function to show example docstring (NumPy format)
-    
-    Replace this function and doc string for your own project
+    r"""
+    Calculate bubble point mole fraction and pressure given system liquid mole fraction and temperature.
     
     Parameters
     ----------
-    with_attribution : bool, Optional, default: True
-        Set whether or not to display who the quote is from
-    
+    xi : numpy.ndarray
+        Liquid mole fraction of each component, sum(xi) should equal 1.0
+    T : float
+        Temperature of the system [K]
+    eos : obj
+        An instance of the defined EOS class to be used in thermodynamic computations.
+    rhodict : dict, Optional, default: {}
+        Dictionary of options used in calculating pressure vs. mole 
+    Pguess : float, Optional, default: -1
+        Guess the system pressure at the dew point. A negative value will force an estimation based on the saturation pressure of each component.
+    meth : str, Optional, default: "broyden1"
+        Choose the method used to solve the dew point calculation
+
     Returns
     -------
-    quote : str
-        Compiled string including quote and optional attribution
+    P : float
+        Pressure of the system [Pa]
+    yi : numpy.ndarray
+        Mole fraction of each component, sum(yi) should equal 1.0
     """
 
     global yi_global
@@ -1676,21 +1855,27 @@ def calc_xT_phase_dir(xi, T, eos, rhodict={}, Pguess=[]):
 #                                                                    #
 ######################################################################
 def calc_PT_phase(xi, T, eos, rhodict={}):
-
-    """
-    Placeholder function to show example docstring (NumPy format)
-    
-    Replace this function and doc string for your own project
+    r"""
+    **Not Complete**
+    Calculate the PT phase diagram given liquid mole fraction and temperature
     
     Parameters
     ----------
-    with_attribution : bool, Optional, default: True
-        Set whether or not to display who the quote is from
-    
+    xi : numpy.ndarray
+        Liquid mole fraction of each component, sum(xi) should equal 1.0
+    T : float
+        Temperature of the system [K]
+    eos : obj
+        An instance of the defined EOS class to be used in thermodynamic computations.
+    rhodict : dict, Optional, default: {}
+        Dictionary of options used in calculating pressure vs. mole 
+
     Returns
     -------
-    quote : str
-        Compiled string including quote and optional attribution
+    P : float
+        Pressure of the system [Pa]
+    yi : numpy.ndarray
+        Mole fraction of each component, sum(yi) should equal 1.0
     """
 
     Psat = np.zeros_like(xi)
@@ -1718,18 +1903,26 @@ def calc_PT_phase(xi, T, eos, rhodict={}):
 #                                                                    #
 ######################################################################
 def calc_dadT(rho, T, xi, eos, rhodict={}):
-    """
-    Given rho N/m3 and T compute denstiy given SAFT parameters
+    r"""
+    Calculate the derivative of the Helmholtz energy with respect to temperature, :math:`\frac{dA}{dT}`, give a list of density values and system conditions.
     
     Parameters
     ----------
-    with_attribution : bool, Optional, default: True
-        Set whether or not to display who the quote is from
-    
+    rho : numpy.ndarray
+        Density array. Length depends on values in rhodict [mol/:math:`m^3`]
+    T : float
+        Temperature of the system [K]
+    xi : numpy.ndarray
+        Liquid mole fraction of each component, sum(xi) should equal 1.0
+    eos : obj
+        An instance of the defined EOS class to be used in thermodynamic computations.
+    rhodict : dict, Optional, default: {}
+        Dictionary of options used in calculating pressure vs. mole 
+
     Returns
     -------
-    quote : str
-        Compiled string including quote and optional attribution
+    dadT : numpy.ndarray
+        Array of derivative values of Helmholtz energy with respect to temperature
     """
 
     step = np.sqrt(np.finfo(float).eps) * T * 1000.0

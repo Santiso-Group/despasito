@@ -11,28 +11,34 @@ import sys
 
 from . import calc
 
+"""
+.. todo::
+    phase_xiT: add like to rhodict options 
+
+"""
 
 ######################################################################
 #                                                                    #
-#                Phase Equilibria given xi and T                     #
+#                Phase Equilibrium given xi and T                     #
 #                                                                    #
 ######################################################################
 def phase_xiT(eos, sys_dict, rhodict={}, output_file="phase_xiT_output.txt"):
 
-    """
-    Placeholder function to show example docstring (NumPy format)
-    
-    Replace this function and doc string for your own project
+    r"""
+    Assess input and system information and calculate phase diagram given liquid mole fractions, xi, and temperature.
+
+    An output file is generated with T, xi, and corresponding P and yi.
     
     Parameters
     ----------
-    with_attribution : bool, Optional, default: True
-        Set whether or not to display who the quote is from
-    
-    Returns
-    -------
-    quote : str
-        Compiled string including quote and optional attribution
+    eos : obj
+        An instance of the defined EOS class to be used in thermodynamic computations.
+    sys_dict: dict
+        A dictionary of all information given in the input .json file that wasn't used to create the EOS object.
+    rhodict : dict, Optional, default: {}
+        Dictionary of options used in calculating pressure vs. mole fraction curves.
+    output_file : str, Optional, default: "phase_xiT_output.txt"
+        Name of file in which the temperature, pressure, and vapor/liquid mole fractions are saved.
     """
 
     #computes P and yi from xi and T
@@ -108,25 +114,24 @@ def phase_xiT(eos, sys_dict, rhodict={}, output_file="phase_xiT_output.txt"):
 ######################################################################
 def phase_yiT(eos, sys_dict, rhodict={}, output_file="phase_yiT_output.txt"):
 
-    """
-    Placeholder function to show example docstring (NumPy format)
-    
-    Replace this function and doc string for your own project
+    r"""
+    Assess input and system information and calculate phase diagram given vapor mole fractions, yi, and temperature.
+
+    An output file is generated with T, yi, and corresponding P and xi.
     
     Parameters
     ----------
-    with_attribution : bool, Optional, default: True
-        Set whether or not to display who the quote is from
-    
-    Returns
-    -------
-    quote : str
-        Compiled string including quote and optional attribution
+    eos : obj
+        An instance of the defined EOS class to be used in thermodynamic computations.
+    sys_dict: dict
+        A dictionary of all information given in the input .json file that wasn't used to create the EOS object.
+    rhodict : dict, Optional, default: {}
+        Dictionary of options used in calculating pressure vs. mole fraction curves.
+    output_file : str, Optional, default: "phase_yiT_output.txt"
+        Name of file in which the temperature, pressure, and vapor/liquid mole fractions are saved.
     """
 
-    #computes P and yi from xi and T
-
-    ## Exctract and check input data
+    ## Extract and check input data
     try:
         T_list = np.array(sys_dict['Tlist'])
         yi_list = np.array(sys_dict['yilist'])
@@ -162,23 +167,22 @@ def phase_yiT(eos, sys_dict, rhodict={}, output_file="phase_yiT_output.txt"):
 ######################################################################
 def sat_props(eos, sys_dict, rhodict={}, output_file="saturation_output.txt"):
 
-    """
-    Placeholder function to show example docstring (NumPy format)
-    
-    Replace this function and doc string for your own project
+    r"""
+    Assess input and system information and computes the saturated pressure, liquid, and gas density a one component phase at a temperature.
+
+    An output file is generated with T, :math:`P^{sat}`, :math:`\rho^{sat}_{l}, :math:`\rho^{sat}_{v}
     
     Parameters
     ----------
-    with_attribution : bool, Optional, default: True
-        Set whether or not to display who the quote is from
-    
-    Returns
-    -------
-    quote : str
-        Compiled string including quote and optional attribution
+    eos : obj
+        An instance of the defined EOS class to be used in thermodynamic computations.
+    sys_dict: dict
+        A dictionary of all information given in the input .json file that wasn't used to create the EOS object.
+    rhodict : dict, Optional, default: {}
+        Dictionary of options used in calculating pressure vs. mole fraction curves.
+    output_file : str, Optional, default: "saturation_output.txt"
+        Name of file in which the temperature, saturation pressure, and vapor/liquid densities.
     """
-
-    #compute the saturated pressure, liquid, and gas density a 1 component phase at a temperature.
 
     ## Exctract and check input data
     try:
@@ -220,20 +224,21 @@ def sat_props(eos, sys_dict, rhodict={}, output_file="saturation_output.txt"):
 ######################################################################
 def liquid_properties(eos, sys_dict, rhodict={}, output_file="liquid_properties_output.txt"):
 
-    """
-    Placeholder function to show example docstring (NumPy format)
-    
-    Replace this function and doc string for your own project
+    r"""
+    Assess input and system information and computes the liquid density and chemical potential given a temperature, pressure, and liquid mole fractions.
+
+    An output file is generated with P, T, xi, :math:`\rho_{l}, and :math:`\phi_{l}.
     
     Parameters
     ----------
-    with_attribution : bool, Optional, default: True
-        Set whether or not to display who the quote is from
-    
-    Returns
-    -------
-    quote : str
-        Compiled string including quote and optional attribution
+    eos : obj
+        An instance of the defined EOS class to be used in thermodynamic computations.
+    sys_dict: dict
+        A dictionary of all information given in the input .json file that wasn't used to create the EOS object.
+    rhodict : dict, Optional, default: {}
+        Dictionary of options used in calculating pressure vs. mole fraction curves.
+    output_file : str, Optional, default: "liquid_properties_output.txt"
+        Name of file in which the pressure, temperature, and liquid mole fraction, density, and chemical potential.
     """
 
     ## Extract and check input data
@@ -284,20 +289,21 @@ def liquid_properties(eos, sys_dict, rhodict={}, output_file="liquid_properties_
 ######################################################################
 def vapor_properties(eos, sys_dict, rhodict={}, output_file="vapor_properties_output.txt"):
 
-    """
-    Placeholder function to show example docstring (NumPy format)
-    
-    Replace this function and doc string for your own project
+    r"""
+    Assess input and system information and computes the vapor density and chemical potential given a temperature, pressure, and vapor mole fractions.
+
+    An output file is generated with P, T, yi, :math:`\rho_{v}, and :math:`\phi_{v}.
     
     Parameters
     ----------
-    with_attribution : bool, Optional, default: True
-        Set whether or not to display who the quote is from
-    
-    Returns
-    -------
-    quote : str
-        Compiled string including quote and optional attribution
+    eos : obj
+        An instance of the defined EOS class to be used in thermodynamic computations.
+    sys_dict: dict
+        A dictionary of all information given in the input .json file that wasn't used to create the EOS object.
+    rhodict : dict, Optional, default: {}
+        Dictionary of options used in calculating pressure vs. mole fraction curves.
+    output_file : str, Optional, default: "vapor_properties_output.txt"
+        Name of file in which the pressure, temperature, and vapor mole fraction, density, and chemical potential.
     """
 
     ## Extract and check input data

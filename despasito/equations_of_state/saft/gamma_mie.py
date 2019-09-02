@@ -130,7 +130,7 @@ class saft_gamma_mie(EOStemplate):
         Parameters
         ----------
         xi : list[float]
-            Mole fraction of component, only relevant for parameter fitting
+            Mole fraction of component
 
         """
 
