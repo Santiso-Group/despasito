@@ -7,7 +7,7 @@ import despasito.equations_of_state.saft.gamma_mie
 import despasito.equations_of_state.saft.gamma_mie_funcs
 
 try:
-    import despasito.equations_of_state.saft.solv_assoc
+    import despasito.equations_of_state.saft.solv_assoc as solv_assoc
 except:
     try:
         import solv_assoc # for windows
