@@ -6,13 +6,13 @@ Unit and regression test for the despasito package.
 import despasito.equations_of_state.saft.gamma_mie
 import despasito.equations_of_state.saft.gamma_mie_funcs
 
-try:
-    import despasito.equations_of_state.saft.solv_assoc as solv_assoc
-except:
-    try:
-        import solv_assoc # for windows
-    except:
-        raise ModuleNotFoundError
+#try:
+#    import despasito.equations_of_state.saft.solv_assoc as solv_assoc
+#except:
+#    try:
+#        import solv_assoc # for windows
+#    except:
+#        raise ModuleNotFoundError
         
 import pytest
 import sys
