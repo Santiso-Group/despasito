@@ -9,6 +9,8 @@ import numpy as np
 from scipy import misc
 from scipy import integrate
 import scipy.optimize as spo
+import sys
+print(sys.path)
 
 from . import constants
 try:
