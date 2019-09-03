@@ -186,7 +186,7 @@ def sat_props(eos, sys_dict, rhodict={}, output_file="saturation_output.txt"):
 
     ## Exctract and check input data
     try:
-        T_list = np.array(input_dict['Tlist'])
+        T_list = np.array(sys_dict['Tlist'])
         print("Using Tlist")
     except:
         raise Exception('Temperature must be specified')
@@ -198,16 +198,16 @@ def sat_props(eos, sys_dict, rhodict={}, output_file="saturation_output.txt"):
     ## Calculate saturation properties
     Psat = np.zeros_like(T_list)
     rholsat = np.zeros_like(T_list)
-    rhogsat = np.zeros_like(T_list)
+    rhovsat = np.zeros_like(T_list)
 
     for i in range(np.size(T_list)):
         try:
-            Psat[i], rholsat[i], rhogsat[i] = calc.calc_Psat(T_list[i], np.array([1.0]), eos, rhodict=rhodict)
+            Psat[i], rholsat[i], rhovsat[i] = calc.calc_Psat(T_list[i], np.array([1.0]), eos, rhodict=rhodict)
         except:
             Psat[i] = np.nan
             rholsat[i] = np.nan
-            rhogsat[i] = np.nan
-            print('Failed to calculate Psat, rholsat, rhogsat at', T_list[i])
+            rhovsat[i] = np.nan
+            print('Failed to calculate Psat, rholsat, rhovsat at', T_list[i])
 
         ## Generate Output
         with open(output_file, 'a') as f:
@@ -243,10 +243,10 @@ def liquid_properties(eos, sys_dict, rhodict={}, output_file="liquid_properties_
 
     ## Extract and check input data
     try:
-        T_list = np.array(input_dict['Tlist'])
-        xi_list = np.array(input_dict['xilist'])
+        T_list = np.array(sys_dict['Tlist'])
+        xi_list = np.array(sys_dict['xilist'])
         try:
-            P_list = np.array(input_dict['Plist'])
+            P_list = np.array(sys_dict['Plist'])
             print("Using xilist, Tlist, and Plist")
         except:
             P_list = 101325.0 * np.ones_like(T_list)
@@ -262,9 +262,9 @@ def liquid_properties(eos, sys_dict, rhodict={}, output_file="liquid_properties_
 
     ## Calculate liquid density
     rhol = np.zeros_like(T_list)
-    phil = np.zeros_like(T_list)
+    phil = []
     for i in range(np.size(T_list)):
-        rhol[i], flagl = calc.calc_rhol_full(P_list[i], T_list[i], xi_list[i], eos, rhodict=rhodict)
+        rhol[i], flagl = calc.calc_rhol(P_list[i], T_list[i], xi_list[i], eos, rhodict=rhodict)
 
         if np.isnan(rhol[i]):
             print('Failed to calculate rhol at', T_list[i])
@@ -272,7 +272,7 @@ def liquid_properties(eos, sys_dict, rhodict={}, output_file="liquid_properties_
         else:
             print(T_list[i], rhol[i])
             muil_tmp = eos.chemicalpotential(P_list[i], np.array([rhol[i]]), xi_list[i], T_list[i])
-            phil[i] = np.exp(muil_tmp)
+            phil.append(np.exp(muil_tmp))
 
         ## Generate Output
         with open(output_file, 'a') as f:
@@ -308,10 +308,10 @@ def vapor_properties(eos, sys_dict, rhodict={}, output_file="vapor_properties_ou
 
     ## Extract and check input data
     try:
-        T_list = np.array(input_dict['Tlist'])
-        yi_list = np.array(input_dict['yilist'])
+        T_list = np.array(sys_dict['Tlist'])
+        yi_list = np.array(sys_dict['yilist'])
         try:
-            P_list = np.array(input_dict['Plist'])
+            P_list = np.array(sys_dict['Plist'])
             print("Using yilist, Tlist, and Plist")
         except:
             P_list = 101325.0 * np.ones_like(T_list)
@@ -327,16 +327,16 @@ def vapor_properties(eos, sys_dict, rhodict={}, output_file="vapor_properties_ou
 
     ## Calculate vapor density
     rhov = np.zeros_like(T_list)
-    phiv = np.zeros_like(T_list)
+    phiv = []
     for i in range(np.size(T_list)):
-        rhov[i], flagv = calc.calc_rhov_full(P_list[i], T_list[i], yi_list[i], eos, rhodict=rhodict)
+        rhov[i], flagv = calc.calc_rhov(P_list[i], T_list[i], yi_list[i], eos, rhodict=rhodict)
         if np.isnan(rhov[i]):
             print('Failed to calculate rhov at', T_list[i])
             phiv[i] = np.nan
         else:
             print(T_list[i], rhov[i])
             muiv_tmp = eos.chemicalpotential(P_list[i], np.array([rhov[i]]), yi_list[i], T_list[i])
-            phiv[i] = np.exp(muiv_tmp)
+            phiv.append(np.exp(muiv_tmp))
 
         ## Generate Output
         with open(output_file, 'a') as f:

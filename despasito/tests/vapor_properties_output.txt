@@ -1,0 +1,2 @@
+Pressure (Pa), Temperature (K), yi, vapor denisty (mol/m^3), fugacity coeff.
+101325.0, 323.2, [0.98830952 0.01169048], 37.87906264750655, [2.45593966 0.38311536]

@@ -39,25 +39,56 @@ def test_thermo_import():
 #    """Sample test, will always pass so long as import statement worked"""
     assert "despasito.thermodynamics" in sys.modules
 
-def test_calc_types(eos=eos_co2_h2o,Tlist=Tlist,xilist=xilist):
+def test_phase_xiT(eos=eos_co2_h2o,Tlist=Tlist,xilist=xilist):
 
-    calcs = ["phase_xiT","phase_yiT","sat_props","liquid_properties","vapor_properties"]
-    thermo_dict = [{"Tlist":Tlist,"xilist":xilist},{"Tlist":Tlist,"yilist":yilist},{"Tlist":Tlist},{"Tlist":Tlist,"xilist":xilist},{"Tlist":Tlist,"yilist":yilist}]
-    calctest = []
-    for i in range(len(calcs)):
-        try:
-            thermo.thermo(calcs[i],eos,thermo_dict[i])
-        except:
-            calctest.append(False)
-        else:
-            calctest.append(True)
+    try:
+        thermo.thermo("phase_xiT",eos,{"Tlist":Tlist,"xilist":xilist})
+    except:
+        flag = False
+    else:
+        flag = True
         
-    assert calctest.all() == True
+    assert flag == True
 
-#def test_calc_Psat(T=Tlist[0],xi=[0.0,1.0],eos=eos_co2_h2o):
+def test_phase_yiT(eos=eos_co2_h2o,Tlist=Tlist,yilist=yilist):
 
-#    Psat, rhov, rhol = calc.calc_Psat(T, xi, eos)
+    try:
+        thermo.thermo("phase_yiT",eos,{"Tlist":Tlist,"yilist":yilist})
+    except:
+        flag = False
+    else:
+        flag = True
 
-#    assert ([ Psat, rhov, rhol]==[]).all()
+    assert flag == True
 
+def test_sat_props(eos=eos_co2_h2o,Tlist=Tlist):
+
+    try:
+        thermo.thermo("sat_props",eos,{"Tlist":Tlist})
+    except:
+        flag = False
+    else:
+        flag = True
+
+    assert flag == True
+
+def test_liquid_properties(eos=eos_co2_h2o,Tlist=Tlist,xilist=xilist):
+
+    try:
+        thermo.thermo("liquid_properties",eos,{"Tlist":Tlist,"xilist":xilist})
+    except:
+        flag = False
+    else:
+        flag = True
+    assert flag == True
+
+def test_vapor_properties(eos=eos_co2_h2o,Tlist=Tlist,yilist=yilist):
+
+    try:
+        thermo.thermo("vapor_properties",eos,{"Tlist":Tlist,"yilist":yilist})
+    except:
+        flag = False
+    else:
+        flag = True
+    assert flag == True
     
