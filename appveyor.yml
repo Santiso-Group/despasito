@@ -19,11 +19,9 @@ init:
 install:
     # Make sure pip is around
     
-  - echo $LD_LIBRARY_PATH
-  - echo $PYTHONPATH
-  
   - python -m ensurepip
   - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
+  - "SET PYTHONPATH=despasito\equations_of_state\saft\.libs"
   
     # Add conda-forge channel
   - conda config --add channels conda-forge
