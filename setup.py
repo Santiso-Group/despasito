@@ -55,6 +55,7 @@ setup(
     setup_requires=["numpy","scipy","deap","matplotlib"] + pytest_runner,
     ext_package=fpath,
     ext_modules = [ext1,ext2],
+    extras_require={'extra': ['pytest']},
 
     # Additional entries you may want simply uncomment the lines you want and fill in the data
     # url='http://www.my_package.com',  # Website
