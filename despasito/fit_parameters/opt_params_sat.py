@@ -1,20 +1,13 @@
 import numpy as np
-import calchelmholtz
-import readwrite_input
-import constants
-import calc_phase
 import time
 import json
 import timeit
 import copy
 from scipy import integrate
-#import cmath
 from scipy.misc import derivative
 import scipy.optimize as spo
 from scipy import interpolate
 from scipy.optimize import minimize_scalar
-#import Achain
-#import density_vector_test
 from multiprocessing import Pool
 import argparse
 
@@ -27,11 +20,11 @@ if args.threads != None:
 else:
     threadcount = 1
 
-with open('CH2OH-CO2_fit/SAFTgroup.json', 'r') as f:
+with open('NCH2-2CH3_bead_fit/SAFTgroup.json', 'r') as f:
     output = f.read()
 beadlibrary = json.loads(output)
 
-with open('CH2OH-CO2_fit/SAFTcross.json', 'r') as f:
+with open('NCH2-2CH3_bead_fit/SAFTcross.json', 'r') as f:
     output = f.read()
 crosslibrary = json.loads(output)
 
@@ -44,7 +37,7 @@ crosslibrary = json.loads(output)
 
 #    crosslibrary['CH3']['CH2OCH2'] = {'epsilon':500.0}
 
-input_file = open('CH2OH-CO2_fit/input.json', 'r').read()
+input_file = open('NCH2-2CH3_bead_fit/input.json', 'r').read()
 opt_input = json.loads(input_file)
 opt_params = opt_input[0]
 molecule_params = opt_input[1]
@@ -91,23 +84,15 @@ for i, param in enumerate(opt_params["fit_params"]):
             epsilonb = beadlibrary[bead_b]["epsilon"]
 
             beadparams0[i] = np.sqrt(epsilona * epsilonb) * np.sqrt((sigmaa**3) * (sigmab**3)) / (sigmaab**3)
-            bounds.append(tuple(opt_params[param + '_bounds']))
+            bounds.append(tuple(opt_params['epsilon_bounds']))
         elif param.startswith('epsilon') and param != 'epsilon':
             bounds.append(tuple(opt_params[param + '_bounds']))
             beadparams0[i] = 1000.0
         elif param.startswith('K'):
             bounds.append(tuple(opt_params[param + '_bounds']))
             beadparams0[i] = 100.0e-30
-        elif param.startswith('l_r'):
-            bounds.append(tuple(opt_params[param + '_bounds']))
-            bead_a = param.split('_')[2]
-            bead_b = opt_params["fit_bead"]
-            lra = beadlibrary[bead_a]["l_r"]
-            lrb = beadlibrary[bead_b]["l_r"]
-            beadparams0[i] = np.sqrt((lra - 3.0) * (lrb - 3.0)) + 3.0
 
-print(beadparams0)
-beadparams0 = np.array([200.0, 9.5077])
+#beadparams0=np.array([  5.50222444e+02,   2.77491856e+01,   4.69291064e-10,   3.31610857e-01])
 #t1=time.time()
 #test=compute_SAFT_obj(beadparams0,opt_params["fit_bead"],opt_params["fit_params"],molecule_params,beadlibrary,crosslibrary=crosslibrary,threads=threadcount)
 #t2=time.time()
@@ -116,7 +101,7 @@ beadparams0 = np.array([200.0, 9.5077])
 #print res
 #res = spo.differential_evolution(compute_SAFT_obj, bounds, args=(opt_params["fit_bead"],opt_params["fit_params"],molecule_params,beadlibrary,crosslibrary,threadcount), polish=False,disp=True)
 
-custombasinstep = BasinStep(np.array([220.86002155, 11.15625049]), stepsize=0.1)
+custombasinstep = BasinStep(np.array([550.0, 26.0, 4.0e-10, 0.45, 500.0, 150.0e-30, 550.0]), stepsize=0.1)
 
 res = spo.basinhopping(compute_SAFT_obj,
                        beadparams0,
@@ -129,7 +114,7 @@ res = spo.basinhopping(compute_SAFT_obj,
                            "method":
                            'nelder-mead',
                            "options": {
-                               'maxiter': 50
+                               'maxiter': 200
                            }
                        },
                        take_step=custombasinstep,
