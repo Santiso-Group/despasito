@@ -54,10 +54,10 @@ def test_calc_types(eos=eos_co2_h2o,Tlist=Tlist,xilist=xilist):
         
     assert calctest.all() == True
 
-def test_calc_Psat(T=Tlist[0],xi=[0.0,1.0],eos=eos_co2_h2o):
+#def test_calc_Psat(T=Tlist[0],xi=[0.0,1.0],eos=eos_co2_h2o):
 
-    Psat, rhov, rhol = calc.calc_Psat(T, xi, eos)
+#    Psat, rhov, rhol = calc.calc_Psat(T, xi, eos)
 
-    assert ([ Psat, rhov, rhol]==[]).all()
+#    assert ([ Psat, rhov, rhol]==[]).all()
 
     
