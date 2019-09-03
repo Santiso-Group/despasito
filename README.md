@@ -21,9 +21,15 @@ Installation
 ------------
 **NOTE:** DESPASITO is not yet available on pip or conda-forge, but it is a package that can be installed in your python environment.
 
-**Step 1:** Download the master branch from our github page as a zip file, or clone it with gitand save in your desired directory.
+**Prerequisites**:
+  * [NumPy](https://numpy.org): needed for running setup (distutils). Follow instructions outlined [here](https://docs.scipy.org/doc/numpy/user/install.html) for installation.
+  * [SetupTools](https://pypi.org/project/setuptools): needed for running setup (find_packages). Follow instructions outlined [here](https://pythonhosted.org/an_example_pypi_project/setuptools.html) for installation. 
 
-**Step 2:** Install with ``pip install .``
+**Step 1:** Install the prerequisites listed above.
+
+**Step 2:** Download the master branch from our github page as a zip file, or clone it with git via ``git clone https://github.com/jaclark5/despasito`` in your working directory.
+
+**Step 3:** Install DESPASITO locally from the working directory with ``pip install . --user`` or if pip is unavailable with ``python setup.py install --user``.
 
 Command Line Use
 ----------------
