@@ -37,11 +37,7 @@ addons:
     packages:
       - gfortran
 
-install:
-  # Extend waittime for travis, before it quits 
-  - travis_wait mvn install 
-  # Extend waittime to 30 min
-#  - travis_wait 30 mvn install
+install: 
 
     # Create test environment for package
   - python devtools/scripts/create_conda_env.py -n=test -p=$PYTHON_VER devtools/conda-envs/test_env.yaml
@@ -53,7 +49,9 @@ install:
 
 
 script:
-  - pytest -v --cov=despasito despasito/tests/
+  - travis_wait pytest -v --cov=despasito despasito/tests/
+    # Extend waittime to 30 min
+#  - travis_wait 30 pytest -v --cov=despasito despasito/tests/
   - cd docs
   - make html
   - cd ../
