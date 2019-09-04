@@ -11,6 +11,7 @@ from scipy.optimize import minimize_scalar
 from multiprocessing import Pool
 import argparse
 
+######## Will eventually move to main ##
 parser = argparse.ArgumentParser()
 parser.add_argument("-t", "--threads", type=int, help="set the number of theads used")
 args = parser.parse_args()
@@ -19,7 +20,9 @@ if args.threads != None:
     threadcount = args.threads
 else:
     threadcount = 1
+########
 
+####### Substitute with input_output ##
 with open('NCH2-2CH3_bead_fit/SAFTgroup.json', 'r') as f:
     output = f.read()
 beadlibrary = json.loads(output)
@@ -39,13 +42,17 @@ crosslibrary = json.loads(output)
 
 input_file = open('NCH2-2CH3_bead_fit/input.json', 'r').read()
 opt_input = json.loads(input_file)
+
 opt_params = opt_input[0]
 molecule_params = opt_input[1]
+### return opt_params molecule_params
 
-nmoleculetypes = np.size(list(molecule_params.keys()))
+### Process parameter fit input
 
-#read experimental data
+# Read experimental data
+# Molecule is the parameter being fit
 for molecule in list(molecule_params.keys()):
+    # data is the beadconfig, and the source of exp. data
     for data in list(molecule_params[molecule].keys()):
         if data != "beadconfig":
             molecule_params[molecule][data] = np.loadtxt(molecule_params[molecule][data], delimiter=',').T
@@ -58,11 +65,13 @@ for molecule in list(molecule_params.keys()):
             molecule_params[molecule]['xi'] = xi
             molecule_params[molecule]['beads'] = beads
             molecule_params[molecule]['nui'] = nui
+    # Note make eos object here, remove nned for next 5 lines, need sitenames?
             massi = np.zeros_like(xi)
             for i in range(np.size(xi)):
                 for k in range(np.size(beads)):
                     massi[i] += nui[i, k] * beadlibrary[beads[k]]["mass"]
             molecule_params[molecule]['massi'] = massi
+##### Here molecule_params will have an eos object and exp. data
 
 beadparams0 = np.zeros(np.size(opt_params["fit_params"]))
 bounds = []
@@ -79,11 +88,12 @@ for i, param in enumerate(opt_params["fit_params"]):
             bead_b = opt_params["fit_bead"]
             sigmaa = beadlibrary[bead_a]["sigma"]
             sigmab = beadlibrary[bead_b]["sigma"]
+
             sigmaab = (sigmaa + sigmab) / 2.0
             epsilona = beadlibrary[bead_a]["epsilon"]
             epsilonb = beadlibrary[bead_b]["epsilon"]
-
             beadparams0[i] = np.sqrt(epsilona * epsilonb) * np.sqrt((sigmaa**3) * (sigmab**3)) / (sigmaab**3)
+
             bounds.append(tuple(opt_params['epsilon_bounds']))
         elif param.startswith('epsilon') and param != 'epsilon':
             bounds.append(tuple(opt_params[param + '_bounds']))
@@ -92,15 +102,12 @@ for i, param in enumerate(opt_params["fit_params"]):
             bounds.append(tuple(opt_params[param + '_bounds']))
             beadparams0[i] = 100.0e-30
 
-#beadparams0=np.array([  5.50222444e+02,   2.77491856e+01,   4.69291064e-10,   3.31610857e-01])
-#t1=time.time()
-#test=compute_SAFT_obj(beadparams0,opt_params["fit_bead"],opt_params["fit_params"],molecule_params,beadlibrary,crosslibrary=crosslibrary,threads=threadcount)
-#t2=time.time()
-#print t2-t1
-#res = spo.minimize(compute_SAFT_obj, beadparams0, args=(opt_params["fit_bead"],opt_params["fit_params"],molecule_params,beadlibrary,threadcount), method='nelder-mead',options={'maxiter': 1000})
-#print res
-#res = spo.differential_evolution(compute_SAFT_obj, bounds, args=(opt_params["fit_bead"],opt_params["fit_params"],molecule_params,beadlibrary,crosslibrary,threadcount), polish=False,disp=True)
+##### Here bounds and beadparams0 (initial guess) is defined from opt_params and beadlibrary
+   # Change opt_params {fit_bead, fit params, beadparams0, bounds}
 
+######### End input/output
+
+####### Fit parameters: need opt_params{ now with beadparams0, bounds}, molecule params
 custombasinstep = BasinStep(np.array([550.0, 26.0, 4.0e-10, 0.45, 500.0, 150.0e-30, 550.0]), stepsize=0.1)
 
 res = spo.basinhopping(compute_SAFT_obj,
@@ -109,13 +116,6 @@ res = spo.basinhopping(compute_SAFT_obj,
                        T=0.2,
                        stepsize=0.1,
                        minimizer_kwargs={
-                           "args": (opt_params["fit_bead"], opt_params["fit_params"], molecule_params, beadlibrary,
-                                    bounds, crosslibrary, threadcount),
-                           "method":
-                           'nelder-mead',
-                           "options": {
-                               'maxiter': 200
-                           }
-                       },
+                           "args": (opt_params["fit_bead"], opt_params["fit_params"], molecule_params, beadlibrary, bounds, crosslibrary, threadcount),"method": 'nelder-mead', "options": {'maxiter': 200}},
                        take_step=custombasinstep,
                        disp=True)
