@@ -42,7 +42,7 @@ def test_thermo_import():
 def test_phase_xiT(eos=eos_co2_h2o,Tlist=Tlist,xilist=xilist):
 
     try:
-        thermo.thermo("phase_xiT",eos,{"Tlist":Tlist,"xilist":xilist})
+        thermo.thermo(eos,{"calculation_type":"phase_xiT","Tlist":Tlist,"xilist":xilist})
     except:
         flag = False
     else:
@@ -53,7 +53,7 @@ def test_phase_xiT(eos=eos_co2_h2o,Tlist=Tlist,xilist=xilist):
 def test_phase_yiT(eos=eos_co2_h2o,Tlist=Tlist,yilist=yilist):
 
     try:
-        thermo.thermo("phase_yiT",eos,{"Tlist":Tlist,"yilist":yilist})
+        thermo.thermo(eos,{"calculation_type":"phase_yiT","Tlist":Tlist,"yilist":yilist})
     except:
         flag = False
     else:
@@ -64,7 +64,7 @@ def test_phase_yiT(eos=eos_co2_h2o,Tlist=Tlist,yilist=yilist):
 def test_sat_props(eos=eos_co2_h2o,Tlist=Tlist):
 
     try:
-        thermo.thermo("sat_props",eos,{"Tlist":Tlist})
+        thermo.thermo(eos,{"calculation_type":"sat_props","Tlist":Tlist})
     except:
         flag = False
     else:
@@ -75,7 +75,7 @@ def test_sat_props(eos=eos_co2_h2o,Tlist=Tlist):
 def test_liquid_properties(eos=eos_co2_h2o,Tlist=Tlist,xilist=xilist):
 
     try:
-        thermo.thermo("liquid_properties",eos,{"Tlist":Tlist,"xilist":xilist})
+        thermo.thermo(eos,{"calculation_type":"liquid_properties","Tlist":Tlist,"xilist":xilist})
     except:
         flag = False
     else:
@@ -85,7 +85,7 @@ def test_liquid_properties(eos=eos_co2_h2o,Tlist=Tlist,xilist=xilist):
 def test_vapor_properties(eos=eos_co2_h2o,Tlist=Tlist,yilist=yilist):
 
     try:
-        thermo.thermo("vapor_properties",eos,{"Tlist":Tlist,"yilist":yilist})
+        thermo.thermo(eos,{"calculation_type":"vapor_properties","Tlist":Tlist,"yilist":yilist})
     except:
         flag = False
     else:

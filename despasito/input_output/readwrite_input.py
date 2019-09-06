@@ -30,13 +30,20 @@ def process_commandline(args):
 
     Returns
     -------
-    calc_type : str
-        String of supported thermodynamic calculation type in this package
     eos_dict : dict
         Dictionary of bead definitions and parameters used to later initialize eos object
     thermo_dict : dict
-        Dictionary of instructions for thermodynamic calculations 
+        Dictionary of instructions for thermodynamic calculations or parameter fitting
     """
+
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument("-t", "--threads", type=int, help="set the number of theads used")
+    # args = parser.parse_args()
+    # 
+    # if args.threads != None:
+    #     threadcount = args.threads
+    # else:
+    #     threadcount = 1
 
     kwargs = {}
     if len(args) > 2:
@@ -49,9 +56,9 @@ def process_commandline(args):
             kwargs['density_fname'] = args[ind+1]
     input_fname = args[1]
 
-    calctype, eos_dict, thermo_dict = extract_calc_data(input_fname,**kwargs)
+    eos_dict, thermo_dict = extract_calc_data(input_fname,**kwargs)
     
-    return calctype, eos_dict, thermo_dict 
+    return eos_dict, thermo_dict 
 
 ######################################################################
 #                                                                    #
@@ -74,25 +81,16 @@ def extract_calc_data(input_fname,density_fname='input_density_params.txt'):
 
     Returns
     -------
-    calc_type : str
-        String of supported thermodynamic calculation type in this package
     eos_dict : dict
         Dictionary of bead definitions and parameters used to later initialize eos object
     thermo_dict : dict
-        Dictionary of instructions for thermodynamic calculations 
+        Dictionary of instructions for thermodynamic calculations or parameter fitting
     """
 
     ## Extract dictionary from input file
     input_file = open(input_fname, 'r').read()
     input_dict = json.loads(input_file)
 
-    ## Check for type of calculation
-    try:
-        calctype = input_dict['calculation_type']
-    except:
-        calctype = 'none'
-        raise Exception('No calculation type specified')
-    
     ## Make bead data dictionary for EOS
     #process input file
     xi, beads, nui = process_bead_data(input_dict['beadconfig'])
@@ -121,21 +119,22 @@ def extract_calc_data(input_fname,density_fname='input_density_params.txt'):
     ## Make dictionary of data needed for thermodynamic calculation
     thermo_dict = {}
     # Extract relevant system state inputs
-    EOS_dict_keys = ['beadconfig', 'SAFTgroup', 'SAFTcross']
+    EOS_dict_keys = ['beadconfig', 'SAFTgroup', 'SAFTcross','association_site_names']
     for key, value in input_dict.items():
         if key not in EOS_dict_keys:
             thermo_dict[key] = value
-    tmp = ", ".join(thermo_dict.keys())
-    print("Note: The following thermo calculation parameters have been provided: %s\n" % tmp)
 
-    try:
-        rho_dic = file2paramdict(density_fname)
-        thermo_dict['rhodict'] = rho_dic
-        print('Note: Density plot parameters have been accepted from '+density_fname)
-    except:
-        pass
+    if "opt_params" not in list(thermo_dict.keys()):
+        print("Note: The following thermo calculation parameters have been provided: %s\n" % ", ".join(thermo_dict.keys()))
+    else: # parameter fitting
+        thermo_dict = process_param_fit_inputs(thermo_dict)
+        for key, value in thermo_dict.items():
+            tmp = ""
+            if (type(value) == dict and "datatype" in list(value.keys())):
+                tmp += " %s (%s)," % (key,value["datatype"])
+        print("Note: The bead, %s, will have the parameters %s, fit using the following data:\n %s" % (thermo_dict["opt_params"]["fit_bead"],thermo_dict["opt_params"]["fit_params"],tmp))
 
-    return calctype, eos_dict, thermo_dict
+    return eos_dict, thermo_dict
 
 ######################################################################
 #                                                                    #
@@ -279,4 +278,141 @@ def process_bead_data(bead_data):
                 if bead_data[i][1][j][0] == beads[k]:
                     nui[i, k] = bead_data[i][1][j][1]
     return xi, beads, nui
+
+######################################################################
+#                                                                    #
+#                  Parameter Fitting Data                            #
+#                                                                    #
+######################################################################
+def process_param_fit_inputs(thermo_dict):
+
+    """
+    Process parameter fitting information and data formatting
+
+    Parameters
+    ----------
+    thermo_dict : dict
+        Dictionary of instructions for thermodynamic calculations or parameter fitting. This dictionary is directly from the input file.
+
+    Returns
+    -------
+    new_thermo_dict : dict
+        Dictionary of instructions for thermodynamic calculations or parameter fitting. This dictionary is reformatted and includes imported data.
+    """
+    new_thermo_dict = {"exp_data":{}}
+    for key, value in thermo_dict.items():
+        if key == "opt_params": 
+            new_opt_params = {}
+            keys_del = []
+            new_opt_params["bounds"] = [[0,1e+4] for x in range(len(value["fit_params"]))]
+            for key2, value2 in value.items():
+                if key2 == "fit_bead":
+                    new_opt_params["fit_bead"] = value["fit_bead"]
+                elif key2 == "fit_params":
+                    new_opt_params["fit_params"] = value["fit_params"]
+                elif "bounds" in key2:
+                    tmp  = key2.replace("_bounds","")
+                    ind = value["fit_params"].index(tmp)
+                    new_opt_params["bounds"][ind] = value2
+                else:
+                    continue
+                keys_del.append(key2)
+            for key2 in keys_del:
+                value.pop(key2,None)
+            print("Note: opt_params keys: %s, were not used." % ", ".join(list(value.keys())))
+            new_thermo_dict[key] = new_opt_params
+        elif (type(value) == dict and "datatype" in list(value.keys())):
+            new_thermo_dict["exp_data"][key] = process_exp_data(value)
+        elif key == "beadparams0":
+            new_thermo_dict[key] = value
+        else:
+            new_thermo_dict[key] = value
+
+    test1 = set(["exp_data","opt_params"]).issubset(list(new_thermo_dict.keys()))
+    test2 = set(["fit_bead","fit_params"]).issubset(list(new_thermo_dict["opt_params"].keys()))
+    if not all([test1,test2]):
+        raise ValueError("An exp_data and opt_params dictionary with, fit_beads and fit_params must be given")
+
+    return new_thermo_dict
+
+######################################################################
+#                                                                    #
+#                  Process Experimental Data                         #
+#                                                                    #
+######################################################################
+def process_exp_data(exp_data_dict):
+
+    """
+    Process raw experimental data dictionary into one that can be used by the parameter fitting module. Note that there should be one dictionary per data set. All data is extracted from data files.
+
+    Parameters
+    ----------
+    exp_data_dict : dict
+        Raw dictionary of experimental data information, there is one dictionary per set
+
+    Returns
+    -------
+    exp_data : dict
+        Reformatted dictionary of experimental data
+    """
+
+    exp_data = {}
+    for key, value in exp_data_dict.items():
+        if key == "datatype":
+            exp_data["name"] = value
+        elif key == "file":
+            file_dict = process_exp_data_file(value)
+            exp_data.update(file_dict)
+        else:
+            exp_data[key] = value
+
+    return exp_data
+
+######################################################################
+#                                                                    #
+#                  Process Experimental Data                         #
+#                                                                    #
+######################################################################
+def process_exp_data_file(fname):
+
+    """
+    Import data file and convert columns into dictionary entries, where the header is the dictionary key. The top line is skipped, and column headers are the second line. Note that column headers should be thermo properties (e.g. T, P, x1, x2, y1, y2) without suffixes. Mole fractions x1, x2, ... should be in the same order as in the beadconfig line of the input file. No mole fractions should be left out.
+
+    Parameters
+    ----------
+    fname : str
+        File name or path to experimental data file
+
+    Returns
+    -------
+    file_dict : dict
+        Dictionary of experimental data from file.
+    """
+
+    data = np.genfromtxt(fname, delimiter=',',names=True,skip_header=1).T
+    file_dict = {name:data[name] for name in data.dtype.names}
+    
+    # Sort through properties
+    key_del = []
+    xi, yi, zi = [[],[],[]]
+    for key, value in file_dict.items():
+       # Assuming mole fractions are listed starting at x1 and continue in order
+       if key.startswith("x"): 
+           xi.append(value)
+       elif key.startswith("y"):
+           yi.append(value)
+       elif key.startswith("z"):
+           zi.append(value)
+       else:
+           continue
+       key_del.append(key)
+
+    for key in key_del:
+        file_dict.pop(key,None)
+
+    if xi: file_dict["xi"] = np.array([np.array(x) for x in xi]).T
+    if yi: file_dict["yi"] = np.array([np.array(y) for y in yi]).T
+    if zi: file_dict["zi"] = np.array([np.array(z) for z in zi]).T
+
+    return file_dict
 

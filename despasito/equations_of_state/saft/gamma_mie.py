@@ -77,6 +77,7 @@ class saft_gamma_mie(EOStemplate):
 
         epsilonkl, sigmakl, l_akl, l_rkl, Ckl = funcs.calc_interaction_matrices(self._beads, self._beadlibrary, crosslibrary=crosslibrary)
 
+        self._crosslibrary = crosslibrary
         self._epsilonkl = epsilonkl
         self._sigmakl = sigmakl
         self._l_akl = l_akl
@@ -92,7 +93,7 @@ class saft_gamma_mie(EOStemplate):
         epsilonHB, Kklab, nk = funcs.calc_assoc_matrices(self._beads,
                                                          self._beadlibrary,
                                                          sitenames=self._sitenames,
-                                                         crosslibrary=crosslibrary)
+                                                         crosslibrary=self._crosslibrary)
         self._epsilonHB = epsilonHB
         self._Kklab = Kklab
         self._nk = nk
@@ -256,6 +257,129 @@ class saft_gamma_mie(EOStemplate):
         # etax, assuming a maximum packing fraction specified by maxpack
         maxrho = maxpack * 6.0 / (self._Cmol2seg * np.pi * np.sum(self._xskl * (self._dkl**3))) / constants.Nav
         return maxrho
+
+    def param_guess(self,fit_params):
+        """
+        Generate initial guesses for the parameters to be fit.
+
+        Parameters
+        ----------
+        fit_params : list[str]
+        A list of parameters to be fit. See EOS mentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
+
+        Returns
+        -------
+        param_initial_guesses : numpy.ndarray, 
+            An array of initial guesses for parameters, these will be optimized throughout the process.
+    """
+        l_fitparams = len(fit_params)
+        if l_fitparams == 1:
+            param_initial_guesses = np.array([l_fitparams])
+        else:
+            param_initial_guesses = np.zeros(1,l_fitparams)
+
+        for i,param in enumerate(fit_params):
+            if (param == "epsilon" or param.startswith('epsilon_')):
+                param_initial_guesses[i] = 200.0
+            elif param.startswith('epsilon'):
+                param_initial_guesses[i] = 1000.0
+            elif param.startswith('l_a'):
+                param_initial_guesses[i] = 6.0
+            elif param.startswith('l_r'):
+                param_initial_guesses[i] = 12.0
+            elif param.startswith('K'):
+                param_initial_guesses[i] = 100.0e-30
+            elif param.startswith('Sk'):
+                param_initial_guesses[i] = 0.5
+            else:
+                raise ValueError("The parameter name %s does not fall under any of the catagories, epsilon, epsilon (assoc), l_a, l_r, K (assoc), or Sk") 
+
+        return param_initial_guesses
+
+    def update_parameters(self, param_name, bead_names, param_value):
+        r"""
+        Update a single parameter value to _beadlibrary or _crosslibrary attributes during parameter fitting process. 
+
+        To refresh those parameters that are dependent on these libraries, use method "parameter refresh".
+        
+        Parameters
+        ----------
+        param_name : str
+            name of parameters being updated
+        bead_names : list
+            List of bead names to be changed. For a self interaction parameter, the length will be 1, for a cross interaction parameter, the length will be two.
+        param_value : float
+            Value of parameter
+        """
+        param_types = ["epsilon", "sigma", "l_r", "l_a", "Sk", "K"]
+
+        if len(bead_names) > 2:
+            raise ValueError("The bead names %s were given, but only a maximum of 2 are permitted." % (", ".join(bead_names)))
+        if not set(bead_names).issubset(self._beads):
+            raise ValueError("The bead names %s were given, but they are not in the allowed list: " % (", ".join(bead_names),", ".join(self._beads)))
+
+        # Non bonded parameters
+        if (param_name in ["epsilon", "sigma", "l_r", "l_a", "Sk"]):
+            # Self interaction parameter
+            if len(bead_names) == 1:
+                self._beadlibrary[bead_names[0]][param_name] = param_value
+            # Cross interaction parameter
+            elif len(bead_names) == 2:
+                if bead_names[0] in list(self._crosslibrary[bead_names[1]].keys()):
+                    self._crosslibrary[bead_names[1]][bead_names[0]][param_name] = param_value
+                else:
+                    try:
+                        self._crosslibrary[bead_names[0]][bead_names[1]][param_name] = param_value
+                    except:
+                        self._crosslibrary[bead_names[0]] = {bead_names[1]:{param_name:param_value}}
+
+        # Association Sites
+        elif any([param_name.startswith('epsilon'), param_name.startswith('K')]):
+
+            # Ensure sitenames are valid and on list
+            if tmp[0] == True: tmp_name_full = param_name.replace("epsilon","")
+            elif tmp[1] == True: tmp_name_full = param_name.replace("K","")
+            flag = 0
+
+            for site1 in self._sitenames:
+                if tmp_name_full.startswith(site1):
+                    tmp_name = tmp_name_full.replace(site1,"")
+                    for site2 in self._sitenames:
+                        if tmp_name == site2:
+                            flag = 1
+                            break
+                    if flag == 1:
+                        break
+            if flag == 0:
+                raise ValueError("site_names should be two different sites in the list: %s. You gave: %s" % (tmp_name_full,", ".join(sitenames=self._sitenames)))
+
+            # Self interaction parameter
+            if len(bead_names) == 1:
+                self._beadlibrary[bead_names[0]][param_name+"".join(site_names)] = param_value
+            # Cross interaction parameter
+            elif len(bead_names) == 2:
+                if bead_names[0] in list(self._crosslibrary[bead_names[1]].keys()):
+                    self._crosslibrary[bead_names[1]][bead_names[0]][param_name+"".join(site_names)] = param_value
+                else:
+                    self._crosslibrary[bead_names[0]][bead_names[1]][param_name+"".join(site_names)] = param_value                        
+
+        else:
+            raise ValueError("The parameter name %s is not found in the allowed parameter types: %s" % (param_name,", ".join(param_types)))
+
+    def parameter_refresh(self):
+        r""" 
+        To refresh those parameters that are dependent on _beadlibrary and _crosslibrary attributes. This **must** be run after all parameters from update_parameters method have been changed.
+        """
+        # Update Non bonded matrices
+        self._epsilonkl, self._sigmakl, self._l_akl, self._l_rkl, self._Ckl = funcs.calc_interaction_matrices(self._beads, self._beadlibrary, crosslibrary=self._crosslibrary)
+
+        # Update Association site matrices
+        self._epsilonHB, self._Kklab, self._nk = funcs.calc_assoc_matrices(self._beads,self._beadlibrary,sitenames=self._sitenames,crosslibrary=self._crosslibrary)
+
+        # Update temperature dependent variables
+        if np.isnan(self.T) == False:
+            self._temp_dependent_variables(self.T)
+
 
     def __str__(self):
 

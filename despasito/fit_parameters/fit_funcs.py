@@ -1,28 +1,67 @@
 
+import os
 import numpy as np
-import time
-import json
-import timeit
-import copy
-from scipy import integrate
-from scipy.misc import derivative
-import scipy.optimize as spo
-from scipy import interpolate
-from scipy.optimize import minimize_scalar
-from multiprocessing import Pool
-import argparse
 
 from despasito.thermodynamics import calc
 
+def reformat_ouput(cluster):
+    """
+    Takes a list of lists that combine lists and floats and reformats it into a 2D numpy array.
+ 
+    Parameters
+    ----------
+    cluster : list[list[list/floats]]
+        A list of lists, where the inner list is made up of lists and floats
+
+    Returns
+    -------
+    matrix : numpy.ndarray
+        A 2D matrix
+    len_cluster : list
+        a list of lengths for each of the columns (whether 1 for float, or len(list))
+    """
+
+    # Arrange data
+
+    type_cluster = [type(x) for x in cluster[0]]
+    if (type_cluster not in [list,np.ndarray,tuple]).all():
+        matrix = np.array(cluster).T
+    else:
+        len_cluster = []
+        for i,typ in enumerate(type_cluster):
+            if typ in [list,np.ndarray,tuple]:
+                len_cluster.append(len(cluster[i]))
+            else:
+                len_cluster.append(1)
+        matrix_tmp = np.zeros([len(cluster), sum(len_cluster)])
+
+        for i, val in enumerate(cluster):
+            ind = 0
+            for j,l in enumerate(len_cluster):
+                if l == 1:
+                    matrix_tmp[i, ind] = val[j]
+                else:
+                    matrix_tmp[i, ind:ind+l+1] = val[j]
+                ind += l
+        matrix = np.array(matrix_tmp).T
+
+    return matrix, len_cluster
+
 class BasinStep(object):
     """
-    Attributes:
-    -----------
+    Custom basin step.
 
+    Attributes
+    ----------
     stepmag : list
         List of step magnitudes
     stepsize : float
         default 0.05
+
+    Returns
+    -------
+    basinstep : numpy.ndarray
+        Suggested basin steps used in basinhopping algorithm
     """
     def __init__(self, stepmag, stepsize=0.05):
         self._stepsize = stepsize
@@ -49,160 +88,71 @@ class BasinStep(object):
             print(x, j)
         return x
 
+def compute_SAFT_obj(beadparams, opt_params, eos, exp_dict, output_file="fit_parameters.txt", threads=1):
+    """
+    Fit defined parameters for equation of state object with given experimental data. Each set of experimental data is converted to an object with the build in ability to evaluate its part of objective function. 
+    To add another type of supported experimental data, add a class to the fit_classes.py file.
 
-def print_fun(x, f, accepted):
-    print('test')
-    print(("at minimum %.4f accepted %d" % (f, int(accepted))))
+    Parameters
+    ----------
+    beadparams0 : numpy.ndarray, 
+        An array of initial guesses for parameters, these will be optimized throughout the process.
+    opt_params : dict
+        A dictionary of the parameter fitting information.
+        * fit_bead : str, Name of the bead (i.e. group/segment) whose 
+parars are being fit
+        * fit_params : list[str], A list of parameters to be fit. See EOS mentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
+        * bounds 
+    eos : obj
+        Equation of state output that writes pressure, max density, and chemical potential
+    exp_dict : dict
+        Dictionary of experimental data objects.
+    output_file : str
+        Output file name
+    threads : int, Optional, default: 1
+        Number of threads used in calculation
 
+    Returns
+    -------
+        Output file saved in current working directory
+    """
 
-def calc_phase_wrapper(calctype,T,xi,eos,rhodict={}):
-    if calctype == "sat_props":
-        try:
-            Psat, rholsat, rhovsat = calc.calc_Psat(T, xi, eos, rhodict=rhodict)
-        except:
-            Psat = 100000.0
-            rholsat = 100000.0
-            rhovsat = 100000.0
-        return Psat, rholsat, rhovsat
-
-    elif calctype == "liquid_properties":
-        try:
-            rhol, flagl = calc.calc_rhol(101325.0, T, xi, eos, rhodict=rhodict)
-        except:
-            rhol = 100000.0
-        print(rhol)
-        return 100000.0, rhol, 100000.0
-
-    elif calctype == "phase_xiT":
-        try:
-            P, yi = calc.calc_xT_phase(xi, T, eos, rhodict=rhodict)
-        except:
-            P = 10000000.0
-            yi = np.ones_like(xi) * 100.0
-        return P, yi
-
-def compute_SAFT_obj(beadparams,
-                     fit_bead,
-                     fit_params,
-                     molecule_params,
-                     beadlibrary,
-                     bounds,
-                     crosslibrary={},
-                     threads=1):
-
-    for i, boundval in enumerate(bounds):
+    print(output_file, threads)
+    for i, boundval in enumerate(opt_params['bounds']):
         if (beadparams[i] > boundval[1]) or (beadparams[i] < boundval[0]):
-            return 10000.0 # for sat, liquid, vapor properties
-#            return 100000000.0 # for calc_phase_xiT
+            beadparams[i] = np.mean(boundval)
 
-    #update beadlibrary with test paramters
-    for i, param in enumerate(fit_params):
-        if param.startswith('epsilon_'):
-            if fit_bead in list(crosslibrary[param.split('_')[1]].keys()):
-                crosslibrary[param.split('_')[1]][fit_bead].update({'epsilon': beadparams[i]})
-            else:
-                crosslibrary[param.split('_')[1]][fit_bead] = {'epsilon': beadparams[i]}
-        elif param.startswith('epsilon') and param != 'epsilon':
-            #print param.split('_')[0],beadparams[i]
-            #print param.split('_')[1]
-            if fit_bead in list(crosslibrary[param.split('_')[1]].keys()):
-                crosslibrary[param.split('_')[1]][fit_bead].update({param.split('_')[0]: beadparams[i]})
-            else:
-                crosslibrary[param.split('_')[1]][fit_bead] = {param.split('_')[0]: beadparams[i]}
-        elif param.startswith('K'):
-            if fit_bead in list(crosslibrary[param.split('_')[1]].keys()):
-                crosslibrary[param.split('_')[1]][fit_bead].update({param.split('_')[0]: beadparams[i]})
-            else:
-                crosslibrary[param.split('_')[1]][fit_bead] = {param.split('_')[0]: beadparams[i]}
-        elif param.startswith('l_r') and param != 'l_r':
-            if fit_bead in list(crosslibrary[param.split('_')[2]].keys()):
-                crosslibrary[param.split('_')[2]][fit_bead].update({'l_r': beadparams[i]})
-            else:
-                crosslibrary[param.split('_')[2]][fit_bead] = {'l_r': beadparams[i]}
+    # Update beadlibrary with test paramters
+    for i, param in enumerate(opt_params['fit_params']):
+        fit_params_list = param.split("_")
+        if len(fit_params_list) == 1:
+            eos.update_parameters(fit_params_list[0], [opt_params['fit_bead']], beadparams[i])
+        elif len(fit_params_list) == 2:
+            eos.update_parameters(fit_params_list[0], [opt_params['fit_bead'], fit_params_list[1]], beadparams[i])
         else:
-            beadlibrary[fit_bead][param] = beadparams[i]
+            raise ValueError("Parameters for only one bead are allowed to be fit at one time. Please only list one bead type in your fit parameter name.")
+    eos.parameter_refresh()
 
-    #generate input list
-    input_list = []
-    for molecule in molecule_params:
-        # calctype Saturation Properties
-        for T in molecule_params[molecule]["ePsat"][0]:
-            rhodict = {"minrhofrac":(1.0 / 80000.0), "rhoinc":10.0, "vspacemax":1.0E-4}
-            input_list.append((T, molecule_params[molecule]["xi"], eos, rhodict, "sat_props"))
-        # calctype liquid_properties
-        for T in molecule_params[molecule]["erhol"][0]:
-            rhodict = {"minrhofrac":(1.0 / 60000.0), "rhoinc":10.0, "vspacemax":1.0E-4}
-            input_list.append((T, molecule_params[molecule]["xi"], eos, rhodict, "liquid_properties"))
-        # calctype phase_xiT
-        for i, T in enumerate(molecule_params[molecule]["TLVE"][0]):
-            rhodict = {"minrhofrac":(1.0 / 300000.0), "rhoinc":10.0, "vspacemax":1.0E-4}
-            input_list.append((np.array([molecule_params[molecule]["TLVE"][3][i],
-                           molecule_params[molecule]["TLVE"][4][i]]), T, eos, rhodict, "phase_xiT"))
-
-    #Tlist_rhol=exp_rhol[0]
-    #Tlist_Psat=exp_Psat[0]
-    #Tlist=np.append(Tlist_rhol,Tlist_Psat)
-    #Psat=np.zeros_like(Tlist_Psat)
-    #rholsat=np.zeros_like(Tlist_rhol)
-
-    if __name__ == '__main__':
-        p = Pool(threads)
-        #input_list = [(T,xi,massi,nui,beads,beadlibrary,(1.0/30000.0),10.0,1.0E-4,1000.0*101325.0) for T in Tlist]
-        phase_list = p.map(calc_phase_wrapper, input_list, 1)
-        p.close()
-        p.join()
-
-    # Arrange data
-    type_phase_list = [type(x) for x in phase_list[0]]
-    if (type_phase_list not in [list,np.ndarray]).all():
-        phase_list = np.array(phase_list).T
-    else:
-        len_phase_list = []
-        for i,typ in enumerate(type_phase_list):
-            if typ in [list,np.ndarray]:
-                len_phase_list.append(len(phase_list[i]))
-            else:
-                len_phase_list.append(1)
-        phase_array = np.zeros([len(phase_list), sum(len_phase_list)])
-      
-        for i, val in enumerate(phase_list):
-            ind = 0
-            for j,l in enumerate(len_phase_list):
-                if l == 1
-                    phase_array[i, ind] = val[j] 
-                else:
-                    phase_array[i, ind:ind+l+1] = val[j]
-                ind += l
-        phase_list = np.array(phase_array).T
-                
     # Compute obj_function
-    obj_function = 0.0
-    index = 0
+    obj_function = []
+    for key,data_obj in exp_dict.items():
+        try:
+            obj_function.append(data_obj.objective(eos,threads=threads))
+        except:
+            raise ValueError("Failed to evaluate objective function for %s of type %s." % (key,data_obj.name))
 
-    # Dataset_array
-    dataset_array = ["ePsat", "erhol"]
-    dataset_array = ["TLVE"]
+    # Write out parameters and objective functions for each dataset
+    if os.path.isfile(output_file):
+        with open(output_file,"w") as f:
+            tmp = [beadparams.tolist() + obj_function + [sum(obj_function)]]
+            tmp = [str(x) for x in tmp]
+            f.write(", ".join(tmp))
+    else:
+        with open(output_file,"w") as f:
+            f.write(", ").join(opt_params['fit_params']+list(exp_dict.keys())+["total obj"])
+            tmp = [beadparams.tolist() + obj_function + [sum(obj_function)]]
+            tmp = [str(x) for x in tmp]
+            f.write(", ".join(tmp))
 
-    #loop over each molecule with data
-    for molecule in molecule_params:
-
-        #compare for Psat and rhol i=0 for Psat and i=1 for rhol
-        for i, dataset in enumerate(dataset_array):
-            if dataset in ["ePsat", "erhol"]:
-                if dataset == "ePsat": ind = 0
-                elif dataset == "erhol": ind = 1
-                obj_function += np.sum(((phase_list[ind, index:(index+np.size(molecule_params[molecule][dataset][1]))]-molecule_params[molecule][dataset][1]) / molecule_params[molecule][dataset][1])**2)
-            elif dataset == "TLVE":
-                obj_function += np.sum(((phase_list[0][index:(index+np.size(molecule_params[molecule][dataset][5]))] - molecule_params[molecule][dataset][5]) / molecule_params[molecule][dataset][5])**2)
-                # This fitting assumes a binary fluid, so only the composition of the first component is used in the objective function
-                obj_function += np.sum(((phase_list[1][index:(index+np.size(molecule_params[molecule][dataset][5]))] - molecule_params[molecule][dataset][1]))**2)
-
-            index += np.size(molecule_params[molecule][dataset][1])
-
-    print(phase_list)
-    print(beadparams)
-    print(obj_function)
-    #for i in range(np.size(Psat)):
-    #    print exp_P_sat[0][i],Psat[i],exp_P_sat[1][i],rholsat[i],exp_rho_liq[1][i]
     return obj_function
 

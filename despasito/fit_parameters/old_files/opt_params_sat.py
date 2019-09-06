@@ -71,7 +71,7 @@ for molecule in list(molecule_params.keys()):
                 for k in range(np.size(beads)):
                     massi[i] += nui[i, k] * beadlibrary[beads[k]]["mass"]
             molecule_params[molecule]['massi'] = massi
-##### Here molecule_params will have an eos object and exp. data
+##### Here produce an eos object and exp. data dict
 
 beadparams0 = np.zeros(np.size(opt_params["fit_params"]))
 bounds = []
