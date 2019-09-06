@@ -26,6 +26,7 @@ The second facet is parameterization, not only of the equation of state (EOS) bu
    input_output
    eos
    thermo
+   fitparams
 
 Indices and tables
 ==================

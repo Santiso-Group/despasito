@@ -1,0 +1,17 @@
+{
+    "beadconfig": [[0.5, [["CO2", 1]]],[0.5, [["CH3", 1], ["CH2OH", 1]]]],
+    "SAFTgroup": "SAFTgroup.json",
+    "SAFTcross": "SAFTcross.json",
+    "association_site_names": ["H","e1","a1"],
+    "opt_params": {
+        "fit_bead" : "CH2OH",
+        "fit_params": ["epsilon_CO2"],
+        "epsilon_cross" : "true",
+        "epsilon_CO2_bounds" : [290.0, 310.0]
+    },
+    "CO2-ethanol": {
+        "datatype": "TLVE",
+        "calctype": "phase_xiT",
+        "file": "CO2-ethanol_TLVE.csv"
+    }        
+}

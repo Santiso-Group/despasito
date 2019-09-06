@@ -22,9 +22,13 @@ def reformat_ouput(cluster):
     """
 
     # Arrange data
+    type_cluster = [type(x) for x in cluster]
 
-    type_cluster = [type(x) for x in cluster[0]]
-    if (type_cluster not in [list,np.ndarray,tuple]).all():
+    print(type_cluster not in [list,np.ndarray,tuple])
+
+    if len(type_cluster) == 1 and type_cluster not in [list,np.ndarray,tuple]:
+        matrix = np.array(cluster).T
+    elif all(type_cluster not in [list,np.ndarray,tuple]):
         matrix = np.array(cluster).T
     else:
         len_cluster = []
