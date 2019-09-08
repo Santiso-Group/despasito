@@ -145,17 +145,14 @@ class Data(ExpDataTemplate):
         #p.close()
         #p.join()
 
-        # Reformat array of results
-        phase_list, len_list = ff.reformat_ouput(phase_list) 
-
         # objective function
+        phase_list, len_cluster = ff.reformat_ouput(phase_list)
+   
         obj_value = np.sum((((phase_list[0] - self.P) / self.P)**2)*self.weights)
         if self.calctype == "phase_xiT":
-            for i in range(1,len_list[1]):
-                obj_value += np.sum((((phase_list[1+i] - self.yi[i]))**2)*self.weights)
+            obj_value += np.sum((((phase_list[1:] - self.yi)/self.yi)**2)*self.weights)
         elif self.calctype == "phase_yiT":
-            for i in range(1,len_list[1]):
-                obj_value += np.sum((((phase_list[1+i] - self.xi[i]))**2)*self.weights)
+            obj_value += np.sum((((phase_list[1:] - self.xi)/self.xi)**2)*self.weights)
 
         return obj_value
 

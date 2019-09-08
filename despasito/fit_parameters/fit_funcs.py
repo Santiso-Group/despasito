@@ -28,8 +28,10 @@ def reformat_ouput(cluster):
 
     if len(type_cluster) == 1 and type_cluster not in [list,np.ndarray,tuple]:
         matrix = np.array(cluster).T
-    elif all(type_cluster not in [list,np.ndarray,tuple]):
+        len_cluster = [1. in x in range(len(type_cluster))]
+    elif type_cluster not in [list,np.ndarray,tuple]:
         matrix = np.array(cluster).T
+        len_cluster = [1. for x in range(len(type_cluster))]
     else:
         len_cluster = []
         for i,typ in enumerate(type_cluster):
@@ -153,7 +155,7 @@ parars are being fit
             f.write(", ".join(tmp))
     else:
         with open(output_file,"w") as f:
-            f.write(", ").join(opt_params['fit_params']+list(exp_dict.keys())+["total obj"])
+            f.write(", ".join(opt_params['fit_params']+list(exp_dict.keys())+["total obj"]))
             tmp = [beadparams.tolist() + obj_function + [sum(obj_function)]]
             tmp = [str(x) for x in tmp]
             f.write(", ".join(tmp))
