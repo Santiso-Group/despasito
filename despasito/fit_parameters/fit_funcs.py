@@ -142,16 +142,16 @@ parars are being fit
 
     # Write out parameters and objective functions for each dataset
     if os.path.isfile(output_file):
-        with open(output_file,"w") as f:
+        with open(output_file,"a") as f:
             tmp = [beadparams.tolist() + obj_function + [sum(obj_function)]]
             tmp = [str(x) for x in tmp]
-            f.write(", ".join(tmp))
+            f.write(", ".join(tmp)+"\n")
     else:
         with open(output_file,"w") as f:
-            f.write(", ".join(opt_params['fit_params']+list(exp_dict.keys())+["total obj"]))
+            f.write(", ".join(opt_params['fit_params']+list(exp_dict.keys())+["total obj"])+"\n")
             tmp = [beadparams.tolist() + obj_function + [sum(obj_function)]]
             tmp = [str(x) for x in tmp]
-            f.write(", ".join(tmp))
+            f.write(", ".join(tmp)+"\n")
 
 
     return sum(obj_function)
