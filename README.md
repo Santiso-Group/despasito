@@ -37,7 +37,7 @@ This package has been primarily designed as a command line tool but can be used 
 
 In any directory with the appropriate .json input files, run DESPASITO with ``python -m despasito input.json``
 
-See examples directory for input file structures.
+See [examples](despasito/examples) directory for input file structures.
 
 ### Copyright
 
