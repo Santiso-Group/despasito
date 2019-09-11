@@ -4,7 +4,6 @@ Objects for storing and producing objective values for comparing experimental da
 
 import sys
 import numpy as np
-from multiprocessing import Pool
 
 from despasito.thermodynamics import thermo
 from despasito.fit_parameters import fit_funcs as ff

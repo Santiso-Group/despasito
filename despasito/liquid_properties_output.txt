@@ -1,0 +1,2 @@
+Pressure (Pa), Temperature (K), xi, liquid denisty (mol/m^3), fugacity coeff.
+101325.0, 323.2, [0.89885627 0.10114373], 19606.92496055633, [84.69817617  0.21793373]

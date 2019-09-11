@@ -64,7 +64,7 @@ def test_phase_yiT(eos=eos_co2_h2o,Tlist=Tlist,yilist=yilist):
 def test_sat_props(eos=eos_co2_h2o,Tlist=Tlist):
 
     try:
-        thermo.thermo(eos,{"calculation_type":"sat_props","Tlist":Tlist})
+        thermo.thermo(eos,{"calculation_type":"sat_props","Tlist":Tlist,"xilist":[np.array([1.0, 0.0])]})
     except:
         flag = False
     else:

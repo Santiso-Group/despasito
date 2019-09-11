@@ -171,7 +171,7 @@ def phase_yiT(eos, sys_dict, rhodict={}, output_file="phase_yiT_output.txt"):
 
     print("--- Calculation phase_yiT Complete ---")
 
-    return {"T":T_list,"yi":yi_list,"P":P_list,"xi":y_list}
+    return {"T":T_list,"yi":yi_list,"P":P_list,"xi":xi_list}
 
 ######################################################################
 #                                                                    #
