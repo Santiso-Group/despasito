@@ -331,7 +331,7 @@ def calc_Psat(T, xi, eos, rhodict={}):
     tmp = np.argwhere(np.diff(Plist) > 0)
 
     if not tmp.any():
-        print('Error: One of the components is above its critical point, add exception to functions calc_xT_phase, calc_PT_phase, or calc_yT_phase')
+        print('Error: One of the components is above its critical point, add an exception to setPsat')
         Psat = np.nan
         roots = [1.0, 1.0, 1.0]
 

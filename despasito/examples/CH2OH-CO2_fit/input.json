@@ -6,7 +6,6 @@
     "opt_params": {
         "fit_bead" : "CH2OH",
         "fit_params": ["epsilon_CO2"],
-        "epsilon_cross" : "true",
         "epsilon_CO2_bounds" : [290.0, 310.0]
     },
     "CO2-ethanol": {

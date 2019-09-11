@@ -1,0 +1,36 @@
+digraph "packages" {
+charset="utf-8"
+rankdir=BT
+"1" [label="despasito.__main__", shape="box"];
+"3" [label="despasito.equations_of_state", shape="box"];
+"4" [label="despasito.equations_of_state.interface", shape="box"];
+"5" [label="despasito.equations_of_state.*", shape="box"];
+"6" [label="despasito.equations_of_state.saft.constants", shape="box"];
+"7" [label="despasito.equations_of_state.saft.gamma_mie", shape="box"];
+"8" [label="despasito.equations_of_state.saft.gamma_mie_funcs", shape="box"];
+"9" [label="despasito.fit_parameters", shape="box"];
+"11" [label="despasito.fit_parameters.data_classes.*", shape="box"];
+"14" [label="despasito.fit_parameters.fit_funcs", shape="box"];
+"15" [label="despasito.fit_parameters.interface", shape="box"];
+"18" [label="despasito.input_output.readwrite_input", shape="box"];
+"19" [label="despasito.thermodynamics", shape="box"];
+"20" [label="despasito.thermodynamics.calc", shape="box"];
+"21" [label="despasito.thermodynamics.calc_types", shape="box"];
+"22" [label="despasito.thermodynamics.fund_constants", shape="box"];
+"1" -> "3" [arrowhead="open", arrowtail="none"];
+"1" -> "9" [arrowhead="open", arrowtail="none"];
+"1" -> "18" [arrowhead="open", arrowtail="none"];
+"1" -> "19" [arrowhead="open", arrowtail="none"];
+"7" -> "4" [arrowhead="open", arrowtail="none"];
+"9" -> "11" [arrowhead="open", arrowtail="none"];
+"9" -> "14" [arrowhead="open", arrowtail="none"];
+"11" -> "14" [arrowhead="open", arrowtail="none"];
+"11" -> "15" [arrowhead="open", arrowtail="none"];
+"11" -> "19" [arrowhead="open", arrowtail="none"];
+"19" -> "21" [arrowhead="open", arrowtail="none"];
+"21" -> "20" [arrowhead="open", arrowtail="none"];
+"20" -> "22" [arrowhead="open", arrowtail="none"];
+"3" -> "5" [arrowhead="open", arrowtail="none"];
+"7" -> "8" [arrowhead="open", arrowtail="none"];
+"8" -> "6" [arrowhead="open", arrowtail="none"];
+}

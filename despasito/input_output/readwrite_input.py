@@ -128,10 +128,9 @@ def extract_calc_data(input_fname,density_fname='input_density_params.txt'):
         print("Note: The following thermo calculation parameters have been provided: %s\n" % ", ".join(thermo_dict.keys()))
     else: # parameter fitting
         thermo_dict = process_param_fit_inputs(thermo_dict)
-        for key, value in thermo_dict.items():
-            tmp = ""
-            if (type(value) == dict and "datatype" in list(value.keys())):
-                tmp += " %s (%s)," % (key,value["datatype"])
+        tmp = ""
+        for key, value in thermo_dict["exp_data"].items():
+            tmp += " %s (%s)," % (key,value["name"])
         print("Note: The bead, %s, will have the parameters %s, fit using the following data:\n %s" % (thermo_dict["opt_params"]["fit_bead"],thermo_dict["opt_params"]["fit_params"],tmp))
 
     return eos_dict, thermo_dict
@@ -299,7 +298,10 @@ def process_param_fit_inputs(thermo_dict):
     new_thermo_dict : dict
         Dictionary of instructions for thermodynamic calculations or parameter fitting. This dictionary is reformatted and includes imported data.
     """
+
+    # Initial new dictionary that will have dictionary for extracted data
     new_thermo_dict = {"exp_data":{}}
+
     for key, value in thermo_dict.items():
         if key == "opt_params": 
             new_opt_params = {}
@@ -319,10 +321,14 @@ def process_param_fit_inputs(thermo_dict):
                 keys_del.append(key2)
             for key2 in keys_del:
                 value.pop(key2,None)
-            print("Note: opt_params keys: %s, were not used." % ", ".join(list(value.keys())))
+
+            if list(value.keys()):
+               print("Note: opt_params keys: %s, were not used." % ", ".join(list(value.keys())))
             new_thermo_dict[key] = new_opt_params
+
         elif (type(value) == dict and "datatype" in list(value.keys())):
             new_thermo_dict["exp_data"][key] = process_exp_data(value)
+
         elif key == "beadparams0":
             new_thermo_dict[key] = value
         else:
@@ -396,6 +402,9 @@ def process_exp_data_file(fname):
     key_del = []
     xi, yi, zi = [[],[],[]]
     for key, value in file_dict.items():
+       if "#" in key:
+           key.replace("#","").replace(" ","")
+
        # Assuming mole fractions are listed starting at x1 and continue in order
        if key.startswith("x"): 
            xi.append(value)

@@ -39,6 +39,11 @@ def phase_xiT(eos, sys_dict, rhodict={}, output_file="phase_xiT_output.txt"):
         Dictionary of options used in calculating pressure vs. mole fraction curves.
     output_file : str, Optional, default: "phase_xiT_output.txt"
         Name of file in which the temperature, pressure, and vapor/liquid mole fractions are saved.
+
+    Returns
+    -------
+    output_dict : dict
+        Output of dictionary containing given and calculated values    
     """
 
     #computes P and yi from xi and T
@@ -106,6 +111,8 @@ def phase_xiT(eos, sys_dict, rhodict={}, output_file="phase_xiT_output.txt"):
 
     print("--- Calculation phase_xiT Complete ---")
 
+    return {"T":T_list,"xi":xi_list,"P":P_list,"yi":yi_list}
+
 
 ######################################################################
 #                                                                    #
@@ -129,6 +136,11 @@ def phase_yiT(eos, sys_dict, rhodict={}, output_file="phase_yiT_output.txt"):
         Dictionary of options used in calculating pressure vs. mole fraction curves.
     output_file : str, Optional, default: "phase_yiT_output.txt"
         Name of file in which the temperature, pressure, and vapor/liquid mole fractions are saved.
+
+    Returns
+    -------
+    output_dict : dict
+        Output of dictionary containing given and calculated values
     """
 
     ## Extract and check input data
@@ -159,6 +171,7 @@ def phase_yiT(eos, sys_dict, rhodict={}, output_file="phase_yiT_output.txt"):
 
     print("--- Calculation phase_yiT Complete ---")
 
+    return {"T":T_list,"yi":yi_list,"P":P_list,"xi":y_list}
 
 ######################################################################
 #                                                                    #
@@ -182,14 +195,20 @@ def sat_props(eos, sys_dict, rhodict={}, output_file="saturation_output.txt"):
         Dictionary of options used in calculating pressure vs. mole fraction curves.
     output_file : str, Optional, default: "saturation_output.txt"
         Name of file in which the temperature, saturation pressure, and vapor/liquid densities.
+
+    Returns
+    -------
+    output_dict : dict
+        Output of dictionary containing given and calculated values
     """
 
     ## Exctract and check input data
     try:
         T_list = np.array(sys_dict['Tlist'])
-        print("Using Tlist")
+        xi_list = np.array(sys_dict['xilist'])
+        print("Using Tlist, xilist")
     except:
-        raise Exception('Temperature must be specified')
+        raise Exception('Temperature must be specified, Mole fraction list with only one component having a value of one and remainder having a value of zero.')
 
     ## Generate Output
     with open(output_file, 'w') as f:
@@ -201,13 +220,14 @@ def sat_props(eos, sys_dict, rhodict={}, output_file="saturation_output.txt"):
     rhovsat = np.zeros_like(T_list)
 
     for i in range(np.size(T_list)):
-        try:
-            Psat[i], rholsat[i], rhovsat[i] = calc.calc_Psat(T_list[i], np.array([1.0]), eos, rhodict=rhodict)
-        except:
-            Psat[i] = np.nan
-            rholsat[i] = np.nan
-            rhovsat[i] = np.nan
-            print('Failed to calculate Psat, rholsat, rhovsat at', T_list[i])
+        Psat[i], rholsat[i], rhovsat[i] = calc.calc_Psat(T_list[i], xi_list[i], eos, rhodict=rhodict)
+     #   try:
+     #       Psat[i], rholsat[i], rhovsat[i] = calc.calc_Psat(T_list[i], xi_list[i], eos, rhodict=rhodict)
+     #   except:
+     #       Psat[i] = np.nan
+     #       rholsat[i] = np.nan
+     #       rhovsat[i] = np.nan
+     #       print('Failed to calculate Psat, rholsat, rhovsat at', T_list[i])
 
         ## Generate Output
         with open(output_file, 'a') as f:
@@ -215,6 +235,8 @@ def sat_props(eos, sys_dict, rhodict={}, output_file="saturation_output.txt"):
             f.write(", ".join([str(x) for x in tmp]) + '\n')
 
     print("--- Calculation sat_props Complete ---")
+
+    return {"T":T_list,"Psat":Psat,"rhol":rholsat,"rhov":rhovsat}
 
 
 ######################################################################
@@ -239,6 +261,11 @@ def liquid_properties(eos, sys_dict, rhodict={}, output_file="liquid_properties_
         Dictionary of options used in calculating pressure vs. mole fraction curves.
     output_file : str, Optional, default: "liquid_properties_output.txt"
         Name of file in which the pressure, temperature, and liquid mole fraction, density, and chemical potential.
+
+    Returns
+    -------
+    output_dict : dict
+        Output of dictionary containing given and calculated values
     """
 
     ## Extract and check input data
@@ -281,6 +308,7 @@ def liquid_properties(eos, sys_dict, rhodict={}, output_file="liquid_properties_
 
     print("--- Calculation liquid_density Complete ---")
 
+    return {"P":P_list,"T":T_list,"xi":xi_list,"rhol":rhol,"phil":phil}
 
 ######################################################################
 #                                                                    #
@@ -304,6 +332,11 @@ def vapor_properties(eos, sys_dict, rhodict={}, output_file="vapor_properties_ou
         Dictionary of options used in calculating pressure vs. mole fraction curves.
     output_file : str, Optional, default: "vapor_properties_output.txt"
         Name of file in which the pressure, temperature, and vapor mole fraction, density, and chemical potential.
+
+    Returns
+    -------
+    output_dict : dict
+        Output of dictionary containing given and calculated values
     """
 
     ## Extract and check input data
@@ -344,4 +377,6 @@ def vapor_properties(eos, sys_dict, rhodict={}, output_file="vapor_properties_ou
             f.write(", ".join([str(x) for x in tmp]) + '\n')
 
     print("--- Calculation vapor_density Complete ---")
+
+    return {"P":P_list,"T":T_list,"yi":yi_list,"rhov":rhov,"phiv":phiv}
 

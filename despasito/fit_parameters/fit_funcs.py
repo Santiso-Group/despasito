@@ -2,8 +2,6 @@
 import os
 import numpy as np
 
-from despasito.thermodynamics import calc
-
 def reformat_ouput(cluster):
     """
     Takes a list of lists that combine lists and floats and reformats it into a 2D numpy array.
@@ -23,8 +21,6 @@ def reformat_ouput(cluster):
 
     # Arrange data
     type_cluster = [type(x) for x in cluster]
-
-    print(type_cluster not in [list,np.ndarray,tuple])
 
     if len(type_cluster) == 1 and type_cluster not in [list,np.ndarray,tuple]:
         matrix = np.array(cluster).T
@@ -94,7 +90,7 @@ class BasinStep(object):
             print(x, j)
         return x
 
-def compute_SAFT_obj(beadparams, opt_params, eos, exp_dict, output_file="fit_parameters.txt", threads=1):
+def compute_SAFT_obj(beadparams, opt_params, eos, exp_dict, output_file="fit_parameters.txt"):
     """
     Fit defined parameters for equation of state object with given experimental data. Each set of experimental data is converted to an object with the build in ability to evaluate its part of objective function. 
     To add another type of supported experimental data, add a class to the fit_classes.py file.
@@ -115,15 +111,12 @@ parars are being fit
         Dictionary of experimental data objects.
     output_file : str
         Output file name
-    threads : int, Optional, default: 1
-        Number of threads used in calculation
 
     Returns
     -------
         Output file saved in current working directory
     """
 
-    print(output_file, threads)
     for i, boundval in enumerate(opt_params['bounds']):
         if (beadparams[i] > boundval[1]) or (beadparams[i] < boundval[0]):
             beadparams[i] = np.mean(boundval)
@@ -143,7 +136,7 @@ parars are being fit
     obj_function = []
     for key,data_obj in exp_dict.items():
         try:
-            obj_function.append(data_obj.objective(eos,threads=threads))
+            obj_function.append(data_obj.objective(eos))
         except:
             raise ValueError("Failed to evaluate objective function for %s of type %s." % (key,data_obj.name))
 
@@ -160,5 +153,6 @@ parars are being fit
             tmp = [str(x) for x in tmp]
             f.write(", ".join(tmp))
 
-    return obj_function
+
+    return sum(obj_function)
 

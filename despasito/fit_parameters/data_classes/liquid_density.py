@@ -6,6 +6,7 @@ import sys
 import numpy as np
 from multiprocessing import Pool
 
+from despasito.thermodynamics import thermo
 from despasito.fit_parameters import fit_funcs as ff
 from despasito.fit_parameters.interface import ExpDataTemplate
 
@@ -78,21 +79,15 @@ class Data(ExpDataTemplate):
         except:
             self._rhodict = {"minrhofrac":(1.0 / 300000.0), "rhoinc":10.0, "vspacemax":1.0E-4}
 
-    def _thermo_wrapper(self, P, T, xi,eos,rhodict={}):
+    def _thermo_wrapper(self, eos):
 
         """
         Generate thermodynamic predictions from eos object
 
         Parameters
         ----------
-        T : float
-            Temperature of system [K]
-        xi : list
-            Liquid mole fractions, must add up to one
         eos : obj
             EOS object with updated parameters
-        rhodict : dict, Optional, default: {}
-            Dictionary of options used in calculating pressure vs. mole fraction curves.
 
         Returns
         -------
@@ -101,13 +96,14 @@ class Data(ExpDataTemplate):
         """
 
         try:
-            rhol, flagl = calc.calc_rhol(P, T, xi, eos, rhodict=rhodict)
+            output_dict = thermo(eos,{"calculation_type":self.calctype,"Tlist":self.T,"xilist":self.xi,"Plist":self.P,"rhodict":self._rhodict})
+            output = output_dict["rhol"]
         except:
             raise ValueError("Calculation of calc_rhol failed for xi:%s, T:%g P:%g" %(str(xi), T, P))
-        return rhol
+        return output
 
 
-    def objective(self, eos, threads=1):
+    def objective(self, eos):
 
         """
         Generate objective function value from this dataset
@@ -123,19 +119,11 @@ class Data(ExpDataTemplate):
             A value for the objective function
         """
 
-        # Generate input_list to distribute to multiple threads.
-        input_list = []
-        for i,T in enumerate(self.T):
-             input_list.append((self.P[i], T, self.xi[i], eos, self._rhodict))
-
-        # Submit data points to be evaluated
-        p = Pool(threads)
-        phase_list = p.map(self._thermo_wrapper, input_list, 1)
-        p.close()
-        p.join()
+        phase_list = self._thermo_wrapper(eos)
 
         # Reformat array of results
         phase_list, len_list = ff.reformat_ouput(phase_list) 
+        phase_list = np.array(phase_list).T
 
         # objective function
         obj_value = np.sum((((phase_list[0] - self.rhol) / self.rhol)**2)*self.weights)

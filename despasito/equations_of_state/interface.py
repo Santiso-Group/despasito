@@ -35,3 +35,24 @@ class EOStemplate(ABC):
         Output maximum packing density predicted by EOS.
         """
         pass
+
+    @abstractmethod
+    def param_guess(self):
+        """
+        Output a guess for the given parameter type.
+        """
+        pass
+
+    @abstractmethod
+    def update_parameters(self):
+        """
+        Update a given parameter in EOS.
+        """
+        pass
+
+    @abstractmethod
+    def parameter_refresh(self):
+        """
+        Update calculated parameters internal to EOS that depend on those changed in update_parameters
+        """
+        pass

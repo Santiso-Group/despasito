@@ -24,7 +24,9 @@ eos = eos("saft.gamma_mie",**eos_dict)
 
 # Run either parameterization or thermodynamic calculation
 if "opt_params" in list(thermo_dict.keys()):
-    fit(eos, thermo_dict)
+    output = fit(eos, thermo_dict)
+    print(output)
 else:
-    thermo(eos, thermo_dict)
+    output_dict = thermo(eos, thermo_dict)
+#    readwrite_input.writeout_dict(output_dict)
 

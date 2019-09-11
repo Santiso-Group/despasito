@@ -58,10 +58,14 @@ class saft_gamma_mie(EOStemplate):
     def __init__(self, kwargs):
 
         # Self interaction parameters
-        xi = kwargs['xi']
         self._nui = kwargs['nui']
         self._beads = kwargs['beads']
         self._beadlibrary = kwargs['beadlibrary']
+
+        try:
+            xi = kwargs['xi']
+        except:
+            pass
 
         massi = np.zeros_like(xi)
         for i in range(np.size(xi)):

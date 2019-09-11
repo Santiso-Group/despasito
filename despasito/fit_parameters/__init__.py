@@ -45,8 +45,6 @@ def fit(eos, thermo_dict):
             beadparams0 = thermo_dict["beadparams0"]
         elif key == "output_file":
             output_file = thermo_dict["output_file"]
-        elif key == "threads":
-            threads = thermo_dict["threads"]
         else:
             continue
         keys_del.append(key)
@@ -60,7 +58,6 @@ def fit(eos, thermo_dict):
     # Reformat exp. data into formatted dictionary
     exp_dict = {}
     pkgpath = os.path.dirname(data_classes.__file__)
-    print(pkgpath)
     type_list = [f for f in os.listdir(pkgpath) if ".py" in f]
     type_list = type_list.remove("__init__.py")
 
@@ -85,11 +82,23 @@ def fit(eos, thermo_dict):
     if "beadparams0" not in key_list:
         beadparams0 = eos.param_guess(opt_params["fit_params"])
   
+    # NoteHere: how is this array generated?
+#    stepmag = np.array([550.0, 26.0, 4.0e-10, 0.45, 500.0, 150.0e-30, 550.0])
+
     # Run Parameter Fitting
     try:
-        # NoteHere: how is this array generated?
-        custombasinstep = ff.BasinStep(np.array([550.0, 26.0, 4.0e-10, 0.45, 500.0, 150.0e-30, 550.0]), stepsize=0.1)
-        threads = 3 
+#        custombasinstep = ff.BasinStep(stepmag, stepsize=0.1)
+#        res = spo.basinhopping(ff.compute_SAFT_obj,
+#                       beadparams0,
+#                       niter=500,
+#                       T=0.2,
+#                       stepsize=0.1,
+#                       minimizer_kwargs={
+#                           "args": (opt_params, eos, exp_dict),"method": 'nelder-mead', "options": {'maxiter': 200}},
+#                       take_step=custombasinstep,
+#                       disp=True)
+        # Why doesn't this work???
+        # "args": (opt_params, eos, exp_dict, output_file),"method": 'nelder-mead', "options": {'maxiter': 200}},
         res = spo.basinhopping(ff.compute_SAFT_obj,
                        beadparams0,
                        niter=500,
@@ -97,10 +106,7 @@ def fit(eos, thermo_dict):
                        stepsize=0.1,
                        minimizer_kwargs={
                            "args": (opt_params, eos, exp_dict),"method": 'nelder-mead', "options": {'maxiter': 200}},
-                       take_step=custombasinstep,
                        disp=True)
-        # Why doesn't this work???
-        # "args": (opt_params, eos, exp_dict, output_file, threads),"method": 'nelder-mead', "options": {'maxiter': 200}},
     except:
         raise TypeError("The parameter fitting failed")
 

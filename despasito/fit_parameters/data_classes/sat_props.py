@@ -6,6 +6,7 @@ import sys
 import numpy as np
 from multiprocessing import Pool
 
+from despasito.thermodynamics import thermo
 from despasito.fit_parameters import fit_funcs as ff
 from despasito.fit_parameters.interface import ExpDataTemplate
 
@@ -52,12 +53,17 @@ class Data(ExpDataTemplate):
             self.calctype = "sat_props"
 
         try:
-            self.xi = data_dict["xi"]
             self.T = data_dict["T"]
         except:
-            raise ImportError("Given saturation property data, values for T and xi should have been provided.")
+            raise ImportError("Given saturation property data, values for T should have been provided.")
+
         try:
             self.Psat = data_dict["Psat"]
+        except:
+            pass
+
+        try:
+            self.xi = data_dict["xi"]
         except:
             pass
 
@@ -81,21 +87,15 @@ class Data(ExpDataTemplate):
         except:
             self._rhodict = {"minrhofrac":(1.0 / 80000.0), "rhoinc":10.0, "vspacemax":1.0E-4}
 
-    def _thermo_wrapper(self, T, xi, eos,rhodict={}):
+    def _thermo_wrapper(self, eos):
 
         """
         Generate thermodynamic predictions from eos object
 
         Parameters
         ----------
-        T : float
-            Temperature of system [K]
-        xi : list
-            Liquid mole fractions, must add up to one
         eos : obj
             EOS object with updated parameters
-        rhodict : dict, Optional, default: {}
-            Dictionary of options used in calculating pressure vs. mole fraction curves.
 
         Returns
         -------
@@ -103,14 +103,26 @@ class Data(ExpDataTemplate):
             A list of the predicted thermodynamic values estimated from thermo calculation. This list can be composed of lists or floats
         """
 
+        # Check bead type
         try:
-            Psat, rholsat, rhovsat = calc.calc_Psat(T, xi, eos, rhodict=rhodict)
+            self.xi = data_dict["xi"]
+        except:
+            if len(eos._nui) > 1:
+                raise ValueError("Ambiguous instructions. Include xi to define intendended component to obtain saturation properties")
+            else:
+                self.xi = np.array([[1.0] for x in range(len(self.T))])
+ 
+        # Run thermo calculations
+        try:
+            output_dict = thermo(eos, {"calculation_type":self.calctype,"Tlist":self.T,"xilist":self.xi,"rhodict":self._rhodict})
+            output = [output_dict["Psat"],output_dict["rhol"],output_dict["rhov"]]
         except:
             raise ValueError("Calculation of calc_Psat failed for xi:%s, T:%g" %(str(xi), T))
-        return Psat, rholsat, rhovsat
+
+        return output
 
 
-    def objective(self, eos, threads=1):
+    def objective(self, eos):
 
         """
         Generate objective function value from this dataset
@@ -126,27 +138,19 @@ class Data(ExpDataTemplate):
             A value for the objective function
         """
 
-        # Generate input_list to distribute to multiple threads.
-        input_list = []
-        for i,T in enumerate(self.T):
-             input_list.append((T, self.xi[i], eos, self._rhodict))
-
-        # Submit data points to be evaluated
-        p = Pool(threads)
-        phase_list = p.map(self._thermo_wrapper, input_list, 1)
-        p.close()
-        p.join()
+        phase_list = self._thermo_wrapper(eos)
 
         # Reformat array of results
-        phase_list, len_list = ff.reformat_ouput(phase_list) 
+        phase_list, len_list = ff.reformat_ouput(phase_list)
+        phase_list = np.array(phase_list).T
 
         # objective function
         obj_value = 0
-        if hasattr(self,Psat):
+        if hasattr(self,"Psat"):
             obj_value = np.sum((((phase_list[0] - self.Psat) / self.Psat)**2)*self.weights)
-        if hasattr(self,rhol):
+        if hasattr(self,"rhol"):
             obj_value = np.sum((((phase_list[1] - self.rhol) / self.rhol)**2)*self.weights)
-        if hasattr(self,rhov):
+        if hasattr(self,"rhov"):
             obj_value = np.sum((((phase_list[2] - self.rhov) / self.rhov)**2)*self.weights)
 
         return obj_value

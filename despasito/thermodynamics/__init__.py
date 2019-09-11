@@ -24,7 +24,8 @@ def thermo(eos, thermo_dict):
 
     Returns
     -------
-        Output file saved in current working directory
+        output_dict : dict
+            Output of dictionary containing given and calculated values
     """
 
     try:
@@ -49,7 +50,9 @@ def thermo(eos, thermo_dict):
         raise ImportError("The calculation type, '"+calctype+"', was not found\nThe following calculation types are supported: "+", ".join(calc_list))
 
     try:
-        func(eos, sys_dict, **kwargs)
+        output_dict = func(eos, sys_dict, **kwargs)
     except:
         raise TypeError("The calculation type, '"+calctype+"', failed")
+
+    return output_dict
 

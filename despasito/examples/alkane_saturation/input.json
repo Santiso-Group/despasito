@@ -1,0 +1,13 @@
+{
+    "beadconfig": [[0.5, [["CH3", 2]]]],
+    "SAFTgroup": "SAFTgroup.json",
+    "opt_params": {
+        "fit_bead" : "CH3",
+        "fit_params": ["epsilon"]
+    },
+    "H2O-ethane": {
+        "datatype": "sat_props",
+        "calctype": "sat_props",
+        "file": "ethane_sat_props.csv"
+    }        
+}
