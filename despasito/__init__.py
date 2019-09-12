@@ -4,6 +4,7 @@ DESPASITO: Determining Equilibrium State and Parametrization: Application for SA
 """
 
 # Add imports here
+from .main import run
 
 # Handle versioneer
 from ._version import get_versions
