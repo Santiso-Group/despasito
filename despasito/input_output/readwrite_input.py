@@ -16,7 +16,7 @@ import numpy as np
 #                  Extract Bead Data                                 #
 #                                                                    #
 ######################################################################
-def process_commandline(args):
+def process_commandline(*args):
 
     """
     Interprets command line arguments when package is called with `python -m despasito`. The minimum is the name of the input file.
@@ -25,7 +25,7 @@ def process_commandline(args):
 
     Parameters
     ----------
-    args : list
+    args : tuple
         Command line arguments of despasito package
 
     Returns
@@ -46,7 +46,7 @@ def process_commandline(args):
     #     threadcount = 1
 
     kwargs = {}
-    if len(args) > 2:
+    if len(args) > 1:
         if ("--dens_params" in args or "-dp" in args):
             try:
                 ind = args.index("--dens_params")
@@ -54,7 +54,7 @@ def process_commandline(args):
                 ind = args.index("-dp")
                 
             kwargs['density_fname'] = args[ind+1]
-    input_fname = args[1]
+    input_fname = args[0]
 
     eos_dict, thermo_dict = extract_calc_data(input_fname,**kwargs)
     
