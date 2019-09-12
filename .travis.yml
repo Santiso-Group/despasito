@@ -4,6 +4,11 @@ language: python
 
 env: FC=gfortran
 
+branches:
+  only:
+    - master
+    - dev
+
 matrix:
   include:
     # Extra includes for OSX since python language is not available by default on OSX
