@@ -5,7 +5,7 @@ DESPASITO
 [![Travis Build Status](https://travis-ci.org/jaclark5/DESPASITO.png)](https://travis-ci.org/jaclark5/DESPASITO)
 [![AppVeyor Build status](https://ci.appveyor.com/api/projects/status/yt3903wlq4gcvdkf/branch/master?svg=true)](https://ci.appveyor.com/project/jaclark5/DESPASITO/branch/master)
 [![codecov](https://codecov.io/gh/jaclark5/DESPASITO/branch/master/graph/badge.svg)](https://codecov.io/gh/jaclark5/DESPASITO/branch/master)
-[![Documentation Status](https://readthedocs.org/projects/despasito/badge/?version=latest)](https://despasito.readthedocs.io/en/latest/?badge=latest)
+[![Documentation Status](https://readthedocs.org/projects/despasito/badge/?version=latest)](despasito.readthedocs.io)
 
 DESPASITO: Determining Equilibrium State and Parametrization: Application for SAFT, Intended for Thermodynamic Output
 
