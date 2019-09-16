@@ -22,7 +22,7 @@ from scipy.optimize import fsolve
 from scipy.misc import derivative
 from scipy.ndimage.filters import gaussian_filter1d
 import random
-import deap
+#import deap
 import copy
 import time
 import matplotlib.pyplot as plt
