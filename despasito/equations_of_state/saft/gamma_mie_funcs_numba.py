@@ -46,7 +46,7 @@ def calc_Aideal(xi, rho, massi, T):
     logger = logging.getLogger(__name__)
 
     # Check for mole fractions of zero and remove those components
-    ind = np.where(xi==0.0)[0]
+    ind = np.where(np.array(xi)==0.0)[0]
     xi_tmp = []
     massi_tmp = []
     for i in range(len(xi)):
@@ -63,17 +63,8 @@ def calc_Aideal(xi, rho, massi, T):
 
 #    if not any(np.sum(xi_tmp * np.log(Aideal_tmp), axis=1)):
     if np.isnan(np.sum(np.sum(xi_tmp * np.log(Aideal_tmp), axis=1))):
-        print(np.array(Aideal_tmp).T)
-        print("lambda",Lambda3)
-        print(xi_tmp, massi_tmp)
-        Aideal = []
-        for a in Aideal_tmp:
-            if not any(np.sum(xi_tmp * np.log(a), axis=1)): 
-                Aideal.append(np.sum(xi_tmp * np.log(a), axis=1) - 1.0)
-            else:
-                print("Aideal",a)
-                Aideal.append(0.0)
-        Aideal = np.array(Aideal)
+        raise ValueError("Aideal has values of zero in taking the log. All mole fraction values should be nonzero. Mole fraction: %s" % str(xi_tmp))
+        logger.exception("Aideal has values of zero in taking the log. All mole fraction values should be nonzero. Mole fraction: %s" % str(xi_tmp))
     else:
         Aideal = np.sum(xi_tmp * np.log(Aideal_tmp), axis=1) - 1.0
 

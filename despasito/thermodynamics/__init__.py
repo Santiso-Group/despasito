@@ -30,6 +30,8 @@ def thermo(eos, thermo_dict):
             Output of dictionary containing given and calculated values
     """
 
+    logger = logging.getLogger(__name__)
+
     try:
         calctype = thermo_dict['calculation_type']
     except:
@@ -41,7 +43,7 @@ def thermo(eos, thermo_dict):
     # Unpack inputs and check
     sys_dict, kwargs = {}, {}
     for key, value in thermo_dict.items():
-        if key not in ['rhodict','output_file','calculation_type']:
+        if key not in ['output_file','calculation_type']:
             sys_dict[key] = value
         elif key != 'calculation_type':
             kwargs[key] = value

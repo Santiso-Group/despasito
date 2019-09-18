@@ -11,8 +11,9 @@ import sys
 import numpy as np
 
 Tlist = [323.2]
-xilist = [[0.89885627, 0.10114373]]
-yilist = [[0.9883095246375379, 0.011690475362462203]]
+xilist = [[0.96176473, 0.03823527]]
+yilist = [[0.9954, 0.0046]]
+Plist = [4492927.45]
 rho_co2_h2o = np.array([19986.78358869])
 P = np.array([4099056.163132072])
 
@@ -72,20 +73,20 @@ def test_sat_props(eos=eos_co2_h2o,Tlist=Tlist):
 
     assert flag == True
 
-def test_liquid_properties(eos=eos_co2_h2o,Tlist=Tlist,xilist=xilist):
+def test_liquid_properties(eos=eos_co2_h2o,Tlist=Tlist,xilist=xilist,Plist=Plist):
 
     try:
-        thermo.thermo(eos,{"calculation_type":"liquid_properties","Tlist":Tlist,"xilist":xilist})
+        thermo.thermo(eos,{"calculation_type":"liquid_properties","Tlist":Tlist,"Plist":Plist,"xilist":xilist})
     except:
         flag = False
     else:
         flag = True
     assert flag == True
 
-def test_vapor_properties(eos=eos_co2_h2o,Tlist=Tlist,yilist=yilist):
+def test_vapor_properties(eos=eos_co2_h2o,Tlist=Tlist,yilist=yilist,Plist=Plist):
 
     try:
-        thermo.thermo(eos,{"calculation_type":"vapor_properties","Tlist":Tlist,"yilist":yilist})
+        thermo.thermo(eos,{"calculation_type":"vapor_properties","Tlist":Tlist,"Plist":Plist,"yilist":yilist})
     except:
         flag = False
     else:

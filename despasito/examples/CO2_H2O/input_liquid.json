@@ -2,9 +2,10 @@
     "beadconfig": [[0.2, [["CO2", 1]]], [0.8, [["H2O", 1]]]], 
     "SAFTgroup": "../library/SAFTgroup.json",
     "SAFTcross": "../library/SAFTcross.json",
-    "output_file": "out_xi.txt",
-    "calculation_type" : "sat_props",
+    "output_file": "out_liquid.txt",
+    "calculation_type" : "liquid_properties",
     "association_site_names": ["H","e1","a1"],
-    "Tlist" : [323.2,323.2],
-    "xilist": [[0.00, 1.00],[1.00, 0.00]]
+    "Tlist" : [323.2],
+    "xilist": [[0.96176473, 0.03823527]],
+    "Plist": [4492927.45]
 }

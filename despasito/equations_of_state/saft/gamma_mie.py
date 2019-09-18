@@ -63,10 +63,8 @@ class saft_gamma_mie(EOStemplate):
         self._beads = kwargs['beads']
         self._beadlibrary = kwargs['beadlibrary']
 
-        try:
+        if "xi" in list(kwargs.keys()):
             xi = kwargs['xi']
-        except:
-            pass
 
         massi = np.zeros_like(xi)
         for i in range(np.size(xi)):
@@ -75,7 +73,7 @@ class saft_gamma_mie(EOStemplate):
         self._massi = massi
 
         # Cross interaction parameters
-        if 'crosslibrary' in kwargs:
+        if 'crosslibrary' in list(kwargs.keys()):
             crosslibrary = kwargs['crosslibrary']
         else:
             crosslibrary = {}
@@ -90,7 +88,7 @@ class saft_gamma_mie(EOStemplate):
         self._Ckl = Ckl
 
         # Association sites
-        if 'sitenames' in kwargs:
+        if 'sitenames' in list(kwargs.keys()):
             self._sitenames = kwargs['sitenames']
         else:
             self._sitenames = []
@@ -333,9 +331,9 @@ class saft_gamma_mie(EOStemplate):
                 if bead_names[0] in list(self._crosslibrary[bead_names[1]].keys()):
                     self._crosslibrary[bead_names[1]][bead_names[0]][param_name] = param_value
                 else:
-                    try:
+                    if bead_names[1] in list(self._crosslibrary[bead_names[0]].keys()): 
                         self._crosslibrary[bead_names[0]][bead_names[1]][param_name] = param_value
-                    except:
+                    else:
                         self._crosslibrary[bead_names[0]] = {bead_names[1]:{param_name:param_value}}
 
         # Association Sites

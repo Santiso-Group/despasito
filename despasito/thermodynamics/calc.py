@@ -55,11 +55,15 @@ def calc_CC_Pguess(xilist, Tlist, CriticalProp):
         A list of guesses in pressure based on critical properties, of the same length as xilist and Tlist [Pa]
     """
 
+    logger = logging.getLogger(__name__)
+
     Tc, Pc, omega, rho_7, Zc, Vc, M = CriticalProp
 
     ############## Calculate Mixed System Mie Parameters
+    flag = 0
     if all(-0.847 > x > 0.2387 for x in omega):
-        print("Omega is outside of the range that these correlations are valid")
+        flag = 1
+        logger.warning("Omega is outside of the range that these correlations are valid")
 
     a = [14.8359, 22.2019, 7220.9599, 23193.4750, -6207.4663, 1732.9600]
     b = [0.0, -6.9630, 468.7358, -983.6038, 914.3608, -1383.4441]
@@ -70,90 +74,82 @@ def calc_CC_Pguess(xilist, Tlist, CriticalProp):
 
     Tcm, Pcm, sigma, epsilon, Psatm = [[] for x in range(5)]
 
-    #Nmol = len(Tc)
-    #for i in range(Nmol):
-    #    for j in range(Nmol-i-1,Nmol):
     i = 0
     jj = 1
 
-    ## Mixture alpha
-    #omegaij = (omega[i]+omega[jj])/2.
-    #tmp1 = np.sum([a[ii]*omegaij**ii for ii in range(6)])
-    #tmp2 = np.sum([b[ii]*omegaij**ii for ii in range(6)])
-    #l_r = tmp1/(1.+tmp2)
-    #C = (l_r/(l_r-6.))*(l_r/6.)**(6./(l_r-6.))
-    #al_tmp = C*(1./3. - 1./(l_r-3.))
-
-    for kk, xi in enumerate(xilist):
-        # Mixture alpha
-        omegaij = xi[i] * omega[i] + xi[jj] * omega[jj]
-        tmp1 = np.sum([a[ii] * omegaij**ii for ii in range(6)])
-        tmp2 = np.sum([b[ii] * omegaij**ii for ii in range(6)])
-        l_r = tmp1 / (1. + tmp2)
-        C = (l_r / (l_r - 6.)) * (l_r / 6.)**(6. / (l_r - 6.))
-        al_tmp = C * (1. / 3. - 1. / (l_r - 3.))
-        # Mixture Critical Properties Stewart-Burkhardt-Voo
-        K = xi[i] * Tc[i] / Pc[i]**.5 + xi[jj] * Tc[jj] / Pc[jj]**.5
-        tmp1 = xi[i] * Tc[i] / Pc[i] + xi[jj] * Tc[jj] / Pc[jj]
-        tmp2 = xi[i] * (Tc[i] / Pc[i])**.5 + xi[jj] * (Tc[jj] / Pc[jj])**.5
-        J = tmp1 / 3. + 2. / 3. * tmp2**2.
-        Tc_tmp = K**2. / J
-        Pc_tmp = (K / J)**2.
-        # Mixture Pressure Prausnitz-Gunn
-        if (Tlist[kk] / Tc[i] > 1. or Tlist[kk] / Tc[jj] > 1.):
-            R = 8.3144598  # [kg*m^2/(s^2*mol*K)] Gas constant
-            tmp1 = Zc[i] + Zc[jj]
-            tmp2 = xi[i] * M[i] * Vc[i] + xi[jj] * M[jj] * Vc[jj]
-            Pc_tmp = R * Tc_tmp * tmp1 / tmp2
-            print("Prausnitz!")
-        # Mixture Molar Density, Plocker Knapp
-        Mij = M[i] * xi[i] + M[jj] * xi[jj]
-        rho_tmp = 8. / Mij / ((rho_7[i] * M[i])**(-1. / 3.) + (rho_7[jj] * M[jj])**(-1. / 3.))**3.
-        Nav = 6.0221415e+23  # avogadros number
-
-        tmp1 = np.sum([c[ii] * al_tmp**ii for ii in range(6)])
-        tmp2 = np.sum([d[ii] * al_tmp**ii for ii in range(6)])
-        Tc_star = tmp1 / (1. + tmp2)
-        eps_tmp = Tc_tmp / Tc_star  # [K], multiply by kB to change to energy units
-
-        tmp3 = np.sum([j[ii] * al_tmp**ii for ii in range(6)])
-        tmp4 = np.sum([k[ii] * al_tmp**ii for ii in range(6)])
-        rho_star = tmp3 / (1. + tmp4)
-        sig_tmp = (rho_star / rho_tmp / Nav)**(1. / 3.)
-
-        # Calculate Psat
-        eos_dict['massi'] = np.array([Mij])
-        eos_dict['nui'] = np.array([[1]])
-        eos_dict['beads'] = ['bead']
-        eos_dict['beadlibrary'] = {
-            'bead': {
-                'l_r': l_r,
-                'epsilon': eps_tmp,
-                'Vks': 1.0,
-                'Sk': 1.0,
-                'l_a': 6,
-                'mass': Mij,
-                'sigma': sig_tmp
+    if flag == 1:
+        Psatm = np.nan
+    elif flag == 0: 
+        for kk, xi in enumerate(xilist):
+            # Mixture alpha
+            omegaij = xi[i] * omega[i] + xi[jj] * omega[jj]
+            tmp1 = np.sum([a[ii] * omegaij**ii for ii in range(6)])
+            tmp2 = np.sum([b[ii] * omegaij**ii for ii in range(6)])
+            l_r = tmp1 / (1. + tmp2)
+            C = (l_r / (l_r - 6.)) * (l_r / 6.)**(6. / (l_r - 6.))
+            al_tmp = C * (1. / 3. - 1. / (l_r - 3.))
+            # Mixture Critical Properties Stewart-Burkhardt-Voo
+            K = xi[i] * Tc[i] / Pc[i]**.5 + xi[jj] * Tc[jj] / Pc[jj]**.5
+            tmp1 = xi[i] * Tc[i] / Pc[i] + xi[jj] * Tc[jj] / Pc[jj]
+            tmp2 = xi[i] * (Tc[i] / Pc[i])**.5 + xi[jj] * (Tc[jj] / Pc[jj])**.5
+            J = tmp1 / 3. + 2. / 3. * tmp2**2.
+            Tc_tmp = K**2. / J
+            Pc_tmp = (K / J)**2.
+            # Mixture Pressure Prausnitz-Gunn
+            if (Tlist[kk] / Tc[i] > 1. or Tlist[kk] / Tc[jj] > 1.):
+                R = 8.3144598  # [kg*m^2/(s^2*mol*K)] Gas constant
+                tmp1 = Zc[i] + Zc[jj]
+                tmp2 = xi[i] * M[i] * Vc[i] + xi[jj] * M[jj] * Vc[jj]
+                Pc_tmp = R * Tc_tmp * tmp1 / tmp2
+                print("Prausnitz!")
+            # Mixture Molar Density, Plocker Knapp
+            Mij = M[i] * xi[i] + M[jj] * xi[jj]
+            rho_tmp = 8. / Mij / ((rho_7[i] * M[i])**(-1. / 3.) + (rho_7[jj] * M[jj])**(-1. / 3.))**3.
+            Nav = 6.0221415e+23  # avogadros number
+    
+            tmp1 = np.sum([c[ii] * al_tmp**ii for ii in range(6)])
+            tmp2 = np.sum([d[ii] * al_tmp**ii for ii in range(6)])
+            Tc_star = tmp1 / (1. + tmp2)
+            eps_tmp = Tc_tmp / Tc_star  # [K], multiply by kB to change to energy units
+    
+            tmp3 = np.sum([j[ii] * al_tmp**ii for ii in range(6)])
+            tmp4 = np.sum([k[ii] * al_tmp**ii for ii in range(6)])
+            rho_star = tmp3 / (1. + tmp4)
+            sig_tmp = (rho_star / rho_tmp / Nav)**(1. / 3.)
+    
+            # Calculate Psat
+            eos_dict['massi'] = np.array([Mij])
+            eos_dict['nui'] = np.array([[1]])
+            eos_dict['beads'] = ['bead']
+            eos_dict['beadlibrary'] = {
+                'bead': {
+                    'l_r': l_r,
+                    'epsilon': eps_tmp,
+                    'Vks': 1.0,
+                    'Sk': 1.0,
+                    'l_a': 6,
+                    'mass': Mij,
+                    'sigma': sig_tmp
+                }
             }
-        }
-        eos = eos("saft.gamma_mie",**eos_dict)
-
-        if (Tlist[kk] < Tc_tmp):
-            Psat_tmp, rholsat_tmp, rhogsat_tmp = calc_Psat(Tlist[kk], np.array([1.0]), eos)
-        else:
-            Psat_tmp = np.nan
-
-        if np.isnan(Psat_tmp):
-            Psatm = np.nan
-            break
-
-        # Save values
-        # Nothing is done with rholsat_tmp and rhogsat_tmp
-        Tcm.append(Tc_tmp)
-        Pcm.append(Pc_tmp)
-        sigma.append(sig_tmp)
-        epsilon.append(eps_tmp)
-        Psatm.append(Psat_tmp)
+            eos = eos("saft.gamma_mie",**eos_dict)
+    
+            if (Tlist[kk] < Tc_tmp):
+                Psat_tmp, rholsat_tmp, rhogsat_tmp = calc_Psat(Tlist[kk], np.array([1.0]), eos)
+            else:
+                Psat_tmp = np.nan
+    
+            if np.isnan(Psat_tmp):
+                Psatm = np.nan
+                break
+    
+            # Save values
+            # Nothing is done with rholsat_tmp and rhogsat_tmp
+            Tcm.append(Tc_tmp)
+            Pcm.append(Pc_tmp)
+            sigma.append(sig_tmp)
+            epsilon.append(eps_tmp)
+            Psatm.append(Psat_tmp)
 
     return Psatm
 
@@ -192,6 +188,8 @@ def PvsRho(T, xi, eos, minrhofrac=(1.0 / 200000.0), rhoinc=5.0, vspacemax=1.0E-4
     Plist : numpy.ndarray
         Pressure associated with specific volume of system with given temperature and composition [Pa]
     """
+
+    logger = logging.getLogger(__name__)
 
     #estimate the maximum density based on the hard sphere packing fraction, part of EOS
     maxrho = eos.density_max(xi, T, maxpack=maxpack)
@@ -243,6 +241,8 @@ def PvsV_spline(vlist, Plist):
         List of specific volume values corresponding to local minima and maxima.
     """
 
+    logger = logging.getLogger(__name__)
+
     Psmoothed = gaussian_filter1d(Plist, sigma=.1)
 
     Pvspline = interpolate.InterpolatedUnivariateSpline(vlist, Psmoothed)
@@ -274,6 +274,8 @@ def PvsV_plot(vlist, Plist, Pvspline, markers=[]):
     markers : list, Optional, default: []
         List of plot markers used in plot
     """
+
+    logger = logging.getLogger(__name__)
 
     plt.plot(vlist,Plist,label="Orig.")
     plt.plot(vlist,Pvspline(vlist),label="Smoothed")
@@ -318,6 +320,8 @@ def calc_Psat(T, xi, eos, rhodict={}):
     rhol : float
         Density of liquid at saturation pressure [mol/:math:`m^3`]
     """
+
+    logger = logging.getLogger(__name__)
 
     if np.count_nonzero(xi) != 1:
         if np.count_nonzero(xi>0.1) != 1:
@@ -382,6 +386,8 @@ def eq_area(shift, Pv, vlist):
         Output of objective function, the addition of the positive area between first two roots, and negative area between second and third roots, quantity squared.
     """
 
+    logger = logging.getLogger(__name__)
+
     Pvspline = interpolate.InterpolatedUnivariateSpline(vlist, Pv - shift)
 
     roots = Pvspline.roots()
@@ -420,6 +426,8 @@ def calc_rhov(P, T, xi, eos, rhodict={}):
     flag : int
         A value of 0 is gas, 1 is liquid, 2 mean a critical fluid, 3 means we should assume ideal, 4 means that neither is true
     """
+
+    logger = logging.getLogger(__name__)
 
     vlist, Plist = PvsRho(T, xi, eos, **rhodict)
     Plist = Plist-P
@@ -503,6 +511,8 @@ def calc_rhol(P, T, xi, eos, rhodict={}):
         A value of 0 is liquid, 1 is gas, 2 means that neither is true.
     """
 
+    logger = logging.getLogger(__name__)
+
     # Get roots and local minima and maxima 
     vlist, Plist = PvsRho(T, xi, eos, **rhodict)
     Pvspline, roots, extrema = PvsV_spline(vlist, Plist-P)
@@ -562,6 +572,8 @@ def Pdiff(rho, Pset, T, xi, eos):
         Difference in set pressure and predicted pressure given system conditions.
     """
 
+    logger = logging.getLogger(__name__)
+
     Pguess = eos.P(rho * const.Nav, T, xi)
 
     return (Pguess - Pset)
@@ -595,6 +607,8 @@ def calc_phiv(P, T, yi, eos, rhodict={}):
     rhov : float
         Density of vapor at system pressure [mol/:math:`m^3`]
     """
+
+    logger = logging.getLogger(__name__)
 
     rhov, flagv = calc_rhov(P, T, yi, eos, rhodict)
     if flagv == 3:
@@ -635,6 +649,8 @@ def calc_phil(P, T, xi, eos, rhodict={}):
         Density of liquid at system pressure [mol/:math:`m^3`]
     """
 
+    logger = logging.getLogger(__name__)
+
     rhol, flagl = calc_rhol(P, T, xi, eos, rhodict)
     muil = eos.chemicalpotential(P, np.array([rhol]), xi, T)
     phil = np.exp(muil)
@@ -670,6 +686,8 @@ def calc_Prange(T, xi, yi, eos, rhodict={}, Pmin=1000):
     Prange : list
         List of min and max pressure range
     """
+
+    logger = logging.getLogger(__name__)
 
     global yi_global
 
@@ -778,6 +796,8 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxitr=50):
         Fugacity coefficient of vapor at system pressure
     """
 
+    logger = logging.getLogger(__name__)
+
     global yi_global
     yi /= np.sum(yi)
 
@@ -881,6 +901,8 @@ def solve_xi_yiT(xi, yi, phiv, P, T, eos, rhodict={}, maxitr=50):
         Fugacity coefficient of liquid at system pressure
     """
 
+    logger = logging.getLogger(__name__)
+
     global xi_global
     xi /= np.sum(xi)
 
@@ -974,6 +996,8 @@ def sum_yi(P, yi, xi, T, phil, eos, rhodict={}, maxitr=50):
     obj_value : float
         Sum of vapor mole fraction values minus one.
     """
+
+    logger = logging.getLogger(__name__)
 
     global yi_global
 
@@ -1094,6 +1118,8 @@ def find_new_yi(P, T, phil, xi, eos, rhodict={}, maxitr=50):
    # yi = yiguess[ind]
    # rhov = rhov_guess[ind]
 
+    logger = logging.getLogger(__name__)
+
     yi_ext = np.linspace(0,1,10) # Guess for yi
     obj_ext = []
     for yi in yi_ext:
@@ -1152,6 +1178,8 @@ def yi_obj(yi,P,T,phil,xi,eos,rhodict={}):
         :math:`\sum\frac{x_{i}\{phi_l}{\phi_v}-1`
     """
 
+    logger = logging.getLogger(__name__)
+
     if type(yi) != list:
         yi = [yi, 1-yi]
 
@@ -1193,6 +1221,8 @@ def solve_xi_root(xi0, yi, phiv, P, T, eos, rhodict):
     obj_value : list
         List of percent change between guess that is input and the updated version from recalculating with fugacity coefficients.
     """
+
+    logger = logging.getLogger(__name__)
 
     # !!!!!!!!!!!!!!! This isn't working !!!!!!!!!!!!!!!!
     # Check calc_phase_test_3.py for old version named "solve_xi"
@@ -1260,6 +1290,8 @@ def solve_yi_root(yi0, xi, phil, P, T, eos, rhodict={}, maxitr=50):
         List of absolute change between guess that is input and the updated version from recalculating with fugacity coefficients.
     """
 
+    logger = logging.getLogger(__name__)
+
     yi0 /= np.sum(yi0)
     yi = yi0
 
@@ -1306,6 +1338,8 @@ def solve_P_xiT(P, xi, T, eos, rhodict):
     obj_value : list
         :math:`\sum\frac{x_{i}\{phi_l}{\phi_v}-1`
     """
+
+    logger = logging.getLogger(__name__)
 
     global yi_global
 
@@ -1354,6 +1388,8 @@ def solve_P_yiT(P, yi, T, eos, rhodict):
     obj_value : list
         :math:`\sum\frac{y_{i}\{phi_v}{\phi_l}-1`
     """
+
+    logger = logging.getLogger(__name__)
 
     global xi_global
 
@@ -1405,6 +1441,8 @@ def solve_P_xiT_inerp(P, Psat, xi, T, eos, rhodict):
     obj_value : list
         :math:`\sum\frac{x_{i}\{phi_l}{\phi_v}-1`
     """
+
+    logger = logging.getLogger(__name__)
 
     #print 'P',P
     if P < 0:
@@ -1482,6 +1520,8 @@ def setPsat(ind, eos):
         Bead name of the component that is above it's critical point
     """
 
+    logger = logging.getLogger(__name__)
+
     for j in range(np.size(eos._nui[ind])):
         if eos._nui[ind][j] > 0.0 and eos._beads[j] == "CO2":
             Psat = 10377000.0
@@ -1506,7 +1546,7 @@ def setPsat(ind, eos):
 #                              Calc yT phase                         #
 #                                                                    #
 ######################################################################
-def calc_yT_phase(yi, T, eos, rhodict, Pguess=-1,meth="broyden1"):
+def calc_yT_phase(yi, T, eos, rhodict={}, Pguess=-1,meth="broyden1"):
     r"""
     Calculate dew point mole fraction and pressure given system vapor mole fraction and temperature.
     
@@ -1532,6 +1572,8 @@ def calc_yT_phase(yi, T, eos, rhodict, Pguess=-1,meth="broyden1"):
     xi : numpy.ndarray
         Mole fraction of each component, sum(xi) should equal 1.0
     """
+
+    logger = logging.getLogger(__name__)
 
     global xi_global
 
@@ -1594,7 +1636,7 @@ def calc_yT_phase(yi, T, eos, rhodict, Pguess=-1,meth="broyden1"):
 #                              Calc xT phase                         #
 #                                                                    #
 ######################################################################
-def calc_xT_phase(xi, T, eos, rhodict={}, Pguess=[],meth="broyden1"):
+def calc_xT_phase(xi, T, eos, rhodict={}, Pguess=-1,meth="broyden1"):
     r"""
     Calculate bubble point mole fraction and pressure given system liquid mole fraction and temperature.
     
@@ -1621,6 +1663,8 @@ def calc_xT_phase(xi, T, eos, rhodict={}, Pguess=[],meth="broyden1"):
         Mole fraction of each component, sum(yi) should equal 1.0
     """
 
+    logger = logging.getLogger(__name__)
+
     global yi_global
 
     Psat = np.zeros_like(xi)
@@ -1633,10 +1677,9 @@ def calc_xT_phase(xi, T, eos, rhodict={}, Pguess=[],meth="broyden1"):
             if np.isnan(Psat[i]):
                 sys.exit("Component, %s, is beyond it's critical point. Add an exception to setPsat" % (NaNbead))
 
-#estimate initial pressure
-    if not Pguess:
-        Pguess = np.sum(xi * Psat)
-        P = np.sum(xi * Psat)
+    # Estimate initial pressure
+    if Pguess < 0:
+        P=1.0/np.sum(xi/Psat)
     else:
         P = Pguess
 
@@ -1794,6 +1837,8 @@ def calc_xT_phase_dir(xi, T, eos, rhodict={}, Pguess=[]):
         Compiled string including quote and optional attribution
     """
 
+    logger = logging.getLogger(__name__)
+
     global yi_global
 
     Psat = np.zeros_like(xi)
@@ -1879,6 +1924,8 @@ def calc_PT_phase(xi, T, eos, rhodict={}):
         Mole fraction of each component, sum(yi) should equal 1.0
     """
 
+    logger = logging.getLogger(__name__)
+
     Psat = np.zeros_like(xi)
     for i in range(np.size(xi)):
         xi_tmp = np.zeros_like(xi)
@@ -1925,6 +1972,8 @@ def calc_dadT(rho, T, xi, eos, rhodict={}):
     dadT : numpy.ndarray
         Array of derivative values of Helmholtz energy with respect to temperature
     """
+
+    logger = logging.getLogger(__name__)
 
     step = np.sqrt(np.finfo(float).eps) * T * 1000.0
     nrho = np.size(rho)
