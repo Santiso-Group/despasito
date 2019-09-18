@@ -7,6 +7,7 @@ Routines for passing input files from .json files to dictionaries and extracting
     * extract_calc_data density_fname: Add link to available density options
 """
 
+import logging
 import json
 import collections
 import numpy as np
@@ -16,68 +17,15 @@ import numpy as np
 #                  Extract Bead Data                                 #
 #                                                                    #
 ######################################################################
-def process_commandline(*args):
+def extract_calc_data(input_fname):
 
     """
-    Interprets command line arguments when package is called with `python -m despasito`. The minimum is the name of the input file.
-    
-    Optionally the flag --dens_params or -dp may be added followed by the name of a file containing optional parameters for the density calculation.
-
-    Parameters
-    ----------
-    args : tuple
-        Command line arguments of despasito package
-
-    Returns
-    -------
-    eos_dict : dict
-        Dictionary of bead definitions and parameters used to later initialize eos object
-    thermo_dict : dict
-        Dictionary of instructions for thermodynamic calculations or parameter fitting
-    """
-
-    # parser = argparse.ArgumentParser()
-    # parser.add_argument("-t", "--threads", type=int, help="set the number of theads used")
-    # args = parser.parse_args()
-    # 
-    # if args.threads != None:
-    #     threadcount = args.threads
-    # else:
-    #     threadcount = 1
-
-    kwargs = {}
-    if len(args) > 1:
-        if ("--dens_params" in args or "-dp" in args):
-            try:
-                ind = args.index("--dens_params")
-            except:
-                ind = args.index("-dp")
-                
-            kwargs['density_fname'] = args[ind+1]
-    input_fname = args[0]
-
-    eos_dict, thermo_dict = extract_calc_data(input_fname,**kwargs)
-    
-    return eos_dict, thermo_dict 
-
-######################################################################
-#                                                                    #
-#                  Extract Bead Data                                 #
-#                                                                    #
-######################################################################
-def extract_calc_data(input_fname,density_fname='input_density_params.txt'):
-
-    """
-    Placeholder function to show example docstring (NumPy format)
-
-    Replace this function and doc string for your own project
+    Uses dictionary from .json input file to process and divide information into two dictionaries, one for creating the equation of state, and one for the thermodynamic calculations.
 
     Parameters
     ----------
     input_fname : str
         The file name of a .json file in the current directory containing (1) the paths to equation of state parameters, (2) calculation type and inputs for thermodynamic calculations.
-    density_fname : str, Optional, default: input_density_params.txt
-        This file is converted directly into a dictionary where each line is a key followed by a value, with a space in between. 
 
     Returns
     -------
@@ -86,6 +34,8 @@ def extract_calc_data(input_fname,density_fname='input_density_params.txt'):
     thermo_dict : dict
         Dictionary of instructions for thermodynamic calculations or parameter fitting
     """
+
+    logger = logging.getLogger(__name__)
 
     ## Extract dictionary from input file
     input_file = open(input_fname, 'r').read()
@@ -106,15 +56,15 @@ def extract_calc_data(input_fname,density_fname='input_density_params.txt'):
         with open(input_dict['SAFTcross'], 'r') as f:
             output = f.read()
         eos_dict['crosslibrary'] = json.loads(output)
-        print("Note: Cross interaction parameters have been accepted")
+        logger.info("Cross interaction parameters have been accepted")
     except:
-        print("Note: No SAFTcross file specified")
+        logger.info("No SAFTcross file specified")
 
     try:
         eos_dict['sitenames'] = input_dict['association_site_names']
-        print('Note: Association sites have been accepted')
+        logger.info('Association sites have been accepted')
     except:
-        print('Note: No association sites specified')
+        logger.info('No association sites specified')
 
     ## Make dictionary of data needed for thermodynamic calculation
     thermo_dict = {}
@@ -125,13 +75,13 @@ def extract_calc_data(input_fname,density_fname='input_density_params.txt'):
             thermo_dict[key] = value
 
     if "opt_params" not in list(thermo_dict.keys()):
-        print("Note: The following thermo calculation parameters have been provided: %s\n" % ", ".join(thermo_dict.keys()))
+        logger.info("The following thermo calculation parameters have been provided: %s\n" % ", ".join(thermo_dict.keys()))
     else: # parameter fitting
         thermo_dict = process_param_fit_inputs(thermo_dict)
         tmp = ""
         for key, value in thermo_dict["exp_data"].items():
             tmp += " %s (%s)," % (key,value["name"])
-        print("Note: The bead, %s, will have the parameters %s, fit using the following data:\n %s" % (thermo_dict["opt_params"]["fit_bead"],thermo_dict["opt_params"]["fit_params"],tmp))
+        logger.info("The bead, %s, will have the parameters %s, fit using the following data:\n %s" % (thermo_dict["opt_params"]["fit_bead"],thermo_dict["opt_params"]["fit_params"],tmp))
 
     return eos_dict, thermo_dict
 
@@ -158,13 +108,13 @@ def file2paramdict(filename,delimiter=" "):
         Resulting dictionary
     """
 
+    logger = logging.getLogger(__name__)
+
     dictionary = {}
     with  open(filename, "r") as filedata:
-        print(filedata)
         for line in filedata:
             line.rstrip()
             linearray = line.split(delimiter)
-            print(linearray)
             if len(linearray) == 2:
                 try:
                     dictionary[linearray[0]] = eval(linearray[1])
@@ -196,6 +146,8 @@ def write_SAFTgroup(library, filename):
     filename : str
         Filename (with or without path) of .json file of parameters
     """
+
+    logger = logging.getLogger(__name__)
 
     #sort and write SAFT dic
     for i in library:
@@ -229,6 +181,8 @@ def make_xi_matrix(filename):
         Array of number of components by number of bead types. Defines the number of each type of group in each component.
     """
 
+    logger = logging.getLogger(__name__)
+
     f = open(filename, 'r').read()
     comp = json.loads(f)
     xi, beads, nui = process_bead_data(comp)
@@ -259,6 +213,8 @@ def process_bead_data(bead_data):
     nui : numpy.ndarray
         Array of number of components by number of bead types. Defines the number of each type of group in each component.
     """
+
+    logger = logging.getLogger(__name__)
 
     #find list of unique beads
     beads = []
@@ -299,6 +255,8 @@ def process_param_fit_inputs(thermo_dict):
         Dictionary of instructions for thermodynamic calculations or parameter fitting. This dictionary is reformatted and includes imported data.
     """
 
+    logger = logging.getLogger(__name__)
+
     # Initial new dictionary that will have dictionary for extracted data
     new_thermo_dict = {"exp_data":{}}
 
@@ -323,7 +281,7 @@ def process_param_fit_inputs(thermo_dict):
                 value.pop(key2,None)
 
             if list(value.keys()):
-               print("Note: opt_params keys: %s, were not used." % ", ".join(list(value.keys())))
+               logger.info("The opt_params keys: %s, were not used." % ", ".join(list(value.keys())))
             new_thermo_dict[key] = new_opt_params
 
         elif (type(value) == dict and "datatype" in list(value.keys())):
@@ -362,6 +320,8 @@ def process_exp_data(exp_data_dict):
         Reformatted dictionary of experimental data
     """
 
+    logger = logging.getLogger(__name__)
+
     exp_data = {}
     for key, value in exp_data_dict.items():
         if key == "datatype":
@@ -394,6 +354,8 @@ def process_exp_data_file(fname):
     file_dict : dict
         Dictionary of experimental data from file.
     """
+
+    logger = logging.getLogger(__name__)
 
     data = np.genfromtxt(fname, delimiter=',',names=True,skip_header=1).T
     file_dict = {name:data[name] for name in data.dtype.names}

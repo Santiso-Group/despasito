@@ -7,9 +7,10 @@ r"""
 
 import sys
 import numpy as np
+import logging
 
 from . import constants
-from . import gamma_mie_funcs as funcs
+from . import gamma_mie_funcs_numba as funcs
 # Later this line will be in an abstract class file in this directory, and all versions of SAFT will reference it
 from despasito.equations_of_state.interface import EOStemplate
 
