@@ -11,6 +11,7 @@ parser.add_argument("-i", "--input", dest="input", help="Input .json file with c
 parser.add_argument("-v", "--verbose", action="count", default=0, help="Verbose level, repeat up to three times.")
 parser.add_argument("--log", nargs='?', dest="logFile", default="despasito.log", help="Output a log file. The default name is despasito.log.")
 parser.add_argument("-t", "--threads", dest="threads", type=int, help="Set the number of theads used. This hasn't been implemented yet.",default=1)
+parser.add_argument("-p", "--path", default=".", help="Set the location of the data/library files (e.g. SAFTcross, etc.) for despasito to look for")
 
 ## Extract arguements
 args = parser.parse_args()
@@ -18,12 +19,14 @@ args = parser.parse_args()
 ## Handle arguements
 
 # Logging
-## Set up logging (refined after argparse)
-logger = logging.getLogger()
-logger.setLevel(args.verbose)
-# Set up rotating log files
 
 if args.logFile:
+
+    ## Set up logging (refined after argparse)
+    logger = logging.getLogger()
+    logger.setLevel(args.verbose)
+    # Set up rotating log files
+
     log_file_handler = logging.handlers.TimedRotatingFileHandler(args.logFile, when='M', interval=2)
     log_file_handler.setFormatter( logging.Formatter('%(asctime)s [%(levelname)s](%(name)s:%(funcName)s:%(lineno)d): %(message)s') )
     log_file_handler.setLevel(args.verbose)
@@ -53,6 +56,7 @@ else:
     
 kwargs["logFile"] = args.logFile
 kwargs["threads"] = args.threads
+kwargs["path"] = args.path
 
 run(**kwargs)
 

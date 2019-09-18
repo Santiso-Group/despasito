@@ -22,7 +22,7 @@ def run(filename="input.json", **args):
     
     #read input file (need to add command line specification)
     logger.info("Begin processing input file: %s" % filename)
-    eos_dict, thermo_dict = readwrite_input.extract_calc_data(filename)
+    eos_dict, thermo_dict = readwrite_input.extract_calc_data(filename, **args)
     logger.debug("EOS dict:",eos_dict)
     logger.debug("Thermo dict:",thermo_dict)
     logger.info("Finish processing input file: %s" % filename)
