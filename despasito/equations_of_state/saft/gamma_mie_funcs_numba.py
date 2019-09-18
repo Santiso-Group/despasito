@@ -1068,7 +1068,7 @@ def calc_assoc_matrices(beads, beadlibrary, sitenames=["H", "e1", "e2"], crossli
             if "Nk"+sitenames[j] in list(beadlibrary[beads[i]].keys()):
                 nk[i, j] = beadlibrary[beads[i]]["Nk" + sitenames[j]]
             else:
-                logger.error("%s is not a valid parameter provided for the group %s" % ("Nk"+sitenames[j],beads[i]))
+                logger.debug("%s is not a valid parameter provided for the group %s" % ("Nk"+sitenames[j],beads[i]))
 
     if crosslibrary:
         # find any cross terms in the cross term library
