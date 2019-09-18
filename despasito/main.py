@@ -11,7 +11,7 @@ from .equations_of_state import eos as eos_mod
 from .thermodynamics import thermo
 from .fit_parameters import fit
 
-def run(filename="input.json"):
+def run(filename="input.json", **args):
 
     """ Main function for running despasito calculations. All inputs and settings should be in the supplied JSON file(s).
     """
