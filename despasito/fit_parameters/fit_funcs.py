@@ -1,6 +1,7 @@
 
 import os
 import numpy as np
+import logging
 
 def reformat_ouput(cluster):
     """

@@ -7,6 +7,8 @@ This package will take in an equation of state object, and any user defined vari
 
 # Add imports here
 from inspect import getmembers, isfunction
+import logging
+
 from . import calc_types
 
 def thermo(eos, thermo_dict):

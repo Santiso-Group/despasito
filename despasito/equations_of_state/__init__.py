@@ -6,6 +6,7 @@ This vision for this library is that this file will define an EOS class, and imp
 
 # Add imports here
 from importlib import import_module
+import logging
 
 
 def eos(eos_type, **kwargs):

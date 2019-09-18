@@ -10,6 +10,7 @@ import os
 import numpy as np
 from importlib import import_module
 import scipy.optimize as spo
+import logging
 
 from . import fit_funcs as ff
 from . import data_classes

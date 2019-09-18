@@ -5,6 +5,7 @@ r"""
     
 """
 
+import logging
 import numpy as np
 from scipy import misc
 from scipy import integrate
@@ -41,6 +42,8 @@ def calc_Aideal(xi, rho, massi, T):
     Aideal : nd.array
         Helmholtz energy of ideal gas for each density given.
     """
+
+    logger = logging.getLogger(__name__)
 
     # Check for mole fractions of zero and remove those components
     ind = np.where(xi==0.0)[0]
@@ -105,6 +108,8 @@ def _dkk_int(r, Ce_kT, sigma, l_r, l_a):
         Integrand used to calculate the hard sphere diameter
     """
 
+    logger = logging.getLogger(__name__)
+
     dkk_int_tmp = 1.0 - np.exp(-Ce_kT * (np.power(sigma / r, l_r) - np.power(sigma / r, l_a)))
 
     return dkk_int_tmp
@@ -132,6 +137,8 @@ def calc_dkk(epsilon, sigma, T, l_r, l_a=6.0):
     dkk : float
         Hard sphere diameter of a group [Å] 
     """
+
+    logger = logging.getLogger(__name__)
 
     Ce_kT = C(l_r, l_a) * epsilon / T
     # calculate integral of dkk_int from 0.0 to sigma
@@ -195,6 +202,9 @@ def calc_interaction_matrices(beads, beadlibrary, crosslibrary={}):
     Ckl : numpy.ndarray
         Matrix of mie potential prefactors for k,l groups
     """
+
+    logger = logging.getLogger(__name__)
+
     nbeads = len(beads)
     sigmakl = np.zeros((nbeads, nbeads))
     l_rkl = np.zeros((nbeads, nbeads))
@@ -222,18 +232,16 @@ def calc_interaction_matrices(beads, beadlibrary, crosslibrary={}):
                         crosslist.append([i, j])
 
         for i in range(np.size(crosslist, axis=0)):
-            try:
-                a = crosslist[i][0]
-                b = crosslist[i][1]
-                epsilonkl[a, b] = crosslibrary[beads[a]][beads[b]]["epsilon"]
-                epsilonkl[b, a] = epsilonkl[a, b]
-            except KeyError:
-                pass
-            try:
-                l_rkl[a, b] = crosslibrary[beads[a]][beads[b]]["l_r"]
-                l_rkl[b, a] = l_rkl[a, b]
-            except KeyError:
-                pass
+            a = crosslist[i][0]
+            b = crosslist[i][1]
+            if beads[a] in list(crosslibrary.keys()):
+                if beads[b] in list(crosslibrary[beads[a]].keys()):
+                    if "epsilon" in list(crosslibrary[beads[a]][beads[b]].keys()):
+                        epsilonkl[a, b] = crosslibrary[beads[a]][beads[b]]["epsilon"]
+                        epsilonkl[b, a] = epsilonkl[a, b]
+                    if "l_r" in list(crosslibrary[beads[a]][beads[b]].keys()):
+                        l_rkl[a, b] = crosslibrary[beads[a]][beads[b]]["l_r"]
+                        l_rkl[b, a] = l_rkl[a, b]
 
     Ckl = C(l_rkl, l_akl)
 
@@ -272,6 +280,8 @@ def calc_composition_dependent_variables(xi, nui, beads, beadlibrary):
     xskl : numpy.ndarray
         Matrix of mole fractions of bead (i.e. segment or group) k multiplied by bead l
     """
+
+    logger = logging.getLogger(__name__)
 
     # compute Conversion factor
     Cmol2seg = 0.0
@@ -328,6 +338,9 @@ def calc_hard_sphere_matricies(beads, beadlibrary, sigmakl, T):
     x0kl : numpy.ndarray
         Matrix of sigmakl/dkl, sigmakl is the mie radius for groups (k,l)
     """
+
+    logger = logging.getLogger(__name__)
+
     nbeads = len(beads)
     dkk = np.zeros(np.size(beads))
     for i in range(np.size(beads)):
@@ -369,6 +382,9 @@ def calc_Bkl(rho, l_kl, Cmol2seg, dkl, epsilonkl, x0kl, zetax):
         Matrix used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy, size is rho x l_kl.shape
 
     """
+
+    logger = logging.getLogger(__name__)
+
     # initialize Ikl and Jkl
     # Ikl = np.zeros_like(l_kl)
     # Jkl = np.zeros_like(l_kl)
@@ -391,7 +407,7 @@ def calc_Bkl(rho, l_kl, Cmol2seg, dkl, epsilonkl, x0kl, zetax):
                             (1.0 - zetax)**3), Ikl) - np.einsum("i,j", ((9.0 * zetax * (1.0 + zetax)) /
                                                                        (2.0 * ((1 - zetax)**3))), Jkl))
     else:
-        print('Error unexpeced l_kl shape in Bkl')
+        logger.warning('Error unexpeced l_kl shape in Bkl')
 
     return Bkl
 
@@ -421,6 +437,8 @@ def calc_a1s(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
         Matrix used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy, size is the Ngroups by Ngroups
     """
 
+    logger = logging.getLogger(__name__)
+
     nbeads = np.size(dkl, axis=0)
     zetax_pow = np.zeros((np.size(rho), 4))
     zetax_pow[:, 0] = zetax
@@ -447,7 +465,7 @@ def calc_a1s(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
                         -2.0 * np.pi * Cmol2seg * ((epsilonkl * (dkl**3)) / (l_kl - 3.0)))
         a1s = np.einsum("i,ij->ij", rho, a1s)
     else:
-        print('Error in calc_a1s, unexpected array size')
+        logger.warning('Error in calc_a1s, unexpected array size')
 
     return a1s
 
@@ -468,13 +486,16 @@ def calc_fm(alphakl, mlist):
     fmlist : numpy.ndarray
         List of coefficients used to compute the correction term for :math:`A_{2}` which is related to the fluctuations of attractive energy.
     """
+
+    logger = logging.getLogger(__name__)
+
     nbeads = np.size(alphakl, axis=0)
     if np.size(np.shape(alphakl)) == 2:
         fmlist = np.zeros((np.size(mlist), np.size(alphakl, axis=0), np.size(alphakl, axis=0)))
     elif np.size(np.shape(alphakl)) == 1:
         fmlist = np.zeros((np.size(mlist), np.size(alphakl, axis=0)))
     else:
-        print('Error: unexpected shape in calcfm')
+        logger.warning('Error: unexpected shape in calcfm')
     mlist = mlist - 1
 
     for i, m in enumerate(mlist):
@@ -542,6 +563,8 @@ def calc_Amono(rho, xi, nui, Cmol2seg, xsk, xskl, dkk, T, epsilonkl, sigmakl, dk
         (length of densities) isothermal compressibility of system with packing fraction zetax
     """
 
+    logger = logging.getLogger(__name__)
+
     # initialize variables
     nbeads = list(nui.shape)[1]  # nbeads is the number of unique groups used by any compnent
     rhos = rho * Cmol2seg
@@ -556,7 +579,7 @@ def calc_Amono(rho, xi, nui, Cmol2seg, xsk, xskl, dkk, T, epsilonkl, sigmakl, dk
         eta[:, m] = rhos * (np.sum(xsk * (dkk**m)) * (np.pi / 6.0))
 
     if rho.any() == 0.0:
-        print(rho)
+        logger.warning("rho:",rho)
     # compute AHS, eq. 16
     AHS = (6.0 / (np.pi * rho)) * (np.log(1.0 - eta[:, 3]) * (((eta[:, 2]**3) / (eta[:, 3]**2)) - eta[:, 0]) +
                                    (3.0 * eta[:, 1] * eta[:, 2] /
@@ -672,6 +695,8 @@ def calc_a1ii(rho, Cmol2seg, dii_eff, l_aii_avg, l_rii_avg, x0ii, epsilonii_avg,
         Matrix used in the calculation of the radial distribution function of a hypothetical one-fluid Mie system.
     """
 
+    logger = logging.getLogger(__name__)
+
     Cii = C(l_rii_avg, l_aii_avg)
 
     Bii_r = calc_Bkl(rho, l_rii_avg, Cmol2seg, dii_eff, epsilonii_avg, x0ii, zetax)
@@ -714,6 +739,8 @@ def calc_da1iidrhos(rho, Cmol2seg, dii_eff, l_aii_avg, l_rii_avg, x0ii, epsiloni
         Derivative of term with respect to segment density
     """
 
+    logger = logging.getLogger(__name__)
+
     step = np.sqrt(np.finfo(float).eps) * rho * Cmol2seg * stepmult
     a1ii_p = calc_a1ii(rho + step, Cmol2seg, dii_eff, l_aii_avg, l_rii_avg, x0ii, epsilonii_avg, zetax)
     a1ii_m = calc_a1ii(rho - step, Cmol2seg, dii_eff, l_aii_avg, l_rii_avg, x0ii, epsilonii_avg, zetax)
@@ -750,6 +777,8 @@ def calc_a2ii_1pchi(rho, Cmol2seg, epsilonii_avg, dii_eff, x0ii, l_rii_avg, l_ai
         Term used in the calculation of the second-order term from the macroscopic compressibility
         
     """
+
+    logger = logging.getLogger(__name__)
 
     KHS = ((1.0 - zetax)**4) / (1.0 + (4.0 * zetax) + (4.0 * (zetax**2)) - (4.0 * (zetax**3)) + (zetax**4))
     Cii = C(l_rii_avg, l_aii_avg)
@@ -801,6 +830,8 @@ def calc_da2ii_1pchi_drhos(rho, Cmol2seg, epsilonii_avg, dii_eff, x0ii, l_rii_av
         Derivative of term with respect to segment density
         
     """
+
+    logger = logging.getLogger(__name__)
 
     step = np.sqrt(np.finfo(float).eps) * rho * Cmol2seg * stepmult
     a2ii_1pchi_p = calc_a2ii_1pchi(rho + step, Cmol2seg, epsilonii_avg, dii_eff, x0ii, l_rii_avg, l_aii_avg, zetax)
@@ -862,6 +893,9 @@ def calc_Achain(rho, Cmol2seg, xi, T, nui, sigmakl, epsilonkl, dkl, xskl, l_rkl,
         Chain contribution of Helmholtz energy, length of array rho
 
     """
+
+    logger = logging.getLogger(__name__)
+
     #initialize values
     ngroups = len(beads)
     ncomp = np.size(xi)
@@ -960,11 +994,8 @@ def calc_Achain(rho, Cmol2seg, xi, T, nui, sigmakl, epsilonkl, dkl, xskl, l_rkl,
     #g2=np.einsum("i,ij->ij",1.0+gammacii,g2MCA)
 
     #print(np.exp((epsilonii_avg*g1/(kT*gdHS))+(((epsilonii_avg/kT)**2)*g2/gdHS)))
-    #try:
     gii = gdHS * np.exp((epsilonii_avg * g1 / (kT * gdHS)) + (((epsilonii_avg / kT)**2) * g2 / gdHS))
     tmp = [(epsilonii_avg * g1 / (kT * gdHS)), (((epsilonii_avg / kT)**2) * g2 / gdHS)]
-    #except:
-    #    print(gdHS,epsilonii_avg,g1,kT,gdHS,epsilonii_avg,kT,g2,gdHS)
     Achain = 0.0
     tmp_A = [0, 0]
     for i in range(ncomp):
@@ -1022,6 +1053,9 @@ def calc_assoc_matrices(beads, beadlibrary, sitenames=["H", "e1", "e2"], crossli
     nk : numpy.ndarray
         For each bead the number of each type of site
     """
+
+    logger = logging.getLogger(__name__)
+
     # initialize variables
     nbeads = len(beads)
     sitemax = np.size(sitenames)
@@ -1031,10 +1065,10 @@ def calc_assoc_matrices(beads, beadlibrary, sitenames=["H", "e1", "e2"], crossli
 
     for i in range(nbeads):
         for j in range(np.size(sitenames)):
-            try:
+            if "Nk"+sitenames[j] in list(beadlibrary[beads[i]].keys()):
                 nk[i, j] = beadlibrary[beads[i]]["Nk" + sitenames[j]]
-            except KeyError:
-                pass
+            else:
+                logger.error("%s is not a valid parameter provided for the group %s" % ("Nk"+sitenames[j],beads[i]))
 
     if crosslibrary:
         # find any cross terms in the cross term library
@@ -1048,37 +1082,29 @@ def calc_assoc_matrices(beads, beadlibrary, sitenames=["H", "e1", "e2"], crossli
         for i in range(np.size(crosslist, axis=0)):
             for a in range(np.size(sitenames)):
                 for b in range(np.size(sitenames)):
-                    try:
-                        epsilonHB[crosslist[i][0], crosslist[i][1], a, b] = \
-                        crosslibrary[beads[crosslist[i][0]]][beads[crosslist[i][1]]][
-                            "epsilon" + sitenames[a] + sitenames[b]]
-                        # epsilonHB[crosslist[i][0],crosslist[i][1],b,a]=epsilonHB[crosslist[i][0],crosslist[i][1],a,b]
-                        # epsilonHB[crosslist[i][1],crosslist[i][0],a,b]=epsilonHB[crosslist[i][0],crosslist[i][1],a,b]
-                        epsilonHB[crosslist[i][1], crosslist[i][0], b, a] = epsilonHB[crosslist[i][0], crosslist[i][1],
-                                                                                      a, b]
-                    except KeyError:
-                        pass
+                    if beads[crosslist[i][0]] in list(crosslibrary.keys()):
+                        if beads[crosslist[i][1]] in list(crosslibrary[beads[crosslist[i][0]]].keys()):
+                            
+                            if "epsilon"+sitenames[a]+sitenames[b] in list(crosslibrary[beads[crosslist[i][0]]][beads[crosslist[i][1]]].keys()):
+                                epsilonHB[crosslist[i][0], crosslist[i][1], a, b] = \
+                                crosslibrary[beads[crosslist[i][0]]][beads[crosslist[i][1]]]["epsilon"+sitenames[a]+sitenames[b]]
+                                epsilonHB[crosslist[i][1], crosslist[i][0], b, a] = epsilonHB[crosslist[i][0], crosslist[i][1],a, b]
 
-                    try:
-                        Kklab[crosslist[i][0], crosslist[i][1], a, b] = \
-                        crosslibrary[beads[crosslist[i][0]]][beads[crosslist[i][1]]]["K" + sitenames[a] + sitenames[b]]
-                        # Kklab[crosslist[i][0],crosslist[i][1],b,a]=Kklab[crosslist[i][0],crosslist[i][1],a,b]
-                        # Kklab[crosslist[i][1],crosslist[i][0],a,b]=Kklab[crosslist[i][0],crosslist[i][1],a,b]
-                        Kklab[crosslist[i][1], crosslist[i][0], b, a] = Kklab[crosslist[i][0], crosslist[i][1], a, b]
-                    except KeyError:
-                        pass
+                            if "K"+sitenames[a]+sitenames[b] in list(crosslibrary[beads[crosslist[i][0]]][beads[crosslist[i][1]]].keys()):
+                                Kklab[crosslist[i][0], crosslist[i][1], a, b] = \
+                                crosslibrary[beads[crosslist[i][0]]][beads[crosslist[i][1]]]["K"+sitenames[a]+sitenames[b]]
+                                Kklab[crosslist[i][1], crosslist[i][0], b, a] = Kklab[crosslist[i][0], crosslist[i][1], a, b]
 
     for i in range(nbeads):
         for a in range(np.size(sitenames)):
             for b in range(np.size(sitenames)):
-                try:
+                tmp = ["epsilon"+sitenames[a]+sitenames[b], "K"+sitenames[a]+sitenames[b]]
+                if all(x in list(beadlibrary[beads[i]].keys()) for x in tmp):
                     epsilonHB[i, i, a, b] = beadlibrary[beads[i]]["epsilon" + sitenames[a] + sitenames[b]]
                     epsilonHB[i, i, b, a] = epsilonHB[i, i, a, b]
                     Kklab[i, i, a, b] = beadlibrary[beads[i]]["K" + sitenames[a] + sitenames[b]]
                     Kklab[i, i, b, a] = Kklab[i, i, a, b]
 
-                except KeyError:
-                    pass
     return epsilonHB, Kklab, nk
 
 def calc_Xika_wrap(Xika0, xi, rho, nui, nk, delta):
@@ -1104,6 +1130,9 @@ def calc_Xika_wrap(Xika0, xi, rho, nui, nk, delta):
     obj_func : 
         Used in calculation of association term of Helmholtz energy
     """
+
+    logger = logging.getLogger(__name__)
+
     # val=solv_assoc.calc_xika(Xika0,xi,rho,nui,nk,delta)
     obj_func, Xika = solv_assoc.calc_xika(Xika0, xi, rho, nui, nk, delta)
     return obj_func
@@ -1144,6 +1173,9 @@ def calc_A_assoc(rho, xi, T, nui, Cmol2seg, xskl, sigmakl, sigmaii_avg, epsiloni
     Aassoc : numpy.ndarray
         Association site contribution of Helmholtz energy, length of array rho
     """
+
+    logger = logging.getLogger(__name__)
+
     kT = T * constants.kb
     nbeads = list(nui.shape)[1]
     ncomp = np.size(xi)
@@ -1209,8 +1241,7 @@ def calc_A_assoc(rho, xi, T, nui, Cmol2seg, xskl, sigmakl, sigmaii_avg, epsiloni
         sol = spo.root(calc_Xika_wrap, Xika0, args=(xi, rho[0], nui, nk, delta[0]), method='broyden1')
         Xika0 = sol.x
         Xika = solv_assoc.min_xika(rho, Xika0, xi, nui, nk, delta, 500, 1.0E-12)
-        # Xika=solv_assoc.min_xika(rho,Xika0,xi,nui,nk,delta,500,1.0E-12)
-        print('Xika out of bounds')
+        logger.warning('Xika out of bounds')
     for i in range(ncomp):
         for k in range(nbeads):
             for a in range(nsitesmax):
@@ -1289,6 +1320,9 @@ def calc_A(rho, xi, T, beads, beadlibrary, massi, nui, Cmol2seg, xsk, xskl, dkk,
     A : numpy.ndarray
         Total Helmholtz energy, length of array rho
     """
+
+    logger = logging.getLogger(__name__)
+
     Aideal = calc_Aideal(xi, rho, massi, T)
     AHS, A1, A2, A3, zetax, zetaxstar, KHS = calc_Amono(rho, xi, nui, Cmol2seg, xsk, xskl, dkk, T,epsilonkl, sigmakl, dkl, l_akl, l_rkl, Ckl, x0kl)
     Achain, sigmaii_avg, epsilonii_avg = calc_Achain(rho, Cmol2seg, xi, T, nui, sigmakl, epsilonkl, dkl, xskl, l_rkl, l_akl, beads, beadlibrary, zetax, zetaxstar, KHS)
@@ -1381,6 +1415,8 @@ def calc_Ares(rho, xi, T, beads, beadlibrary, massi, nui, Cmol2seg, xsk, xskl, d
     Ares : numpy.ndarray
         Residual Helmholtz energy that deviates from Aideal, length of array rho
     """
+
+    logger = logging.getLogger(__name__)
 
     AHS, A1, A2, A3, zetax, zetaxstar, KHS = calc_Amono(rho, xi, nui, Cmol2seg, xsk, xskl, dkk, T, epsilonkl, sigmakl, dkl, l_akl, l_rkl, Ckl, x0kl)
     Achain, sigmaii_avg, epsilonii_avg = calc_Achain(rho, Cmol2seg, xi, T, nui, sigmakl, epsilonkl, dkl, xskl, l_rkl, l_akl, beads, beadlibrary, zetax, zetaxstar, KHS)
