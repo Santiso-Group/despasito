@@ -10,7 +10,7 @@ import numpy as np
 import logging
 
 from . import constants
-from . import gamma_mie_funcs_numba as funcs
+from . import gamma_mie_funcs as funcs
 # Later this line will be in an abstract class file in this directory, and all versions of SAFT will reference it
 from despasito.equations_of_state.interface import EOStemplate
 
@@ -328,13 +328,18 @@ class saft_gamma_mie(EOStemplate):
                 self._beadlibrary[bead_names[0]][param_name] = param_value
             # Cross interaction parameter
             elif len(bead_names) == 2:
-                if bead_names[0] in list(self._crosslibrary[bead_names[1]].keys()):
-                    self._crosslibrary[bead_names[1]][bead_names[0]][param_name] = param_value
-                else:
+                if bead_names[1] in list(self._crosslibrary.keys()):
+                    if bead_names[0] in list(self._crosslibrary[bead_names[1]].keys()):
+                        self._crosslibrary[bead_names[1]][bead_names[0]][param_name] = param_value
+                    else:
+                        self._crosslibrary[bead_names[1]] = {bead_names[0]:{param_name:param_value}}
+                elif bead_names[0] in list(self._crosslibrary.keys()):
                     if bead_names[1] in list(self._crosslibrary[bead_names[0]].keys()): 
                         self._crosslibrary[bead_names[0]][bead_names[1]][param_name] = param_value
                     else:
                         self._crosslibrary[bead_names[0]] = {bead_names[1]:{param_name:param_value}}
+                else:
+                    self._crosslibrary[bead_names[0]] = {bead_names[1]:{param_name:param_value}}
 
         # Association Sites
         elif any([param_name.startswith('epsilon'), param_name.startswith('K')]):
