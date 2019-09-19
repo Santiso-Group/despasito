@@ -11,13 +11,35 @@ import logging
 import json
 import collections
 import numpy as np
+import os
+
+def append_data_file_path(input_dict, path='.'):
+   """
+   Appends path to data file(s).
+
+   Parameters
+   ----------
+   input_dict
+       Dictionary of input (json) data 
+   path: str
+       relative path to append to existing data files 
+   """
+   if 'SAFTgroup' in input_dict:
+      input_dict['SAFTgroup'] = os.path.join(path, input_dict['SAFTgroup'])
+
+   if 'SAFTcross' in input_dict:
+      input_dict['SAFTcross'] = os.path.join(path, input_dict['SAFTcross'])
+
+   for key, val in input_dict.items():
+      if 'file' in val:
+         input_dict[key]['file'] = os.path.join(path, input_dict[key]['file'])
 
 ######################################################################
 #                                                                    #
 #                  Extract Bead Data                                 #
 #                                                                    #
 ######################################################################
-def extract_calc_data(input_fname):
+def extract_calc_data(input_fname, path='.'):
 
     """
     Uses dictionary from .json input file to process and divide information into two dictionaries, one for creating the equation of state, and one for the thermodynamic calculations.
@@ -38,8 +60,11 @@ def extract_calc_data(input_fname):
     logger = logging.getLogger(__name__)
 
     ## Extract dictionary from input file
-    input_file = open(input_fname, 'r').read()
-    input_dict = json.loads(input_file)
+    with open(input_fname, 'r') as input_file:
+        input_dict = json.loads(input_file.read())
+
+    # Look for data (library) files in the user-supplied path
+    append_data_file_path(input_dict, path)
 
     ## Make bead data dictionary for EOS
     #process input file
