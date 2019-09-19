@@ -20,6 +20,8 @@ def reformat_ouput(cluster):
         a list of lengths for each of the columns (whether 1 for float, or len(list))
     """
 
+    logger = logging.getLogger(__name__)
+
     # Arrange data
     type_cluster = [type(x) for x in cluster]
 
@@ -66,6 +68,9 @@ class BasinStep(object):
     basinstep : numpy.ndarray
         Suggested basin steps used in basinhopping algorithm
     """
+
+    logger = logging.getLogger(__name__)
+
     def __init__(self, stepmag, stepsize=0.05):
         self._stepsize = stepsize
         self._stepmag = stepmag
@@ -117,6 +122,8 @@ parars are being fit
     -------
         Output file saved in current working directory
     """
+
+    logger = logging.getLogger(__name__)
 
     for i, boundval in enumerate(opt_params['bounds']):
         if (beadparams[i] > boundval[1]) or (beadparams[i] < boundval[0]):

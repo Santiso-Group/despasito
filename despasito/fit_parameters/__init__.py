@@ -32,6 +32,8 @@ def fit(eos, thermo_dict):
         Output file saved in current working directory
     """
 
+    logger = logging.getLogger(__name__)
+
     # Extract relevent quantities from thermo_dict
     key_list = list(thermo_dict.keys())
     keys_del = []

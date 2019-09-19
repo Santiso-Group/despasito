@@ -101,7 +101,6 @@ def calc_CC_Pguess(xilist, Tlist, CriticalProp):
                 tmp1 = Zc[i] + Zc[jj]
                 tmp2 = xi[i] * M[i] * Vc[i] + xi[jj] * M[jj] * Vc[jj]
                 Pc_tmp = R * Tc_tmp * tmp1 / tmp2
-                print("Prausnitz!")
             # Mixture Molar Density, Plocker Knapp
             Mij = M[i] * xi[i] + M[jj] * xi[jj]
             rho_tmp = 8. / Mij / ((rho_7[i] * M[i])**(-1. / 3.) + (rho_7[jj] * M[jj])**(-1. / 3.))**3.
@@ -326,9 +325,11 @@ def calc_Psat(T, xi, eos, rhodict={}):
     if np.count_nonzero(xi) != 1:
         if np.count_nonzero(xi>0.1) != 1:
             raise ValueError("Multiple components have compositions greater than 10%, check code for source")
+            logger.error("Multiple components have compositions greater than 10%, check code for source")
         else:
             ind = np.where((xi>0.1)==True)[0]
             raise ValueError("Multiple components have compositions greater than 0. Do you mean to obtain the saturation pressure of %s with a mole fraction of %g?" % (eos._beads[ind],xi[ind]))
+            logger.error("Multiple components have compositions greater than 0. Do you mean to obtain the saturation pressure of %s with a mole fraction of %g?" % (eos._beads[ind],xi[ind]))
 
     vlist, Plist = PvsRho(T, xi, eos, **rhodict)
     Pvspline, roots, extrema = PvsV_spline(vlist, Plist)
@@ -336,7 +337,7 @@ def calc_Psat(T, xi, eos, rhodict={}):
     tmp = np.argwhere(np.diff(Plist) > 0)
 
     if not tmp.any():
-        print('Error: One of the components is above its critical point, add an exception to setPsat')
+        logger.warning('Error: One of the components is above its critical point, add an exception to setPsat')
         Psat = np.nan
         roots = [1.0, 1.0, 1.0]
 
@@ -347,7 +348,7 @@ def calc_Psat(T, xi, eos, rhodict={}):
         Pmaxsearch = Plist[Pmax1]
 
         Pminsearch = max(Plist[-1], np.amin(Plist[Pmin1:Pmax1]))
-        #print("Pmin", Pmin1, "Pminsearch", Pminsearch, "Pmax", Pmax1, "Pmaxsearch", Pmaxsearch)
+
         #search Pressure that gives equal area in maxwell construction
         Psat = minimize_scalar(eq_area,
                                args=(Plist, vlist),
@@ -433,38 +434,38 @@ def calc_rhov(P, T, xi, eos, rhodict={}):
     Plist = Plist-P
     Pvspline, roots, extrema = PvsV_spline(vlist, Plist)
 
-    #print("Find rhov, P [Pa], roots [m^3/mol]:",P, roots)
+    logger.debug("Find rhov, P %f Pa, roots %s m^3/mol" % (P,str(roots)))
 
     l_roots = len(roots)
     if l_roots == 0:
         flag = 4
         rho_tmp = np.nan
-        print("This temperature and composition won't produce a fluid (vapor or liquid) at this pressure")
+        logger.info("The temperature and composition, %s %s, won't produce a fluid (vapor or liquid) at this pressure" % (str(T),str(xi)))
         PvsV_plot(vlist, Plist, Pvspline)
     elif l_roots == 1:
         if not len(extrema):
             flag = 2
             rho_tmp = 1.0 / roots[0]
-            print("This T and xi combination produces a critical fluid at this pressure")
+            logger.info("The T and xi, %s %s, combination produces a critical fluid at this pressure" % (str(T),str(xi)))
         elif (Pvspline(roots[0])+P) > (Pvspline(max(extrema))+P):
-            print(extrema)
-            print(roots)
+            logger.info("Extrema: %s" % str(extrema))
+            logger.info("Roots: %s" % str(roots))
             flag = 1
             rho_tmp = np.nan
-            print("This T and xi combination produces a liquid at this pressure")
+            logger.info("The T and xi, %s %s, combination produces a liquid at this pressure" % (str(T),str(xi)))
         elif len(extrema) > 1:
             flag = 0
             rho_tmp = 1.0 / roots[0]
-            print("This T and xi combination produces a vapor at this pressure. Warning! approaching critical fluid")
+            logger.info("This T and xi, %s %s, combination produces a vapor at this pressure. Warning! approaching critical fluid"  % (str(T),str(xi)))
     elif l_roots == 2:
         if (Pvspline(roots[0])+P) < 0.:
             flag = 1
             rho_tmp = np.nan
-            print("This T and xi combination produces a liquid under tension at this pressure")
+            logger.info("This T and xi, %s %s, combination produces a liquid under tension at this pressure" % (str(T),str(xi)))
         else:
             flag = 3
             rho_tmp = np.nan
-            print("There should be a third root! Assume ideal gass P:", P)
+            logger.info("There should be a third root! Assume ideal gass P:", P)
             #PvsV_plot(vlist, Plist, Pvspline)
     else: # 3 roots
         rho_tmp = 1.0 / roots[2]
@@ -473,7 +474,7 @@ def calc_rhov(P, T, xi, eos, rhodict={}):
     if flag in [0,2]: # vapor or critical fluid
         tmp = [rho_tmp*.99, rho_tmp*1.01]
         if not (Pdiff(tmp[0],P, T, xi, eos)*Pdiff(tmp[1],P, T, xi, eos))<0:
-            print("rhomin, rhomax:",tmp)
+            logger.info("rhomin, rhomax:",tmp)
             PvsV_plot(vlist, Plist, Pvspline)
         rho_tmp = brentq(Pdiff, tmp[0], tmp[1], args=(P, T, xi, eos), rtol=0.0000001)
 
@@ -517,7 +518,7 @@ def calc_rhol(P, T, xi, eos, rhodict={}):
     vlist, Plist = PvsRho(T, xi, eos, **rhodict)
     Pvspline, roots, extrema = PvsV_spline(vlist, Plist-P)
 
-    #print("Find rhol, P [Pa], roots [m^3/mol]:",P, roots)
+    logger.debug("Find rhov, P %f Pa, roots %s m^3/mol" % (P,str(roots)))
 
     # Assess roots, what is the liquid density
     l_roots = len(roots)
@@ -525,14 +526,14 @@ def calc_rhol(P, T, xi, eos, rhodict={}):
         rho_tmp = 1.0 / roots[0]
         flag = 0
         if (Pvspline(roots[0])+P) < 0.:
-            print("This T and xi combination produces a liquid under tension")
+            logger.info("This T and xi, %s %s, combination produces a liquid under tension" % (str(T),str(xi)))
             if l_roots == 1:
-                print("Warning! There should be two roots if it is under tension")
+                logger.warning("There should be two roots if it is under tension")
                 PvsV_plot(vlist, Plist, Pvspline)
     elif len(roots) == 0:
         rho_tmp = np.nan
         flag = 2
-        print("This temperature and composition won't produce a fluid (vapor or liquid)")
+        logger.warning("This temperature and composition, %s %s, won't produce a fluid (vapor or liquid)" % (str(T),str(xi)))
         PvsV_plot(vlist, Plist, Pvspline)
     else:
         rho_tmp = 1.0 / roots[0]
@@ -713,19 +714,19 @@ def calc_Prange(T, xi, yi, eos, rhodict={}, Pmin=1000):
             phil, rhol = calc_phil(p, T, xi, eos, rhodict={})
             yi_range, phiv = solve_yi_xiT(yi_range, xi, phil, p, T, eos, rhodict=rhodict, maxitr=50)
             ObjArray[0] = (np.sum(xi * phil / phiv) - 1.0)
-            print("!!!!!!!!!!!!!!!! Pmin", Parray[0], "Obj. Func", ObjArray[0])
+            logger.info("Minimum pressure: %f,  Obj. Func: %f" % (Parray[0],ObjArray[0]))
         elif z == 1:
             # Find Obj function for Max Pressure above
             p = Parray[1]
             phil, rhol = calc_phil(p, T, xi, eos, rhodict={})
             yi_range, phiv = solve_yi_xiT(yi_range, xi, phil, p, T, eos, rhodict=rhodict, maxitr=50)
             ObjArray[1] = (np.sum(xi * phil / phiv) - 1.0)
-            print("!!!!!!!!!!!!!!!! Estimate Pmax", Parray[1], "Obj. Func", ObjArray[1])
+            logger.info("Estimate Maximum pressure: %f,  Obj. Func: %f" % (Parray[1],ObjArray[1]))
         else:
             tmp_sum = np.abs(ObjArray[-2] + ObjArray[-1])
             tmp_dif = np.abs(ObjArray[-2] - ObjArray[-1])
             if tmp_dif > tmp_sum:
-                print("Got the pressure range!")
+                logger.info("Got the pressure range!")
                 slope = (ObjArray[-1] - ObjArray[-2]) / (Parray[-1] - Parray[-2])
                 intercept = ObjArray[-1] - slope * Parray[-1]
                 Pguess = -intercept / slope
@@ -738,13 +739,13 @@ def calc_Prange(T, xi, yi, eos, rhodict={}, Pmin=1000):
                 #plt.show()
                 break
             elif z == maxiter:
-                print('A change in sign for the objective function could not be found, inspect progress')
+                raise ValueError('A change in sign for the objective function could not be found, inspect progress')
                 plt.plot(Parray, ObjArray)
                 plt.plot([Parray[0], Parray[-1]], [0, 0], 'k')
                 plt.ylabel("Obj. Function")
                 plt.xlabel("Pressure / Pa")
                 plt.show()
-                sys.exit('Error: A change in sign for the objective function could not be found')
+                logger.error('A change in sign for the objective function could not be found')
             else:
                 p = 2 * Parray[-1]
                 Parray.append(p)
@@ -754,7 +755,8 @@ def calc_Prange(T, xi, yi, eos, rhodict={}, Pmin=1000):
 
     Prange = Parray[-2:]
     ObjRange = ObjArray[-2:]
-    print("[Pmin, Pmax]", Prange, "Obj. Values", ObjRange)
+    logger.info("[Pmin, Pmax]: %s, Obj. Values: %s" % (str(Prange),str(ObjRange)))
+    logger.info("Initial guess in pressure: %f Pa" % (Pguess))
 
     yi_global = yi_range
 
@@ -804,16 +806,13 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxitr=50):
 # Option 1
 #    yimin=root(solve_yi_root,yi,args=(xi,phil,P,T,eos,rhodict),method='broyden1',options={'fatol':0.0001,'maxiter':15})
 #    yi = yimin.x
-#    print "!!!! Output", yimin.x
 #    yi/=np.sum(yi)
-
 #    phiv, rhov = calc_phiv(P, T, yi, eos, rhodict={})
-
 
     yi_tmp = []
     for z in range(maxitr):
 
-        print("    yi guess", yi)
+        logger.info("    yi guess %s" % str(yi))
 
         yi /= np.sum(yi)
 # Please
@@ -821,12 +820,12 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxitr=50):
         phiv, rhov = calc_phiv(P, T, yi, eos, rhodict={})
         
         if any(np.isnan(phiv)): # If vapor density doesn't exist
-            print("    Let's find it!")
+            logger.info("    Let's find it!")
             yinew = find_new_yi(P, T, phil, xi, eos, rhodict=rhodict, maxitr=1000)
             phiv, rhov = calc_phiv(P, T, yinew, eos, rhodict={})
             if any(np.isnan(yinew)): 
                 phiv = np.nan
-                sys.exit("This shouldn't be happening")
+                logger.error("This shouldn't be happening")
 
         yinew = xi * phil / phiv
         yinew = yinew / np.sum(yinew)
@@ -835,14 +834,14 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxitr=50):
         ind_tmp = np.where(yi == min(yi))[0]
         if np.abs(yinew[ind_tmp] - yi[ind_tmp]) / yi[ind_tmp] < 1e-5:
             yi_global = yi
-            print("    Found yi")
+            logger.info("    Found yi")
             break
 
         # Check for bouncing between values, then updated yi to yinew
         if len(yi_tmp) > 4:
             if all(np.abs((yi - yi_tmp[-3]) / yi + (yinew - yi_tmp[-2]) / yinew) < 1e-2):
                 yi = (yi + yinew) / 2
-                print("    New guess:", yi)
+                logger.info("    New guess: %s" % str(yi))
             else:
                 yi = yinew
         else:
@@ -851,7 +850,7 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxitr=50):
 
     ## If yi wasn't found in defined number of iterations
     if z == maxitr - 1:
-        print('    More than ', maxitr, ' iterations needed, % error: ', np.sum(np.abs((yinew - yi)[0:] / yi[0:])))
+        logger.warning('    More than %g iterations needed, % error: %f' % (maxitr, np.sum(np.abs((yinew - yi)[0:] / yi[0:]))))
         yi_tmp = np.array(yi_tmp).T
         #NoteHere Benzene
         for i in range(len(yi)):
@@ -861,7 +860,7 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxitr=50):
             plt.legend(loc="best")
             plt.show()
 
-    print("    Inner Loop Final yi: ", yi)
+    logger.info("    Inner Loop Final yi: %s", str(yi))
 
     return yi, phiv
 
@@ -909,7 +908,7 @@ def solve_xi_yiT(xi, yi, phiv, P, T, eos, rhodict={}, maxitr=50):
     xi_tmp = []
     for z in range(maxitr):
 
-        print("    xi guess", xi)
+        logger.info("    xi guess %s" % str(xi))
 
         xi /= np.sum(xi)
 # Please
@@ -918,11 +917,12 @@ def solve_xi_yiT(xi, yi, phiv, P, T, eos, rhodict={}, maxitr=50):
         
         if any(np.isnan(phil)): # If vapor density doesn't exist
             raise ValueError("Contingency methods of determining xi haven't been written yet")
+            logger.error("Contingency methods of determining xi haven't been written yet")
             xinew = find_new_xi(P, T, phiv, yi, eos, rhodict=rhodict, maxitr=1000)
             phil, rhol = calc_phil(P, T, xinew, eos, rhodict={})
             if any(np.isnan(xinew)): 
                 phil = np.nan
-                sys.exit("This shouldn't be happening")
+                logger.error("This shouldn't be happening")
 
         xinew = yi * phiv / phil
         xinew = xinew / np.sum(xinew)
@@ -931,14 +931,14 @@ def solve_xi_yiT(xi, yi, phiv, P, T, eos, rhodict={}, maxitr=50):
         ind_tmp = np.where(xi == min(xi))[0]
         if np.abs(xinew[ind_tmp] - xi[ind_tmp]) / xi[ind_tmp] < 1e-5:
             xi_global = xi
-            print("    Found xi")
+            logger.info("    Found xi")
             break
 
         # Check for bouncing between values, then updated xi to xinew
         if len(xi_tmp) > 4:
             if all(np.abs((xi - xi_tmp[-3]) / xi + (xinew - xi_tmp[-2]) / xinew) < 1e-2):
                 xi = (xi + xinew) / 2
-                print("New guess:", xi)
+                logger.info("    New guess: %s" % str(xi))
             else:
                 xi = xinew
         else:
@@ -947,7 +947,7 @@ def solve_xi_yiT(xi, yi, phiv, P, T, eos, rhodict={}, maxitr=50):
 
     ## If xi wasn't found in defined number of iterations
     if z == maxitr - 1:
-        print('More than ', maxitr, ' iterations needed, % error: ', np.sum(np.abs((xinew - xi)[0:] / xi[0:])))
+        logger.warning('    More than %g iterations needed, % error: %f' % (maxitr, np.sum(np.abs((xinew - xi)[0:] / xi[0:]))))
         xi_tmp = np.array(xi_tmp).T
         #NoteHere Benzene
         for i in range(len(xi)):
@@ -957,7 +957,7 @@ def solve_xi_yiT(xi, yi, phiv, P, T, eos, rhodict={}, maxitr=50):
             plt.legend(loc="best")
             plt.show()
 
-    print("    Inner Loop Final xi: ", xi)
+    logger.info("    Inner Loop Final xi: %s" % str(xi))
 
     return xi, phil
 
@@ -1006,7 +1006,7 @@ def sum_yi(P, yi, xi, T, phil, eos, rhodict={}, maxitr=50):
         phiv, rhov = calc_phiv(P, T, yi, eos, rhodict={})
         yinew = xi * phil / phiv
 
-        print("P:", P, " yi:", yi, " yinew:", yinew, " yinew tot:", np.sum(yinew))
+        logger.info("P: %f, yi: %s, yinew: %s, yinew tot: %s" % (P,str(yi),str(yinew),str(np.sum(yinew))))
         obj_out = np.sum(yinew) - 1
         if (y_total - np.sum(yinew)) < 1e-3:
             yi = yinew
@@ -1014,10 +1014,10 @@ def sum_yi(P, yi, xi, T, phil, eos, rhodict={}, maxitr=50):
         else:
             yi = yinew / np.sum(yinew)
             y_total = np.sum(yinew)
-        print(yi)
+        logger.info("    Guess yi: %s" % str(yi))
 
     if i == maxitr - 1:
-        sys.exit("yi didn't converged in sum_yi()")
+        logger.error("yi didn't converged in sum_yi()")
     yi_global = yi
 
     return obj_out
@@ -1106,7 +1106,7 @@ def find_new_yi(P, T, phil, xi, eos, rhodict={}, maxitr=50):
 
    #         phiv = np.exp(muiv_tmp)
    #         obj_tmp = np.sum(xi * phil / phiv) - 1
-   #         print(rhov_tmp, muiv, phiv, obj_tmp)
+   #         logger.debug("rhov, muiv, phiv, obj_tmp" % str([rhov_tmp, muiv, phiv, obj_tmp]))
 
    #         obj_guess.append(np.abs(obj_tmp))
 
@@ -1114,7 +1114,7 @@ def find_new_yi(P, T, phil, xi, eos, rhodict={}, maxitr=50):
    #         break
    # # Choose the yi value to continue with based on new guesses
    # ind = np.where(obj_guess == min(obj_guess))[0]
-   # print(obj_guess, ind)
+   # logger.info("Obj Value: %f, Index: %g" % (obj_guess,ind))
    # yi = yiguess[ind]
    # rhov = rhov_guess[ind]
 
@@ -1127,7 +1127,7 @@ def find_new_yi(P, T, phil, xi, eos, rhodict={}, maxitr=50):
         obj_ext.append(obj_tmp)
 
     tmp = np.count_nonzero(~np.isnan(obj_ext))
-    print(tmp)
+    logger.debug("Number of valid mole fractions: %g" % tmp)
     if tmp == 0:
         yi_tmp = np.nan
         obj_tmp = np.nan
@@ -1139,7 +1139,7 @@ def find_new_yi(P, T, phil, xi, eos, rhodict={}, maxitr=50):
         obj_tmp = [obj_ext[ii] for ii in ind]
         iind = np.where(obj_tmp==min(np.abs(obj_tmp)))[0][0]
         yi_tmp = yi_ext[iind]
-    print("Found yi:", yi_tmp, "Obj:",obj_tmp)
+    logger.info("    Found new guess in yi: %s, Obj: %s" % (str(yi_tmp),str(obj_tmp)))
     yi = yi_tmp
     if type(yi) != list:
         yi = [yi, 1-yi]
@@ -1186,7 +1186,7 @@ def yi_obj(yi,P,T,phil,xi,eos,rhodict={}):
     phiv, rhov = calc_phiv(P, T, yi, eos, rhodict={})
     obj = np.sum(xi*phil/phiv)-1
 
-    print(yi, obj)
+    logger.info("yi: %s, obj: %s" % (str(yi),str(obj)))
 
     return obj
 
@@ -1244,11 +1244,11 @@ def solve_xi_root(xi0, yi, phiv, P, T, eos, rhodict):
     xinew = yi * phiv / phil
     xinew = xinew / np.sum(xinew)
 
-    #   ind_tmp = np.where(yi==min(yi))[0]
-    #   print 'xinew',xinew,xi,' Percent Error: ',np.abs(xinew[ind_tmp]-xi[ind_tmp])/xi[ind_tmp]
-    #   return np.abs(xinew[ind_tmp]-xi[ind_tmp])/xi[ind_tmp]
+    logger.info('    xi: %s, xinew: %s, Percent Error: %s' % (str(xi), str(xinew), str((xinew - xi)/xi*100)))
 
-    print('xinew', xinew, xi, ' Percent Error: ', (xinew - xi) / xi * 100)
+    #ind_tmp = np.where(yi==min(yi))[0]
+    #return np.abs(xinew[ind_tmp]-xi[ind_tmp])/xi[ind_tmp]
+
     return np.abs(xinew - xi) / xi
 
 
@@ -1299,17 +1299,12 @@ def solve_yi_root(yi0, xi, phil, P, T, eos, rhodict={}, maxitr=50):
     yinew = xi * phil / phiv
     yinew = yinew / np.sum(yinew)
 
-    # ind_tmp = np.where(yi==min(yi))[0]
-    # print 'yinew',yinew,yi,' Percent Error: ',np.abs(yinew[ind_tmp]-yi[ind_tmp])/yi[ind_tmp]
-    #   return np.abs(yinew[ind_tmp]-yi[ind_tmp])/yi[ind_tmp]
+    logger.info('    yi: %s, yinew: %s, Percent Error: %s' % (str(yi), str(yinew), str((yinew - yi)/yi*100)))
 
-    print('yinew', yinew, yi, ' Percent Error: ', (yinew - yi) / yi * 100)
+    #ind_tmp = np.where(yi==min(yi))[0]
+    #return np.abs(yinew[ind_tmp]-yi[ind_tmp])/yi[ind_tmp]
+
     return yinew - yi
-
-
-#   return np.abs(yinew-yi)
-#   return (yinew-yi)/yi
-#   return np.abs(yinew-yi)/yi
 
 ######################################################################
 #                                                                    #
@@ -1346,7 +1341,6 @@ def solve_P_xiT(P, xi, T, eos, rhodict):
     if P < 0:
         return 10.0
 
-    #yi=np.array([0.99,0.01])
     #find liquid density
     phil, rhol = calc_phil(P, T, xi, eos, rhodict={})
 
@@ -1357,7 +1351,7 @@ def solve_P_xiT(P, xi, T, eos, rhodict):
     phiv, rhov = calc_phiv(P, T, yi_global, eos, rhodict={})
 
     Pv_test = eos.P(rhov*const.Nav, T, yi_global)
-    print('Obj Func', (np.sum(xi * phil / phiv) - 1.0), "Pset", P, "Pcalcv",Pv_test[0])
+    logger.info('    Obj Func: %f, Pset: %f, Pcalc: %f' % ((np.sum(xi * phil / phiv) - 1.0), P, Pv_test[0]))
 
     return (np.sum(xi * phil / phiv) - 1.0)
 
@@ -1396,7 +1390,6 @@ def solve_P_yiT(P, yi, T, eos, rhodict):
     if P < 0:
         return 10.0
 
-    #yi=np.array([0.99,0.01])
     #find liquid density
     phiv, rhov = calc_phiv(P, T, yi, eos, rhodict={})
 
@@ -1407,7 +1400,7 @@ def solve_P_yiT(P, yi, T, eos, rhodict):
     phil, rhol = calc_phil(P, T, xi_global, eos, rhodict={})
 
     Pv_test = eos.P(rhov*const.Nav, T, xi_global)
-    print('Obj Func', (np.sum(yi * phiv / phil) - 1.0), "Pset", P, "Pcalcv",Pv_test[0])
+    logger.info('    Obj Func: %f, Pset: %f, Pcalc: %f' % ((np.sum(xi_global * phil / phiv) - 1.0), P, Pv_test[0]))
 
     return (np.sum(yi * phiv / phil) - 1.0)
 
@@ -1444,7 +1437,6 @@ def solve_P_xiT_inerp(P, Psat, xi, T, eos, rhodict):
 
     logger = logging.getLogger(__name__)
 
-    #print 'P',P
     if P < 0:
         return 10.0
 
@@ -1453,47 +1445,33 @@ def solve_P_xiT_inerp(P, Psat, xi, T, eos, rhodict):
 
     yi = xi * Psat / P
     yi /= np.sum(yi)
-    #yi=np.array([0.99,0.01])
+
     #find liquid density
     phil, rhol = calc_phil(P, T, xi, eos, rhodict={})
 
-    #print phiv
-    #print xi[0]
-    #test=solve_xi_root(xi[0],yi,phiv,P,T,eos,rhodict)
-    #print test
     #yimin=fsolve(solve_yi,yi[0:-1],args=(xi,phil,P,T,eos,rhodict)
-    try:
-        yimin = root(solve_yi,
-                     yi[0:-1],
-                     args=(xi, phil, P, T, eos, rhodict),
-                     method='broyden1',
-                     options={
-                         'fatol': 0.0001,
-                         'maxiter': 15
-                     })
-        yi = np.zeros_like(xi)
-        yi[0:np.size(yimin.x)] = yimin.x
-        yi[-1] = 1.0 - np.sum(yi)
-    except:
-        return 10.0
-        #for i in range(10):
-        #    yidiff,yi=solve_yi_iter(yi[0:-1],xi,phil,P,T,eos,rhodict=rhodict,maxpack)
-        #    if np.sum(abs(yidiff))< 0.0001: break
-        #yi=np.zeros_like(xi)
-        #yi[0:np.size(yimin.x)]=yimin
-        #yi[-1]=1.0-np.sum(yi)
+    yimin = root(solve_yi,
+                 yi[0:-1],
+                 args=(xi, phil, P, T, eos, rhodict),
+                 method='broyden1',
+                 options={
+                     'fatol': 0.0001,
+                     'maxiter': 15
+                 })
+    yi = np.zeros_like(xi)
+    yi[0:np.size(yimin.x)] = yimin.x
+    yi[-1] = 1.0 - np.sum(yi)
 
     #yimin=root(solve_yi,yi[0:-1],args=(xi,phil,P,T,eos,rhodict=rhodict,maxpack))
 
     #yi=np.zeros_like(xi)
     #yi[0:np.size(yimin.x)]=yimin.x
     #yi[-1]=1.0-np.sum(yi)
-    #yi=np.array([1.0])
-    #massi=massi[0]
-    #eos._nui=np.array([eos._nui[0]])
+
     #given final yi recompute
     phiv, rhov = calc_phiv(P, T, yi, eos, rhodict={})
-    print('Pconv', (np.sum(xi * phil / phiv) - 1.0), P, rhov)
+    logger.info('    Obj Func: %f, Pset: %f, Pcalc: %f' % ((np.sum(xi * phil / phiv) - 1.0), P, Pv_test[0]))
+
     return (np.sum(xi * phil / phiv) - 1.0)
 
 ######################################################################
@@ -1534,10 +1512,10 @@ def setPsat(ind, eos):
         elif eos._nui[ind][j] > 0.0:
             Psat = np.nan
             NaNbead = eos._beads[j]
-    try:
-        NaNbead
-    except:
+
+    if "NaNbead" not in list(locals().keys()):
        NaNbead = "No NaNbead"
+       logger.info("No beads above their critical point")
 
     return Psat, NaNbead 
 
@@ -1586,7 +1564,8 @@ def calc_yT_phase(yi, T, eos, rhodict={}, Pguess=-1,meth="broyden1"):
         if np.isnan(Psat[i]):
             Psat[i], NaNbead = setPsat(i, eos)
             if np.isnan(Psat[i]):
-                sys.exit("Component, %s, is beyond it's critical point at %g K. Add an exception to setPsat" % (NaNbead,T))
+                raise ValueError("Component, %s, is beyond it's critical point at %g K. Add an exception to setPsat" % (NaNbead,T))
+                logger.error("Component, %s, is beyond it's critical point at %g K. Add an exception to setPsat"  % (NaNbead,T))
 
     # Estimate initial pressure
     if Pguess < 0:
@@ -1675,7 +1654,7 @@ def calc_xT_phase(xi, T, eos, rhodict={}, Pguess=-1,meth="broyden1"):
         if np.isnan(Psat[i]):
             Psat[i], NaNbead = setPsat(i, eos)
             if np.isnan(Psat[i]):
-                sys.exit("Component, %s, is beyond it's critical point. Add an exception to setPsat" % (NaNbead))
+                logger.error("Component, %s, is beyond it's critical point. Add an exception to setPsat" % (NaNbead))
 
     # Estimate initial pressure
     if Pguess < 0:
@@ -1684,7 +1663,7 @@ def calc_xT_phase(xi, T, eos, rhodict={}, Pguess=-1,meth="broyden1"):
         P = Pguess
 
     if ("yi_global" not in globals() or "True" in np.isnan(yi_global)):
-        print("Guess yi in calc_xT_phase with Psat")
+        logger.info("Guess yi in calc_xT_phase with Psat")
         yi_global = xi * Psat / P
         yi_global /= np.sum(yi_global)
         yi_global = copy.deepcopy(yi_global)
@@ -1692,18 +1671,15 @@ def calc_xT_phase(xi, T, eos, rhodict={}, Pguess=-1,meth="broyden1"):
 
     phil, rhol = calc_phil(P, T, xi, eos, rhodict={})
 
-#    print("Initial: P ", Pguess, "   yi ", yi)
+#    logger.info("Initial: P: %f, yi: %s" % (Pguess,str(yi)))
 #    Pguess, yi = bubblepoint_guess(Pguess, yi, xi, T, phil, eos, rhodict)
-#    print("Updated: P ", Pguess, "   yi ", yi, "\n\n\n\n")
-
-    #P=4130879.792
-    #Pfinal=root(solve_P_xiT,P,args=(Psat,xi,T,eos,rhodict),method='broyden1',options={'fatol':0.0001,'maxiter':25,'jac_options': {'reduction_method': 'simple'}})
+#    logger.info("Updated: P: %f, yi: %s" % (Pguess,str(yi)))
 
     Prange, Pguess = calc_Prange(T, xi, yi, eos, rhodict)
-    print("Given Pguess:", P, "Suggested", Pguess)
+    logger.info("Given Pguess: %f, Suggested: %f" % (P, Pguess))
     P = Pguess
 
-    print("Method:", meth)
+    logger.info("Method: %s" % meth)
     #################### Root Finding without Boundaries ###################
     if meth in ['broyden1', 'broyden2']:
         Pfinal = root(solve_P_xiT,
@@ -1770,13 +1746,11 @@ def calc_xT_phase(xi, T, eos, rhodict={}, Pguess=-1,meth="broyden1"):
 #################### Minimization Methods with Boundaries ###################
     elif meth == "TNC":
         if len(Prange) == 2:
-            print([tuple(Prange)], len((tuple(Prange))))
             Pfinal = minimize(solve_P_xiT, P, args=(xi, T, eos, rhodict), method="TNC", bounds=[tuple(Prange)])
         else:
             Pfinal = minimize(solve_P_xiT, P, args=(xi, T, eos, rhodict), method="TNC")
     elif meth == "L-BFGS-B":
         if len(Prange) == 2:
-            print([tuple(Prange)], len((tuple(Prange))))
             Pfinal = minimize(solve_P_xiT,
                               P,
                               args=(xi, T, eos, rhodict),
@@ -1786,7 +1760,6 @@ def calc_xT_phase(xi, T, eos, rhodict={}, Pguess=-1,meth="broyden1"):
             Pfinal = minimize(solve_P_xiT, P, args=(xi, T, eos, rhodict), method="L-BFGS-B")
     elif meth == "SLSQP":
         if len(Prange) == 2:
-            print([tuple(Prange)], len((tuple(Prange))))
             Pfinal = minimize(solve_P_xiT,
                               P,
                               args=(xi, T, eos, rhodict),
@@ -1850,7 +1823,7 @@ def calc_xT_phase_dir(xi, T, eos, rhodict={}, Pguess=[]):
         if np.isnan(Psat[i]):
             Psat[i], NaNbead = setPsat(i, eos)
             if np.isnan(Psat[i]):
-                sys.exit("Component, %s, is beyond it's critical point. Add an exception to setPsat" % (NaNbead))
+                logger.error("Component, %s, is beyond it's critical point. Add an exception to setPsat" % (NaNbead))
 
     #estimate initial pressure
     if not Pguess:
@@ -1867,7 +1840,6 @@ def calc_xT_phase_dir(xi, T, eos, rhodict={}, Pguess=[]):
         ########## replace solve_P_xiT #############
         #####def solve_P_xiT(P,Psat,xi,T,eos,rhodict):
 
-        #print 'P',P
         if P < 0:
             #return 10.0 # change the objective function (difference in error) to much higher, pushing the P way down
             P = np.nan
@@ -1884,13 +1856,13 @@ def calc_xT_phase_dir(xi, T, eos, rhodict={}, Pguess=[]):
         #given final yi recompute
         phiv, rhov = calc_phiv(P, T, yi, eos, rhodict={})
         Pv_test = eos.P(rhov * const.Nav, T, yi)
-        print(Pv_test, 'Pa')
-        print('Pconv', (np.sum(xi * phil / phiv) - 1.0), P, rhov, rhov_full, rhol)
+        logger.info("Pset: %f, Pcalc: %f Pa, Obj Value: %f" % (P,Pv_test,(np.sum(xi * phil / phiv) - 1.0)))
+        logger.info('rhov, rhol: %f, %f mol/m^3' % (rhov,rhol))
         P = Pv_test
         if (np.sum(xi * phil / phiv) - 1.0) < 0.0001:
             break
     if zz == maxitr - 1:
-        print('More than ', maxitr, ' iterations needed for P, abs error: ', (np.sum(xi * phil / phiv) - 1.0))
+        logger.warning('    More than %g iterations needed, % error: %f' % (maxitr, np.sum(np.abs((xinew - xi)[0:] / xi[0:]))))
 #########################
     return P, yi
 
@@ -1934,7 +1906,7 @@ def calc_PT_phase(xi, T, eos, rhodict={}):
         if np.isnan(Psat[i]):
             Psat[i], NaNbead = setPsat(i, eos)
             if np.isnan(Psat[i]):
-                sys.exit("Component, %s, is beyond it's critical point. Add an exception to setPsat" % (NaNbead))
+                logger.error("Component, %s, is beyond it's critical point. Add an exception to setPsat" % (NaNbead))
 
     zi = np.array([0.5, 0.5])
 
