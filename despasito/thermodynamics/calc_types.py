@@ -77,7 +77,17 @@ def phase_xiT(eos, sys_dict, output_file="phase_xiT_output.txt"):
 
     # Process initial guess in pressure
     if 'Pguess' in list(sys_dict.keys()):
-        opts["Pguess"] = sys_dict['Pguess']
+        Pguess = sys_dict['Pguess']
+        if np.size(T_list) != np.size(Pguess):
+            if type(Pguess) not in [list, numpy.ndarray]:
+                opts["Pguess"] = np.ones(len(T_list))*Pguess
+                logger.info("The same pressure, %f, was used for all mole fraction values" % Pguess)
+            elif len(T_list) == 1:
+                opts["Pguess"] = np.ones(len(T_list))*Pguess[0]
+                logger.info("The same pressure, %f, was used for all mole fraction values" % Pguess)
+            else:
+                raise ValueError("The number of provided pressure and mole fraction sets are different")
+                logger.error("The number of provided pressure and mole fraction sets are different")
         logger.info("Using user defined inital guess has been provided")
     else:
         if 'CriticalProp' in list(sys_dict.keys()):
@@ -187,7 +197,17 @@ def phase_yiT(eos, sys_dict, output_file="phase_yiT_output.txt"):
 
     # Process initial guess in pressure
     if 'Pguess' in list(sys_dict.keys()):
-        opts["Pguess"] = float(sys_dict['Pguess'])
+        Pguess = sys_dict['Pguess']
+        if np.size(T_list) != np.size(Pguess):
+            if type(Pguess) not in [list, numpy.ndarray]:
+                opts["Pguess"] = np.ones(len(T_list))*Pguess
+                logger.info("The same pressure, %f, was used for all mole fraction values" % Pguess)
+            elif len(T_list) == 1:
+                opts["Pguess"] = np.ones(len(T_list))*Pguess[0]
+                logger.info("The same pressure, %f, was used for all mole fraction values" % Pguess)
+            else:
+                raise ValueError("The number of provided pressure and mole fraction sets are different")
+                logger.error("The number of provided pressure and mole fraction sets are different")
         logger.info("Using user defined inital guess has been provided")
     else:
         if 'CriticalProp' in list(sys_dict.keys()):
