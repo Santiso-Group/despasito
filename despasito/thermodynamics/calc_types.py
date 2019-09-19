@@ -77,7 +77,7 @@ def phase_xiT(eos, sys_dict, output_file="phase_xiT_output.txt"):
 
     # Process initial guess in pressure
     if 'Pguess' in list(sys_dict.keys()):
-        opts["Pguess"] = float(sys_dict['Pguess'])
+        opts["Pguess"] = sys_dict['Pguess']
         logger.info("Using user defined inital guess has been provided")
     else:
         if 'CriticalProp' in list(sys_dict.keys()):
@@ -100,15 +100,17 @@ def phase_xiT(eos, sys_dict, output_file="phase_xiT_output.txt"):
     # Extract rho dict
     if "rhodict" in list(sys_dict.keys()):
         logger.info("Accepted options for P vs. density curve")
-        opts["rhodict"] = rhodict
+        opts["rhodict"] = sys_dict["rhodict"]
 
     # NoteHere
     ## Generate Output
     with open(output_file, 'w') as f:
-        f.write('Temperature (K), xi, Pressure (Pa), yi\n')
+        f.write('Temperature (K), xi, Pressure (Pa), yi, flagl, flagv\n')
 
     ## Calculate P and yi
     P_list = np.zeros_like(T_list)
+    flagv_list = np.zeros_like(T_list)
+    flagl_list = np.zeros_like(T_list)
     yi_list = np.zeros_like(xi_list)
     for i in range(np.size(T_list)):
         optsi = opts
@@ -116,17 +118,17 @@ def phase_xiT(eos, sys_dict, output_file="phase_xiT_output.txt"):
             optsi["Pguess"] = optsi["Pguess"][i]
 
         logger.info("T (K), xi: %s %s, Let's Begin!" % (str(T_list[i]), str(xi_list[i])))
-        P_list[i], yi_list[i] = calc.calc_xT_phase(xi_list[i], T_list[i], eos, **optsi)
+        P_list[i], yi_list[i], flagv_list[i], flagl_list[i] = calc.calc_xT_phase(xi_list[i], T_list[i], eos, **optsi)
         logger.info("P (Pa), yi: %s %s" % (str(P_list[i]), str(yi_list[i])))
 
         ## Generate Output
         with open(output_file, 'a') as f:
-            tmp = [T_list[i], xi_list[i], P_list[i], yi_list[i]]
+            tmp = [T_list[i], xi_list[i], P_list[i], yi_list[i], flagl_list[i], flagv_list[i]]
             f.write(", ".join([str(x) for x in tmp]) + '\n')
 
     logger.info("--- Calculation phase_xiT Complete ---")
 
-    return {"T":T_list,"xi":xi_list,"P":P_list,"yi":yi_list}
+    return {"T":T_list,"xi":xi_list,"P":P_list,"yi":yi_list,"flagl":flagl_list,"flagv":flagv_list}
 
 
 ######################################################################
@@ -212,27 +214,29 @@ def phase_yiT(eos, sys_dict, output_file="phase_yiT_output.txt"):
 
     ## Generate Output
     with open(output_file, 'w') as f:
-        f.write('Temperature (K), yi, Pressure (Pa), xi\n')
+        f.write('Temperature (K), yi, Pressure (Pa), xi, flagv, flagl\n')
 
     ## Calculate P and xi
     P_list = np.zeros_like(T_list)
+    flagv_list = np.zeros_like(T_list)
+    flagl_list = np.zeros_like(T_list)
     xi_list = np.zeros_like(yi_list)
     for i in range(np.size(T_list)):
         optsi = opts
         if "Pguess" in list(opts.keys()):
             optsi["Pguess"] = optsi["Pguess"][i]
         logger.info("T (K), yi: %s %s, Let's Begin!" % (str(T_list[i]), str(yi_list[i])))
-        P_list[i], xi_list[i] = calc.calc_yT_phase(yi_list[i], T_list[i], eos, **optsi)
+        P_list[i], xi_list[i], flagl_list[i], flagv_list[i]  = calc.calc_yT_phase(yi_list[i], T_list[i], eos, **optsi)
         logger.info("P (Pa), xi: %s %s" % (str(P_list[i]), str(xi_list[i])))
 
         ## Generate Output
         with open(output_file, 'a') as f:
-            tmp = [T_list[i], yi_list[i], P_list[i], xi_list[i]]
+            tmp = [T_list[i], yi_list[i], P_list[i], xi_list[i], flagv_list[i], flagl_list[i]]
             f.write(", ".join([str(x) for x in tmp]) + '\n')
 
     logger.info("--- Calculation phase_yiT Complete ---")
 
-    return {"T":T_list,"yi":yi_list,"P":P_list,"xi":xi_list}
+    return {"T":T_list,"yi":yi_list,"P":P_list,"xi":xi_list,"flagl":flagl_list,"flagv":flagv_list}
 
 ######################################################################
 #                                                                    #

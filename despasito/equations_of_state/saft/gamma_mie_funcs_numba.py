@@ -10,7 +10,8 @@ import numpy as np
 from scipy import misc
 from scipy import integrate
 import scipy.optimize as spo
-import logging
+import time
+import sys
 
 from . import constants
 from . import solv_assoc
@@ -45,6 +46,10 @@ def calc_Aideal(xi, rho, massi, T):
 
     logger = logging.getLogger(__name__)
 
+    if any(np.isnan(rho)):
+        raise ValueError("nan was given as a value of density, rho") 
+        logger.error("Value of nan for density input into Aideal")
+
     # Check for mole fractions of zero and remove those components
     ind = np.where(np.array(xi)==0.0)[0]
     xi_tmp = []
@@ -63,8 +68,8 @@ def calc_Aideal(xi, rho, massi, T):
 
 #    if not any(np.sum(xi_tmp * np.log(Aideal_tmp), axis=1)):
     if np.isnan(np.sum(np.sum(xi_tmp * np.log(Aideal_tmp), axis=1))):
-        raise ValueError("Aideal has values of zero in taking the log. All mole fraction values should be nonzero. Mole fraction: %s" % str(xi_tmp))
-        logger.exception("Aideal has values of zero in taking the log. All mole fraction values should be nonzero. Mole fraction: %s" % str(xi_tmp))
+        raise ValueError("Aideal has values of zero when taking the log. All mole fraction values should be nonzero. Mole fraction: %s" % str(xi_tmp))
+        logger.exception("Aideal has values of zero when taking the log. All mole fraction values should be nonzero. Mole fraction: %s" % str(xi_tmp))
     else:
         Aideal = np.sum(xi_tmp * np.log(Aideal_tmp), axis=1) - 1.0
 
@@ -445,7 +450,8 @@ def calc_a1s(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
                 etakl[:, k, l] = np.einsum("ij,j", zetax_pow, cikl)
         a1s = np.einsum("ijk,jk->ijk", (1.0 - (etakl / 2.0)) / ((1.0 - etakl)**3),
                         -2.0 * np.pi * Cmol2seg * ((epsilonkl * (dkl**3)) / (l_kl - 3.0)))
-        a1s = np.einsum("i,ijk->ijk", rho, a1s)
+        # a1s is 4D matrix
+        a1s = np.einsum("i,ijk->ijk", rho, a1s)  # {BottleNeck}
 
     elif np.size(np.shape(l_kl)) == 1:
         etakl = np.zeros((np.size(rho), nbeads))
@@ -454,6 +460,7 @@ def calc_a1s(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
             etakl[:, k] = np.einsum("ij,j", zetax_pow, cikl)
         a1s = np.einsum("ij,j->ij", (1.0 - (etakl / 2.0)) / ((1.0 - etakl)**3),
                         -2.0 * np.pi * Cmol2seg * ((epsilonkl * (dkl**3)) / (l_kl - 3.0)))
+        # a1s is 3D matrix
         a1s = np.einsum("i,ij->ij", rho, a1s)
     else:
         logger.warning('Error in calc_a1s, unexpected array size')
@@ -1190,7 +1197,8 @@ def calc_A_assoc(rho, xi, T, nui, Cmol2seg, xskl, sigmakl, sigmaii_avg, epsiloni
     # compute sigmax3
     sigmax3 = Cmol2seg * np.sum(xskl * (sigmakl**3))
 
-    # compute Iijklab
+    # compute Iijklab 
+    # {BottleNeck}
     for p in range(11):
         for q in range(11 - i):
             #Iij += np.einsum("i,jk->ijk", constants.cij[p, q] * ((sigmax3 * rho)**p), ((kT / epsilonij)**q))
@@ -1224,6 +1232,7 @@ def calc_A_assoc(rho, xi, T, nui, Cmol2seg, xskl, sigmakl, sigmaii_avg, epsiloni
                             # print(Fklab[k,l,a,b],Kklab[k,l,a,b],Iij[i,j])
                             if nui[i, k] and nui[j, l] > 0:
                                 delta[:, i, j, k, l, a, b] = Fklab[k, l, a, b] * Kklab[k, l, a, b] * Iij[:, i, j]
+
     Xika0 = np.zeros((ncomp, nbeads, nsitesmax))
     Xika0[:, :, :] = 1.0
     Xika = solv_assoc.min_xika(rho, Xika0, xi, nui, nk, delta, 500, 1.0E-12)
@@ -1231,7 +1240,7 @@ def calc_A_assoc(rho, xi, T, nui, Cmol2seg, xskl, sigmakl, sigmaii_avg, epsiloni
         Xika0[:, :, :] = 0.5
         sol = spo.root(calc_Xika_wrap, Xika0, args=(xi, rho[0], nui, nk, delta[0]), method='broyden1')
         Xika0 = sol.x
-        Xika = solv_assoc.min_xika(rho, Xika0, xi, nui, nk, delta, 500, 1.0E-12)
+        Xika = solv_assoc.min_xika(rho, Xika0, xi, nui, nk, delta, 500, 1.0E-12) # {BottleNeck}
         logger.warning('Xika out of bounds')
     for i in range(ncomp):
         for k in range(nbeads):
