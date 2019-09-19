@@ -39,7 +39,7 @@ def append_data_file_path(input_dict, path='.'):
 #                  Extract Bead Data                                 #
 #                                                                    #
 ######################################################################
-def extract_calc_data(input_fname, path='.'):
+def extract_calc_data(input_fname, path='.', **args):
 
     """
     Uses dictionary from .json input file to process and divide information into two dictionaries, one for creating the equation of state, and one for the thermodynamic calculations.
