@@ -103,3 +103,6 @@ ENV/
 
 # text files
 *.txt
+
+*log*
+*.swp

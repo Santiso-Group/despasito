@@ -867,6 +867,7 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxitr=50):
             #logger.debug(str(np.abs((yi - yi_tmp[-3]) / yi + (yinew - yi_tmp[-2]) / yinew)))
             if all(np.abs((yi - yi_tmp[-3]) / yi + (yinew - yi_tmp[-2]) / yinew) < 1e-2):
                 yi = (yi + yinew) / 2
+                phiv, rhov, flagv = calc_phiv(P, T, yinew, eos, rhodict={})
                 logger.info("    New guess: %s" % str(yi))
             else:
                 yi = yinew
@@ -879,12 +880,12 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxitr=50):
         logger.warning('    More than %g iterations needed, %% error: %f' % (maxitr, np.sum(np.abs((yi_tmp[-1] - yi_tmp[-2])[0:] / yi[0:]))))
         yi_tmp = np.array(yi_tmp).T
         #NoteHere Benzene
-        for i in range(len(yi)):
-            plt.plot(yi_tmp[i], label="$y_{%g}$" % i)
-            plt.xlabel("Iteration")
-            plt.ylabel("Vapor Fraction")
-            plt.legend(loc="best")
-            plt.show()
+        #for i in range(len(yi)):
+        #    plt.plot(yi_tmp[i], label="$y_{%g}$" % i)
+        #    plt.xlabel("Iteration")
+        #    plt.ylabel("Vapor Fraction")
+        #    plt.legend(loc="best")
+        #    plt.show()
 
     logger.info("    Inner Loop Final yi: %s", str(yi))
 
