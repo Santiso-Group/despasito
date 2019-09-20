@@ -8,6 +8,7 @@ This vision for this library is that this file will define an EOS class, and imp
 from importlib import import_module
 import logging
 
+disable_jit = True
 
 def eos(eos_type, **kwargs):
     """
@@ -25,6 +26,10 @@ def eos(eos_type, **kwargs):
         instance : obj
             An instance of the defined EOS class to be used in thermodynamic computations.
     """
+
+    global disable_jit
+
+    disable_jit = not kwargs['jit']
 
     try:
         eos_fam, eos = eos_type.split('.')

@@ -16,6 +16,35 @@ import sys
 from . import constants
 from . import solv_assoc
 
+import timeit
+
+from .gamma_mie_funcs_opt import calc_a1s_1d, calc_a1s_2d
+
+############################################################
+#                                                          #
+#                 A Ideal Contribution                     #
+#                                                          #
+############################################################
+
+totalTime = 0
+
+def calc_a1s(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
+    r""" wrapper function for calling 2d/3d versions of calc_a1s ... this is done for stupid Numba 
+    """
+    global totalTime
+
+    start_time = timeit.default_timer()
+
+    if len(l_kl.shape) == 2:
+        output = calc_a1s_2d(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl)
+    elif len(l_kl.shape) == 1:
+        output = calc_a1s_1d(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl)
+
+    totalTime += timeit.default_timer() - start_time
+    print("===================================================\n", "totalTime = ", totalTime)
+
+    return output
+
 ############################################################
 #                                                          #
 #                 A Ideal Contribution                     #
