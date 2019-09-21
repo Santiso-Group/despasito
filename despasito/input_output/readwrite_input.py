@@ -13,6 +13,12 @@ import collections
 import numpy as np
 import os
 
+######################################################################
+#                                                                    #
+#                   Appends path to find data files                  #
+#                                                                    #
+######################################################################
+
 def append_data_file_path(input_dict, path='.'):
    """
    Appends path to data file(s).
@@ -99,7 +105,7 @@ def extract_calc_data(input_fname, path='.', **args):
         if key not in EOS_dict_keys:
             thermo_dict[key] = value
 
-    if "opt_params" not in list(thermo_dict.keys()):
+    if "opt_params" not in thermo_dict:
         logger.info("The following thermo calculation parameters have been provided: %s\n" % ", ".join(thermo_dict.keys()))
     else: # parameter fitting
         thermo_dict = process_param_fit_inputs(thermo_dict)
@@ -305,11 +311,11 @@ def process_param_fit_inputs(thermo_dict):
             for key2 in keys_del:
                 value.pop(key2,None)
 
-            if list(value.keys()):
+            if value:
                logger.info("The opt_params keys: %s, were not used." % ", ".join(list(value.keys())))
             new_thermo_dict[key] = new_opt_params
 
-        elif (type(value) == dict and "datatype" in list(value.keys())):
+        elif (type(value) == dict and "datatype" in value):
             new_thermo_dict["exp_data"][key] = process_exp_data(value)
 
         elif key == "beadparams0":
