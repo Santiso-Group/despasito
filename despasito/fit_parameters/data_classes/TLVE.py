@@ -104,7 +104,7 @@ class Data(ExpDataTemplate):
                 output_dict = thermo(eos, {"calculation_type":self.calctype,"Tlist":self.T,"yilist":self.yi,"Pguess":self.P,"rhodict":self._rhodict})
                 output = [output_dict['P'],output_dict["xi"]]
             except:
-                raise ValueError("Calculation of calc_yT_phase failed for yi")
+                raise ValueError("Calculation of calc_yT_phase failed")
 
             return output
 

@@ -117,7 +117,7 @@ class Data(ExpDataTemplate):
             output_dict = thermo(eos, {"calculation_type":self.calctype,"Tlist":self.T,"xilist":self.xi,"rhodict":self._rhodict})
             output = [output_dict["Psat"],output_dict["rhol"],output_dict["rhov"]]
         except:
-            raise ValueError("Calculation of calc_Psat failed for xi")
+            raise ValueError("Calculation of calc_Psat failed")
 
         return output
 
@@ -141,6 +141,7 @@ class Data(ExpDataTemplate):
         phase_list = self._thermo_wrapper(eos)
 
         # Reformat array of results
+        print(len(phase_list),phase_list)
         phase_list, len_list = ff.reformat_ouput(phase_list)
         phase_list = np.array(phase_list).T
 

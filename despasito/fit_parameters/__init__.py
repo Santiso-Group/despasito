@@ -35,7 +35,6 @@ def fit(eos, thermo_dict):
     logger = logging.getLogger(__name__)
 
     # Extract relevent quantities from thermo_dict
-    key_list = list(thermo_dict.keys())
     keys_del = []
     for key, value in thermo_dict.items():
         # Extract inputs
@@ -82,7 +81,7 @@ def fit(eos, thermo_dict):
             raise AttributeError("Data set, %s, did not properly initiate object" % (key))
 
     # Generate initial guess for parameters if none was given
-    if "beadparams0" not in key_list:
+    if "beadparams0" not in thermo_dict:
         beadparams0 = eos.param_guess(opt_params["fit_params"])
   
     # NoteHere: how is this array generated?

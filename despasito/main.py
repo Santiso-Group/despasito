@@ -6,12 +6,14 @@ In any directory with the appropriate .json input files, run DESPASITO with ``py
 """
 
 import logging
+import os
+
 from .input_output import readwrite_input
 from .equations_of_state import eos as eos_mod
 from .thermodynamics import thermo
 from .fit_parameters import fit
 
-def run(filename="input.json", **args):
+def run(filename="input.json", path=".", **args):
 
     """ Main function for running despasito calculations. All inputs and settings should be in the supplied JSON file(s).
     """
@@ -22,7 +24,7 @@ def run(filename="input.json", **args):
     
     #read input file (need to add command line specification)
     logger.info("Begin processing input file: %s" % filename)
-    eos_dict, thermo_dict = readwrite_input.extract_calc_data(filename, **args)
+    eos_dict, thermo_dict = readwrite_input.extract_calc_data(filename, path, **args)
     eos_dict['jit'] = args['jit']
 
     logger.debug("EOS dict:",eos_dict)

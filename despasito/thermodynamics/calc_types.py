@@ -51,11 +51,11 @@ def phase_xiT(eos, sys_dict, output_file="phase_xiT_output.txt"):
     #computes P and yi from xi and T
 
     ## Extract and check input data
-    if 'Tlist' in list(sys_dict.keys()):
+    if 'Tlist' in sys_dict:
         T_list = np.array(sys_dict['Tlist'])
         logger.info("Using Tlist") 
 
-    if 'xilist' in list(sys_dict.keys()):
+    if 'xilist' in sys_dict:
         xi_list = np.array(sys_dict['xilist'])
         logger.info("Using xilist")
 
@@ -76,7 +76,7 @@ def phase_xiT(eos, sys_dict, output_file="phase_xiT_output.txt"):
     opts = {}
 
     # Process initial guess in pressure
-    if 'Pguess' in list(sys_dict.keys()):
+    if 'Pguess' in sys_dict:
         Pguess = sys_dict['Pguess']
         if np.size(T_list) != np.size(Pguess):
             if type(Pguess) not in [list, numpy.ndarray]:
@@ -90,7 +90,7 @@ def phase_xiT(eos, sys_dict, output_file="phase_xiT_output.txt"):
                 logger.error("The number of provided pressure and mole fraction sets are different")
         logger.info("Using user defined inital guess has been provided")
     else:
-        if 'CriticalProp' in list(sys_dict.keys()):
+        if 'CriticalProp' in sys_dict:
             CriticalProp = np.array(sys_dict['CriticalProp'])
             logger.info("Using critical properties to intially guess pressure")
 
@@ -103,12 +103,12 @@ def phase_xiT(eos, sys_dict, output_file="phase_xiT_output.txt"):
                 opts["Pguess"] = Pguess
 
     # Extract desired method
-    if "method" in list(sys_dict.keys()):
+    if "method" in sys_dict:
         logger.info("Accepted optimization method, %s, for solving pressure" % sys_dict['method'])
         opts["meth"] = sys_dict['method']
 
     # Extract rho dict
-    if "rhodict" in list(sys_dict.keys()):
+    if "rhodict" in sys_dict:
         logger.info("Accepted options for P vs. density curve")
         opts["rhodict"] = sys_dict["rhodict"]
 
@@ -124,7 +124,7 @@ def phase_xiT(eos, sys_dict, output_file="phase_xiT_output.txt"):
     yi_list = np.zeros_like(xi_list)
     for i in range(np.size(T_list)):
         optsi = opts
-        if "Pguess" in list(opts.keys()):
+        if "Pguess" in opts:
             optsi["Pguess"] = optsi["Pguess"][i]
 
         logger.info("T (K), xi: %s %s, Let's Begin!" % (str(T_list[i]), str(xi_list[i])))
@@ -171,11 +171,11 @@ def phase_yiT(eos, sys_dict, output_file="phase_yiT_output.txt"):
     logger = logging.getLogger(__name__)
 
     ## Extract and check input data
-    if 'Tlist' in list(sys_dict.keys()):
+    if 'Tlist' in sys_dict:
         T_list = np.array(sys_dict['Tlist'])
         logger.info("Using Tlist")
 
-    if 'yilist' in list(sys_dict.keys()):
+    if 'yilist' in sys_dict:
         yi_list = np.array(sys_dict['yilist'])
         logger.info("Using yilist")
 
@@ -196,7 +196,7 @@ def phase_yiT(eos, sys_dict, output_file="phase_yiT_output.txt"):
     opts = {}
 
     # Process initial guess in pressure
-    if 'Pguess' in list(sys_dict.keys()):
+    if 'Pguess' in sys_dict:
         Pguess = sys_dict['Pguess']
         if np.size(T_list) != np.size(Pguess):
             if type(Pguess) not in [list, numpy.ndarray]:
@@ -210,7 +210,7 @@ def phase_yiT(eos, sys_dict, output_file="phase_yiT_output.txt"):
                 logger.error("The number of provided pressure and mole fraction sets are different")
         logger.info("Using user defined inital guess has been provided")
     else:
-        if 'CriticalProp' in list(sys_dict.keys()):
+        if 'CriticalProp' in sys_dict:
             CriticalProp = np.array(sys_dict['CriticalProp'])
             logger.info("Using critical properties to intially guess pressure")
 
@@ -223,14 +223,14 @@ def phase_yiT(eos, sys_dict, output_file="phase_yiT_output.txt"):
                 opts["Pguess"] = Pguess
 
     # Extract desired method
-    if "method" in list(sys_dict.keys()):
+    if "method" in sys_dict:
         logger.info("Accepted optimization method, %s, for solving pressure" % sys_dict['method'])
         opts["meth"] = sys_dict['method']
 
     # Extract rho dict
-    if "rhodict" in list(sys_dict.keys()):
+    if "rhodict" in sys_dict:
         logger.info("Accepted options for P vs. density curve")
-        opts["rhodict"] = rhodict
+        opts["rhodict"] = sys_dict["rhodict"]
 
     ## Generate Output
     with open(output_file, 'w') as f:
@@ -243,7 +243,7 @@ def phase_yiT(eos, sys_dict, output_file="phase_yiT_output.txt"):
     xi_list = np.zeros_like(yi_list)
     for i in range(np.size(T_list)):
         optsi = opts
-        if "Pguess" in list(opts.keys()):
+        if "Pguess" in opts:
             optsi["Pguess"] = optsi["Pguess"][i]
         logger.info("T (K), yi: %s %s, Let's Begin!" % (str(T_list[i]), str(yi_list[i])))
         P_list[i], xi_list[i], flagl_list[i], flagv_list[i]  = calc.calc_yT_phase(yi_list[i], T_list[i], eos, **optsi)
@@ -288,11 +288,11 @@ def sat_props(eos, sys_dict, output_file="saturation_output.txt"):
     logger = logging.getLogger(__name__)
 
     ## Extract and check input data
-    if 'Tlist' in list(sys_dict.keys()):
+    if 'Tlist' in sys_dict:
         T_list = np.array(sys_dict['Tlist'])
         logger.info("Using Tlist")
 
-    if 'xilist' in list(sys_dict.keys()):
+    if 'xilist' in sys_dict:
         xi_list = np.array(sys_dict['xilist'])
         logger.info("Using xilist")
 
@@ -313,16 +313,16 @@ def sat_props(eos, sys_dict, output_file="saturation_output.txt"):
     opts = {}
 
     # Process initial guess in pressure
-    if 'Pguess' in list(sys_dict.keys()):
+    if 'Pguess' in sys_dict:
         logger.info("Guess in Psat has been provided, but is unused for this function")
 
-    if 'CriticalProp' in list(sys_dict.keys()):
+    if 'CriticalProp' in sys_dict:
         logger.info("Critial properties have been provided, but are unused for this function")
 
     # Extract rho dict
-    if "rhodict" in list(sys_dict.keys()):
+    if "rhodict" in sys_dict:
         logger.info("Accepted options for P vs. density curve")
-        opts["rhodict"] = rhodict
+        opts["rhodict"] = sys_dict["rhodict"]
 
     ## Generate Output
     with open(output_file, 'w') as f:
@@ -376,11 +376,11 @@ def liquid_properties(eos, sys_dict, output_file="liquid_properties_output.txt")
     logger = logging.getLogger(__name__)
 
     ## Extract and check input data
-    if 'Tlist' in list(sys_dict.keys()):
+    if 'Tlist' in sys_dict:
         T_list = np.array(sys_dict['Tlist'])
         logger.info("Using Tlist")
 
-    if 'xilist' in list(sys_dict.keys()):
+    if 'xilist' in sys_dict:
         xi_list = np.array(sys_dict['xilist'])
         logger.info("Using xilist")
 
@@ -397,7 +397,7 @@ def liquid_properties(eos, sys_dict, output_file="liquid_properties_output.txt")
             raise ValueError("The number of provided temperatures and mole fraction sets are different")
             logger.error("The number of provided temperatures and mole fraction sets are different")
 
-    if "Plist" not in list(sys_dict.keys()):
+    if "Plist" not in sys_dict:
         logger.info("Using Plist")
     else:
         P_list = 101325.0 * np.ones_like(T_list)
@@ -407,16 +407,16 @@ def liquid_properties(eos, sys_dict, output_file="liquid_properties_output.txt")
     opts = {}
 
     # Process initial guess in pressure
-    if 'Pguess' in list(sys_dict.keys()):
+    if 'Pguess' in sys_dict:
         logger.info("Guess in pressure has been provided, but is unused for this function")
 
-    if 'CriticalProp' in list(sys_dict.keys()):
+    if 'CriticalProp' in sys_dict:
         logger.info("Critial properties have been provided, but are unused for this function")
 
     # Extract rho dict
-    if "rhodict" in list(sys_dict.keys()):
+    if "rhodict" in sys_dict:
         logger.info("Accepted options for P vs. density curve")
-        opts["rhodict"] = rhodict
+        opts["rhodict"] = sys_dict["rhodict"]
 
     ## Generate Output
     with open(output_file, 'w') as f:
@@ -475,11 +475,11 @@ def vapor_properties(eos, sys_dict, output_file="vapor_properties_output.txt"):
     logger = logging.getLogger(__name__)
 
     ## Extract and check input data
-    if 'Tlist' in list(sys_dict.keys()):
+    if 'Tlist' in sys_dict:
         T_list = np.array(sys_dict['Tlist'])
         logger.info("Using Tlist")
 
-    if 'yilist' in list(sys_dict.keys()):
+    if 'yilist' in sys_dict:
         yi_list = np.array(sys_dict['yilist'])
         logger.info("Using yilist")
 
@@ -496,7 +496,7 @@ def vapor_properties(eos, sys_dict, output_file="vapor_properties_output.txt"):
             raise ValueError("The number of provided temperatures and mole fraction sets are different")
             logger.error("The number of provided temperatures and mole fraction sets are different")
 
-    if "Plist" not in list(sys_dict.keys()):
+    if "Plist" not in sys_dict:
         logger.info("Using Plist")
     else:
         P_list = 101325.0 * np.ones_like(T_list)
@@ -506,16 +506,16 @@ def vapor_properties(eos, sys_dict, output_file="vapor_properties_output.txt"):
     opts = {}
 
     # Process initial guess in pressure
-    if 'Pguess' in list(sys_dict.keys()):
+    if 'Pguess' in sys_dict:
         logger.info("Guess in pressure has been provided, but is unused for this function")
 
-    if 'CriticalProp' in list(sys_dict.keys()):
+    if 'CriticalProp' in sys_dict:
         logger.info("Critial properties have been provided, but are unused for this function")
 
     # Extract rho dict
-    if "rhodict" in list(sys_dict.keys()):
+    if "rhodict" in sys_dict:
         logger.info("Accepted options for P vs. density curve")
-        opts["rhodict"] = rhodict
+        opts["rhodict"] = sys_dict["rhodict"]
 
     ## Generate Output
     with open(output_file, 'w') as f:

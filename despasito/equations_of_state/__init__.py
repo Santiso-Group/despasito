@@ -29,7 +29,10 @@ def eos(eos_type, **kwargs):
 
     global disable_jit
 
-    disable_jit = not kwargs['jit']
+    if "jit" not in kwargs:
+        disable_jit = True
+    else:
+        disable_jit = False
 
     try:
         eos_fam, eos = eos_type.split('.')
