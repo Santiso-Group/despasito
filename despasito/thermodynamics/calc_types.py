@@ -24,7 +24,7 @@ from . import calc
 #                Phase Equilibrium given xi and T                     #
 #                                                                    #
 ######################################################################
-def phase_xiT(eos, sys_dict, output_file="phase_xiT_output.txt"):
+def phase_xiT(eos, sys_dict):
 
     r"""
     Assess input and system information and calculate phase diagram given liquid mole fractions, xi, and temperature.
@@ -37,8 +37,6 @@ def phase_xiT(eos, sys_dict, output_file="phase_xiT_output.txt"):
         An instance of the defined EOS class to be used in thermodynamic computations.
     sys_dict: dict
         A dictionary of all information given in the input .json file that wasn't used to create the EOS object.
-    output_file : str, Optional, default: "phase_xiT_output.txt"
-        Name of file in which the temperature, pressure, and vapor/liquid mole fractions are saved.
 
     Returns
     -------
@@ -67,7 +65,7 @@ def phase_xiT(eos, sys_dict, output_file="phase_xiT_output.txt"):
     if np.size(T_list) != np.size(xi_list, axis=0):
         if len(T_list) == 1:
             T_list = np.ones(len(xi_list))*T_list[0]
-            logger.info("The same temperature, %f, was used for all mole fraction values" % T_list[0])
+            logger.info("The same temperature, {}, was used for all mole fraction values".format(T_list[0]))
         else:
             raise ValueError("The number of provided temperatures and mole fraction sets are different")
             logger.error("The number of provided temperatures and mole fraction sets are different")
@@ -81,10 +79,10 @@ def phase_xiT(eos, sys_dict, output_file="phase_xiT_output.txt"):
         if np.size(T_list) != np.size(Pguess):
             if type(Pguess) not in [list, numpy.ndarray]:
                 opts["Pguess"] = np.ones(len(T_list))*Pguess
-                logger.info("The same pressure, %f, was used for all mole fraction values" % Pguess)
+                logger.info("The same pressure, {}, was used for all mole fraction values".format(Pguess))
             elif len(T_list) == 1:
                 opts["Pguess"] = np.ones(len(T_list))*Pguess[0]
-                logger.info("The same pressure, %f, was used for all mole fraction values" % Pguess)
+                logger.info("The same pressure, {}, was used for all mole fraction values".format(Pguess))
             else:
                 raise ValueError("The number of provided pressure and mole fraction sets are different")
                 logger.error("The number of provided pressure and mole fraction sets are different")
@@ -104,18 +102,13 @@ def phase_xiT(eos, sys_dict, output_file="phase_xiT_output.txt"):
 
     # Extract desired method
     if "method" in sys_dict:
-        logger.info("Accepted optimization method, %s, for solving pressure" % sys_dict['method'])
+        logger.info("Accepted optimization method, {}, for solving pressure".format(sys_dict['method']))
         opts["meth"] = sys_dict['method']
 
     # Extract rho dict
     if "rhodict" in sys_dict:
         logger.info("Accepted options for P vs. density curve")
         opts["rhodict"] = sys_dict["rhodict"]
-
-    # NoteHere
-    ## Generate Output
-    with open(output_file, 'w') as f:
-        f.write('Temperature (K), xi, Pressure (Pa), yi, flagl, flagv\n')
 
     ## Calculate P and yi
     P_list = np.zeros_like(T_list)
@@ -127,14 +120,15 @@ def phase_xiT(eos, sys_dict, output_file="phase_xiT_output.txt"):
         if "Pguess" in opts:
             optsi["Pguess"] = optsi["Pguess"][i]
 
-        logger.info("T (K), xi: %s %s, Let's Begin!" % (str(T_list[i]), str(xi_list[i])))
-        P_list[i], yi_list[i], flagv_list[i], flagl_list[i] = calc.calc_xT_phase(xi_list[i], T_list[i], eos, **optsi)
-        logger.info("P (Pa), yi: %s %s" % (str(P_list[i]), str(yi_list[i])))
-
-        ## Generate Output
-        with open(output_file, 'a') as f:
-            tmp = [T_list[i], xi_list[i], P_list[i], yi_list[i], flagl_list[i], flagv_list[i]]
-            f.write(", ".join([str(x) for x in tmp]) + '\n')
+        logger.info("T (K), xi: {} {}, Let's Begin!".format(str(T_list[i]), str(xi_list[i])))
+        try:
+            P_list[i], yi_list[i], flagv_list[i], flagl_list[i] = calc.calc_xT_phase(xi_list[i], T_list[i], eos, **optsi)
+        except:
+            logger.warning("T (K), xi: {} {}, calculation did not produce a valid result.".format(T_list[i], xi_list[i]))
+            P_list[i], yi_list[i] = [np.nan for x in range(2)]
+            flagl_list[i], flagv_list[i] = [3, 3]
+            continue
+        logger.info("P (Pa), yi: {} {}".format(P_list[i], yi_list[i]))
 
     logger.info("--- Calculation phase_xiT Complete ---")
 
@@ -146,7 +140,7 @@ def phase_xiT(eos, sys_dict, output_file="phase_xiT_output.txt"):
 #                Phase Equilibria given yi and T                     #
 #                                                                    #
 ######################################################################
-def phase_yiT(eos, sys_dict, output_file="phase_yiT_output.txt"):
+def phase_yiT(eos, sys_dict):
 
     r"""
     Assess input and system information and calculate phase diagram given vapor mole fractions, yi, and temperature.
@@ -159,8 +153,6 @@ def phase_yiT(eos, sys_dict, output_file="phase_yiT_output.txt"):
         An instance of the defined EOS class to be used in thermodynamic computations.
     sys_dict: dict
         A dictionary of all information given in the input .json file that wasn't used to create the EOS object.
-    output_file : str, Optional, default: "phase_yiT_output.txt"
-        Name of file in which the temperature, pressure, and vapor/liquid mole fractions are saved.
 
     Returns
     -------
@@ -187,7 +179,7 @@ def phase_yiT(eos, sys_dict, output_file="phase_yiT_output.txt"):
     if np.size(T_list) != np.size(yi_list, axis=0):
         if len(T_list) == 1:
             T_list = np.ones(len(yi_list))*T_list[0]
-            logger.info("The same temperature, %f, was used for all mole fraction values" % T_list[0])
+            logger.info("The same temperature, {}, was used for all mole fraction values".format(T_list[0]))
         else:
             raise ValueError("The number of provided temperatures and mole fraction sets are different")
             logger.error("The number of provided temperatures and mole fraction sets are different")
@@ -201,10 +193,10 @@ def phase_yiT(eos, sys_dict, output_file="phase_yiT_output.txt"):
         if np.size(T_list) != np.size(Pguess):
             if type(Pguess) not in [list, numpy.ndarray]:
                 opts["Pguess"] = np.ones(len(T_list))*Pguess
-                logger.info("The same pressure, %f, was used for all mole fraction values" % Pguess)
+                logger.info("The same pressure, {}, was used for all mole fraction values".format(Pguess))
             elif len(T_list) == 1:
                 opts["Pguess"] = np.ones(len(T_list))*Pguess[0]
-                logger.info("The same pressure, %f, was used for all mole fraction values" % Pguess)
+                logger.info("The same pressure, {}, was used for all mole fraction values".format(Pguess))
             else:
                 raise ValueError("The number of provided pressure and mole fraction sets are different")
                 logger.error("The number of provided pressure and mole fraction sets are different")
@@ -219,22 +211,18 @@ def phase_yiT(eos, sys_dict, output_file="phase_yiT_output.txt"):
             if np.isnan(Pguess):
                 logger.info("Critical properties were not used to guess an intial pressure")
             else:
-                logger.info("Pguess: %f" % Pguess)
+                logger.info("Pguess: {}".format(Pguess))
                 opts["Pguess"] = Pguess
 
     # Extract desired method
     if "method" in sys_dict:
-        logger.info("Accepted optimization method, %s, for solving pressure" % sys_dict['method'])
+        logger.info("Accepted optimization method, {}, for solving pressure".format(sys_dict['method']))
         opts["meth"] = sys_dict['method']
 
     # Extract rho dict
     if "rhodict" in sys_dict:
         logger.info("Accepted options for P vs. density curve")
         opts["rhodict"] = sys_dict["rhodict"]
-
-    ## Generate Output
-    with open(output_file, 'w') as f:
-        f.write('Temperature (K), yi, Pressure (Pa), xi, flagv, flagl\n')
 
     ## Calculate P and xi
     P_list = np.zeros_like(T_list)
@@ -245,14 +233,15 @@ def phase_yiT(eos, sys_dict, output_file="phase_yiT_output.txt"):
         optsi = opts
         if "Pguess" in opts:
             optsi["Pguess"] = optsi["Pguess"][i]
-        logger.info("T (K), yi: %s %s, Let's Begin!" % (str(T_list[i]), str(yi_list[i])))
-        P_list[i], xi_list[i], flagl_list[i], flagv_list[i]  = calc.calc_yT_phase(yi_list[i], T_list[i], eos, **optsi)
-        logger.info("P (Pa), xi: %s %s" % (str(P_list[i]), str(xi_list[i])))
-
-        ## Generate Output
-        with open(output_file, 'a') as f:
-            tmp = [T_list[i], yi_list[i], P_list[i], xi_list[i], flagv_list[i], flagl_list[i]]
-            f.write(", ".join([str(x) for x in tmp]) + '\n')
+        logger.info("T (K), yi: {} {}, Let's Begin!".format(str(T_list[i]), str(yi_list[i])))
+        try:
+            P_list[i], xi_list[i], flagl_list[i], flagv_list[i]  = calc.calc_yT_phase(yi_list[i], T_list[i], eos, **optsi)
+        except:
+            logger.warning("T (K), yi: {} {}, calculation did not produce a valid result.".format(str(T_list[i]), str(yi_list[i])))
+            P_list[i], xi_list[i] = [np.nan for x in range(2)]
+            flagl_list[i], flagv_list[i] = [3, 3]
+            continue
+        logger.info("P (Pa), xi: {} {}".format(str(P_list[i]), str(xi_list[i])))
 
     logger.info("--- Calculation phase_yiT Complete ---")
 
@@ -263,7 +252,7 @@ def phase_yiT(eos, sys_dict, output_file="phase_yiT_output.txt"):
 #                Saturation calc for 1 Component               #
 #                                                                    #
 ######################################################################
-def sat_props(eos, sys_dict, output_file="saturation_output.txt"):
+def sat_props(eos, sys_dict):
 
     r"""
     Assess input and system information and computes the saturated pressure, liquid, and gas density a one component phase at a temperature.
@@ -276,8 +265,6 @@ def sat_props(eos, sys_dict, output_file="saturation_output.txt"):
         An instance of the defined EOS class to be used in thermodynamic computations.
     sys_dict: dict
         A dictionary of all information given in the input .json file that wasn't used to create the EOS object.
-    output_file : str, Optional, default: "saturation_output.txt"
-        Name of file in which the temperature, saturation pressure, and vapor/liquid densities.
 
     Returns
     -------
@@ -304,7 +291,7 @@ def sat_props(eos, sys_dict, output_file="saturation_output.txt"):
     if np.size(T_list) != np.size(xi_list, axis=0):
         if len(T_list) == 1:
             T_list = np.ones(len(xi_list))*T_list[0]
-            logger.info("The same temperature, %f, was used for all mole fraction values" % T_list[0])
+            logger.info("The same temperature, {}, was used for all mole fraction values".format(T_list[0]))
         else:
             raise ValueError("The number of provided temperatures and mole fraction sets are different")
             logger.error("The number of provided temperatures and mole fraction sets are different")
@@ -324,22 +311,21 @@ def sat_props(eos, sys_dict, output_file="saturation_output.txt"):
         logger.info("Accepted options for P vs. density curve")
         opts["rhodict"] = sys_dict["rhodict"]
 
-    ## Generate Output
-    with open(output_file, 'w') as f:
-        f.write('Temperature (K), Saturated Pressure (Pa), liquid denisty (mol/m^3), vapor density (mol/m^3)\n')
-
     ## Calculate saturation properties
     Psat = np.zeros_like(T_list)
     rholsat = np.zeros_like(T_list)
     rhovsat = np.zeros_like(T_list)
 
     for i in range(np.size(T_list)):
-        Psat[i], rholsat[i], rhovsat[i] = calc.calc_Psat(T_list[i], xi_list[i], eos, **opts)
 
-        ## Generate Output
-        with open(output_file, 'a') as f:
-            tmp = [T_list[i], Psat[i], rholsat[i], rhovsat[i]]
-            f.write(", ".join([str(x) for x in tmp]) + '\n')
+        logger.info("T (K), xi: {} {}, Let's Begin!".format(str(T_list[i]), str(xi_list[i])))
+        try:
+            Psat[i], rholsat[i], rhovsat[i] = calc.calc_Psat(T_list[i], xi_list[i], eos, **opts)
+        except:
+            logger.warning("T (K), xi: {} {}, calculation did not produce a valid result.".format(str(T_list[i]), str(xi_list[i])))
+            Psat[i], rholsat[i], rhovsat[i] = [np.nan for x in range(3)]
+            continue
+        logger.info("Psat {} Pa, rhol {}, rhov {}".format(Psat[i],rholsat[i],rhovsat[i]))
 
     logger.info("--- Calculation sat_props Complete ---")
 
@@ -351,7 +337,7 @@ def sat_props(eos, sys_dict, output_file="saturation_output.txt"):
 #                Liquid density given xi, T, and P                   #
 #                                                                    #
 ######################################################################
-def liquid_properties(eos, sys_dict, output_file="liquid_properties_output.txt"):
+def liquid_properties(eos, sys_dict):
 
     r"""
     Assess input and system information and computes the liquid density and chemical potential given a temperature, pressure, and liquid mole fractions.
@@ -364,8 +350,6 @@ def liquid_properties(eos, sys_dict, output_file="liquid_properties_output.txt")
         An instance of the defined EOS class to be used in thermodynamic computations.
     sys_dict: dict
         A dictionary of all information given in the input .json file that wasn't used to create the EOS object.
-    output_file : str, Optional, default: "liquid_properties_output.txt"
-        Name of file in which the pressure, temperature, and liquid mole fraction, density, and chemical potential.
 
     Returns
     -------
@@ -392,7 +376,7 @@ def liquid_properties(eos, sys_dict, output_file="liquid_properties_output.txt")
     if np.size(T_list) != np.size(xi_list, axis=0):
         if len(T_list) == 1:
             T_list = np.ones(len(xi_list))*T_list[0]
-            logger.info("The same temperature, %f, was used for all mole fraction values" % T_list[0])
+            logger.info("The same temperature, {}, was used for all mole fraction values".format(T_list[0]))
         else:
             raise ValueError("The number of provided temperatures and mole fraction sets are different")
             logger.error("The number of provided temperatures and mole fraction sets are different")
@@ -418,10 +402,6 @@ def liquid_properties(eos, sys_dict, output_file="liquid_properties_output.txt")
         logger.info("Accepted options for P vs. density curve")
         opts["rhodict"] = sys_dict["rhodict"]
 
-    ## Generate Output
-    with open(output_file, 'w') as f:
-        f.write('Pressure (Pa), Temperature (K), xi, liquid denisty (mol/m^3), fugacity coeff.\n')
-
     ## Calculate liquid density
     rhol = np.zeros_like(T_list)
     phil = []
@@ -429,17 +409,12 @@ def liquid_properties(eos, sys_dict, output_file="liquid_properties_output.txt")
         rhol[i], flagl = calc.calc_rhol(P_list[i], T_list[i], xi_list[i], eos, **opts)
 
         if np.isnan(rhol[i]):
-            logger.warning('Failed to calculate rhol at %f' % T_list[i])
+            logger.warning('Failed to calculate rhol at {}'.format(T_list[i]))
             phil[i] = np.nan
         else:
-            logger.info("P (Pa), T (K), xi, rhol: %s %s %s %s" % (str(P_list[i]),str(T_list[i]), str(xi_list[i]),str(rhol[i])))
+            logger.info("P (Pa), T (K), xi, rhol: {} {} {} {}".format(P_list[i],T_list[i],xi_list[i],rhol[i]))
             muil_tmp = eos.chemicalpotential(P_list[i], np.array([rhol[i]]), xi_list[i], T_list[i])
             phil.append(np.exp(muil_tmp))
-
-        ## Generate Output
-        with open(output_file, 'a') as f:
-            tmp = [P_list[i], T_list[i], xi_list[i], rhol[i], phil[i]]
-            f.write(", ".join([str(x) for x in tmp]) + '\n')
 
     logger.info("--- Calculation liquid_density Complete ---")
 
@@ -450,7 +425,7 @@ def liquid_properties(eos, sys_dict, output_file="liquid_properties_output.txt")
 #                Vapor density given yi, T, and P                    #
 #                                                                    #
 ######################################################################
-def vapor_properties(eos, sys_dict, output_file="vapor_properties_output.txt"):
+def vapor_properties(eos, sys_dict):
 
     r"""
     Assess input and system information and computes the vapor density and chemical potential given a temperature, pressure, and vapor mole fractions.
@@ -463,8 +438,6 @@ def vapor_properties(eos, sys_dict, output_file="vapor_properties_output.txt"):
         An instance of the defined EOS class to be used in thermodynamic computations.
     sys_dict: dict
         A dictionary of all information given in the input .json file that wasn't used to create the EOS object.
-    output_file : str, Optional, default: "vapor_properties_output.txt"
-        Name of file in which the pressure, temperature, and vapor mole fraction, density, and chemical potential.
 
     Returns
     -------
@@ -491,7 +464,7 @@ def vapor_properties(eos, sys_dict, output_file="vapor_properties_output.txt"):
     if np.size(T_list) != np.size(yi_list, axis=0):
         if len(T_list) == 1:
             T_list = np.ones(len(yi_list))*T_list[0]
-            logger.info("The same temperature, %f, was used for all mole fraction values" % T_list[0])
+            logger.info("The same temperature, {}, was used for all mole fraction values".join(T_list[0]))
         else:
             raise ValueError("The number of provided temperatures and mole fraction sets are different")
             logger.error("The number of provided temperatures and mole fraction sets are different")
@@ -517,27 +490,18 @@ def vapor_properties(eos, sys_dict, output_file="vapor_properties_output.txt"):
         logger.info("Accepted options for P vs. density curve")
         opts["rhodict"] = sys_dict["rhodict"]
 
-    ## Generate Output
-    with open(output_file, 'w') as f:
-        f.write('Pressure (Pa), Temperature (K), yi, vapor denisty (mol/m^3), fugacity coeff.\n')
-
     ## Calculate vapor density
     rhov = np.zeros_like(T_list)
     phiv = []
     for i in range(np.size(T_list)):
         rhov[i], flagv = calc.calc_rhov(P_list[i], T_list[i], yi_list[i], eos, **opts)
         if np.isnan(rhov[i]):
-            logger.warning('Failed to calculate rhov at %f' % T_list[i])
+            logger.warning('Failed to calculate rhov at {}'.format(T_list[i]))
             phiv[i] = np.nan
         else:
-            logger.info("P (Pa), T (K), yi, rhov: %s %s %s %s" % (str(P_list[i]),str(T_list[i]), str(yi_list[i]),str(rhov[i])))
+            logger.info("P (Pa), T (K), yi, rhov: {} {} {} {}".format(P_list[i],T_list[i],yi_list[i],rhov[i]))
             muiv_tmp = eos.chemicalpotential(P_list[i], np.array([rhov[i]]), yi_list[i], T_list[i])
             phiv.append(np.exp(muiv_tmp))
-
-        ## Generate Output
-        with open(output_file, 'a') as f:
-            tmp = [P_list[i], T_list[i], yi_list[i], rhov[i],phiv[i]]
-            f.write(", ".join([str(x) for x in tmp]) + '\n')
 
     logger.info("--- Calculation vapor_density Complete ---")
 

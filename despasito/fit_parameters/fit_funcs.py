@@ -23,32 +23,42 @@ def reformat_ouput(cluster):
     logger = logging.getLogger(__name__)
 
     # Arrange data
-    type_cluster = [type(x) for x in cluster]
+    type_cluster = [type(x[0]) for x in cluster]
 
-    if len(type_cluster) == 1 and type_cluster not in [list,np.ndarray,tuple]:
-        matrix = np.array(cluster).T
-        len_cluster = [1. in x in range(len(type_cluster))]
-    elif type_cluster not in [list,np.ndarray,tuple]:
-        matrix = np.array(cluster).T
-        len_cluster = [1. for x in range(len(type_cluster))]
+    # if input is a list or array
+    if len(cluster) == 1:
+        matrix = np.array(cluster[0]).T
+        if cluster[0][0] not in [list,np.ndarray,tuple]:
+            len_cluster = [1]
+        else:
+            len_cluster = [len(cluster[0][0])]
+
+    # If list of lists or arrays
     else:
+
+        # Obtain dimensions of final matrix
         len_cluster = []
         for i,typ in enumerate(type_cluster):
             if typ in [list,np.ndarray,tuple]:
-                len_cluster.append(len(cluster[i]))
+                len_cluster.append(len(cluster[i][0]))
             else:
                 len_cluster.append(1)
-        matrix_tmp = np.zeros([len(cluster), sum(len_cluster)])
+        matrix_tmp = np.zeros([len(cluster[0]), sum(len_cluster)])
 
+        # Transfer information to final matrix
+        ind = 0
         for i, val in enumerate(cluster):
-            ind = 0
-            for j,l in enumerate(len_cluster):
-                if l == 1:
-                    matrix_tmp[i, ind] = val[j]
-                else:
-                    matrix_tmp[i, ind:ind+l+1] = val[j]
-                ind += l
-        matrix = np.array(matrix_tmp).T
+            matrix = np.array(val).T
+            l = len_cluster[i]
+            if l == 1:
+                matrix_tmp[:, ind] = np.array(matrix)
+                ind += 1
+            else:
+                for j in range(l):
+                    matrix_tmp[:, ind] = matrix[j]
+                    ind += 1
+        #matrix = np.array(matrix_tmp).T
+        matrix = np.array(matrix_tmp)
 
     return matrix, len_cluster
 

@@ -24,7 +24,10 @@ def run(filename="input.json", path=".", **args):
     
     #read input file (need to add command line specification)
     logger.info("Begin processing input file: %s" % filename)
-    eos_dict, thermo_dict = readwrite_input.extract_calc_data(filename, path, **args)
+    eos_dict, thermo_dict, output_file = readwrite_input.extract_calc_data(filename, path, **args)
+    if output_file:
+        file_dict = {"output_file":output_file}
+
     eos_dict['jit'] = args['jit']
 
     logger.debug("EOS dict:",eos_dict)
@@ -43,10 +46,10 @@ def run(filename="input.json", path=".", **args):
         logger.info("Intializing parametrization procedure")
         output = fit(eos, thermo_dict)
         logger.info("Finished parametrization")
-        # readwrite_input.writeout_dict(output_dict)
+        # readwrite_input.writeout_dict(output_dict,**file_dict)
     else:
         logger.info("Intializing thermodynamic calculation")
         output_dict = thermo(eos, thermo_dict)
         logger.info("Finished thermodynamic calculation")
-        # readwrite_input.writeout_dict(output_dict)
+        readwrite_input.writeout_dict(output_dict,thermo_dict["calculation_type"],**file_dict)
     

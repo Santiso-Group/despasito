@@ -46,8 +46,7 @@ def eos(eos_type, **kwargs):
         instance = eos_class(kwargs)
     except (AttributeError):
         raise ImportError(
-            "Based on your input, '%s', we expect the class, %s, in a module, %s, found in the package, %s, which indicates the EOS family."
-            % (eos_type, class_name, eos, eos_fam))
+            "Based on your input, '{}', we expect the class, {}, in a module, %s, found in the package, {}, which indicates the EOS family.".format(eos_type, class_name, eos, eos_fam))
 
     return instance
 

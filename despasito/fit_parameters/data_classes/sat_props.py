@@ -140,8 +140,7 @@ class Data(ExpDataTemplate):
 
         phase_list = self._thermo_wrapper(eos)
 
-        # Reformat array of results
-        print(len(phase_list),phase_list)
+        ## Reformat array of results
         phase_list, len_list = ff.reformat_ouput(phase_list)
         phase_list = np.array(phase_list).T
 

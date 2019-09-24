@@ -72,6 +72,11 @@ def extract_calc_data(input_fname, path='.', **args):
     # Look for data (library) files in the user-supplied path
     append_data_file_path(input_dict, path)
 
+    if "output_file" in input_dict:
+        output_file = input_dict["output_file"]
+    else:
+        output_file = None
+
     ## Make bead data dictionary for EOS
     #process input file
     xi, beads, nui = process_bead_data(input_dict['beadconfig'])
@@ -100,21 +105,21 @@ def extract_calc_data(input_fname, path='.', **args):
     ## Make dictionary of data needed for thermodynamic calculation
     thermo_dict = {}
     # Extract relevant system state inputs
-    EOS_dict_keys = ['beadconfig', 'SAFTgroup', 'SAFTcross','association_site_names']
+    EOS_dict_keys = ['beadconfig', 'SAFTgroup', 'SAFTcross','association_site_names',"output_file"]
     for key, value in input_dict.items():
         if key not in EOS_dict_keys:
             thermo_dict[key] = value
 
     if "opt_params" not in thermo_dict:
-        logger.info("The following thermo calculation parameters have been provided: %s\n" % ", ".join(thermo_dict.keys()))
+        logger.info("The following thermo calculation parameters have been provided: {}\n".format((", ".join(thermo_dict.keys()))))
     else: # parameter fitting
         thermo_dict = process_param_fit_inputs(thermo_dict)
         tmp = ""
         for key, value in thermo_dict["exp_data"].items():
-            tmp += " %s (%s)," % (key,value["name"])
-        logger.info("The bead, %s, will have the parameters %s, fit using the following data:\n %s" % (thermo_dict["opt_params"]["fit_bead"],thermo_dict["opt_params"]["fit_params"],tmp))
+            tmp += " {} ({}),".format(key,value["name"])
+        logger.info("The bead, {}, will have the parameters {}, fit using the following data:\n {}".format(thermo_dict["opt_params"]["fit_bead"],thermo_dict["opt_params"]["fit_params"],tmp))
 
-    return eos_dict, thermo_dict
+    return eos_dict, thermo_dict, output_file
 
 ######################################################################
 #                                                                    #
@@ -312,7 +317,7 @@ def process_param_fit_inputs(thermo_dict):
                 value.pop(key2,None)
 
             if value:
-               logger.info("The opt_params keys: %s, were not used." % ", ".join(list(value.keys())))
+               logger.info("The opt_params keys: {}, were not used.".format(", ".join(list(value.keys()))))
             new_thermo_dict[key] = new_opt_params
 
         elif (type(value) == dict and "datatype" in value):
@@ -417,4 +422,65 @@ def process_exp_data_file(fname):
     if zi: file_dict["zi"] = np.array([np.array(z) for z in zi]).T
 
     return file_dict
+
+######################################################################
+#                                                                    #
+#                  Write Thermodynamic Ouput                         #
+#                                                                    #
+######################################################################
+def writeout_dict(output_dict,calctype,output_file="thermo_output.txt"):
+    """
+    Import dictionary of both input and output data to produce a file. A line in the top clarifies the calculation type done.
+
+    Parameters
+    ----------
+    output_dict : dict
+        Dictionary of given and calculated information from thermodynamic module
+    output_file : str, Optional, default: thermo_output.txt
+        Name of output file
+
+    Returns
+    -------
+    File of data saved to current directory
+    """
+
+    # Define units
+    units = {"T":"K","P":"Pa","Psat":"Pa","rhol":"mol/m^3","rhov":"mol/m^3"}
+
+    # Make comment line
+    comment = "# This data was generated in DESPASITO using the thermodynamic calculation: "+calctype
+    
+    # Make results matrix
+    keys = []
+    matrix = []
+    for key, value in output_dict.items():
+        tmp_matrix = np.array(value).T
+        if len(tmp_matrix.shape)==1:
+            keys.append(key)
+            matrix.append(value)
+        else:
+            for i in range(len(tmp_matrix)):
+                keys.append(key+str(i+1))
+                matrix.append(tmp_matrix[i])
+                print("more",tmp_matrix[i])
+    matrix = np.array(matrix).T
+
+    # Make header line
+    header = "#"
+    for key in keys:
+        if key in units:
+            unit = " [{}]".format(units[key])
+        else:
+            unit = ""
+        header += " {}{},".format(key,unit)
+
+    # Write to file
+    with open(output_file,"w") as f:
+        f.write(comment+"\n")
+        f.write(header+"\n")
+        for row in matrix:
+            f.write((' {},' * len(row)).format(*row)+"\n")
+            
+
+
 

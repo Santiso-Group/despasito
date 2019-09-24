@@ -50,18 +50,30 @@ class Data(ExpDataTemplate):
 
         # Self interaction parameters
         self.name = data_dict["name"]
-        try:
-            self.calctype = data_dict["calctype"]
-        except:
-            self.calctype = "phase_xiT"
 
-        try:
-            self.xi = data_dict["xi"]
-            self.T = data_dict["T"]
-            self.yi = data_dict["yi"]
-            self.P = data_dict["P"]
-        except:
-            raise ImportError("Given TLVE data, values for P, T, xi, and yi should have been provided.")
+        if "xi" in data_dict: self.xi = data_dict["xi"]
+        if "T" in data_dict: self.T = data_dict["T"]
+        if "yi" in data_dict: self.yi = data_dict["yi"]
+        if "P" in data_dict: self.P = data_dict["P"]
+
+        if (not hasattr(self,"P") or not hasattr(self,"T")):
+            raise ImportError("Given TLVE data, values for P and T should have been provided.")
+
+        if (not hasattr(self,"xi") and not hasattr(self,"yi")):
+            raise ImportError("Given TLVE data, mole fractions should have been provided.")
+
+        if "calctype" not in data_dict:
+            print("No calculation type has been provided.")
+            if self.xi:
+                self.calctype = "phase_xiT"
+                print("Assume a calculation type of phase_xiT")
+            elif self.yi:
+                self.calctype = "phase_yiT"
+                print("Assume a calculation type of phase_yiT")
+            else:
+                raise ValueError("Unknown calculation instructions")
+        else:
+            self.calctype = data_dict["calctype"]
 
         if any(np.array([len(x) for x in [self.xi, self.yi, self.T, self.P]]) == len(self.xi)) == False:
             raise ValueError("T, P, yi, and xi are not all the same length.")
@@ -106,7 +118,7 @@ class Data(ExpDataTemplate):
             except:
                 raise ValueError("Calculation of calc_yT_phase failed")
 
-            return output
+        return output
 
     def objective(self, eos):
 
@@ -131,9 +143,11 @@ class Data(ExpDataTemplate):
    
         obj_value = np.sum((((phase_list[0] - self.P) / self.P)**2)*self.weights)
         if self.calctype == "phase_xiT":
-            obj_value += np.sum((((phase_list[1:] - self.yi)/self.yi)**2)*self.weights)
+            yi = self.yi.T
+            obj_value += np.sum((((phase_list[1:] - yi)/yi)**2)*self.weights)
         elif self.calctype == "phase_yiT":
-            obj_value += np.sum((((phase_list[1:] - self.xi)/self.xi)**2)*self.weights)
+            yi = self.xi.T
+            obj_value += np.sum((((phase_list[1:] - xi)/xi)**2)*self.weights)
 
         return obj_value
 

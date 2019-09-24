@@ -101,14 +101,21 @@ def fit(eos, thermo_dict):
 #                       disp=True)
         # Why doesn't this work???
         # "args": (opt_params, eos, exp_dict, output_file),"method": 'nelder-mead', "options": {'maxiter': 200}},
-        res = spo.basinhopping(ff.compute_SAFT_obj,
+        result = spo.basinhopping(ff.compute_SAFT_obj,
                        beadparams0,
-                       niter=500,
-                       T=0.2,
+                       niter=2,
+                       T=0.5,
                        stepsize=0.1,
                        minimizer_kwargs={
                            "args": (opt_params, eos, exp_dict),"method": 'nelder-mead', "options": {'maxiter': 200}},
                        disp=True)
+        logger.info("Fitting terminated:\n{}".format(result.message))
+        logger.info("{}".format(result.message))
+        logger.info("Best Fit Parameters")
+        logger.info("    Obj. Value: {}".format(result.fun))
+        for i in range(len(opt_params["fit_params"])):
+            logger.info("    {} {}: {}".format(opt_params["fit_bead"],opt_params["fit_params"][i],result.x[i]))
+
     except:
         raise TypeError("The parameter fitting failed")
 

@@ -43,7 +43,7 @@ def calc_Aideal(xi, rho, massi, T):
     """
 
     # Check for mole fractions of zero and remove those components
-    ind = np.where(xi==0.0)[0]
+    ind = np.where(np.abs(xi)<1e-16)[0]
     xi_tmp = []
     massi_tmp = []
     for i in range(len(xi)):
@@ -60,9 +60,8 @@ def calc_Aideal(xi, rho, massi, T):
 
 #    if not any(np.sum(xi_tmp * np.log(Aideal_tmp), axis=1)):
     if np.isnan(np.sum(np.sum(xi_tmp * np.log(Aideal_tmp), axis=1))):
-        print(np.array(Aideal_tmp).T)
-        print("lambda",Lambda3)
-        print(xi_tmp, massi_tmp)
+        print("xi",xi,"xi_new",xi_tmp, "xi_new should have no values of zero")
+        print("rho",rho)
         Aideal = []
         for a in Aideal_tmp:
             if not any(np.sum(xi_tmp * np.log(a), axis=1)): 
