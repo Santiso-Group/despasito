@@ -17,10 +17,12 @@ parser.add_argument("--jit", action='store_true', default=0, help="turn on Numba
 
 ## Extract arguements
 args = parser.parse_args()
-if args.verbose < 3:
-    args.verbose = (3-args.verbose)*10
-else:
-    args.verbose = 10
+if args.verbose:
+    if args.verbose < 3:
+        args.verbose = (3 - args.verbose) * 10
+    else:
+        args.verbose = 10
+
 ## Handle arguements
 
 # Logging
@@ -35,15 +37,15 @@ log_file_handler.setFormatter( logging.Formatter('%(asctime)s [%(levelname)s](%(
 log_file_handler.setLevel(args.verbose)
 logger.addHandler(log_file_handler)
 
-if args.quiet is False:
+if not args.quiet:
     # Set up logging to console
     console_handler = logging.StreamHandler() # sys.stderr
     console_handler.setFormatter( logging.Formatter('[%(levelname)s](%(name)s): %(message)s') )
     console_handler.setLevel(args.verbose)
     logger.addHandler(console_handler)
 
-logging.info("Input args: %r", args)
-logging.info("JIT compilation: %r", bool(args.jit))
+logging.info("Input args: {}".format(args))
+logging.info("JIT compilation: {}".format(args.jit))
 
 # Threads
 # if args.threads != None:
@@ -56,8 +58,7 @@ if args.input:
     kwargs = {"filename":args.input}
 else:
     kwargs = {}
-    
-#kwargs["logFile"] = args.logFile
+
 kwargs["threads"] = args.threads
 kwargs["path"] = args.path
 kwargs["jit" ] = args.jit
