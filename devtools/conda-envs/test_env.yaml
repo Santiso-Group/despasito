@@ -8,6 +8,7 @@ dependencies:
   - scipy
   - deap
   - matplotlib
+  - numba
 
     # Testing
   - pytest

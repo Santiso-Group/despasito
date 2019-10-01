@@ -735,7 +735,7 @@ def calc_Prange(T, xi, yi, eos, rhodict={}, Pmin=1000):
             # Find Obj Function for Min pressure above
             p = Parray[0]
             phil, rhol, flagl = calc_phil(p, T, xi, eos, rhodict={})
-            yi_range, phiv, flagv = solve_yi_xiT(yi_range, xi, phil, p, T, eos, rhodict=rhodict, maxitr=50)
+            yi_range, phiv, flagv = solve_yi_xiT(yi_range, xi, phil, p, T, eos, rhodict=rhodict)
             ObjArray[0] = (np.sum(xi * phil / phiv) - 1.0)
             logger.info("Minimum pressure: {},  Obj. Func: {}".format(Parray[0],ObjArray[0]))
             
@@ -743,7 +743,7 @@ def calc_Prange(T, xi, yi, eos, rhodict={}, Pmin=1000):
             # Find Obj function for Max Pressure above
             p = Parray[1]
             phil, rhol, flagl = calc_phil(p, T, xi, eos, rhodict={})
-            yi_range, phiv, flagv = solve_yi_xiT(yi_range, xi, phil, p, T, eos, rhodict=rhodict, maxitr=50)
+            yi_range, phiv, flagv = solve_yi_xiT(yi_range, xi, phil, p, T, eos, rhodict=rhodict)
             ObjArray[1] = (np.sum(xi * phil / phiv) - 1.0)
             logger.info("Estimate Maximum pressure: {},  Obj. Func: {}".format(Parray[1],ObjArray[1]))
         else:
@@ -774,7 +774,7 @@ def calc_Prange(T, xi, yi, eos, rhodict={}, Pmin=1000):
                 p = 2 * Parray[-1]
                 Parray.append(p)
                 phil, rhol, flagl = calc_phil(p, T, xi, eos, rhodict={})
-                yi_range, phiv, flagv = solve_yi_xiT(yi_range, xi, phil, p, T, eos, rhodict=rhodict, maxitr=50)
+                yi_range, phiv, flagv = solve_yi_xiT(yi_range, xi, phil, p, T, eos, rhodict=rhodict)
                 ObjArray.append(np.sum(xi * phil / phiv) - 1.0)
 
     Prange = Parray[-2:]
@@ -843,7 +843,7 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxitr=15, tol=1e-6):
         
         if (any(np.isnan(phiv)) or flagv==1): # If vapor density doesn't exist
             logger.info("    Composition doesn't produce a vapor, let's find one!")
-            yinew = find_new_yi(yi_total,P, T, phil, xi, eos, rhodict=rhodict, maxitr=1000)
+            yinew = find_new_yi(yi_total,P, T, phil, xi, eos, rhodict=rhodict)
             phiv, rhov, flagv = calc_phiv(P, T, yinew, eos, rhodict={})
             if any(np.isnan(yinew)):
                 phiv = np.nan
@@ -878,7 +878,7 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxitr=15, tol=1e-6):
 #                       Solve Yi for xi and T                        #
 #                                                                    #
 ######################################################################
-def solve_xi_yiT(xi, yi, phiv, P, T, eos, rhodict={}, maxitr=50, tol=1e-6):
+def solve_xi_yiT(xi, yi, phiv, P, T, eos, rhodict={}, maxitr=20, tol=1e-6):
     r"""
     Find liquid mole fraction given pressure, vapor mole fraction, and temperature. Objective function is the sum of the predicted "mole numbers" predicted by the computed fugacity coefficients. Note that by "mole number" we mean that the prediction will only sum to 1 when the correct pressure is chosen in the outer loop. In this inner loop, we seek to find a mole fraction that is converged to reproduce itself in a prediction. If it hasn't, the new "mole numbers" are normalized into mole fractions and used as the next guess.
     In the case that a guess doesn't produce a liquid or critical fluid, we use another function to produce a new guess.
@@ -899,7 +899,7 @@ def solve_xi_yiT(xi, yi, phiv, P, T, eos, rhodict={}, maxitr=50, tol=1e-6):
         An instance of the defined EOS class to be used in thermodynamic computations.
     rhodict : dict, Optional, default: {}
         Dictionary of options used in calculating pressure vs. mole 
-    maxitr : int, Optional, default: 50
+    maxitr : int, Optional, default: 20
         Maximum number of iteration for both the outer pressure and inner vapor mole fraction loops
     tol : float, Optional, default: 1e-6
         Tolerance in sum of predicted xi "mole numbers"
@@ -963,7 +963,7 @@ def solve_xi_yiT(xi, yi, phiv, P, T, eos, rhodict={}, maxitr=50, tol=1e-6):
 ######################################################################
 
 
-def find_new_yi(yi_total,P, T, phil, xi, eos, rhodict={}, maxitr=50):
+def find_new_yi(yi_total,P, T, phil, xi, eos, rhodict={}):
     r"""
     Search vapor mole fraction combinations for a new estimate that produces a vapor density.
     
@@ -983,8 +983,6 @@ def find_new_yi(yi_total,P, T, phil, xi, eos, rhodict={}, maxitr=50):
         An instance of the defined EOS class to be used in thermodynamic computations.
     rhodict : dict, Optional, default: {}
         Dictionary of options used in calculating pressure vs. mole 
-    maxitr : int, Optional, default: 50
-        Maximum number of iteration for both the outer pressure and inner vapor mole fraction loops
 
     Returns
     -------
@@ -1233,7 +1231,7 @@ def solve_P_xiT(P, xi, T, eos, rhodict):
     #find liquid density
     phil, rhol, flagl = calc_phil(P, T, xi, eos, rhodict={})
 
-    yinew, phiv, flagv = solve_yi_xiT(yi_global, xi, phil, P, T, eos, rhodict=rhodict, maxitr=50)
+    yinew, phiv, flagv = solve_yi_xiT(yi_global, xi, phil, P, T, eos, rhodict=rhodict)
     yi_global = yi_global / np.sum(yi_global)
 
     #given final yi recompute
@@ -1283,7 +1281,7 @@ def solve_P_yiT(P, yi, T, eos, rhodict):
     #find liquid density
     phiv, rhov, flagv = calc_phiv(P, T, yi, eos, rhodict={})
 
-    xi_global, phil, flagl = solve_xi_yiT(xi_global, yi, phiv, P, T, eos, rhodict=rhodict, maxitr=50)
+    xi_global, phil, flagl = solve_xi_yiT(xi_global, yi, phiv, P, T, eos, rhodict=rhodict)
     xi_global = xi_global / np.sum(xi_global)
 
     #given final yi recompute
@@ -1419,7 +1417,7 @@ def calc_yT_phase(yi, T, eos, rhodict={}, Pguess=-1,meth="broyden1"):
 
     # Option 1
     phiv, rhov, flagv = calc_phiv(P, T, yi, eos, rhodict={})
-    xi_global, phil, flagl = solve_xi_yiT(xi_global, yi, phiv, P, T, eos, rhodict=rhodict, maxitr=50, tol=1e-10)
+    xi_global, phil, flagl = solve_xi_yiT(xi_global, yi, phiv, P, T, eos, rhodict=rhodict, tol=1e-10)
     xi = xi_global / np.sum(xi_global)
     obj = solve_P_yiT(P,yi, T, eos, rhodict=rhodict)
     
@@ -1520,7 +1518,7 @@ def calc_xT_phase(xi, T, eos, rhodict={}, Pguess=-1,meth="broyden1"):
                       method=meth,
                       options={
                           'fatol': 1e-5,
-                          'maxiter': 50,
+                          'maxiter': 25,
                           'jac_options': {
                               'reduction_method': 'simple'
                           }

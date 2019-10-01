@@ -116,7 +116,7 @@ def phase_xiT(eos, sys_dict):
     flagv_list = np.zeros_like(T_list)
     flagl_list = np.zeros_like(T_list)
     yi_list = np.zeros_like(xi_list)
-    obj_list = np.zeros_like(xi_list)
+    obj_list = np.zeros_like(T_list)
     for i in range(np.size(T_list)):
         optsi = opts
         if "Pguess" in opts:
@@ -231,7 +231,7 @@ def phase_yiT(eos, sys_dict):
     flagv_list = np.zeros_like(T_list)
     flagl_list = np.zeros_like(T_list)
     xi_list = np.zeros_like(yi_list)
-    obj_list = np.zeros_like(yi_list)
+    obj_list = np.zeros_like(T_list)
     for i in range(np.size(T_list)):
         optsi = opts
         if "Pguess" in opts:
