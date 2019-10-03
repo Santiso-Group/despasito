@@ -52,14 +52,14 @@ setup(
     include_package_data=True,
 
     # Allows `setup.py test` to work correctly with pytest
-    setup_requires=["numpy","scipy","deap","matplotlib"] + pytest_runner,
+    setup_requires=["numpy","scipy","deap","numba","matplotlib"] + pytest_runner,
     ext_package=fpath,
     ext_modules = [ext1,ext2],
     extras_require={'extra': ['pytest']},
 
     # Additional entries you may want simply uncomment the lines you want and fill in the data
     # url='http://www.my_package.com',  # Website
-    install_requires=["numpy","scipy","deap","matplotlib"],              # Required packages, pulls from pip if needed; do not use for Conda deployment
+    install_requires=["numpy","scipy","deap","numba","matplotlib"],              # Required packages, pulls from pip if needed; do not use for Conda deployment
     # platforms=['Linux',
     #            'Mac OS-X',
     #            'Unix',

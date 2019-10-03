@@ -44,13 +44,13 @@ def test_phase_xiT(eos=eos_co2_h2o,Tlist=Tlist,xilist=xilist):
 
     output = thermo.thermo(eos,{"calculation_type":"phase_xiT","Tlist":Tlist,"xilist":xilist})
         
-    assert output["P"][0]==pytest.approx(4493161.08556299,abs=1e+1) and output["yi"][0]==pytest.approx([0.99539961, 0.00460039],abs=1e-4)
+    assert output["P"][0]==pytest.approx(4493471.284403669,abs=1e+1) and output["yi"][0]==pytest.approx([0.99539961, 0.00460039],abs=1e-4)
 
 def test_phase_yiT(eos=eos_co2_h2o,Tlist=Tlist,yilist=yilist):
 
     output = thermo.thermo(eos,{"calculation_type":"phase_yiT","Tlist":Tlist,"yilist":yilist})
 
-    assert output["P"][0]==pytest.approx(4492927.52668297,abs=1e+1) and output["xi"][0]==pytest.approx([0.9617648, 0.0382352],abs=1e-4)
+    assert output["P"][0]==pytest.approx(4493570.232231314,abs=1e+1) and output["xi"][0]==pytest.approx([0.9617648, 0.0382352],abs=1e-4)
 
 def test_sat_props(eos=eos_co2_h2o,Tlist=Tlist):
 

@@ -11,7 +11,8 @@ import os
 import sys
 import logging
 
-from . import calc
+from . import calc_newyi as calc
+#from . import calc
 
 """
 .. todo::
@@ -115,6 +116,7 @@ def phase_xiT(eos, sys_dict):
     flagv_list = np.zeros_like(T_list)
     flagl_list = np.zeros_like(T_list)
     yi_list = np.zeros_like(xi_list)
+    obj_list = np.zeros_like(T_list)
     for i in range(np.size(T_list)):
         optsi = opts
         if "Pguess" in opts:
@@ -122,17 +124,17 @@ def phase_xiT(eos, sys_dict):
 
         logger.info("T (K), xi: {} {}, Let's Begin!".format(str(T_list[i]), str(xi_list[i])))
         try:
-            P_list[i], yi_list[i], flagv_list[i], flagl_list[i] = calc.calc_xT_phase(xi_list[i], T_list[i], eos, **optsi)
+            P_list[i], yi_list[i], flagv_list[i], flagl_list[i], obj_list[i] = calc.calc_xT_phase(xi_list[i], T_list[i], eos, **optsi)
         except:
             logger.warning("T (K), xi: {} {}, calculation did not produce a valid result.".format(T_list[i], xi_list[i]))
             P_list[i], yi_list[i] = [np.nan for x in range(2)]
-            flagl_list[i], flagv_list[i] = [3, 3]
+            flagl_list[i], flagv_list[i], obj_list[i] = [3, 3, np.nan]
             continue
         logger.info("P (Pa), yi: {} {}".format(P_list[i], yi_list[i]))
 
     logger.info("--- Calculation phase_xiT Complete ---")
 
-    return {"T":T_list,"xi":xi_list,"P":P_list,"yi":yi_list,"flagl":flagl_list,"flagv":flagv_list}
+    return {"T":T_list,"xi":xi_list,"P":P_list,"yi":yi_list,"flagl":flagl_list,"flagv":flagv_list,"obj":obj_list}
 
 
 ######################################################################
@@ -229,23 +231,24 @@ def phase_yiT(eos, sys_dict):
     flagv_list = np.zeros_like(T_list)
     flagl_list = np.zeros_like(T_list)
     xi_list = np.zeros_like(yi_list)
+    obj_list = np.zeros_like(T_list)
     for i in range(np.size(T_list)):
         optsi = opts
         if "Pguess" in opts:
             optsi["Pguess"] = optsi["Pguess"][i]
         logger.info("T (K), yi: {} {}, Let's Begin!".format(str(T_list[i]), str(yi_list[i])))
         try:
-            P_list[i], xi_list[i], flagl_list[i], flagv_list[i]  = calc.calc_yT_phase(yi_list[i], T_list[i], eos, **optsi)
+            P_list[i], xi_list[i], flagl_list[i], flagv_list[i], obj_list[i]  = calc.calc_yT_phase(yi_list[i], T_list[i], eos, **optsi)
         except:
             logger.warning("T (K), yi: {} {}, calculation did not produce a valid result.".format(str(T_list[i]), str(yi_list[i])))
             P_list[i], xi_list[i] = [np.nan for x in range(2)]
-            flagl_list[i], flagv_list[i] = [3, 3]
+            flagl_list[i], flagv_list[i], obj_list[i] = [3, 3, np.nan]
             continue
         logger.info("P (Pa), xi: {} {}".format(str(P_list[i]), str(xi_list[i])))
 
     logger.info("--- Calculation phase_yiT Complete ---")
 
-    return {"T":T_list,"yi":yi_list,"P":P_list,"xi":xi_list,"flagl":flagl_list,"flagv":flagv_list}
+    return {"T":T_list,"yi":yi_list,"P":P_list,"xi":xi_list,"flagl":flagl_list,"flagv":flagv_list, "obj":obj_list}
 
 ######################################################################
 #                                                                    #
