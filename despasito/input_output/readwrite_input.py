@@ -451,18 +451,17 @@ def writeout_dict(output_dict,calctype,output_file="thermo_output.txt"):
     comment = "# This data was generated in DESPASITO using the thermodynamic calculation: "+calctype
     
     # Make results matrix
-    print(output_dict)
     keys = []
     matrix = []
     for key, value in output_dict.items():
         tmp_matrix = np.array(value).T
         if len(tmp_matrix.shape)==1:
             keys.append(key)
-            matrix.append(value)
+            matrix.append(np.array(value))
         else:
             for i in range(len(tmp_matrix)):
                 keys.append(key+str(i+1))
-                matrix.append(tmp_matrix[i])
+                matrix.append(np.array(tmp_matrix[i]))
     matrix = np.array(matrix).T
 
     # Make header line

@@ -443,7 +443,7 @@ def calc_rhov(P, T, xi, eos, rhodict={}):
         flag = 3
         rho_tmp = np.nan
         logger.info("    The T and yi, {} {}, won't produce a fluid (vapor or liquid) at this pressure".format(T,xi))
-        PvsV_plot(vlist, Plist-P, Pvspline)
+        PvsV_plot(vlist, Plist, Pvspline)
     elif l_roots == 1:
         if not len(extrema):
             flag = 2
@@ -468,17 +468,17 @@ def calc_rhov(P, T, xi, eos, rhodict={}):
             flag = 4
             rho_tmp = np.nan
             logger.debug("    There should be a third root! Assume ideal gas P: {}".format(P))
-            #PvsV_plot(vlist, Plist-P, Pvspline)
+            #PvsV_plot(vlist, Plist, Pvspline)
     else: # 3 roots
         rho_tmp = 1.0 / roots[2]
         flag = 0
 
     if flag in [0,2]: # vapor or critical fluid
         tmp = [rho_tmp*.99, rho_tmp*1.01]
-        if not (Pdiff(tmp[0],P, T, xi, eos)*Pdiff(tmp[1],P, T, xi, eos))<0:
-            logger.info("rhomin, rhomax:",tmp)
-            PvsV_plot(vlist, Plist-P, Pvspline)
-        rho_tmp = brentq(Pdiff, tmp[0], tmp[1], args=(P, T, xi, eos), rtol=0.0000001)
+        if (Pdiff(tmp[0],P, T, xi, eos)*Pdiff(tmp[1],P, T, xi, eos))<0:
+            rho_tmp = brentq(Pdiff, tmp[0], tmp[1], args=(P, T, xi, eos), rtol=0.0000001)
+        else:
+            rho_tmp = root(Pdiff, rho_tmp, args=(P, T, xi, eos), method="hybr", tol=0.0000001)
 
     # Flag: 0 is vapor, 1 is liquid, 2 mean a critical fluid, 3 means that neither is true, 4 means we should assume ideal gas
     return rho_tmp, flag
@@ -686,9 +686,9 @@ def calc_phil(P, T, xi, eos, rhodict={}):
 #                              Calc P range                          #
 #                                                                    #
 ######################################################################
-def calc_Prange(T, xi, yi, eos, rhodict={}, Pmin=1000):
+def calc_Prange_xi(T, xi, yi, eos, rhodict={}, Pmin=1000, zi_opts={}):
     r"""
-    Obtain min and max pressure values, where the objective function at each of those values is of opposite sign.
+    Obtain min and max pressure values, where the liquid mole fraction is set and the objective function at each of those values is of opposite sign.
     
     Parameters
     ----------
@@ -704,6 +704,8 @@ def calc_Prange(T, xi, yi, eos, rhodict={}, Pmin=1000):
         Dictionary of options used in calculating pressure vs. mole 
     Pmin : float, Optional, default: 1000.0
         Minimum pressure in pressure range that restricts searched space.
+    zi_opts : dict, Optional, default: {}
+        Options used to solve the inner loop in the solving algorithm
 
     Returns
     -------
@@ -734,16 +736,16 @@ def calc_Prange(T, xi, yi, eos, rhodict={}, Pmin=1000):
         if z == 0:
             # Find Obj Function for Min pressure above
             p = Parray[0]
-            phil, rhol, flagl = calc_phil(p, T, xi, eos, rhodict={})
-            yi_range, phiv, flagv = solve_yi_xiT(yi_range, xi, phil, p, T, eos, rhodict=rhodict)
+            phil, rhol, flagl = calc_phil(p, T, xi, eos, rhodict=rhodict)
+            yi_range, phiv, flagv = solve_yi_xiT(yi_range, xi, phil, p, T, eos, rhodict=rhodict, **zi_opts)
             ObjArray[0] = (np.sum(xi * phil / phiv) - 1.0)
             logger.info("Minimum pressure: {},  Obj. Func: {}".format(Parray[0],ObjArray[0]))
             
         elif z == 1:
             # Find Obj function for Max Pressure above
             p = Parray[1]
-            phil, rhol, flagl = calc_phil(p, T, xi, eos, rhodict={})
-            yi_range, phiv, flagv = solve_yi_xiT(yi_range, xi, phil, p, T, eos, rhodict=rhodict)
+            phil, rhol, flagl = calc_phil(p, T, xi, eos, rhodict=rhodict)
+            yi_range, phiv, flagv = solve_yi_xiT(yi_range, xi, phil, p, T, eos, rhodict=rhodict, **zi_opts)
             ObjArray[1] = (np.sum(xi * phil / phiv) - 1.0)
             logger.info("Estimate Maximum pressure: {},  Obj. Func: {}".format(Parray[1],ObjArray[1]))
         else:
@@ -773,8 +775,8 @@ def calc_Prange(T, xi, yi, eos, rhodict={}, Pmin=1000):
             else:
                 p = 2 * Parray[-1]
                 Parray.append(p)
-                phil, rhol, flagl = calc_phil(p, T, xi, eos, rhodict={})
-                yi_range, phiv, flagv = solve_yi_xiT(yi_range, xi, phil, p, T, eos, rhodict=rhodict)
+                phil, rhol, flagl = calc_phil(p, T, xi, eos, rhodict=rhodict)
+                yi_range, phiv, flagv = solve_yi_xiT(yi_range, xi, phil, p, T, eos, rhodict=rhodict, **zi_opts)
                 ObjArray.append(np.sum(xi * phil / phiv) - 1.0)
 
     Prange = Parray[-2:]
@@ -788,10 +790,113 @@ def calc_Prange(T, xi, yi, eos, rhodict={}, Pmin=1000):
 
 ######################################################################
 #                                                                    #
+#                              Calc P range                          #
+#                                                                    #
+######################################################################
+def calc_Prange_yi(T, xi, yi, eos, rhodict={}, Pmin=1000, zi_opts={}):
+    r"""
+    Obtain min and max pressure values, where the vapor mole fraction is set and the objective function at each of those values is of opposite sign.
+    
+    Parameters
+    ----------
+    T : float
+        Temperature of the system [K]
+    xi : numpy.ndarray
+        Liquid mole fraction of each component, sum(xi) should equal 1.0
+    yi : numpy.ndarray
+        Vapor mole fraction of each component, sum(xi) should equal 1.0
+    eos : obj
+        An instance of the defined EOS class to be used in thermodynamic computations.
+    rhodict : dict, Optional, default: {}
+        Dictionary of options used in calculating pressure vs. mole 
+    Pmin : float, Optional, default: 1000.0
+        Minimum pressure in pressure range that restricts searched space.
+    zi_opts : dict, Optional, default: {}
+        Options used to solve the inner loop in the solving algorithm
+
+    Returns
+    -------
+    Prange : list
+        List of min and max pressure range
+    """
+
+    logger = logging.getLogger(__name__)
+
+    global xi_global
+
+    # Guess a range from Pmin to the local max of the liquid curve
+    vlist, Plist = PvsRho(T, yi, eos, **rhodict)
+    Pvspline, roots, extrema = PvsV_spline(vlist, Plist)
+
+    # Calculation the highest pressure possbile
+    Pmax = max(Pvspline(extrema))
+    Parray = [Pmin, Pmax]
+
+    ############################# Test
+    pressures = np.linspace(Pmin,Pmax,30)
+    pressure2 = np.linspace(pressures[-2],Pmax,20)
+    pressures = np.concatenate((pressures,pressure2),axis=0)
+    obj_list = []
+    for p in pressures:
+        phiv, rhov, flagv = calc_phiv(p, T, yi, eos, rhodict=rhodict)
+        xi, phil, flagl = solve_xi_yiT(xi, yi, phiv, p, T, eos, rhodict=rhodict, **zi_opts)
+        obj_list.append(np.sum(yi * phiv / phil) - 1.0)
+    print(pressures)
+    print(obj_list)
+    plt.plot(pressures,obj_list,".-")
+    plt.plot([Pmin,Pmax],[0,0],"k")
+    plt.show()
+
+    #################### Find Pressure range and Objective Function values
+
+    ObjArray = [0, 0]
+    xi_range = xi
+
+    for j,i in enumerate([0,1,0]):
+        p = Parray[i]
+        phiv, rhov, flagv = calc_phiv(p, T, yi, eos, rhodict=rhodict)
+        xi_range, phil, flagl = solve_xi_yiT(xi_range, yi, phiv, p, T, eos, rhodict=rhodict, **zi_opts)
+        ObjArray[i] = (np.sum(yi * phiv / phil) - 1.0)
+        if i == 0:
+            logger.info("Estimate Minimum pressure: {},  Obj. Func: {}".format(p,ObjArray[i]))
+        elif i == 1:
+            if ObjArray[i] < 1e-3:
+                ObjArray[i] = 0.0
+            logger.info("Estimate Maximum pressure: {},  Obj. Func: {}".format(p,ObjArray[i]))
+        # Check pressure range
+        if j < 2:
+            tmp_sum = np.abs(ObjArray[0] + ObjArray[1])
+            tmp_dif = np.abs(ObjArray[0] - ObjArray[1])
+            if tmp_dif >= tmp_sum:
+                logger.info("Got the pressure range!")
+                slope = (ObjArray[1] - ObjArray[-2]) / (Parray[1] - Parray[0])
+                intercept = ObjArray[1] - slope * Parray[1]
+                Pguess = -intercept / slope
+                break
+            else:
+                newPmin = 10
+                if Parray[0] != newPmin:
+                    Parray[0] = newPmin
+                else:
+                    raise ValueError("No VLE data may be found given this temperature and vapor composition. If there are no errors in parameter definitions, consider updating the thermo function 'solve_xi_yiT'.")
+                    logger.error("No VLE data may be found given this temperature and vapor composition. If there are no errors in parameter definitions, consider updating the thermo function 'solve_xi_yiT'.")
+            
+    Prange = Parray[-2:]
+    ObjRange = ObjArray[-2:]
+    logger.info("[Pmin, Pmax]: {}, Obj. Values: {}".format(str(Prange),str(ObjRange)))
+    logger.info("Initial guess in pressure: {} Pa".format(Pguess))
+
+    xi_global = xi_range
+
+    return Prange, Pguess
+
+
+######################################################################
+#                                                                    #
 #                       Solve Yi for xi and T                        #
 #                                                                    #
 ######################################################################
-def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxitr=15, tol=1e-6):
+def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxiter=15, tol=1e-6):
     r"""
     Find vapor mole fraction given pressure, liquid mole fraction, and temperature. Objective function is the sum of the predicted "mole numbers" predicted by the computed fugacity coefficients. Note that by "mole number" we mean that the prediction will only sum to 1 when the correct pressure is chosen in the outer loop. In this inner loop, we seek to find a mole fraction that is converged to reproduce itself in a prediction. If it hasn't, the new "mole numbers" are normalized into mole fractions and used as the next guess.
     In the case that a guess doesn't produce a gas or critical fluid, we use another function to produce a new guess.
@@ -812,7 +917,7 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxitr=15, tol=1e-6):
         An instance of the defined EOS class to be used in thermodynamic computations.
     rhodict : dict, Optional, default: {}
         Dictionary of options used in calculating pressure vs. mole 
-    maxitr : int, Optional, default: 15
+    maxiter : int, Optional, default: 15
         Maximum number of iteration for both the outer pressure and inner vapor mole fraction loops
     tol : float, Optional, default: 1e-6
         Tolerance in sum of predicted yi "mole numbers"
@@ -833,7 +938,7 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxitr=15, tol=1e-6):
 
     yi /= np.sum(yi)
     yi_total = np.sum(yi)
-    for z in range(maxitr):
+    for z in range(maxiter):
 
         yi /= np.sum(yi)
         logger.info("    yi guess {}".format(yi))
@@ -865,8 +970,8 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxitr=15, tol=1e-6):
     ## If yi wasn't found in defined number of iterations
     yinew /= np.sum(yinew)
 
-    if z == maxitr - 1:
-        logger.warning('    More than {} iterations needed. Error in Smallest Fraction: {} %%'.format(maxitr, (np.abs(yinew[ind_tmp] - yi[ind_tmp]) / yi[ind_tmp])*100))
+    if z == maxiter - 1:
+        logger.warning('    More than {} iterations needed. Error in Smallest Fraction: {} %%'.format(maxiter, (np.abs(yinew[ind_tmp] - yi[ind_tmp]) / yi[ind_tmp])*100))
 
     ind_tmp = np.where(yi == min(yi))[0]
     logger.info("    Inner Loop Final yi: {}, Final Error on Smallest Fraction: {}".format(yi,np.abs(yinew[ind_tmp] - yi[ind_tmp]) / yi[ind_tmp]*100))
@@ -878,7 +983,7 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxitr=15, tol=1e-6):
 #                       Solve Yi for xi and T                        #
 #                                                                    #
 ######################################################################
-def solve_xi_yiT(xi, yi, phiv, P, T, eos, rhodict={}, maxitr=20, tol=1e-6):
+def solve_xi_yiT(xi, yi, phiv, P, T, eos, rhodict={}, maxiter=20, tol=1e-6):
     r"""
     Find liquid mole fraction given pressure, vapor mole fraction, and temperature. Objective function is the sum of the predicted "mole numbers" predicted by the computed fugacity coefficients. Note that by "mole number" we mean that the prediction will only sum to 1 when the correct pressure is chosen in the outer loop. In this inner loop, we seek to find a mole fraction that is converged to reproduce itself in a prediction. If it hasn't, the new "mole numbers" are normalized into mole fractions and used as the next guess.
     In the case that a guess doesn't produce a liquid or critical fluid, we use another function to produce a new guess.
@@ -899,7 +1004,7 @@ def solve_xi_yiT(xi, yi, phiv, P, T, eos, rhodict={}, maxitr=20, tol=1e-6):
         An instance of the defined EOS class to be used in thermodynamic computations.
     rhodict : dict, Optional, default: {}
         Dictionary of options used in calculating pressure vs. mole 
-    maxitr : int, Optional, default: 20
+    maxiter : int, Optional, default: 20
         Maximum number of iteration for both the outer pressure and inner vapor mole fraction loops
     tol : float, Optional, default: 1e-6
         Tolerance in sum of predicted xi "mole numbers"
@@ -920,7 +1025,7 @@ def solve_xi_yiT(xi, yi, phiv, P, T, eos, rhodict={}, maxitr=20, tol=1e-6):
 
     xi /= np.sum(xi)
     xi_total = np.sum(xi)
-    for z in range(maxitr):
+    for z in range(maxiter):
 
         xi /= np.sum(xi)
         logger.info("    xi guess {}".format(xi))
@@ -948,8 +1053,8 @@ def solve_xi_yiT(xi, yi, phiv, P, T, eos, rhodict={}, maxitr=20, tol=1e-6):
     ## If xi wasn't found in defined number of iterations
     xinew /= np.sum(xinew)
 
-    if z == maxitr - 1:
-        logger.warning('    More than {} iterations needed. Error in Smallest Fraction: {} %%'.format(maxitr, (np.abs(xinew[ind_tmp] - xi[ind_tmp]) / xi[ind_tmp])*100))
+    if z == maxiter - 1:
+        logger.warning('    More than {} iterations needed. Error in Smallest Fraction: {} %%'.format(maxiter, (np.abs(xinew[ind_tmp] - xi[ind_tmp]) / xi[ind_tmp])*100))
 
     ind_tmp = np.where(xi == min(xi))[0]
     logger.info("    Inner Loop Final xi: {}, Final Error on Smallest Fraction: {}".format(xi,np.abs(xinew[ind_tmp] - xi[ind_tmp]) / xi[ind_tmp]*100))
@@ -1025,7 +1130,7 @@ def find_new_yi(yi_total,P, T, phil, xi, eos, rhodict={}):
    # yiguess = eos.chemicalpotential(P, np.array([rhov_tmp]), yi_g_tmp, T)[]
    # rhov_guess = []
    # obj_guess = []
-   # for j in range(maxitr):  # iterate until 10 feasible options are found
+   # for j in range(maxiter):  # iterate until 10 feasible options are found
    #     yi_g_tmp = np.zeros(l_yi)
    #     # Make guesses for yi
    #     yi_g_tmp[0:-1] = np.random.random((1, l_yi - 1))[0]
@@ -1196,7 +1301,7 @@ def solve_yi_root(yi0, xi, phil, P, T, eos, rhodict={}):
 #                              Solve P xT                            #
 #                                                                    #
 ######################################################################
-def solve_P_xiT(P, xi, T, eos, rhodict):
+def solve_P_xiT(P, xi, T, eos, rhodict, zi_opts={}):
     r"""
     Objective function used to search pressure values and solve outer loop of P bubble point calculations.
     
@@ -1212,10 +1317,13 @@ def solve_P_xiT(P, xi, T, eos, rhodict):
         An instance of the defined EOS class to be used in thermodynamic computations.
     rhodict : dict, Optional, default: {}
         Dictionary of options used in calculating pressure vs. mole 
+    zi_opts : dict, Optional, default: {}
+        Options used to solve the inner loop in the solving algorithm
+    
 
     Returns
     -------
-    obj_value : list
+    obj_value : float
         :math:`\sum\frac{x_{i}\{phi_l}{\phi_v}-1`
     """
 
@@ -1231,14 +1339,14 @@ def solve_P_xiT(P, xi, T, eos, rhodict):
     #find liquid density
     phil, rhol, flagl = calc_phil(P, T, xi, eos, rhodict={})
 
-    yinew, phiv, flagv = solve_yi_xiT(yi_global, xi, phil, P, T, eos, rhodict=rhodict)
+    yinew, phiv, flagv = solve_yi_xiT(yi_global, xi, phil, P, T, eos, rhodict=rhodict, **zi_opts)
     yi_global = yi_global / np.sum(yi_global)
 
     #given final yi recompute
     phiv, rhov, flagv = calc_phiv(P, T, yi_global, eos, rhodict={})
 
     Pv_test = eos.P(rhov*const.Nav, T, yi_global)
-    obj_value = (np.sum(xi * phil / phiv) - 1.0)
+    obj_value = float((np.sum(xi * phil / phiv) - 1.0))
     logger.info('Obj Func: {}, Pset: {}, Pcalc: {}'.format(obj_value, P, Pv_test[0]))
 
     return obj_value
@@ -1248,7 +1356,7 @@ def solve_P_xiT(P, xi, T, eos, rhodict):
 #                              Solve P yT                            #
 #                                                                    #
 ######################################################################
-def solve_P_yiT(P, yi, T, eos, rhodict):
+def solve_P_yiT(P, yi, T, eos, rhodict, zi_opts={}):
     r"""
     Objective function used to search pressure values and solve outer loop of P dew point calculations.
     
@@ -1264,6 +1372,8 @@ def solve_P_yiT(P, yi, T, eos, rhodict):
         An instance of the defined EOS class to be used in thermodynamic computations.
     rhodict : dict, Optional, default: {}
         Dictionary of options used in calculating pressure vs. mole 
+    zi_opts : dict, Optional, default: {}
+        Options used to solve the inner loop in the solving algorithm
 
     Returns
     -------
@@ -1281,7 +1391,7 @@ def solve_P_yiT(P, yi, T, eos, rhodict):
     #find liquid density
     phiv, rhov, flagv = calc_phiv(P, T, yi, eos, rhodict={})
 
-    xi_global, phil, flagl = solve_xi_yiT(xi_global, yi, phiv, P, T, eos, rhodict=rhodict)
+    xi_global, phil, flagl = solve_xi_yiT(xi_global, yi, phiv, P, T, eos, rhodict=rhodict, **zi_opts)
     xi_global = xi_global / np.sum(xi_global)
 
     #given final yi recompute
@@ -1345,7 +1455,7 @@ def setPsat(ind, eos):
 #                              Calc yT phase                         #
 #                                                                    #
 ######################################################################
-def calc_yT_phase(yi, T, eos, rhodict={}, Pguess=-1,meth="broyden1"):
+def calc_yT_phase(yi, T, eos, rhodict={}, zi_opts={}, Pguess=-1, meth="broyden1", pressure_opts={}):
     r"""
     Calculate dew point mole fraction and pressure given system vapor mole fraction and temperature.
     
@@ -1359,10 +1469,14 @@ def calc_yT_phase(yi, T, eos, rhodict={}, Pguess=-1,meth="broyden1"):
         An instance of the defined EOS class to be used in thermodynamic computations.
     rhodict : dict, Optional, default: {}
         Dictionary of options used in calculating pressure vs. mole 
+    zi_opts : dict, Optional, default: {}
+        Options used to solve the inner loop in the solving algorithm
     Pguess : float, Optional, default: -1
         Guess the system pressure at the dew point. A negative value will force an estimation based on the saturation pressure of each component.
     meth : str, Optional, default: "broyden1"
         Choose the method used to solve the dew point calculation
+    pressure_opts : dict, Optional, default: {}
+        Options used in the given method, "meth", to solve the outer loop in the solving algorithm
 
     Returns
     -------
@@ -1405,34 +1519,69 @@ def calc_yT_phase(yi, T, eos, rhodict={}, Pguess=-1,meth="broyden1"):
         xi_global = copy.deepcopy(xi_global)
     xi = xi_global 
 
-    Pfinal = root(solve_P_yiT,
-                  P,
-                  args=(yi, T, eos, rhodict),
-                  method='broyden1',
-                  options={
-                      'fatol': 0.0001,
-                      'maxiter': 15
-                  })
-    P = Pfinal.x
+    #Prange, Pguess = calc_Prange_yi(T, xi, yi, eos, rhodict, zi_opts=zi_opts)
+    #logger.info("Given Pguess: {}, Suggested: {}".format(P, Pguess))
+    #P = Pguess
 
-    # Option 1
+    #################### Root Finding without Boundaries ###################
+    if meth in ['broyden1', 'broyden2']:
+        outer_dict = {'fatol': 1e-5, 'maxiter': 25, 'jac_options': {'reduction_method': 'simple'}}
+        for key, value in pressure_opts.items():
+            outer_dict[key] = value
+        logger.debug("Using the method, {}, with the following options:\n{}".format(meth,outer_dict))
+        Pfinal = root(solve_P_yiT, P, args=(yi, T, eos, rhodict, zi_opts), method=meth, options=outer_dict)
+    elif meth in ['hybr_broyden1', 'hybr_broyden2']:
+        outer_dict = {'fatol': 1e-5, 'maxiter': 25, 'jac_options': {'reduction_method': 'simple'}}
+        for key, value in pressure_opts.items():
+            outer_dict[key] = value
+        Pfinal = root(solve_P_yiT, P, args=(yi, T, eos, rhodict, zi_opts), method="hybr")
+        Pfinal = root(solve_P_yiT, Pfinal.x, args=(yi, T, eos, rhodict, zi_opts), method=meth, options=outer_dict)
+    elif meth == 'anderson':
+        outer_dict = {'fatol': 1e-5, 'maxiter': 25}
+        for key, value in pressure_opts.items():
+            outer_dict[key] = value
+        logger.debug("Using the method, {}, with the following options:\n{}".format(meth,outer_dict))
+        Pfinal = root(solve_P_yiT, P, args=(yi, T, eos, rhodict, zi_opts), method=meth, options=outer_dict)
+    elif meth in ['hybr', 'lm', 'linearmixing', 'diagbroyden', 'excitingmixing', 'krylov', 'df-sane']:
+        outer_dict = {}
+        for key, value in pressure_opts.items():
+            outer_dict[key] = value
+        logger.debug("Using the method, {}, with the following options:\n{}".format(meth,outer_dict))
+        Pfinal = root(solve_P_yiT, P, args=(yi, T, eos, rhodict, zi_opts), method=meth, options=outer_dict)
+
+#################### Minimization Methods with Boundaries ###################
+    elif meth in ["TNC", "L-BFGS-B", "SLSQP"]:
+        outer_dict = {}
+        for key, value in pressure_opts.items():
+            outer_dict[key] = value
+        logger.debug("Using the method, {}, with the following options:\n{}".format(meth,outer_dict))
+        if len(Prange) == 2:
+            Pfinal = minimize(solve_P_yiT, P, args=(yi, T, eos, rhodict, zi_opts), method=meth, bounds=[tuple(Prange)], options=outer_dict)
+        else:
+            Pfinal = minimize(solve_P_yiT, P, args=(yi, T, eos, rhodict, zi_opts), method=meth, options=outer_dict)
+
+#################### Root Finding with Boundaries ###################
+    elif meth == "brent":
+        outer_dict = {"rtol":1e-7}
+        for key, value in pressure_opts.items():
+            if key in ["xtol","rtol","maxiter","full_output","disp"]:
+                outer_dict[key] = value
+        logger.debug("Using the method, {}, with the following options:\n{}".format(meth,outer_dict))
+        P = brentq(solve_P_yiT, Prange[0], Prange[1], args=(yi, T, eos, rhodict, zi_opts), **outer_dict)
+
+    #Given final P estimate
+    if meth != "brent":
+        P = Pfinal.x
+
+    #find vapor density and fugacity
     phiv, rhov, flagv = calc_phiv(P, T, yi, eos, rhodict={})
-    xi_global, phil, flagl = solve_xi_yiT(xi_global, yi, phiv, P, T, eos, rhodict=rhodict, tol=1e-10)
-    xi = xi_global / np.sum(xi_global)
-    obj = solve_P_yiT(P,yi, T, eos, rhodict=rhodict)
-    
-    # Option 2
-#    ximin = root(solve_xi_root,
-#                 xi[0:-1],
-#                 args=(yi, phiv, P, T, eos, rhodict),
-#                 method='broyden1',
-#                 options={
-#                     'fatol': 0.00001,
-#                     'maxiter': 20
-#                 })
-#    xi = np.zeros_like(yi)
-#    xi[0:np.size(ximin.x)] = ximin.x
-#    xi[-1] = 1.0 - np.sum(xi)
+    if "tol" in zi_opts:
+        if zi_opts["tol"] > 1e-10:
+            zi_opts["tol"] = 1e-10
+
+    xi, phil, flagl = solve_xi_yiT(xi_global, yi, phiv, P, T, eos, rhodict, **zi_opts)
+    xi_global = xi
+    obj = solve_P_yiT(P, yi, T, eos, rhodict=rhodict)
 
     return P, xi, flagl, flagv, obj
 
@@ -1441,7 +1590,7 @@ def calc_yT_phase(yi, T, eos, rhodict={}, Pguess=-1,meth="broyden1"):
 #                              Calc xT phase                         #
 #                                                                    #
 ######################################################################
-def calc_xT_phase(xi, T, eos, rhodict={}, Pguess=-1,meth="broyden1"):
+def calc_xT_phase(xi, T, eos, rhodict={}, zi_opts={}, Pguess=-1, meth="broyden1", pressure_opts={}):
     r"""
     Calculate bubble point mole fraction and pressure given system liquid mole fraction and temperature.
     
@@ -1455,10 +1604,14 @@ def calc_xT_phase(xi, T, eos, rhodict={}, Pguess=-1,meth="broyden1"):
         An instance of the defined EOS class to be used in thermodynamic computations.
     rhodict : dict, Optional, default: {}
         Dictionary of options used in calculating pressure vs. mole 
+    zi_opts : dict, Optional, default: {}
+        Options used to solve the inner loop in the solving algorithm
     Pguess : float, Optional, default: -1
         Guess the system pressure at the dew point. A negative value will force an estimation based on the saturation pressure of each component.
     meth : str, Optional, default: "broyden1"
         Choose the method used to solve the dew point calculation
+    pressure_opts : dict, Optional, default: {}
+        Options used in the given method, "meth", to solve the outer loop in the solving algorithm
 
     Returns
     -------
@@ -1499,111 +1652,59 @@ def calc_xT_phase(xi, T, eos, rhodict={}, Pguess=-1,meth="broyden1"):
         yi_global = copy.deepcopy(yi_global)
     yi = yi_global
 
-    phil, rhol, flagl = calc_phil(P, T, xi, eos, rhodict={})
-
 #    logger.info("Initial: P: {}, yi: {}".format(Pguess,str(yi)))
 #    Pguess, yi = bubblepoint_guess(Pguess, yi, xi, T, phil, eos, rhodict)
 #    logger.info("Updated: P: {}, yi: {}".format(Pguess,str(yi)))
 
-    Prange, Pguess = calc_Prange(T, xi, yi, eos, rhodict)
+    Prange, Pguess = calc_Prange_xi(T, xi, yi, eos, rhodict, zi_opts=zi_opts)
     logger.info("Given Pguess: {}, Suggested: {}".format(P, Pguess))
     P = Pguess
 
-    logger.info("Method: {}".format(meth))
     #################### Root Finding without Boundaries ###################
     if meth in ['broyden1', 'broyden2']:
-        Pfinal = root(solve_P_xiT,
-                      P,
-                      args=(xi, T, eos, rhodict),
-                      method=meth,
-                      options={
-                          'fatol': 1e-5,
-                          'maxiter': 25,
-                          'jac_options': {
-                              'reduction_method': 'simple'
-                          }
-                      })
-    elif meth == 'hybr_broyden1':
-        Pfinal = root(solve_P_xiT, P, args=(xi, T, eos, rhodict), method="hybr")
-        Pfinal = root(solve_P_xiT,
-                      Pfinal.x,
-                      args=(xi, T, eos, rhodict),
-                      method="broyden1",
-                      options={
-                          'fatol': 0.0001,
-                          'maxiter': 25,
-                          'jac_options': {
-                              'reduction_method': 'simple'
-                          }
-                      })
-    elif meth == 'hybr_broyden2':
-        Pfinal = root(solve_P_xiT, P, args=(xi, T, eos, rhodict), method="hybr")
-        Pfinal = root(solve_P_xiT,
-                      Pfinal.x,
-                      args=(xi, T, eos, rhodict),
-                      method="broyden2",
-                      options={
-                          'fatol': 0.0001,
-                          'maxiter': 25,
-                          'jac_options': {
-                              'reduction_method': 'simple'
-                          }
-                      })
+        outer_dict = {'fatol': 1e-5, 'maxiter': 25, 'jac_options': {'reduction_method': 'simple'}}
+        for key, value in pressure_opts.items():
+            outer_dict[key] = value
+        logger.debug("Using the method, {}, with the following options:\n{}".format(meth,outer_dict))
+        Pfinal = root(solve_P_xiT, P, args=(xi, T, eos, rhodict, zi_opts), method=meth, options=outer_dict)
+    elif meth in ['hybr_broyden1', 'hybr_broyden2']:
+        outer_dict = {'fatol': 1e-5, 'maxiter': 25, 'jac_options': {'reduction_method': 'simple'}}
+        for key, value in pressure_opts.items():
+            outer_dict[key] = value
+        Pfinal = root(solve_P_xiT, P, args=(xi, T, eos, rhodict, zi_opts), method="hybr")
+        Pfinal = root(solve_P_xiT, Pfinal.x, args=(xi, T, eos, rhodict, zi_opts), method=meth, options=outer_dict)
     elif meth == 'anderson':
-        Pfinal = root(solve_P_xiT,
-                      P,
-                      args=(xi, T, eos, rhodict),
-                      method=meth,
-                      options={
-                          'fatol': 0.0001,
-                          'maxiter': 25
-                      })
-    elif meth == 'hybr':
-        Pfinal = root(solve_P_xiT, P, args=(xi, T, eos, rhodict), method=meth)
-    elif meth == 'lm':
-        Pfinal = root(solve_P_xiT, P, args=(xi, T, eos, rhodict), method=meth)
-    elif meth == 'linearmixing':
-        Pfinal = root(solve_P_xiT, P, args=(xi, T, eos, rhodict), method=meth)
-    elif meth == 'diagbroyden':
-        Pfinal = root(solve_P_xiT, P, args=(xi, T, eos, rhodict), method="hybr")
-        Pfinal = root(solve_P_xiT, Pfinal.x, args=(xi, T, eos, rhodict), method=meth)
-    elif meth == 'excitingmixing':
-        Pfinal = root(solve_P_xiT, P, args=(xi, T, eos, rhodict), method=meth)
-    elif meth == 'krylov':
-        Pfinal = root(solve_P_xiT, P, args=(xi, T, eos, rhodict), method=meth)
-    elif meth == 'df-sane':
-        Pfinal = root(solve_P_xiT, P, args=(xi, T, eos, rhodict), method=meth)
+        outer_dict = {'fatol': 1e-5, 'maxiter': 25}
+        for key, value in pressure_opts.items():
+            outer_dict[key] = value
+        logger.debug("Using the method, {}, with the following options:\n{}".format(meth,outer_dict))
+        Pfinal = root(solve_P_xiT, P, args=(xi, T, eos, rhodict, zi_opts), method=meth, options=outer_dict)
+    elif meth in ['hybr', 'lm', 'linearmixing', 'diagbroyden', 'excitingmixing', 'krylov', 'df-sane']:
+        outer_dict = {}
+        for key, value in pressure_opts.items():
+            outer_dict[key] = value
+        logger.debug("Using the method, {}, with the following options:\n{}".format(meth,outer_dict))
+        Pfinal = root(solve_P_xiT, P, args=(xi, T, eos, rhodict, zi_opts), method=meth, options=outer_dict)
+
 #################### Minimization Methods with Boundaries ###################
-    elif meth == "TNC":
+    elif meth in ["TNC", "L-BFGS-B", "SLSQP"]:
+        outer_dict = {}
+        for key, value in pressure_opts.items():
+            outer_dict[key] = value
+        logger.debug("Using the method, {}, with the following options:\n{}".format(meth,outer_dict))
         if len(Prange) == 2:
-            Pfinal = minimize(solve_P_xiT, P, args=(xi, T, eos, rhodict), method="TNC", bounds=[tuple(Prange)])
+            Pfinal = minimize(solve_P_xiT, P, args=(xi, T, eos, rhodict, zi_opts), method=meth, bounds=[tuple(Prange)], options=outer_dict)
         else:
-            Pfinal = minimize(solve_P_xiT, P, args=(xi, T, eos, rhodict), method="TNC")
-    elif meth == "L-BFGS-B":
-        if len(Prange) == 2:
-            Pfinal = minimize(solve_P_xiT,
-                              P,
-                              args=(xi, T, eos, rhodict),
-                              method="L-BFGS-B",
-                              bounds=[tuple(Prange)])
-        else:
-            Pfinal = minimize(solve_P_xiT, P, args=(xi, T, eos, rhodict), method="L-BFGS-B")
-    elif meth == "SLSQP":
-        if len(Prange) == 2:
-            Pfinal = minimize(solve_P_xiT,
-                              P,
-                              args=(xi, T, eos, rhodict),
-                              method="SLSQP",
-                              bounds=[tuple(Prange)],
-                              options={
-                                  'fatol': 0.0001,
-                                  'maxiter': 25
-                              })
-        else:
-            Pfinal = minimize(solve_P_xiT, P, args=(xi, T, eos, rhodict), method="SLSQP")
+            Pfinal = minimize(solve_P_xiT, P, args=(xi, T, eos, rhodict, zi_opts), method=meth, options=outer_dict)
+
 #################### Root Finding with Boundaries ###################
     elif meth == "brent":
-        Pfinal = brentq(solve_P_xiT, Prange[0], Prange[1], args=(xi, T, eos, rhodict), rtol=0.0000001)
+        outer_dict = {"rtol":1e-7}
+        for key, value in pressure_opts.items():
+            if key in ["xtol","rtol","maxiter","full_output","disp"]:
+                outer_dict[key] = value
+        logger.debug("Using the method, {}, with the following options:\n{}".format(meth,outer_dict))
+        P = brentq(solve_P_xiT, Prange[0], Prange[1], args=(xi, T, eos, rhodict, zi_opts), **outer_dict)
 
     #Given final P estimate
     if meth != "brent":
@@ -1611,7 +1712,11 @@ def calc_xT_phase(xi, T, eos, rhodict={}, Pguess=-1,meth="broyden1"):
 
     #find liquid density and fugacity
     phil, rhol, flagl = calc_phil(P, T, xi, eos, rhodict={})
-    yi, phiv, flagv = solve_yi_xiT(yi_global, xi, phil, P, T, eos, rhodict, tol=1e-10)
+    if "tol" in zi_opts:
+        if zi_opts["tol"] > 1e-10:
+            zi_opts["tol"] = 1e-10
+
+    yi, phiv, flagv = solve_yi_xiT(yi_global, xi, phil, P, T, eos, rhodict, **zi_opts)
     yi_global = yi
     obj = solve_P_xiT(P, xi, T, eos, rhodict=rhodict)
 
