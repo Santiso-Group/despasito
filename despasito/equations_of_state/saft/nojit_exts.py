@@ -10,6 +10,7 @@ from scipy import misc
 from scipy import integrate
 import scipy.optimize as spo
 import logging
+from profilehooks import profile
 
 from . import constants
 from . import solv_assoc
@@ -395,7 +396,7 @@ def calc_Bkl(rho, l_kl, Cmol2seg, dkl, epsilonkl, x0kl, zetax):
 
     return Bkl
 
-
+@profile
 def calc_a1s(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
     r""" 
     Return a1s,kl(rho*Cmol2seg,l_kl) in K as defined in eq. 25, used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy.
