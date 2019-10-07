@@ -1,3 +1,5 @@
+__main__.py
+
 # C/C++ code
 *.c
 *.cpp

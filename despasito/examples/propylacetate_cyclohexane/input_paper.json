@@ -4,6 +4,7 @@
     "SAFTcross": "SAFTcross_paper.json",
     "output_file": "out_propylacetate_cyclohexane_335_paper.txt",
     "calculation_type" : "phase_xiT",
+    "method": "hybr",
     "Tlist" : [335],
     "xilist": [[0.1185, 0.8815]]
 }

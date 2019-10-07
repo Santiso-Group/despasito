@@ -111,12 +111,22 @@ def phase_xiT(eos, sys_dict):
         logger.info("Accepted options for P vs. density curve")
         opts["rhodict"] = sys_dict["rhodict"]
 
+    # Extract pressure optimization dict
+    if "pressure options" in sys_dict:
+        logger.info("Accepted options for P optimization")
+        opts["pressure_opts"] = sys_dict["pressure options"]
+
+    # Extract pressure optimization dict
+    if "mole fraction options" in sys_dict:
+        logger.info("Accepted options for mole fraction optimization")
+        opts["zi_opts"] = sys_dict["mole fraction options"]
+
     ## Calculate P and yi
     P_list = np.zeros_like(T_list)
     flagv_list = np.zeros_like(T_list)
     flagl_list = np.zeros_like(T_list)
     yi_list = np.zeros_like(xi_list)
-    obj_list = np.zeros_like(T_list)
+    obj_list = np.zeros(len(T_list))
     for i in range(np.size(T_list)):
         optsi = opts
         if "Pguess" in opts:
@@ -127,6 +137,7 @@ def phase_xiT(eos, sys_dict):
             P_list[i], yi_list[i], flagv_list[i], flagl_list[i], obj_list[i] = calc.calc_xT_phase(xi_list[i], T_list[i], eos, **optsi)
         except:
             logger.warning("T (K), xi: {} {}, calculation did not produce a valid result.".format(T_list[i], xi_list[i]))
+            logger.debug("Calculation Failed:", exc_info=True)
             P_list[i], yi_list[i] = [np.nan for x in range(2)]
             flagl_list[i], flagv_list[i], obj_list[i] = [3, 3, np.nan]
             continue
@@ -226,6 +237,16 @@ def phase_yiT(eos, sys_dict):
         logger.info("Accepted options for P vs. density curve")
         opts["rhodict"] = sys_dict["rhodict"]
 
+    # Extract pressure optimization dict
+    if "pressure options" in sys_dict:
+        logger.info("Accepted options for P optimization")
+        opts["pressure_opts"] = sys_dict["pressure options"]
+
+    # Extract pressure optimization dict
+    if "mole fraction options" in sys_dict:
+        logger.info("Accepted options for mole fraction optimization")
+        opts["zi_opts"] = sys_dict["mole fraction options"]
+
     ## Calculate P and xi
     P_list = np.zeros_like(T_list)
     flagv_list = np.zeros_like(T_list)
@@ -241,6 +262,7 @@ def phase_yiT(eos, sys_dict):
             P_list[i], xi_list[i], flagl_list[i], flagv_list[i], obj_list[i]  = calc.calc_yT_phase(yi_list[i], T_list[i], eos, **optsi)
         except:
             logger.warning("T (K), yi: {} {}, calculation did not produce a valid result.".format(str(T_list[i]), str(yi_list[i])))
+            logger.debug("Calculation Failed:", exc_info=True)
             P_list[i], xi_list[i] = [np.nan for x in range(2)]
             flagl_list[i], flagv_list[i], obj_list[i] = [3, 3, np.nan]
             continue
@@ -326,6 +348,7 @@ def sat_props(eos, sys_dict):
             Psat[i], rholsat[i], rhovsat[i] = calc.calc_Psat(T_list[i], xi_list[i], eos, **opts)
         except:
             logger.warning("T (K), xi: {} {}, calculation did not produce a valid result.".format(str(T_list[i]), str(xi_list[i])))
+            logger.debug("Calculation Failed:", exc_info=True)
             Psat[i], rholsat[i], rhovsat[i] = [np.nan for x in range(3)]
             continue
         logger.info("Psat {} Pa, rhol {}, rhov {}".format(Psat[i],rholsat[i],rhovsat[i]))
