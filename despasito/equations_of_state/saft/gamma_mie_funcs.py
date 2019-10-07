@@ -1,3 +1,5 @@
+# -- coding: utf8 --
+
 r"""
     
     Routines for calculating the Helmholtz energy for the SAFT-gamma equation of state.

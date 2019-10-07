@@ -441,33 +441,35 @@ def calc_rhov(P, T, xi, eos, rhodict={}):
     l_roots = len(roots)
     if l_roots == 0:
         flag = 3
-        rho_tmp = np.nan
-        logger.info("    The T and yi, {} {}, won't produce a fluid (vapor or liquid) at this pressure".format(T,xi))
-        PvsV_plot(vlist, Plist, Pvspline)
+        logger.info("    Flag 3: The T and yi, {} {}, won't produce a fluid (vapor or liquid) at this pressure".format(T,xi))
+        if Plist[0] < 0:
+            rho_tmp = 1/vlist[0]
+        else:
+            rho_tmp = np.nan
     elif l_roots == 1:
         if not len(extrema):
             flag = 2
             rho_tmp = 1.0 / roots[0]
-            logger.info("    The T and yi, {} {}, combination produces a critical fluid at this pressure".format(T,xi))
+            logger.info("    Flag 2: The T and yi, {} {}, combination produces a critical fluid at this pressure".format(T,xi))
         elif (Pvspline(roots[0])+P) > (Pvspline(max(extrema))+P):
             #logger.debug("Extrema: {}".format(extrema))
             #logger.debug("Roots: {}".format(roots))
             flag = 1
             rho_tmp = 1.0 / roots[0]
-            logger.info("    The T and yi, {} {}, combination produces a liquid at this pressure".format(T,xi))
+            logger.info("    Flag 1: The T and yi, {} {}, combination produces a liquid at this pressure".format(T,xi))
         elif len(extrema) > 1:
             flag = 0
             rho_tmp = 1.0 / roots[0]
-            logger.debug("    This T and yi, {} {}, combination produces a vapor at this pressure. Warning! approaching critical fluid".format(T,xi))
+            logger.debug("    Flag 0: This T and yi, {} {}, combination produces a vapor at this pressure. Warning! approaching critical fluid".format(T,xi))
     elif l_roots == 2:
         if (Pvspline(roots[0])+P) < 0.:
             flag = 1
             rho_tmp = 1.0 / roots[0]
-            logger.info("    This T and xi, {} {}, combination produces a liquid under tension at this pressure".format(T,xi))
+            logger.info("    Flag 1: This T and xi, {} {}, combination produces a liquid under tension at this pressure".format(T,xi))
         else:
             flag = 4
             rho_tmp = np.nan
-            logger.debug("    There should be a third root! Assume ideal gas P: {}".format(P))
+            logger.debug("    Flag 4: There should be a third root! Assume ideal gas P: {}".format(P))
             #PvsV_plot(vlist, Plist, Pvspline)
     else: # 3 roots
         rho_tmp = 1.0 / roots[2]
@@ -479,6 +481,7 @@ def calc_rhov(P, T, xi, eos, rhodict={}):
             rho_tmp = brentq(Pdiff, tmp[0], tmp[1], args=(P, T, xi, eos), rtol=0.0000001)
         else:
             rho_tmp = root(Pdiff, rho_tmp, args=(P, T, xi, eos), method="hybr", tol=0.0000001)
+            rho_tmp = rho_tmp.x[0]
 
     # Flag: 0 is vapor, 1 is liquid, 2 mean a critical fluid, 3 means that neither is true, 4 means we should assume ideal gas
     return rho_tmp, flag
@@ -526,14 +529,17 @@ def calc_rhol(P, T, xi, eos, rhodict={}):
     l_roots = len(roots)
     if l_roots == 0: # zero roots
         flag = 3
-        rho_tmp = np.nan
-        logger.info("    The T and xi, {} {}, won't produce a fluid (vapor or liquid) at this pressure".format(str(T),str(xi)))
-        PvsV_plot(vlist, Plist-P, Pvspline)
+        logger.info("    Flag 3: The T and xi, {} {}, won't produce a fluid (vapor or liquid) at this pressure".format(str(T),str(xi)))
+        #PvsV_plot(vlist, Plist-P, Pvspline)
+        if Plist[0] < P:
+            rho_tmp = 1/vlist[1]
+        else:
+            rho_tmp = np.nan
     elif l_roots == 2: # 2 roots
         if (Pvspline(roots[0])+P) < 0.:
             flag = 1
             rho_tmp = 1.0 / roots[0]
-            logger.info("    This T and xi, {} {}, combination produces a liquid under tension at this pressure".format(T,xi))
+            logger.info("    Flag 1: This T and xi, {} {}, combination produces a liquid under tension at this pressure".format(T,xi))
         else: # There should be three roots, but the values of specific volume don't go far enough to pick up the last one
             flag = 1
             rho_tmp = 1.0 / roots[0]
@@ -541,15 +547,15 @@ def calc_rhol(P, T, xi, eos, rhodict={}):
         if not len(extrema):
             flag = 2
             rho_tmp = 1.0 / roots[0]
-            logger.info("    The T and xi, {} {}, combination produces a critical fluid at this pressure".format(T,xi))
+            logger.info("    Flag 2: The T and xi, {} {}, combination produces a critical fluid at this pressure".format(T,xi))
         elif (Pvspline(roots[0])+P) > (Pvspline(max(extrema))+P):
             flag = 1
             rho_tmp = 1.0 / roots[0]
-            logger.debug("    The T and xi, {} {}, combination produces a liquid at this pressure".format(T,xi))
+            logger.debug("    Flag 1: The T and xi, {} {}, combination produces a liquid at this pressure".format(T,xi))
         elif len(extrema) > 1:
             flag = 0
             rho_tmp = 1.0 / roots[0]
-            logger.info("    This T and xi, {} {}, combination produces a vapor at this pressure. Warning! approaching critical fluid".format(T,xi))
+            logger.info("    Flag 0: This T and xi, {} {}, combination produces a vapor at this pressure. Warning! approaching critical fluid".format(T,xi))
     else: # 3 roots
         rho_tmp = 1.0 / roots[0]
         flag = 1
@@ -841,8 +847,6 @@ def calc_Prange_yi(T, xi, yi, eos, rhodict={}, Pmin=1000, zi_opts={}):
         phiv, rhov, flagv = calc_phiv(p, T, yi, eos, rhodict=rhodict)
         xi, phil, flagl = solve_xi_yiT(xi, yi, phiv, p, T, eos, rhodict=rhodict, **zi_opts)
         obj_list.append(np.sum(yi * phiv / phil) - 1.0)
-    print(pressures)
-    print(obj_list)
     plt.plot(pressures,obj_list,".-")
     plt.plot([Pmin,Pmax],[0,0],"k")
     plt.show()
@@ -948,8 +952,12 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxiter=15, tol=1e-6):
         
         if (any(np.isnan(phiv)) or flagv==1): # If vapor density doesn't exist
             logger.info("    Composition doesn't produce a vapor, let's find one!")
-            yinew = find_new_yi(yi_total,P, T, phil, xi, eos, rhodict=rhodict)
-            phiv, rhov, flagv = calc_phiv(P, T, yinew, eos, rhodict={})
+            if all(yi != 0.):
+                yinew = find_new_yi(yi_total,P, T, phil, xi, eos, rhodict=rhodict)
+                phiv, rhov, flagv = calc_phiv(P, T, yinew, eos, rhodict={})
+            else:
+                yinew = yi
+
             if any(np.isnan(yinew)):
                 phiv = np.nan
                 logger.error("Fugacity coefficient of vapor should not be NaN")
@@ -960,21 +968,26 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxiter=15, tol=1e-6):
 
         # Check convergence
         if abs(np.sum(yinew)-yi_total) < tol:
-            yi_global = yi
-            logger.info("    Found yi")
-            break
-        else:
+            ind_tmp = np.where(yi == min(yi[yi>0]))[0] 
+            yi2 = yinew/np.sum(yinew)
+            if np.abs(yi2[ind_tmp] - yi[ind_tmp]) / yi[ind_tmp] < tol:
+                yi_global = yi
+                logger.info("    Found yi")
+                break
+
+        if z < maxiter-1:
             yi = yinew/np.sum(yinew)
             yi_total = np.sum(yinew)
 
     ## If yi wasn't found in defined number of iterations
     yinew /= np.sum(yinew)
 
+    ind_tmp = np.where(yi == min(yi[yi>0]))[0]
     if z == maxiter - 1:
+        yi2 = yinew/np.sum(yinew)
         logger.warning('    More than {} iterations needed. Error in Smallest Fraction: {} %%'.format(maxiter, (np.abs(yinew[ind_tmp] - yi[ind_tmp]) / yi[ind_tmp])*100))
-
-    ind_tmp = np.where(yi == min(yi))[0]
-    logger.info("    Inner Loop Final yi: {}, Final Error on Smallest Fraction: {}".format(yi,np.abs(yinew[ind_tmp] - yi[ind_tmp]) / yi[ind_tmp]*100))
+    else:
+        logger.info("    Inner Loop Final yi: {}, Final Error on Smallest Fraction: {}".format(yi,np.abs(yi2[ind_tmp] - yi[ind_tmp]) / yi[ind_tmp]*100))
 
     return yi, phiv, flagv
 
@@ -1043,21 +1056,26 @@ def solve_xi_yiT(xi, yi, phiv, P, T, eos, rhodict={}, maxiter=20, tol=1e-6):
 
         # Check convergence
         if abs(np.sum(xinew)-xi_total) < tol:
-            xi_global = xi
-            logger.info("    Found xi")
-            break
-        else:
+            ind_tmp = np.where(xi == min(xi[xi>0]))[0]
+            xi2 = xinew/np.sum(xinew)
+            if np.abs(xi2[ind_tmp] - xi[ind_tmp]) / xi[ind_tmp] < tol:
+                xi_global = xi
+                logger.info("    Found xi")
+                break
+
+        if z < maxiter-1:
             xi = xinew/np.sum(xinew)
             xi_total = np.sum(xinew)
 
     ## If xi wasn't found in defined number of iterations
     xinew /= np.sum(xinew)
 
+    ind_tmp = np.where(xi == min(xi[xi>0]))[0]
     if z == maxiter - 1:
-        logger.warning('    More than {} iterations needed. Error in Smallest Fraction: {} %%'.format(maxiter, (np.abs(xinew[ind_tmp] - xi[ind_tmp]) / xi[ind_tmp])*100))
-
-    ind_tmp = np.where(xi == min(xi))[0]
-    logger.info("    Inner Loop Final xi: {}, Final Error on Smallest Fraction: {}".format(xi,np.abs(xinew[ind_tmp] - xi[ind_tmp]) / xi[ind_tmp]*100))
+        xi2 = xinew/np.sum(xinew)
+        logger.warning('    More than {} iterations needed. Error in Smallest Fraction: {} %%'.format(maxiter, (np.abs(xi2[ind_tmp] - xi[ind_tmp]) / xi[ind_tmp])*100))
+    else:
+        logger.info("    Inner Loop Final xi: {}, Final Error on Smallest Fraction: {}".format(xi,np.abs(xi2[ind_tmp] - xi[ind_tmp]) / xi[ind_tmp]*100))
 
     return xi, phil, flagl
 
@@ -1194,7 +1212,6 @@ def find_new_yi(yi_total,P, T, phil, xi, eos, rhodict={}):
         ind = np.where(np.abs(obj_tmp)==min(np.abs(obj_tmp)))[0][0]
         obj_tmp = obj_tmp[ind]
         yi_tmp = yi_tmp[ind]
-
 
     logger.info("    Found new guess in yi: {}, Obj: {}".format(yi_tmp,obj_tmp))
     yi = yi_tmp
@@ -1455,7 +1472,7 @@ def setPsat(ind, eos):
 #                              Calc yT phase                         #
 #                                                                    #
 ######################################################################
-def calc_yT_phase(yi, T, eos, rhodict={}, zi_opts={}, Pguess=-1, meth="broyden1", pressure_opts={}):
+def calc_yT_phase(yi, T, eos, rhodict={}, zi_opts={}, Pguess=-1, meth="hybr", pressure_opts={}):
     r"""
     Calculate dew point mole fraction and pressure given system vapor mole fraction and temperature.
     
@@ -1590,7 +1607,7 @@ def calc_yT_phase(yi, T, eos, rhodict={}, zi_opts={}, Pguess=-1, meth="broyden1"
 #                              Calc xT phase                         #
 #                                                                    #
 ######################################################################
-def calc_xT_phase(xi, T, eos, rhodict={}, zi_opts={}, Pguess=-1, meth="broyden1", pressure_opts={}):
+def calc_xT_phase(xi, T, eos, rhodict={}, zi_opts={}, Pguess=-1, meth="hybr", pressure_opts={}):
     r"""
     Calculate bubble point mole fraction and pressure given system liquid mole fraction and temperature.
     
@@ -1646,10 +1663,10 @@ def calc_xT_phase(xi, T, eos, rhodict={}, zi_opts={}, Pguess=-1, meth="broyden1"
         P = Pguess
 
     if ("yi_global" not in globals() or any(np.isnan(yi_global))):
-        logger.info("Guess yi in calc_xT_phase with Psat")
         yi_global = xi * Psat / P
         yi_global /= np.sum(yi_global)
         yi_global = copy.deepcopy(yi_global)
+        logger.info("Guess yi in calc_xT_phase with Psat: {}".format(yi_global))
     yi = yi_global
 
 #    logger.info("Initial: P: {}, yi: {}".format(Pguess,str(yi)))

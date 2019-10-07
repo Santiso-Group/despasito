@@ -1,3 +1,5 @@
+#-- coding: utf8 --
+
 r"""
     
     Routines for calculating the Helmholtz energy for the SAFT-gamma equation of state.
@@ -1092,10 +1094,9 @@ def calc_assoc_matrices(beads, beadlibrary, sitenames=["H", "e1", "e2"], crossli
 
     for i in range(nbeads):
         for j in range(np.size(sitenames)):
-            if "Nk"+sitenames[j] in list(beadlibrary[beads[i]].keys()):
+            if "Nk"+sitenames[j] in beadlibrary[beads[i]]:
+                logger.debug("Bead {} has association site {}".format(beads[i],"Nk"+sitenames[j]))
                 nk[i, j] = beadlibrary[beads[i]]["Nk" + sitenames[j]]
-            else:
-                logger.debug("%s is not a valid parameter provided for the group %s" % ("Nk"+sitenames[j],beads[i]))
 
     if crosslibrary:
         # find any cross terms in the cross term library

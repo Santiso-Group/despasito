@@ -1,3 +1,5 @@
+# -- coding: utf8 --
+
 r"""
     
     EOS object for SAFT-:math:`\gamma`-Mie
@@ -216,7 +218,7 @@ class saft_gamma_mie(EOStemplate):
             dAres = np.zeros(2)
             ares = funcs.calc_Ares(rho * constants.Nav, xi, T, self._beads, self._beadlibrary, self._massi, self._nui, self._Cmol2seg, self._xsk, self._xskl,self._dkk, self._epsilonkl, self._sigmakl, self._dkl, self._l_akl, self._l_rkl, self._Ckl, self._x0kl, self._epsilonHB, self._Kklab, self._nk)
             for j, delta in enumerate((dnmol, -dnmol)):
-                xi_temp = np.copy(xi)
+                xi_temp = np.array(xi,float)
                 xi_temp[i] += delta
                 Cmol2seg_tmp, xsk_tmp, xskl_tmp = funcs.calc_composition_dependent_variables(xi_temp, self._nui, self._beads, self._beadlibrary)
                 # xi_temp/=(nmol+delta)

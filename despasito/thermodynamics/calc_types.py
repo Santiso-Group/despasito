@@ -138,7 +138,7 @@ def phase_xiT(eos, sys_dict):
         except:
             logger.warning("T (K), xi: {} {}, calculation did not produce a valid result.".format(T_list[i], xi_list[i]))
             logger.debug("Calculation Failed:", exc_info=True)
-            P_list[i], yi_list[i] = [np.nan for x in range(2)]
+            P_list[i], yi_list[i] = [np.nan, np.nan]
             flagl_list[i], flagv_list[i], obj_list[i] = [3, 3, np.nan]
             continue
         logger.info("P (Pa), yi: {} {}".format(P_list[i], yi_list[i]))
@@ -263,7 +263,7 @@ def phase_yiT(eos, sys_dict):
         except:
             logger.warning("T (K), yi: {} {}, calculation did not produce a valid result.".format(str(T_list[i]), str(yi_list[i])))
             logger.debug("Calculation Failed:", exc_info=True)
-            P_list[i], xi_list[i] = [np.nan for x in range(2)]
+            P_list[i], xi_list[i] = [np.nan, np.nan]
             flagl_list[i], flagv_list[i], obj_list[i] = [3, 3, np.nan]
             continue
         logger.info("P (Pa), xi: {} {}".format(str(P_list[i]), str(xi_list[i])))
@@ -349,7 +349,7 @@ def sat_props(eos, sys_dict):
         except:
             logger.warning("T (K), xi: {} {}, calculation did not produce a valid result.".format(str(T_list[i]), str(xi_list[i])))
             logger.debug("Calculation Failed:", exc_info=True)
-            Psat[i], rholsat[i], rhovsat[i] = [np.nan for x in range(3)]
+            Psat[i], rholsat[i], rhovsat[i] = [np.nan, np.nan, np.nan]
             continue
         logger.info("Psat {} Pa, rhol {}, rhov {}".format(Psat[i],rholsat[i],rhovsat[i]))
 
