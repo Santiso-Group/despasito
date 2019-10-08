@@ -30,8 +30,6 @@ def run(filename="input.json", path=".", **args):
     if output_file:
         file_dict = {"output_file":output_file}
 
-    eos_dict['jit'] = args['jit']
-
     logger.debug("EOS dict:", eos_dict)
     logger.debug("Thermo dict:", thermo_dict)
     logger.info("Finish processing input file: {}".format(filename))
