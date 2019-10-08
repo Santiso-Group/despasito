@@ -28,7 +28,10 @@ def eos(eos_type, **kwargs):
             An instance of the defined EOS class to be used in thermodynamic computations.
     """
 
-    jit_stat.disable_jit = not kwargs['jit']
+    if 'jit' not in kwargs:
+        jit_stat.disable_jit = True
+    else:
+        jit_stat.disable_jit = not kwargs['jit']
 
     try:
         eos_fam, eos = eos_type.split('.')
