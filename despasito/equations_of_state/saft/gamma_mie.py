@@ -10,6 +10,7 @@ r"""
 import sys
 import numpy as np
 import logging
+import matplotlib.pyplot as plt
 
 from . import constants
 from . import gamma_mie_funcs_numba as funcs
@@ -177,7 +178,7 @@ class saft_gamma_mie(EOStemplate):
 
         # computer rho+step and rho-step for better a bit better performance
         A = funcs.calc_A(np.append(rho + step, rho - step), xi, T, self._beads, self._beadlibrary, self._massi, self._nui, self._Cmol2seg, self._xsk, self._xskl, self._dkk, self._epsilonkl, self._sigmakl, self._dkl, self._l_akl, self._l_rkl, self._Ckl,self._x0kl, self._epsilonHB, self._Kklab, self._nk)
-        
+
         P_tmp = (A[:nrho]-A[nrho:])*((constants.kb*T)/(2.0*step))*(rho**2)
 
         return P_tmp

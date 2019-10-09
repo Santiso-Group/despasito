@@ -122,6 +122,7 @@ def phase_xiT(eos, sys_dict):
         opts["zi_opts"] = sys_dict["mole fraction options"]
 
     ## Calculate P and yi
+    T_list = np.array(T_list)
     P_list = np.zeros_like(T_list)
     flagv_list = np.zeros_like(T_list)
     flagl_list = np.zeros_like(T_list)
@@ -248,11 +249,12 @@ def phase_yiT(eos, sys_dict):
         opts["zi_opts"] = sys_dict["mole fraction options"]
 
     ## Calculate P and xi
+    T_list = np.array(T_list)
     P_list = np.zeros_like(T_list)
-    flagv_list = np.zeros_like(T_list)
-    flagl_list = np.zeros_like(T_list)
-    xi_list = np.zeros_like(yi_list)
-    obj_list = np.zeros_like(T_list)
+    flagv_list = np.zeros(len(T_list))
+    flagl_list = np.zeros(len(T_list))
+    xi_list = np.zeros(len(yi_list))
+    obj_list = np.zeros(len(T_list))
     for i in range(np.size(T_list)):
         optsi = opts
         if "Pguess" in opts:
@@ -337,9 +339,10 @@ def sat_props(eos, sys_dict):
         opts["rhodict"] = sys_dict["rhodict"]
 
     ## Calculate saturation properties
-    Psat = np.zeros_like(T_list)
-    rholsat = np.zeros_like(T_list)
-    rhovsat = np.zeros_like(T_list)
+    T_list = np.array(T_list)
+    Psat = np.zeros(len(T_list))
+    rholsat = np.zeros(len(T_list))
+    rhovsat = np.zeros(len(T_list))
 
     for i in range(np.size(T_list)):
 
@@ -429,7 +432,8 @@ def liquid_properties(eos, sys_dict):
         opts["rhodict"] = sys_dict["rhodict"]
 
     ## Calculate liquid density
-    rhol = np.zeros_like(T_list)
+    T_list = np.array(T_list)
+    rhol = np.zeros(len(T_list))
     phil = []
     for i in range(np.size(T_list)):
         rhol[i], flagl = calc.calc_rhol(P_list[i], T_list[i], xi_list[i], eos, **opts)
@@ -517,7 +521,8 @@ def vapor_properties(eos, sys_dict):
         opts["rhodict"] = sys_dict["rhodict"]
 
     ## Calculate vapor density
-    rhov = np.zeros_like(T_list)
+    T_list = np.array(T_list)
+    rhov = np.zeros(len(T_list))
     phiv = []
     for i in range(np.size(T_list)):
         rhov[i], flagv = calc.calc_rhov(P_list[i], T_list[i], yi_list[i], eos, **opts)

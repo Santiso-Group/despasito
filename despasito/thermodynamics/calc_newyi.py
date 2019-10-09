@@ -157,7 +157,7 @@ def calc_CC_Pguess(xilist, Tlist, CriticalProp):
 #                      Pressure-Density Curve                        #
 #                                                                    #
 ######################################################################
-def PvsRho(T, xi, eos, minrhofrac=(1.0 / 200000.0), rhoinc=5.0, vspacemax=1.0E-4, maxpack=0.65):
+def PvsRho(T, xi, eos, minrhofrac=(1.0 / 100000.0), rhoinc=5.0, vspacemax=1.0E-4, maxpack=0.65):
 
     r"""
     Computes the Mie parameters of a mixture from the mixed critical properties of the pure components. 
@@ -171,7 +171,7 @@ def PvsRho(T, xi, eos, minrhofrac=(1.0 / 200000.0), rhoinc=5.0, vspacemax=1.0E-4
         Mole fraction of each component, sum(xi) should equal 1.0
     eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
-    minrhofrac : float, Optional, default: (1.0/200000.0)
+    minrhofrac : float, Optional, default: (1.0/100000.0)
         Fraction of the maximum density used to calculate, and is equal to, the minimum density of the density array. The minimum density is the reciprocal of the maximum specific volume used to calculate the roots. Passed from inputs to through the dictionary rhodict.
     rhoinc : float, Optional, default: 5.0
         The increment between density values in the density array. Passed from inputs to through the dictionary rhodict.
@@ -336,20 +336,19 @@ def calc_Psat(T, xi, eos, rhodict={}):
     vlist, Plist = PvsRho(T, xi, eos, **rhodict)
     Pvspline, roots, extrema = PvsV_spline(vlist, Plist)
 
-    tmp = np.argwhere(np.diff(Plist) > 0)
-
-    if not tmp.any():
+    if (not extrema or len(extrema)<2):
         logger.warning('Error: One of the components is above its critical point, add an exception to setPsat')
         Psat = np.nan
         roots = [1.0, 1.0, 1.0]
 
     else:
-        Pmin1 = np.argwhere(np.diff(Plist) > 0)[0][0]
-        Pmax1 = np.argmax(Plist[Pmin1:]) + Pmin1
+        ind_Pmin1 = np.argwhere(np.diff(Plist) > 0)[0][0]
+        ind_Pmax1 = np.argmax(Plist[ind_Pmin1:]) + ind_Pmin1
 
-        Pmaxsearch = Plist[Pmax1]
+        Pmaxsearch = Plist[ind_Pmax1]
 
-        Pminsearch = max(Plist[-1], np.amin(Plist[Pmin1:Pmax1]))
+        Pconverged = 10 # If the pressure is negative (under tension), we search from a value just above vacuum 
+        Pminsearch = max(Pconverged, np.amin(Plist[ind_Pmin1:ind_Pmax1]))
 
         #search Pressure that gives equal area in maxwell construction
         Psat = minimize_scalar(eq_area,
@@ -391,12 +390,15 @@ def eq_area(shift, Pv, vlist):
 
     logger = logging.getLogger(__name__)
 
-    Pvspline = interpolate.InterpolatedUnivariateSpline(vlist, Pv - shift)
+    Pvspline, roots, extrema = PvsV_spline(vlist, Pv-shift)
 
-    roots = Pvspline.roots()
+    try:
+        a = Pvspline.integral(roots[0], roots[1])
+        b = Pvspline.integral(roots[1], roots[2])
+    except:
+        logger.warning("Pressure curve without cubic properties has wrongly been excepted.")
+        PvsV_plot(vlist, Pv-shift, Pvspline, markers=extrema)
 
-    a = Pvspline.integral(roots[0], roots[1])
-    b = Pvspline.integral(roots[1], roots[2])
 
     return (a + b)**2
 
@@ -441,10 +443,18 @@ def calc_rhov(P, T, xi, eos, rhodict={}):
     l_roots = len(roots)
     if l_roots == 0:
         flag = 3
-        logger.info("    Flag 3: The T and yi, {} {}, won't produce a fluid (vapor or liquid) at this pressure".format(T,xi))
         if Plist[0] < 0:
+            if not len(extrema):
+                flag = 2
+                logger.info("    Flag 2: The T and yi, {} {}, combination produces a critical fluid at this pressure".format(T,xi))
+            else:
+                flag = 1
+                logger.info("    Flag 1: The T and yi, {} {}, combination produces a liquid at this pressure".format(T,xi))
             rho_tmp = 1/vlist[0]
         else:
+            logger.warning("    Flag 3: The T and yi, {} {}, won't produce a fluid (vapor or liquid) at this pressure".format(T,xi))
+            flag = 3
+            PvsV_plot(vlist, Plist, Pvspline, markers=extrema)
             rho_tmp = np.nan
     elif l_roots == 1:
         if not len(extrema):
@@ -470,7 +480,6 @@ def calc_rhov(P, T, xi, eos, rhodict={}):
             flag = 4
             rho_tmp = np.nan
             logger.debug("    Flag 4: There should be a third root! Assume ideal gas P: {}".format(P))
-            #PvsV_plot(vlist, Plist, Pvspline)
     else: # 3 roots
         rho_tmp = 1.0 / roots[2]
         flag = 0
@@ -480,8 +489,11 @@ def calc_rhov(P, T, xi, eos, rhodict={}):
         if (Pdiff(tmp[0],P, T, xi, eos)*Pdiff(tmp[1],P, T, xi, eos))<0:
             rho_tmp = brentq(Pdiff, tmp[0], tmp[1], args=(P, T, xi, eos), rtol=0.0000001)
         else:
-            rho_tmp = root(Pdiff, rho_tmp, args=(P, T, xi, eos), method="hybr", tol=0.0000001)
-            rho_tmp = rho_tmp.x[0]
+            if Plist[0] < 0:
+                logger.warning("Density value could not be bounded with (rhomin,rhomax), {}. Using approximate density value".format(tmp))
+            else:
+                rho_tmp = root(Pdiff, rho_tmp, args=(P, T, xi, eos), method="hybr", tol=0.0000001)
+                rho_tmp = rho_tmp.x[0]
 
     # Flag: 0 is vapor, 1 is liquid, 2 mean a critical fluid, 3 means that neither is true, 4 means we should assume ideal gas
     return rho_tmp, flag
@@ -521,20 +533,31 @@ def calc_rhol(P, T, xi, eos, rhodict={}):
 
     # Get roots and local minima and maxima 
     vlist, Plist = PvsRho(T, xi, eos, **rhodict)
-    Pvspline, roots, extrema = PvsV_spline(vlist, Plist-P)
+    Plist = Plist-P
+    Pvspline, roots, extrema = PvsV_spline(vlist, Plist)
 
     logger.debug("    Find rhol: P {} Pa, roots {} m^3/mol".format(P,str(roots)))
+
+    if extrema:
+        if len(extrema) == 1:
+            logger.warning("One extrema at {}, assume weird minima behavior. Check your parameters.".format(1/extrema[0])) 
 
     # Assess roots, what is the liquid density
     l_roots = len(roots)
     if l_roots == 0: # zero roots
-        flag = 3
-        logger.info("    Flag 3: The T and xi, {} {}, won't produce a fluid (vapor or liquid) at this pressure".format(str(T),str(xi)))
-        #PvsV_plot(vlist, Plist-P, Pvspline)
-        if Plist[0] < P:
+        if Plist[0] < 0:
+            if not len(extrema):
+                flag = 2
+                logger.info("    Flag 2: The T and yi, {} {}, combination produces a critical fluid at this pressure".format(T,xi))
+            else:
+                flag = 1
+                logger.info("    Flag 1: The T and yi, {} {}, combination produces a liquid at this pressure".format(T,xi))
             rho_tmp = 1/vlist[1]
         else:
+            flag = 3
+            logger.warning("    Flag 3: The T and xi, {} {}, won't produce a fluid (vapor or liquid) at this pressure".format(str(T),str(xi)))
             rho_tmp = np.nan
+            PvsV_plot(vlist, Plist, Pvspline, markers=extrema)
     elif l_roots == 2: # 2 roots
         if (Pvspline(roots[0])+P) < 0.:
             flag = 1
@@ -562,10 +585,14 @@ def calc_rhol(P, T, xi, eos, rhodict={}):
 
     if flag in [1,2]: # liquid or critical fluid
         tmp = [rho_tmp*.99, rho_tmp*1.01]
-        if not (Pdiff(tmp[0],P, T, xi, eos)*Pdiff(tmp[1],P, T, xi, eos))<0:
-            logger.info("rhomin, rhomax:",tmp)
-            PvsV_plot(vlist, Plist-P, Pvspline)
-        rho_tmp = brentq(Pdiff, tmp[0], tmp[1], args=(P, T, xi, eos), rtol=0.0000001)
+        if (Pdiff(tmp[0],P, T, xi, eos)*Pdiff(tmp[1],P, T, xi, eos))<0:
+            rho_tmp = brentq(Pdiff, tmp[0], tmp[1], args=(P, T, xi, eos), rtol=0.0000001)
+        else:
+            if Plist[0] < 0:
+                logger.warning("Density value could not be bounded with (rhomin,rhomax), {}. Using approximate density value".format(tmp))
+            else:
+                rho_tmp = root(Pdiff, rho_tmp, args=(P, T, xi, eos), method="hybr", tol=0.0000001)
+                rho_tmp = rho_tmp.x[0]
 
     # Flag: 0 is vapor, 1 is liquid, 2 mean a critical fluid, 3 means that neither is true
     return rho_tmp, flag
@@ -684,6 +711,7 @@ def calc_phil(P, T, xi, eos, rhodict={}):
     rhol, flagl = calc_rhol(P, T, xi, eos, rhodict)
     muil = eos.chemicalpotential(P, np.array([rhol]), xi, T)
     phil = np.exp(muil)
+    print(P, T, xi, muil, phil)
 
     return phil, rhol, flagl
 
@@ -727,7 +755,10 @@ def calc_Prange_xi(T, xi, yi, eos, rhodict={}, Pmin=1000, zi_opts={}):
     vlist, Plist = PvsRho(T, xi, eos, **rhodict)
     Pvspline, roots, extrema = PvsV_spline(vlist, Plist)
 
-    Pmax = max(Pvspline(extrema))
+    if not len(extrema):
+        Pmax = 100000 # 1 MPa
+    else:
+        Pmax = max(Pvspline(extrema))
     Parray = [Pmin, Pmax]
 
     #################### Find Pressure range and Objective Function values
@@ -739,21 +770,33 @@ def calc_Prange_xi(T, xi, yi, eos, rhodict={}, Pmin=1000, zi_opts={}):
     ind = 0
     maxiter = 200
     for z in range(maxiter):
-        if z == 0:
-            # Find Obj Function for Min pressure above
-            p = Parray[0]
-            phil, rhol, flagl = calc_phil(p, T, xi, eos, rhodict=rhodict)
-            yi_range, phiv, flagv = solve_yi_xiT(yi_range, xi, phil, p, T, eos, rhodict=rhodict, **zi_opts)
-            ObjArray[0] = (np.sum(xi * phil / phiv) - 1.0)
-            logger.info("Minimum pressure: {},  Obj. Func: {}".format(Parray[0],ObjArray[0]))
+        # Find Obj Function for Min pressure above
+        p = Parray[0]
+        phil, rhol, flagl = calc_phil(p, T, xi, eos, rhodict=rhodict)
+        if any(np.isnan(phil)):
+            logger.error("Estimated minimum pressure is too low.")
+            Parray[0] += Pmin
+            continue
+        yi_range, phiv, flagv = solve_yi_xiT(yi_range, xi, phil, p, T, eos, rhodict=rhodict, **zi_opts)
+        ObjArray[0] = (np.sum(xi * phil / phiv) - 1.0)
+        logger.info("Estimated Minimum Pressure: {},  Obj. Func: {}".format(Parray[0],ObjArray[0]))
+        if ObjArray[0] > 0:
+            break
+
+    if z == maxiter-1:
+        logger.error("Proper minimum pressure for liquid density could not be found")
             
-        elif z == 1:
+    for z in range(maxiter):
+        if z == 0:
             # Find Obj function for Max Pressure above
             p = Parray[1]
             phil, rhol, flagl = calc_phil(p, T, xi, eos, rhodict=rhodict)
+            if any(np.isnan(phil)):
+                raise ValueError
+                logger.error("Fugacity coefficient should not be NaN")
             yi_range, phiv, flagv = solve_yi_xiT(yi_range, xi, phil, p, T, eos, rhodict=rhodict, **zi_opts)
             ObjArray[1] = (np.sum(xi * phil / phiv) - 1.0)
-            logger.info("Estimate Maximum pressure: {},  Obj. Func: {}".format(Parray[1],ObjArray[1]))
+            logger.info("Estimate Maximum Pressure: {},  Obj. Func: {}".format(Parray[1],ObjArray[1]))
         else:
             tmp_sum = np.abs(ObjArray[-2] + ObjArray[-1])
             tmp_dif = np.abs(ObjArray[-2] - ObjArray[-1])
@@ -782,8 +825,11 @@ def calc_Prange_xi(T, xi, yi, eos, rhodict={}, Pmin=1000, zi_opts={}):
                 p = 2 * Parray[-1]
                 Parray.append(p)
                 phil, rhol, flagl = calc_phil(p, T, xi, eos, rhodict=rhodict)
+                if any(np.isnan(phil)):
+                    logger.error("Fugacity coefficient should not be NaN")
                 yi_range, phiv, flagv = solve_yi_xiT(yi_range, xi, phil, p, T, eos, rhodict=rhodict, **zi_opts)
                 ObjArray.append(np.sum(xi * phil / phiv) - 1.0)
+                logger.info("New Estimate for Maximum Pressure: {},  Obj. Func: {}".format(Parray[-1],ObjArray[-1]))
 
     Prange = Parray[-2:]
     ObjRange = ObjArray[-2:]
@@ -958,7 +1004,7 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxiter=15, tol=1e-6):
             else:
                 yinew = yi
 
-            if any(np.isnan(yinew)):
+            if any(np.isnan(phiv)):
                 phiv = np.nan
                 logger.error("Fugacity coefficient of vapor should not be NaN")
 
@@ -1186,6 +1232,8 @@ def find_new_yi(yi_total,P, T, phil, xi, eos, rhodict={}):
         yinew = xi * phil / phiv
         yinew_total_1 = np.sum(yinew)
 
+        print("yinew_total_1, yi_total, xi, phil, phiv",yinew_total_1, yi_total, xi, phil, phiv)
+
         obj_ext.append(yinew_total_1 - yi_total)
         flag_ext.append(flagv)
  
@@ -1193,7 +1241,7 @@ def find_new_yi(yi_total,P, T, phil, xi, eos, rhodict={}):
     flag_ext = np.array(flag_ext)
 
     tmp = np.count_nonzero(~np.isnan(obj_ext))
-    logger.debug("Number of valid mole fractions: {}".format(tmp))
+    logger.debug("    Number of valid mole fractions: {}".format(tmp))
     if tmp == 0:
         yi_tmp = np.nan
         obj_tmp = np.nan
@@ -1203,12 +1251,13 @@ def find_new_yi(yi_total,P, T, phil, xi, eos, rhodict={}):
         yi_tmp   =   yi_ext[~np.isnan(obj_ext)]
         flag_tmp = flag_ext[~np.isnan(obj_ext)]
  
-        # Assess vapor values
-        ind = [i for i in range(len(flag_tmp)) if flag_tmp[i] not in [1,4]]
-        if ind:
-            obj_tmp = [obj_tmp[i] for i in ind]
-            yi_tmp = [yi_tmp[i] for i in ind]
+    #    # Assess vapor values
+    #    ind = [i for i in range(len(flag_tmp)) if flag_tmp[i] not in [1,4]]
+    #    if ind:
+    #        obj_tmp = [obj_tmp[i] for i in ind]
+    #        yi_tmp = [yi_tmp[i] for i in ind]
 
+        # Choose values with lowest objective function
         ind = np.where(np.abs(obj_tmp)==min(np.abs(obj_tmp)))[0][0]
         obj_tmp = obj_tmp[ind]
         yi_tmp = yi_tmp[ind]

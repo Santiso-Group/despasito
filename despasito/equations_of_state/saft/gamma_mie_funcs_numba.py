@@ -14,6 +14,7 @@ from scipy import integrate
 import scipy.optimize as spo
 import time
 import sys
+import matplotlib.pyplot as plt
 
 from . import constants
 from . import solv_assoc
@@ -1095,7 +1096,7 @@ def calc_assoc_matrices(beads, beadlibrary, sitenames=["H", "e1", "e2"], crossli
     for i in range(nbeads):
         for j in range(np.size(sitenames)):
             if "Nk"+sitenames[j] in beadlibrary[beads[i]]:
-                logger.debug("Bead {} has association site {}".format(beads[i],"Nk"+sitenames[j]))
+                logger.debug("Bead {} has {} of the association site {}".format(beads[i],beadlibrary[beads[i]]["Nk"+sitenames[j]],"Nk"+sitenames[j]))
                 nk[i, j] = beadlibrary[beads[i]]["Nk" + sitenames[j]]
 
     if crosslibrary:
@@ -1265,7 +1266,7 @@ def calc_A_assoc(rho, xi, T, nui, Cmol2seg, xskl, sigmakl, sigmaii_avg, epsiloni
 
     Xika0 = np.zeros((ncomp, nbeads, nsitesmax))
     Xika0[:, :, :] = 1.0
-    Xika = solv_assoc.min_xika(rho, Xika0, xi, nui, nk, delta, 500, 1.0E-12)
+    Xika = solv_assoc.min_xika(rho, Xika0, xi, nui, nk, delta, 500, 1.0E-12) # {BottleNeck}
     if np.any(Xika < 0.0):
         Xika0[:, :, :] = 0.5
         sol = spo.root(calc_Xika_wrap, Xika0, args=(xi, rho[0], nui, nk, delta[0]), method='broyden1')
@@ -1278,7 +1279,11 @@ def calc_A_assoc(rho, xi, T, nui, Cmol2seg, xskl, sigmakl, sigmaii_avg, epsiloni
                 if nk[k, a] != 0.0:
                     Aassoc += xi[i] * nui[i, k] * nk[k, a] * (np.log(Xika[:, i, k, a]) +
                                                               ((1.0 - Xika[:, i, k, a]) / 2.0))
-
+                    ind = 28493
+                    if len(Aassoc) == 2*ind:
+                        print(Xika[:, i, k, a][0],Xika[:, i, k, a][ind])
+    if len(Aassoc) == 2*ind:
+        sys.exit("stop")
 
     return Aassoc
 
