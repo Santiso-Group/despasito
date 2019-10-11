@@ -11,8 +11,7 @@ import os
 import sys
 import logging
 
-from . import calc_newyi as calc
-#from . import calc
+from . import calc
 
 """
 .. todo::

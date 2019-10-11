@@ -1180,19 +1180,19 @@ def calc_A_assoc(rho, xi, T, nui, Cmol2seg, xskl, sigmakl, sigmaii_avg, epsiloni
             elif p == 9: Iij += np.einsum("i,jk->ijk", constants.cij[p, q] * ((sigmax3**p * rho4*rho5)), ((kT / epsilonij)**q))
             elif p == 10: Iij += np.einsum("i,jk->ijk", constants.cij[p, q] * ((sigmax3**p * rho5*rho5)), ((kT / epsilonij)**q))
 
-    # compute deltaijklab
-    for i in range(ncomp):
-        for j in range(ncomp):
-            for k in range(nbeads):
-                for l in range(nbeads):
-                    for a in range(nsitesmax):
-                        for b in range(nsitesmax):
-                            # print(Fklab[k,l,a,b],Kklab[k,l,a,b],Iij[i,j])
-                            if nui[i, k] and nui[j, l] > 0:
-                                delta[:, i, j, k, l, a, b] = Fklab[k, l, a, b] * Kklab[k, l, a, b] * Iij[:, i, j]
-
-    ind = 28460
     # Compute Xika: with Fortran   {BottleNeck}
+
+#    # compute deltaijklab
+#    for i in range(ncomp):
+#        for j in range(ncomp):
+#            for k in range(nbeads):
+#                for l in range(nbeads):
+#                    for a in range(nsitesmax):
+#                        for b in range(nsitesmax):
+#                            # print(Fklab[k,l,a,b],Kklab[k,l,a,b],Iij[i,j])
+#                            if nui[i, k] and nui[j, l] > 0:
+#                                delta[:, i, j, k, l, a, b] = Fklab[k, l, a, b] * Kklab[k, l, a, b] * Iij[:, i, j]
+#
 #    Xika0 = np.zeros((ncomp, nbeads, nsitesmax))
 #    Xika0[:, :, :] = 1.0
 #    Xika = solv_assoc.min_xika(rho, Xika0, xi, nui, nk, delta, 500, 1.0E-12) # {BottleNeck}
@@ -1204,21 +1204,25 @@ def calc_A_assoc(rho, xi, T, nui, Cmol2seg, xskl, sigmakl, sigmaii_avg, epsiloni
 #        logger.warning('Xika out of bounds')
 
     # Compute Xika: with python numba or cython  {BottleNeck}
+    ind = 28460
     indices = assoc_site_indices(xi, nui, nk)
     Xika = []
+    status = []
     l_ind = len(indices)
-    logger.debug("association site indices {}".format(indices))
-    Xika_elements_gss = np.ones(l_ind)*.5
+    #logger.debug("association site indices {}".format(indices))
+    Xika_elements = np.ones(l_ind)*.5
     for i in range(len(rho)):
         #sol = spo.root(obj_Xika, np.ones(len(indices))*.5, args=(indices,rho[i], xi, nui, nk, delta[i]), options={"xtol":1e-15})
         bounds = (np.zeros(l_ind),np.ones(l_ind))
-        sol = spo.least_squares(obj_Xika, Xika_elements_gss, bounds=bounds, args=(indices,rho[i], xi, nui, nk, delta[i]))
+        sol = spo.least_squares(obj_Xika, Xika_elements, bounds=bounds, args=(indices,rho[i], xi, nui, nk, Fklab,Kklab,Iij[i]))
         Xika_elements = sol.x
-        Xika_elements_gss = Xika_elements
+        print("Xika elements {}".format(sol.x))
+        status.append(sol.status)
         Xika_tmp = np.ones((ncomp, nbeads, nsitesmax))
         Xika.append(assemble_Xika(Xika_elements,indices,Xika_tmp))
     Xika = np.array(Xika)
-    print("Got one! {}".format(Xika_elements))
+    unique, counts = np.unique(status, return_counts=True)
+    logger.debug("    Xika Status Flags: {}: {}".format(unique, counts))
 
     # Compute A_assoc
     for i in range(ncomp):
@@ -1269,7 +1273,7 @@ def assoc_site_indices(xi, nui, nk):
                         indices.append([i,j,k])
     return indices
 
-def obj_Xika(Xika_elements, indices, rho, xi, nui, nk, delta):
+def obj_Xika(Xika_elements, indices, rho, xi, nui, nk, Fklab, Kklab, Iij):
     r""" 
     Calculate the fraction of molecules of component i that are not bonded at a site of type a on group k in an iterative fashion.
 
@@ -1289,6 +1293,12 @@ def obj_Xika(Xika_elements, indices, rho, xi, nui, nk, delta):
         For each bead the number of each type of site
     delta : numpy.ndarray
         The association strength between a site of type a on a group of type k of component i and a site of type b on a group of type l of component j. eq. 66, for a specific density
+    Fklab : numpy.ndarray
+        
+    Kklab : numpy.ndarray
+        
+    Iij : numpy.ndarray
+        
 
     Returns
     -------
@@ -1297,7 +1307,6 @@ def obj_Xika(Xika_elements, indices, rho, xi, nui, nk, delta):
     """
 
     logger = logging.getLogger(__name__)
-
 
     ## Option 1: A lot of for loops
 #    nbeads    = nui.shape[1]
@@ -1320,20 +1329,21 @@ def obj_Xika(Xika_elements, indices, rho, xi, nui, nk, delta):
     ## Option 2: Fewer forloops
     Xika_elements_new = np.ones(len(Xika_elements))
     Xika_elements = np.array(Xika_elements)
-
+    print("indices",indices)
     ind = 0
     for i,k,a in indices:
         jnd = 0
         for j,l,b in indices:
- #           print(rho,xi[j],nui[j,l],nk[l,b],Xika_elements[jnd],delta[i,j,k,l,a,b])
-            Xika_elements_new[ind] += rho * xi[j] * nui[j,l] * nk[l,b] * Xika_elements[jnd] * delta[i,j,k,l,a,b]
+            delta = Fklab[k, l, a, b] * Kklab[k, l, a, b] * Iij[i, j]
+            print(k, l, a, b, Fklab[k, l, a, b], Kklab[k, l, a, b], Iij[i, j], delta)
+            Xika_elements_new[ind] += rho * xi[j] * nui[j,l] * nk[l,b] * Xika_elements[jnd] * delta
             jnd += 1
         ind += 1
- #   print(Xika_elements_new)
     Xika_elements_new = 1./Xika_elements_new
- #   print(Xika_elements_new)
 
     obj = Xika_elements_new - Xika_elements
+
+    print("Xika guess and obj ",Xika_elements,obj)
 
     #logger.debug("    Xika: {}, Error: {}".format(Xika_elements_new,obj))
 
@@ -1448,6 +1458,18 @@ def calc_A(rho, xi, T, beads, beadlibrary, massi, nui, Cmol2seg, xsk, xskl, dkk,
     if np.sum(nk) > 0.0:
         Aassoc = calc_A_assoc(rho, xi, T, nui,  Cmol2seg, xskl, sigmakl, sigmaii_avg, epsilonii_avg, epsilonHB, Kklab, nk)
         A = Aideal + AHS + A1 + A2 + A3 + Achain + Aassoc
+        nrho = int(len(A)/2)
+    # NoteHere
+     #   plt.plot(rho[:nrho],Aideal[:nrho]-Aideal[nrho:],"b",linewidth=1)
+     #   plt.plot(rho[:nrho],AHS[:nrho]-AHS[nrho:],"r",linewidth=1)
+     #   plt.plot(rho[:nrho],A1[:nrho]-A1[nrho:],"g",linewidth=1)
+     #   plt.plot(rho[:nrho],A2[:nrho]-A2[nrho:],"c",linewidth=1)
+     #   plt.plot(rho[:nrho],A3[:nrho]-A3[nrho:],"m",linewidth=1)
+     #   plt.plot(rho[:nrho],Achain[:nrho]-Achain[nrho:],"y",linewidth=1)
+     #   plt.plot(rho[:nrho],Aassoc[:nrho]-Aassoc[nrho:],"k",linewidth=1)
+     #   plt.plot(rho[:nrho],A[:nrho]-A[nrho:],"k",linewidth=2)
+     #   plt.show()
+        
     else:
         A = Aideal + AHS + A1 + A2 + A3 + Achain
 
