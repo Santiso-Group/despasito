@@ -48,7 +48,7 @@ def run(filename="input.json", path=".", **args):
         logger.info("Finished parametrization")
         # readwrite_input.writeout_dict(output_dict,**file_dict)
     else:
-        logger.info("Intializing thermodynamic calculation")
+        logger.info("Initializing thermodynamic calculation")
         output_dict = thermo(eos, thermo_dict)
         logger.info("Finished thermodynamic calculation")
         readwrite_input.writeout_dict(output_dict,thermo_dict["calculation_type"],**file_dict)

@@ -57,6 +57,7 @@ def thermo(eos, thermo_dict):
         output_dict = func(eos, sys_dict, **kwargs)
     except:
         raise TypeError("The calculation type, '"+calctype+"', failed")
+        logger.error("The calculation type, '"+calctype+"', failed",exc_info=True)
 
     return output_dict
 

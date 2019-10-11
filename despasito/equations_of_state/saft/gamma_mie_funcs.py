@@ -1,3 +1,5 @@
+# -- coding: utf8 --
+
 r"""
     
     Routines for calculating the Helmholtz energy for the SAFT-gamma equation of state.
@@ -10,12 +12,13 @@ import numpy as np
 from scipy import misc
 from scipy import integrate
 import scipy.optimize as spo
-import logging
+import time
+import sys
+import matplotlib.pyplot as plt
+import os
 
 from . import constants
 from . import solv_assoc
-
-import os
 
 if 'NUMBA_DISABLE_JIT' in os.environ:
     disable_jit = os.environ['NUMBA_DISABLE_JIT']
@@ -24,6 +27,7 @@ else:
     disable_jit = jit_stat.disable_jit
 
 if disable_jit:
+#    from .nojit_exts import calc_a1s, calc_Xika
     from .nojit_exts import calc_a1s
     #uncomment line below for cython extensions:
     #from .c_exts import calc_a1s
@@ -61,8 +65,12 @@ def calc_Aideal(xi, rho, massi, T):
 
     logger = logging.getLogger(__name__)
 
+    if any(np.isnan(rho)):
+        raise ValueError("nan was given as a value of density, rho") 
+        logger.error("Value of nan for density input into Aideal")
+
     # Check for mole fractions of zero and remove those components
-    ind = np.where(np.array(xi)==0.0)[0]
+    ind = np.where(np.array(xi)<1e-32)[0]
     xi_tmp = []
     massi_tmp = []
     for i in range(len(xi)):
@@ -79,8 +87,8 @@ def calc_Aideal(xi, rho, massi, T):
 
 #    if not any(np.sum(xi_tmp * np.log(Aideal_tmp), axis=1)):
     if np.isnan(np.sum(np.sum(xi_tmp * np.log(Aideal_tmp), axis=1))):
-        raise ValueError("Aideal has values of zero in taking the log. All mole fraction values should be nonzero. Mole fraction: %s" % str(xi_tmp))
-        logger.exception("Aideal has values of zero in taking the log. All mole fraction values should be nonzero. Mole fraction: %s" % str(xi_tmp))
+        raise ValueError("Aideal has values of zero when taking the log. All mole fraction values should be nonzero. Mole fraction: %s".format(xi_tmp))
+        logger.exception("Aideal has values of zero when taking the log. All mole fraction values should be nonzero. Mole fraction: %s".format(xi_tmp))
     else:
         Aideal = np.sum(xi_tmp * np.log(Aideal_tmp), axis=1) - 1.0
 
@@ -1014,10 +1022,9 @@ def calc_assoc_matrices(beads, beadlibrary, sitenames=["H", "e1", "e2"], crossli
 
     for i in range(nbeads):
         for j in range(np.size(sitenames)):
-            if "Nk"+sitenames[j] in list(beadlibrary[beads[i]].keys()):
+            if "Nk"+sitenames[j] in beadlibrary[beads[i]]:
+                logger.debug("Bead {} has {} of the association site {}".format(beads[i],beadlibrary[beads[i]]["Nk"+sitenames[j]],"Nk"+sitenames[j]))
                 nk[i, j] = beadlibrary[beads[i]]["Nk" + sitenames[j]]
-            else:
-                logger.debug("%s is not a valid parameter provided for the group %s" % ("Nk"+sitenames[j],beads[i]))
 
     if crosslibrary:
         # find any cross terms in the cross term library
@@ -1148,7 +1155,8 @@ def calc_A_assoc(rho, xi, T, nui, Cmol2seg, xskl, sigmakl, sigmaii_avg, epsiloni
     # compute sigmax3
     sigmax3 = Cmol2seg * np.sum(xskl * (sigmakl**3))
 
-    # compute Iijklab
+    # compute Iijklab 
+    # {BottleNeck}
     for p in range(11):
         for q in range(11 - i):
             #Iij += np.einsum("i,jk->ijk", constants.cij[p, q] * ((sigmax3 * rho)**p), ((kT / epsilonij)**q))
@@ -1182,15 +1190,37 @@ def calc_A_assoc(rho, xi, T, nui, Cmol2seg, xskl, sigmakl, sigmaii_avg, epsiloni
                             # print(Fklab[k,l,a,b],Kklab[k,l,a,b],Iij[i,j])
                             if nui[i, k] and nui[j, l] > 0:
                                 delta[:, i, j, k, l, a, b] = Fklab[k, l, a, b] * Kklab[k, l, a, b] * Iij[:, i, j]
-    Xika0 = np.zeros((ncomp, nbeads, nsitesmax))
-    Xika0[:, :, :] = 1.0
-    Xika = solv_assoc.min_xika(rho, Xika0, xi, nui, nk, delta, 500, 1.0E-12)
-    if np.any(Xika < 0.0):
-        Xika0[:, :, :] = 0.5
-        sol = spo.root(calc_Xika_wrap, Xika0, args=(xi, rho[0], nui, nk, delta[0]), method='broyden1')
-        Xika0 = sol.x
-        Xika = solv_assoc.min_xika(rho, Xika0, xi, nui, nk, delta, 500, 1.0E-12)
-        logger.warning('Xika out of bounds')
+
+    ind = 28460
+    # Compute Xika: with Fortran   {BottleNeck}
+#    Xika0 = np.zeros((ncomp, nbeads, nsitesmax))
+#    Xika0[:, :, :] = 1.0
+#    Xika = solv_assoc.min_xika(rho, Xika0, xi, nui, nk, delta, 500, 1.0E-12) # {BottleNeck}
+#    if np.any(Xika < 0.0):
+#        Xika0[:, :, :] = 0.5
+#        sol = spo.root(calc_Xika_wrap, Xika0, args=(xi, rho[0], nui, nk, delta[0]), method='broyden1')
+#        Xika0 = sol.x
+#        Xika = solv_assoc.min_xika(rho, Xika0, xi, nui, nk, delta, 500, 1.0E-12) # {BottleNeck}
+#        logger.warning('Xika out of bounds')
+
+    # Compute Xika: with python numba or cython  {BottleNeck}
+    indices = assoc_site_indices(xi, nui, nk)
+    Xika = []
+    l_ind = len(indices)
+    logger.debug("association site indices {}".format(indices))
+    Xika_elements_gss = np.ones(l_ind)*.5
+    for i in range(len(rho)):
+        #sol = spo.root(obj_Xika, np.ones(len(indices))*.5, args=(indices,rho[i], xi, nui, nk, delta[i]), options={"xtol":1e-15})
+        bounds = (np.zeros(l_ind),np.ones(l_ind))
+        sol = spo.least_squares(obj_Xika, Xika_elements_gss, bounds=bounds, args=(indices,rho[i], xi, nui, nk, delta[i]))
+        Xika_elements = sol.x
+        Xika_elements_gss = Xika_elements
+        Xika_tmp = np.ones((ncomp, nbeads, nsitesmax))
+        Xika.append(assemble_Xika(Xika_elements,indices,Xika_tmp))
+    Xika = np.array(Xika)
+    print("Got one! {}".format(Xika_elements))
+
+    # Compute A_assoc
     for i in range(ncomp):
         for k in range(nbeads):
             for a in range(nsitesmax):
@@ -1198,8 +1228,147 @@ def calc_A_assoc(rho, xi, T, nui, Cmol2seg, xskl, sigmakl, sigmaii_avg, epsiloni
                     Aassoc += xi[i] * nui[i, k] * nk[k, a] * (np.log(Xika[:, i, k, a]) +
                                                               ((1.0 - Xika[:, i, k, a]) / 2.0))
 
-
     return Aassoc
+
+def assoc_site_indices(xi, nui, nk):
+    r""" 
+    Make a list of sets of indices that allow quick identification of the relevent association sights. This is needed for solving Xika, the fraction of molecules of component i that are not bonded at a site of type a on group k.
+
+    Parameters
+    ----------
+    xi : numpy.ndarray
+        Mole fraction of each component, sum(xi) should equal 1.0
+    nui : numpy.array
+        :math:`\nu_{i,k}/k_B`, Array of number of components by number of bead types. Defines the number of each type of group in each component. 
+    nk : numpy.ndarray
+        For each bead the number of each type of site
+
+    Returns
+    -------
+    indices : list[list]
+        A list of sets of (component, bead, site) to identify the values of the Xika matrix that are being fit
+    """
+
+    logger = logging.getLogger(__name__)
+
+    indices = []
+
+    # List of site indicies for each bead type
+    bead_sites = []
+    for bead in nk:
+        bead_sites.append([i for i, site in enumerate(bead) if site != 0])
+
+    # Indices of components will minimal mole fractions
+    zero_frac = np.where(np.array(xi)<1e-32)[0]
+
+    for i, comp in enumerate(nui):
+        if i not in zero_frac:
+            for j, bead in enumerate(comp):
+                if (bead != 0 and bead_sites[j]):
+                    for k in bead_sites[j]:
+                        indices.append([i,j,k])
+    return indices
+
+def obj_Xika(Xika_elements, indices, rho, xi, nui, nk, delta):
+    r""" 
+    Calculate the fraction of molecules of component i that are not bonded at a site of type a on group k in an iterative fashion.
+
+    Parameters
+    ----------
+    Xika_elements : numpy.ndarray
+        A guess in the value of the elements
+    indices : list[list]
+        A list of sets of (component, bead, site) to identify the values of the Xika matrix that are being fit
+    rho : float
+        Number density of system [molecules/m^3]
+    xi : numpy.ndarray
+        Mole fraction of each component, sum(xi) should equal 1.0
+    nui : numpy.array
+        :math:`\nu_{i,k}/k_B`, Array of number of components by number of bead types. Defines the number of each type of group in each component. 
+    nk : numpy.ndarray
+        For each bead the number of each type of site
+    delta : numpy.ndarray
+        The association strength between a site of type a on a group of type k of component i and a site of type b on a group of type l of component j. eq. 66, for a specific density
+
+    Returns
+    -------
+    obj : numpy.ndarray
+        The sum of the absolute difference between each of the target elements.
+    """
+
+    logger = logging.getLogger(__name__)
+
+
+    ## Option 1: A lot of for loops
+#    nbeads    = nui.shape[1]
+#    ncomp     = np.size(xi)
+#    nsitesmax = np.size(nk, axis=1)
+#
+#    Xika = np.ones((ncomp, nbeads, nsitesmax))
+#    Xika0 = assemble_Xika(Xika_elements,indices,Xika)
+#    for i in range(ncomp):
+#        for k in range(nbeads):
+#            for a in range(nsitesmax):
+#
+#                for j in range(ncomp):
+#                    for l in range(nbeads):
+#                        for b in range(nsitesmax):
+#                            Xika[i,k,a] += (rho * xi[j] * nui[j,l] * nk[l,b] * Xika0[j,l,b] * delta[i,j,k,l,a,b])
+#    Xika = 1./Xika
+#    Xika_elements_new = [Xika[i][j][k] for i,j,k in indices]
+
+    ## Option 2: Fewer forloops
+    Xika_elements_new = np.ones(len(Xika_elements))
+    Xika_elements = np.array(Xika_elements)
+
+    ind = 0
+    for i,k,a in indices:
+        jnd = 0
+        for j,l,b in indices:
+ #           print(rho,xi[j],nui[j,l],nk[l,b],Xika_elements[jnd],delta[i,j,k,l,a,b])
+            Xika_elements_new[ind] += rho * xi[j] * nui[j,l] * nk[l,b] * Xika_elements[jnd] * delta[i,j,k,l,a,b]
+            jnd += 1
+        ind += 1
+ #   print(Xika_elements_new)
+    Xika_elements_new = 1./Xika_elements_new
+ #   print(Xika_elements_new)
+
+    obj = Xika_elements_new - Xika_elements
+
+    #logger.debug("    Xika: {}, Error: {}".format(Xika_elements_new,obj))
+
+    return obj
+
+def assemble_Xika(Xika_elements,indices,Xika):
+    r""" 
+    Put matrix values back into template matrix according to sets of indices.
+
+    Parameters
+    ----------
+    Xika_elements : numpy.ndarray
+        A guess in the value of the elements
+    indices : list[list]
+        A list of sets of (component, bead, site) to identify the values of the Xika matrix that are being fit
+    Xika : numpy.ndarray
+        A template matrix of the fraction of molecules of component i that are not bonded at a site of type a on group k.
+
+    Returns
+    -------
+    Xika : numpy.ndarray
+        The final matrix of the fraction of molecules of component i that are not bonded at a site of type a on group k,
+    """
+
+    logger = logging.getLogger(__name__)
+
+    if len(Xika_elements) != len(indices):
+        raise ValueError("Number of elements should each have a corresponding set of indices.")
+        logger.exception("Number of elements should each have a corresponding set of indices.")
+
+    for j,ind in enumerate(indices):
+        i,k,a = ind
+        Xika[i][k][a] = Xika_elements[j]
+
+    return Xika
 
 ############################################################
 #                                                          #
@@ -1281,23 +1450,6 @@ def calc_A(rho, xi, T, beads, beadlibrary, massi, nui, Cmol2seg, xsk, xskl, dkk,
         A = Aideal + AHS + A1 + A2 + A3 + Achain + Aassoc
     else:
         A = Aideal + AHS + A1 + A2 + A3 + Achain
-
-    # NoteHere
-    # nrho=np.size(rho)/2
-    # tmp = []
-    # for a in [Aideal,AHS,A1,A2,A3,Achain]:
-    #    tmp.append(a[:nrho]-a[nrho:])
-    # tmp = np.array(tmp).T.tolist()
-    # with open("test_Helmholtz.csv","w") as f:
-    #    f.write("Aideal,AHS,A1,A2,A3,Achain\n")
-    #    for line in tmp:
-    #        line = [str(x) for x in line]
-    #        f.write(", ".join(line)+"\n")
-
-    # with open("Output_Achain.csv","w") as f:
-    #    f.write("tmp_g1, tmp_g2\n")
-    #    for line in tmp_A.T:
-    #        f.write("%s,%s\n" % (str(line[0]),str(line[1])))
 
     return A
 

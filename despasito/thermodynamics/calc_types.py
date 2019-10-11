@@ -122,6 +122,7 @@ def phase_xiT(eos, sys_dict):
         opts["zi_opts"] = sys_dict["mole fraction options"]
 
     ## Calculate P and yi
+    T_list = np.array(T_list)
     P_list = np.zeros_like(T_list)
     flagv_list = np.zeros_like(T_list)
     flagl_list = np.zeros_like(T_list)
@@ -138,7 +139,7 @@ def phase_xiT(eos, sys_dict):
         except:
             logger.warning("T (K), xi: {} {}, calculation did not produce a valid result.".format(T_list[i], xi_list[i]))
             logger.debug("Calculation Failed:", exc_info=True)
-            P_list[i], yi_list[i] = [np.nan for x in range(2)]
+            P_list[i], yi_list[i] = [np.nan, np.nan]
             flagl_list[i], flagv_list[i], obj_list[i] = [3, 3, np.nan]
             continue
         logger.info("P (Pa), yi: {} {}".format(P_list[i], yi_list[i]))
@@ -248,11 +249,12 @@ def phase_yiT(eos, sys_dict):
         opts["zi_opts"] = sys_dict["mole fraction options"]
 
     ## Calculate P and xi
+    T_list = np.array(T_list)
     P_list = np.zeros_like(T_list)
-    flagv_list = np.zeros_like(T_list)
-    flagl_list = np.zeros_like(T_list)
-    xi_list = np.zeros_like(yi_list)
-    obj_list = np.zeros_like(T_list)
+    flagv_list = np.zeros(len(T_list))
+    flagl_list = np.zeros(len(T_list))
+    xi_list = np.zeros(len(yi_list))
+    obj_list = np.zeros(len(T_list))
     for i in range(np.size(T_list)):
         optsi = opts
         if "Pguess" in opts:
@@ -263,7 +265,7 @@ def phase_yiT(eos, sys_dict):
         except:
             logger.warning("T (K), yi: {} {}, calculation did not produce a valid result.".format(str(T_list[i]), str(yi_list[i])))
             logger.debug("Calculation Failed:", exc_info=True)
-            P_list[i], xi_list[i] = [np.nan for x in range(2)]
+            P_list[i], xi_list[i] = [np.nan, np.nan]
             flagl_list[i], flagv_list[i], obj_list[i] = [3, 3, np.nan]
             continue
         logger.info("P (Pa), xi: {} {}".format(str(P_list[i]), str(xi_list[i])))
@@ -337,9 +339,10 @@ def sat_props(eos, sys_dict):
         opts["rhodict"] = sys_dict["rhodict"]
 
     ## Calculate saturation properties
-    Psat = np.zeros_like(T_list)
-    rholsat = np.zeros_like(T_list)
-    rhovsat = np.zeros_like(T_list)
+    T_list = np.array(T_list)
+    Psat = np.zeros(len(T_list))
+    rholsat = np.zeros(len(T_list))
+    rhovsat = np.zeros(len(T_list))
 
     for i in range(np.size(T_list)):
 
@@ -349,7 +352,7 @@ def sat_props(eos, sys_dict):
         except:
             logger.warning("T (K), xi: {} {}, calculation did not produce a valid result.".format(str(T_list[i]), str(xi_list[i])))
             logger.debug("Calculation Failed:", exc_info=True)
-            Psat[i], rholsat[i], rhovsat[i] = [np.nan for x in range(3)]
+            Psat[i], rholsat[i], rhovsat[i] = [np.nan, np.nan, np.nan]
             continue
         logger.info("Psat {} Pa, rhol {}, rhov {}".format(Psat[i],rholsat[i],rhovsat[i]))
 
@@ -429,7 +432,8 @@ def liquid_properties(eos, sys_dict):
         opts["rhodict"] = sys_dict["rhodict"]
 
     ## Calculate liquid density
-    rhol = np.zeros_like(T_list)
+    T_list = np.array(T_list)
+    rhol = np.zeros(len(T_list))
     phil = []
     for i in range(np.size(T_list)):
         rhol[i], flagl = calc.calc_rhol(P_list[i], T_list[i], xi_list[i], eos, **opts)
@@ -517,7 +521,8 @@ def vapor_properties(eos, sys_dict):
         opts["rhodict"] = sys_dict["rhodict"]
 
     ## Calculate vapor density
-    rhov = np.zeros_like(T_list)
+    T_list = np.array(T_list)
+    rhov = np.zeros(len(T_list))
     phiv = []
     for i in range(np.size(T_list)):
         rhov[i], flagv = calc.calc_rhov(P_list[i], T_list[i], yi_list[i], eos, **opts)

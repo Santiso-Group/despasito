@@ -11,14 +11,7 @@ This module contains our thermodynamic calculations. Calculation of pressure, ch
 import numpy as np
 import sys
 from scipy import interpolate
-from scipy.optimize import minimize
-from scipy.optimize import minimize_scalar
-from scipy.optimize import fmin
-from scipy.optimize import newton
-from scipy.optimize import root
-from scipy.optimize import brentq
-from scipy.optimize import bisect
-from scipy.optimize import fsolve
+import scipy.optimize as spo
 from scipy.misc import derivative
 from scipy.ndimage.filters import gaussian_filter1d
 import random
@@ -157,7 +150,7 @@ def calc_CC_Pguess(xilist, Tlist, CriticalProp):
 #                      Pressure-Density Curve                        #
 #                                                                    #
 ######################################################################
-def PvsRho(T, xi, eos, minrhofrac=(1.0 / 200000.0), rhoinc=5.0, vspacemax=1.0E-4, maxpack=0.65):
+def PvsRho(T, xi, eos, minrhofrac=(1.0 / 100000.0), rhoinc=5.0, vspacemax=1.0E-4, maxpack=0.65):
 
     r"""
     Computes the Mie parameters of a mixture from the mixed critical properties of the pure components. 
@@ -171,7 +164,7 @@ def PvsRho(T, xi, eos, minrhofrac=(1.0 / 200000.0), rhoinc=5.0, vspacemax=1.0E-4
         Mole fraction of each component, sum(xi) should equal 1.0
     eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
-    minrhofrac : float, Optional, default: (1.0/200000.0)
+    minrhofrac : float, Optional, default: (1.0/100000.0)
         Fraction of the maximum density used to calculate, and is equal to, the minimum density of the density array. The minimum density is the reciprocal of the maximum specific volume used to calculate the roots. Passed from inputs to through the dictionary rhodict.
     rhoinc : float, Optional, default: 5.0
         The increment between density values in the density array. Passed from inputs to through the dictionary rhodict.
@@ -336,23 +329,22 @@ def calc_Psat(T, xi, eos, rhodict={}):
     vlist, Plist = PvsRho(T, xi, eos, **rhodict)
     Pvspline, roots, extrema = PvsV_spline(vlist, Plist)
 
-    tmp = np.argwhere(np.diff(Plist) > 0)
-
-    if not tmp.any():
+    if (not extrema or len(extrema)<2):
         logger.warning('Error: One of the components is above its critical point, add an exception to setPsat')
         Psat = np.nan
         roots = [1.0, 1.0, 1.0]
 
     else:
-        Pmin1 = np.argwhere(np.diff(Plist) > 0)[0][0]
-        Pmax1 = np.argmax(Plist[Pmin1:]) + Pmin1
+        ind_Pmin1 = np.argwhere(np.diff(Plist) > 0)[0][0]
+        ind_Pmax1 = np.argmax(Plist[ind_Pmin1:]) + ind_Pmin1
 
-        Pmaxsearch = Plist[Pmax1]
+        Pmaxsearch = Plist[ind_Pmax1]
 
-        Pminsearch = max(Plist[-1], np.amin(Plist[Pmin1:Pmax1]))
+        Pconverged = 10 # If the pressure is negative (under tension), we search from a value just above vacuum 
+        Pminsearch = max(Pconverged, np.amin(Plist[ind_Pmin1:ind_Pmax1]))
 
         #search Pressure that gives equal area in maxwell construction
-        Psat = minimize_scalar(eq_area,
+        Psat = spo.minimize_scalar(eq_area,
                                args=(Plist, vlist),
                                bounds=(Pminsearch * 1.0001, Pmaxsearch * .9999),
                                method='bounded')
@@ -391,12 +383,15 @@ def eq_area(shift, Pv, vlist):
 
     logger = logging.getLogger(__name__)
 
-    Pvspline = interpolate.InterpolatedUnivariateSpline(vlist, Pv - shift)
+    Pvspline, roots, extrema = PvsV_spline(vlist, Pv-shift)
 
-    roots = Pvspline.roots()
+    try:
+        a = Pvspline.integral(roots[0], roots[1])
+        b = Pvspline.integral(roots[1], roots[2])
+    except:
+        logger.warning("Pressure curve without cubic properties has wrongly been excepted.")
+        PvsV_plot(vlist, Pv-shift, Pvspline, markers=extrema)
 
-    a = Pvspline.integral(roots[0], roots[1])
-    b = Pvspline.integral(roots[1], roots[2])
 
     return (a + b)**2
 
@@ -441,34 +436,51 @@ def calc_rhov(P, T, xi, eos, rhodict={}):
     l_roots = len(roots)
     if l_roots == 0:
         flag = 3
-        rho_tmp = np.nan
-        logger.info("    The T and yi, {} {}, won't produce a fluid (vapor or liquid) at this pressure".format(T,xi))
-        PvsV_plot(vlist, Plist, Pvspline)
+        if Plist[0] < 0:
+            if not len(extrema):
+                flag = 2
+                logger.info("    Flag 2: The T and yi, {} {}, combination produces a critical fluid at this pressure".format(T,xi))
+            else:
+                flag = 1
+                logger.info("    Flag 1: The T and yi, {} {}, combination produces a liquid at this pressure".format(T,xi))
+            rho_tmp = 1/vlist[0]
+        elif min(Plist)+P > 0:
+            rho_tmp = np.nan
+            if not len(extrema):
+                flag = 4
+                logger.info("    Flag 2: The T and yi, {} {}, combination produces a critical fluid at this pressure".format(T,xi))
+            else:
+                flag = 4
+                logger.info("    Flag 0: This T and xi, {} {}, combination produces a vapor at this pressure. Warning! approaching critical fluid".format(T,xi))
+        else:
+            logger.warning("    Flag 3: The T and yi, {} {}, won't produce a fluid (vapor or liquid) at this pressure".format(T,xi))
+            flag = 3
+            PvsV_plot(vlist, Plist, Pvspline, markers=extrema)
+            rho_tmp = np.nan
     elif l_roots == 1:
         if not len(extrema):
             flag = 2
             rho_tmp = 1.0 / roots[0]
-            logger.info("    The T and yi, {} {}, combination produces a critical fluid at this pressure".format(T,xi))
+            logger.info("    Flag 2: The T and yi, {} {}, combination produces a critical fluid at this pressure".format(T,xi))
         elif (Pvspline(roots[0])+P) > (Pvspline(max(extrema))+P):
             #logger.debug("Extrema: {}".format(extrema))
             #logger.debug("Roots: {}".format(roots))
             flag = 1
             rho_tmp = 1.0 / roots[0]
-            logger.info("    The T and yi, {} {}, combination produces a liquid at this pressure".format(T,xi))
+            logger.info("    Flag 1: The T and yi, {} {}, combination produces a liquid at this pressure".format(T,xi))
         elif len(extrema) > 1:
             flag = 0
             rho_tmp = 1.0 / roots[0]
-            logger.debug("    This T and yi, {} {}, combination produces a vapor at this pressure. Warning! approaching critical fluid".format(T,xi))
+            logger.debug("    Flag 0: This T and yi, {} {}, combination produces a vapor at this pressure. Warning! approaching critical fluid".format(T,xi))
     elif l_roots == 2:
         if (Pvspline(roots[0])+P) < 0.:
             flag = 1
             rho_tmp = 1.0 / roots[0]
-            logger.info("    This T and xi, {} {}, combination produces a liquid under tension at this pressure".format(T,xi))
+            logger.info("    Flag 1: This T and xi, {} {}, combination produces a liquid under tension at this pressure".format(T,xi))
         else:
             flag = 4
             rho_tmp = np.nan
-            logger.debug("    There should be a third root! Assume ideal gas P: {}".format(P))
-            #PvsV_plot(vlist, Plist, Pvspline)
+            logger.debug("    Flag 4: There should be a third root! Assume ideal gas P: {}".format(P))
     else: # 3 roots
         rho_tmp = 1.0 / roots[2]
         flag = 0
@@ -476,9 +488,13 @@ def calc_rhov(P, T, xi, eos, rhodict={}):
     if flag in [0,2]: # vapor or critical fluid
         tmp = [rho_tmp*.99, rho_tmp*1.01]
         if (Pdiff(tmp[0],P, T, xi, eos)*Pdiff(tmp[1],P, T, xi, eos))<0:
-            rho_tmp = brentq(Pdiff, tmp[0], tmp[1], args=(P, T, xi, eos), rtol=0.0000001)
+            rho_tmp = spo.brentq(Pdiff, tmp[0], tmp[1], args=(P, T, xi, eos), rtol=0.0000001)
         else:
-            rho_tmp = root(Pdiff, rho_tmp, args=(P, T, xi, eos), method="hybr", tol=0.0000001)
+            if Plist[0] < 0:
+                logger.warning("Density value could not be bounded with (rhomin,rhomax), {}. Using approximate density value".format(tmp))
+            else:
+                rho_tmp = spo.root(Pdiff, rho_tmp, args=(P, T, xi, eos), method="hybr", tol=0.0000001)
+                rho_tmp = rho_tmp.x[0]
 
     # Flag: 0 is vapor, 1 is liquid, 2 mean a critical fluid, 3 means that neither is true, 4 means we should assume ideal gas
     return rho_tmp, flag
@@ -518,22 +534,44 @@ def calc_rhol(P, T, xi, eos, rhodict={}):
 
     # Get roots and local minima and maxima 
     vlist, Plist = PvsRho(T, xi, eos, **rhodict)
-    Pvspline, roots, extrema = PvsV_spline(vlist, Plist-P)
+    Plist = Plist-P
+    Pvspline, roots, extrema = PvsV_spline(vlist, Plist)
 
     logger.debug("    Find rhol: P {} Pa, roots {} m^3/mol".format(P,str(roots)))
+
+    if extrema:
+        if len(extrema) == 1:
+            logger.warning("One extrema at {}, assume weird minima behavior. Check your parameters.".format(1/extrema[0])) 
 
     # Assess roots, what is the liquid density
     l_roots = len(roots)
     if l_roots == 0: # zero roots
-        flag = 3
-        rho_tmp = np.nan
-        logger.info("    The T and xi, {} {}, won't produce a fluid (vapor or liquid) at this pressure".format(str(T),str(xi)))
-        PvsV_plot(vlist, Plist-P, Pvspline)
+        if Plist[0] < 0:
+            if not len(extrema):
+                flag = 2
+                logger.info("    Flag 2: The T and yi, {} {}, combination produces a critical fluid at this pressure".format(T,xi))
+            else:
+                flag = 1
+                logger.info("    Flag 1: The T and yi, {} {}, combination produces a liquid at this pressure".format(T,xi))
+            rho_tmp = 1/vlist[1]
+        elif min(Plist)+P > 0:
+            rho_tmp = np.nan
+            if not len(extrema):
+                flag = 4
+                logger.info("    Flag 2: The T and yi, {} {}, combination produces a critical fluid at this pressure".format(T,xi))
+            else:
+                flag = 4
+                logger.info("    Flag 0: This T and xi, {} {}, combination produces a vapor at this pressure. Warning! approaching critical fluid".format(T,xi))
+        else:
+            flag = 3
+            logger.error("    Flag 3: The T and xi, {} {}, won't produce a fluid (vapor or liquid) at this pressure".format(str(T),str(xi)))
+            rho_tmp = np.nan
+            PvsV_plot(vlist, Plist+P, Pvspline, markers=extrema)
     elif l_roots == 2: # 2 roots
         if (Pvspline(roots[0])+P) < 0.:
             flag = 1
             rho_tmp = 1.0 / roots[0]
-            logger.info("    This T and xi, {} {}, combination produces a liquid under tension at this pressure".format(T,xi))
+            logger.info("    Flag 1: This T and xi, {} {}, combination produces a liquid under tension at this pressure".format(T,xi))
         else: # There should be three roots, but the values of specific volume don't go far enough to pick up the last one
             flag = 1
             rho_tmp = 1.0 / roots[0]
@@ -541,25 +579,29 @@ def calc_rhol(P, T, xi, eos, rhodict={}):
         if not len(extrema):
             flag = 2
             rho_tmp = 1.0 / roots[0]
-            logger.info("    The T and xi, {} {}, combination produces a critical fluid at this pressure".format(T,xi))
+            logger.info("    Flag 2: The T and xi, {} {}, combination produces a critical fluid at this pressure".format(T,xi))
         elif (Pvspline(roots[0])+P) > (Pvspline(max(extrema))+P):
             flag = 1
             rho_tmp = 1.0 / roots[0]
-            logger.debug("    The T and xi, {} {}, combination produces a liquid at this pressure".format(T,xi))
+            logger.debug("    Flag 1: The T and xi, {} {}, combination produces a liquid at this pressure".format(T,xi))
         elif len(extrema) > 1:
             flag = 0
             rho_tmp = 1.0 / roots[0]
-            logger.info("    This T and xi, {} {}, combination produces a vapor at this pressure. Warning! approaching critical fluid".format(T,xi))
+            logger.info("    Flag 0: This T and xi, {} {}, combination produces a vapor at this pressure. Warning! approaching critical fluid".format(T,xi))
     else: # 3 roots
         rho_tmp = 1.0 / roots[0]
         flag = 1
 
     if flag in [1,2]: # liquid or critical fluid
         tmp = [rho_tmp*.99, rho_tmp*1.01]
-        if not (Pdiff(tmp[0],P, T, xi, eos)*Pdiff(tmp[1],P, T, xi, eos))<0:
-            logger.info("rhomin, rhomax:",tmp)
-            PvsV_plot(vlist, Plist-P, Pvspline)
-        rho_tmp = brentq(Pdiff, tmp[0], tmp[1], args=(P, T, xi, eos), rtol=0.0000001)
+        if (Pdiff(tmp[0],P, T, xi, eos)*Pdiff(tmp[1],P, T, xi, eos))<0:
+            rho_tmp = spo.brentq(Pdiff, tmp[0], tmp[1], args=(P, T, xi, eos), rtol=0.0000001)
+        else:
+            if Plist[0] < 0:
+                logger.warning("Density value could not be bounded with (rhomin,rhomax), {}. Using approximate density value".format(tmp))
+            else:
+                rho_tmp = spo.root(Pdiff, rho_tmp, args=(P, T, xi, eos), method="hybr", tol=0.0000001)
+                rho_tmp = rho_tmp.x[0]
 
     # Flag: 0 is vapor, 1 is liquid, 2 mean a critical fluid, 3 means that neither is true
     return rho_tmp, flag
@@ -635,6 +677,8 @@ def calc_phiv(P, T, yi, eos, rhodict={}):
     rhov, flagv = calc_rhov(P, T, yi, eos, rhodict)
     if flagv == 4:
         phiv = np.ones_like(yi)
+        rhov = 0.
+        logger.info("    rhov set to 0.")
     else:
         muiv = eos.chemicalpotential(P, np.array([rhov]), yi, T)
         phiv = np.exp(muiv)
@@ -676,8 +720,13 @@ def calc_phil(P, T, xi, eos, rhodict={}):
     logger = logging.getLogger(__name__)
 
     rhol, flagl = calc_rhol(P, T, xi, eos, rhodict)
-    muil = eos.chemicalpotential(P, np.array([rhol]), xi, T)
-    phil = np.exp(muil)
+    if flagl == 4:
+        phil = np.ones(len(xi))
+        rhol = 0.
+        logger.info("    rhol set to 0.")
+    else:
+        muil = eos.chemicalpotential(P, np.array([rhol]), xi, T)
+        phil = np.exp(muil)
 
     return phil, rhol, flagl
 
@@ -721,7 +770,10 @@ def calc_Prange_xi(T, xi, yi, eos, rhodict={}, Pmin=1000, zi_opts={}):
     vlist, Plist = PvsRho(T, xi, eos, **rhodict)
     Pvspline, roots, extrema = PvsV_spline(vlist, Plist)
 
-    Pmax = max(Pvspline(extrema))
+    if not len(extrema):
+        Pmax = 100000 # 1 MPa
+    else:
+        Pmax = max(Pvspline(extrema))
     Parray = [Pmin, Pmax]
 
     #################### Find Pressure range and Objective Function values
@@ -733,21 +785,33 @@ def calc_Prange_xi(T, xi, yi, eos, rhodict={}, Pmin=1000, zi_opts={}):
     ind = 0
     maxiter = 200
     for z in range(maxiter):
-        if z == 0:
-            # Find Obj Function for Min pressure above
-            p = Parray[0]
-            phil, rhol, flagl = calc_phil(p, T, xi, eos, rhodict=rhodict)
-            yi_range, phiv, flagv = solve_yi_xiT(yi_range, xi, phil, p, T, eos, rhodict=rhodict, **zi_opts)
-            ObjArray[0] = (np.sum(xi * phil / phiv) - 1.0)
-            logger.info("Minimum pressure: {},  Obj. Func: {}".format(Parray[0],ObjArray[0]))
+        # Find Obj Function for Min pressure above
+        p = Parray[0]
+        phil, rhol, flagl = calc_phil(p, T, xi, eos, rhodict=rhodict)
+        if any(np.isnan(phil)):
+            logger.error("Estimated minimum pressure is too low.")
+            Parray[0] += Pmin
+            continue
+        yi_range, phiv, flagv = solve_yi_xiT(yi_range, xi, phil, p, T, eos, rhodict=rhodict, **zi_opts)
+        ObjArray[0] = (np.sum(xi * phil / phiv) - 1.0)
+        logger.info("Estimated Minimum Pressure: {},  Obj. Func: {}".format(Parray[0],ObjArray[0]))
+        if ObjArray[0] > 0:
+            break
+
+    if z == maxiter-1:
+        logger.error("Proper minimum pressure for liquid density could not be found")
             
-        elif z == 1:
+    for z in range(maxiter):
+        if z == 0:
             # Find Obj function for Max Pressure above
             p = Parray[1]
             phil, rhol, flagl = calc_phil(p, T, xi, eos, rhodict=rhodict)
+            if any(np.isnan(phil)):
+                raise ValueError
+                logger.error("Fugacity coefficient should not be NaN")
             yi_range, phiv, flagv = solve_yi_xiT(yi_range, xi, phil, p, T, eos, rhodict=rhodict, **zi_opts)
             ObjArray[1] = (np.sum(xi * phil / phiv) - 1.0)
-            logger.info("Estimate Maximum pressure: {},  Obj. Func: {}".format(Parray[1],ObjArray[1]))
+            logger.info("Estimate Maximum Pressure: {},  Obj. Func: {}".format(Parray[1],ObjArray[1]))
         else:
             tmp_sum = np.abs(ObjArray[-2] + ObjArray[-1])
             tmp_dif = np.abs(ObjArray[-2] - ObjArray[-1])
@@ -776,8 +840,11 @@ def calc_Prange_xi(T, xi, yi, eos, rhodict={}, Pmin=1000, zi_opts={}):
                 p = 2 * Parray[-1]
                 Parray.append(p)
                 phil, rhol, flagl = calc_phil(p, T, xi, eos, rhodict=rhodict)
+                if any(np.isnan(phil)):
+                    logger.error("Fugacity coefficient should not be NaN")
                 yi_range, phiv, flagv = solve_yi_xiT(yi_range, xi, phil, p, T, eos, rhodict=rhodict, **zi_opts)
                 ObjArray.append(np.sum(xi * phil / phiv) - 1.0)
+                logger.info("New Estimate for Maximum Pressure: {},  Obj. Func: {}".format(Parray[-1],ObjArray[-1]))
 
     Prange = Parray[-2:]
     ObjRange = ObjArray[-2:]
@@ -841,8 +908,6 @@ def calc_Prange_yi(T, xi, yi, eos, rhodict={}, Pmin=1000, zi_opts={}):
         phiv, rhov, flagv = calc_phiv(p, T, yi, eos, rhodict=rhodict)
         xi, phil, flagl = solve_xi_yiT(xi, yi, phiv, p, T, eos, rhodict=rhodict, **zi_opts)
         obj_list.append(np.sum(yi * phiv / phil) - 1.0)
-    print(pressures)
-    print(obj_list)
     plt.plot(pressures,obj_list,".-")
     plt.plot([Pmin,Pmax],[0,0],"k")
     plt.show()
@@ -896,7 +961,7 @@ def calc_Prange_yi(T, xi, yi, eos, rhodict={}, Pmin=1000, zi_opts={}):
 #                       Solve Yi for xi and T                        #
 #                                                                    #
 ######################################################################
-def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxiter=15, tol=1e-6):
+def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxiter=30, tol=1e-6):
     r"""
     Find vapor mole fraction given pressure, liquid mole fraction, and temperature. Objective function is the sum of the predicted "mole numbers" predicted by the computed fugacity coefficients. Note that by "mole number" we mean that the prediction will only sum to 1 when the correct pressure is chosen in the outer loop. In this inner loop, we seek to find a mole fraction that is converged to reproduce itself in a prediction. If it hasn't, the new "mole numbers" are normalized into mole fractions and used as the next guess.
     In the case that a guess doesn't produce a gas or critical fluid, we use another function to produce a new guess.
@@ -917,7 +982,7 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxiter=15, tol=1e-6):
         An instance of the defined EOS class to be used in thermodynamic computations.
     rhodict : dict, Optional, default: {}
         Dictionary of options used in calculating pressure vs. mole 
-    maxiter : int, Optional, default: 15
+    maxiter : int, Optional, default: 30
         Maximum number of iteration for both the outer pressure and inner vapor mole fraction loops
     tol : float, Optional, default: 1e-6
         Tolerance in sum of predicted yi "mole numbers"
@@ -937,46 +1002,69 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxiter=15, tol=1e-6):
     global yi_global
 
     yi /= np.sum(yi)
-    yi_total = np.sum(yi)
+    yi_total = [np.sum(yi)]
+    flag_check_vapor = True # Make sure we only search for vapor compositions once
     for z in range(maxiter):
 
-        yi /= np.sum(yi)
-        logger.info("    yi guess {}".format(yi))
+        yi_tmp = yi/np.sum(yi)
+        logger.info("    yi guess {}".format(yi_tmp))
 
         # Try yi
-        phiv, rhov, flagv = calc_phiv(P, T, yi, eos, rhodict=rhodict)
+        phiv, rhov, flagv = calc_phiv(P, T, yi_tmp, eos, rhodict=rhodict)
         
-        if (any(np.isnan(phiv)) or flagv==1): # If vapor density doesn't exist
+        if ((any(np.isnan(phiv)) or flagv==1) and flag_check_vapor): # If vapor density doesn't exist
+            flag_check_vapor = False
             logger.info("    Composition doesn't produce a vapor, let's find one!")
-            yinew = find_new_yi(yi_total,P, T, phil, xi, eos, rhodict=rhodict)
-            phiv, rhov, flagv = calc_phiv(P, T, yinew, eos, rhodict={})
-            if any(np.isnan(yinew)):
+            if all(yi != 0.):
+                yinew = find_new_yi(P, T, phil, xi, eos, rhodict=rhodict)
+                phiv, rhov, flagv = calc_phiv(P, T, yinew, eos, rhodict=rhodict)
+                yinew = xi * phil / phiv
+            else:
+                yinew = yi
+
+            if any(np.isnan(phiv)):
                 phiv = np.nan
                 logger.error("Fugacity coefficient of vapor should not be NaN")
+        else:
+            yinew = xi * phil / phiv
 
-        yinew = xi * phil / phiv
-        logger.info("    yi calc {}".format(yinew))
-        logger.info("    Old yi_total: {}, New yi_total: {}, Change: {}".format(yi_total,np.sum(yinew),np.sum(yinew)-yi_total)) 
+        # Check for bouncing between values
+        if len(yi_total) > 3:
+            if (np.abs(np.sum(yinew)-yi_total[-2]) + np.abs(yi_total[-1]-yi_total[-3])) < tol/1000:
+                # This occurs when the P vs. v curve doesn't cross the 0 axis, there could be a larger problem causing this, but in my experience, it's because the curve is not long enough to converge to zero. Instead of the possible endless increase in vector length and a substantial increase in computational time, we simply set the fugacity coefficient to ideal and the density to 0. When an iteration on our assumption produces a vapor near ideality, it then may predict an ideal gas. This causes the constant back and forth that really isn't that important to solve, as the fugacity coefficients are unity regardless.
+                logger.info("    yi_total is bouncing between {} and {}, choose the lowest value (outer loop obj. function).".format(np.sum(yinew),yi_total[-1]))
+                if np.sum(yinew) > yi_total[-1]:
+                    yinew = yi
+                    phiv, rhov, flagv = calc_phiv(P, T, yi_tmp, eos, rhodict=rhodict)
+
+        logger.info("    yi calc {}, phiv {}".format(yinew,phiv))
+        logger.info("    Old yi_total: {}, New yi_total: {}, Change: {}".format(yi_total[-1],np.sum(yinew),np.sum(yinew)-yi_total[-1])) 
 
         # Check convergence
-        if abs(np.sum(yinew)-yi_total) < tol:
-            yi_global = yi
-            logger.info("    Found yi")
-            break
-        else:
-            yi = yinew/np.sum(yinew)
-            yi_total = np.sum(yinew)
+        if abs(np.sum(yinew)-yi_total[-1]) < tol:
+            ind_tmp = np.where(yi_tmp == min(yi_tmp[yi_tmp>0]))[0] 
+            yi2 = yinew/np.sum(yinew)
+            if np.abs(yi2[ind_tmp] - yi_tmp[ind_tmp]) / yi_tmp[ind_tmp] < tol:
+                yi_global = yi_tmp
+                logger.info("    Found yi")
+                break
+
+        if z < maxiter-1:
+            yi = yinew
+            yi_total.append(np.sum(yinew))
 
     ## If yi wasn't found in defined number of iterations
+    yi_tmp = yi/np.sum(yi)
     yinew /= np.sum(yinew)
 
+    ind_tmp = np.where(yi_tmp == min(yi_tmp[yi_tmp>0]))[0]
     if z == maxiter - 1:
-        logger.warning('    More than {} iterations needed. Error in Smallest Fraction: {} %%'.format(maxiter, (np.abs(yinew[ind_tmp] - yi[ind_tmp]) / yi[ind_tmp])*100))
+        yi2 = yinew/np.sum(yinew)
+        logger.warning('    More than {} iterations needed. Error in Smallest Fraction: {} %%'.format(maxiter, (np.abs(yinew[ind_tmp] - yi_tmp[ind_tmp]) / yi_tmp[ind_tmp])*100))
+    else:
+        logger.info("    Inner Loop Final yi: {}, Final Error on Smallest Fraction: {}".format(yi_tmp,np.abs(yi2[ind_tmp] - yi_tmp[ind_tmp]) / yi_tmp[ind_tmp]*100))
 
-    ind_tmp = np.where(yi == min(yi))[0]
-    logger.info("    Inner Loop Final yi: {}, Final Error on Smallest Fraction: {}".format(yi,np.abs(yinew[ind_tmp] - yi[ind_tmp]) / yi[ind_tmp]*100))
-
-    return yi, phiv, flagv
+    return yi_tmp, phiv, flagv
 
 ######################################################################
 #                                                                    #
@@ -1043,21 +1131,26 @@ def solve_xi_yiT(xi, yi, phiv, P, T, eos, rhodict={}, maxiter=20, tol=1e-6):
 
         # Check convergence
         if abs(np.sum(xinew)-xi_total) < tol:
-            xi_global = xi
-            logger.info("    Found xi")
-            break
-        else:
+            ind_tmp = np.where(xi == min(xi[xi>0]))[0]
+            xi2 = xinew/np.sum(xinew)
+            if np.abs(xi2[ind_tmp] - xi[ind_tmp]) / xi[ind_tmp] < tol:
+                xi_global = xi
+                logger.info("    Found xi")
+                break
+
+        if z < maxiter-1:
             xi = xinew/np.sum(xinew)
             xi_total = np.sum(xinew)
 
     ## If xi wasn't found in defined number of iterations
     xinew /= np.sum(xinew)
 
+    ind_tmp = np.where(xi == min(xi[xi>0]))[0]
     if z == maxiter - 1:
-        logger.warning('    More than {} iterations needed. Error in Smallest Fraction: {} %%'.format(maxiter, (np.abs(xinew[ind_tmp] - xi[ind_tmp]) / xi[ind_tmp])*100))
-
-    ind_tmp = np.where(xi == min(xi))[0]
-    logger.info("    Inner Loop Final xi: {}, Final Error on Smallest Fraction: {}".format(xi,np.abs(xinew[ind_tmp] - xi[ind_tmp]) / xi[ind_tmp]*100))
+        xi2 = xinew/np.sum(xinew)
+        logger.warning('    More than {} iterations needed. Error in Smallest Fraction: {} %%'.format(maxiter, (np.abs(xi2[ind_tmp] - xi[ind_tmp]) / xi[ind_tmp])*100))
+    else:
+        logger.info("    Inner Loop Final xi: {}, Final Error on Smallest Fraction: {}".format(xi,np.abs(xi2[ind_tmp] - xi[ind_tmp]) / xi[ind_tmp]*100))
 
     return xi, phil, flagl
 
@@ -1068,14 +1161,12 @@ def solve_xi_yiT(xi, yi, phiv, P, T, eos, rhodict={}, maxiter=20, tol=1e-6):
 ######################################################################
 
 
-def find_new_yi(yi_total,P, T, phil, xi, eos, rhodict={}):
+def find_new_yi(P, T, phil, xi, eos, rhodict={}):
     r"""
     Search vapor mole fraction combinations for a new estimate that produces a vapor density.
     
     Parameters
     ----------
-    yi_total : float
-        Total "Mole Number" from estimating vapor mole fractions from fugacity coefficients
     P : float
         Pressure of the system [Pa]
     T : float
@@ -1158,9 +1249,12 @@ def find_new_yi(yi_total,P, T, phil, xi, eos, rhodict={}):
 
     logger = logging.getLogger(__name__)
 
-    yi_ext = np.linspace(0,1,20) # Guess for yi
+    yi_ext = np.linspace(0.01,.99,10) # Guess for yi
     obj_ext = []
     flag_ext = []
+    yi_total_ext = []
+    rho_ext = []
+    phi_ext = []
     for yi in yi_ext:
         yi = [yi, 1-yi]
 
@@ -1168,14 +1262,16 @@ def find_new_yi(yi_total,P, T, phil, xi, eos, rhodict={}):
         yinew = xi * phil / phiv
         yinew_total_1 = np.sum(yinew)
 
-        obj_ext.append(yinew_total_1 - yi_total)
+        obj_ext.append(yinew_total_1)
         flag_ext.append(flagv)
- 
+
+        logger.debug("    Obj yi_total1 {}, flagv {}".format(yinew_total_1,flagv))
+
     obj_ext = np.array(obj_ext)
     flag_ext = np.array(flag_ext)
 
     tmp = np.count_nonzero(~np.isnan(obj_ext))
-    logger.debug("Number of valid mole fractions: {}".format(tmp))
+    logger.debug("    Number of valid mole fractions: {}".format(tmp))
     if tmp == 0:
         yi_tmp = np.nan
         obj_tmp = np.nan
@@ -1185,16 +1281,16 @@ def find_new_yi(yi_total,P, T, phil, xi, eos, rhodict={}):
         yi_tmp   =   yi_ext[~np.isnan(obj_ext)]
         flag_tmp = flag_ext[~np.isnan(obj_ext)]
  
-        # Assess vapor values
-        ind = [i for i in range(len(flag_tmp)) if flag_tmp[i] not in [1,4]]
-        if ind:
-            obj_tmp = [obj_tmp[i] for i in ind]
-            yi_tmp = [yi_tmp[i] for i in ind]
+    #    # Assess vapor values
+    #    ind = [i for i in range(len(flag_tmp)) if flag_tmp[i] not in [1,4]]
+    #    if ind:
+    #        obj_tmp = [obj_tmp[i] for i in ind]
+    #        yi_tmp = [yi_tmp[i] for i in ind]
 
+        # Choose values with lowest objective function
         ind = np.where(np.abs(obj_tmp)==min(np.abs(obj_tmp)))[0][0]
         obj_tmp = obj_tmp[ind]
         yi_tmp = yi_tmp[ind]
-
 
     logger.info("    Found new guess in yi: {}, Obj: {}".format(yi_tmp,obj_tmp))
     yi = yi_tmp
@@ -1455,7 +1551,7 @@ def setPsat(ind, eos):
 #                              Calc yT phase                         #
 #                                                                    #
 ######################################################################
-def calc_yT_phase(yi, T, eos, rhodict={}, zi_opts={}, Pguess=-1, meth="broyden1", pressure_opts={}):
+def calc_yT_phase(yi, T, eos, rhodict={}, zi_opts={}, Pguess=-1, meth="hybr", pressure_opts={}):
     r"""
     Calculate dew point mole fraction and pressure given system vapor mole fraction and temperature.
     
@@ -1529,25 +1625,25 @@ def calc_yT_phase(yi, T, eos, rhodict={}, zi_opts={}, Pguess=-1, meth="broyden1"
         for key, value in pressure_opts.items():
             outer_dict[key] = value
         logger.debug("Using the method, {}, with the following options:\n{}".format(meth,outer_dict))
-        Pfinal = root(solve_P_yiT, P, args=(yi, T, eos, rhodict, zi_opts), method=meth, options=outer_dict)
+        Pfinal = spo.root(solve_P_yiT, P, args=(yi, T, eos, rhodict, zi_opts), method=meth, options=outer_dict)
     elif meth in ['hybr_broyden1', 'hybr_broyden2']:
         outer_dict = {'fatol': 1e-5, 'maxiter': 25, 'jac_options': {'reduction_method': 'simple'}}
         for key, value in pressure_opts.items():
             outer_dict[key] = value
-        Pfinal = root(solve_P_yiT, P, args=(yi, T, eos, rhodict, zi_opts), method="hybr")
-        Pfinal = root(solve_P_yiT, Pfinal.x, args=(yi, T, eos, rhodict, zi_opts), method=meth, options=outer_dict)
+        Pfinal = spo.root(solve_P_yiT, P, args=(yi, T, eos, rhodict, zi_opts), method="hybr")
+        Pfinal = spo.root(solve_P_yiT, Pfinal.x, args=(yi, T, eos, rhodict, zi_opts), method=meth, options=outer_dict)
     elif meth == 'anderson':
         outer_dict = {'fatol': 1e-5, 'maxiter': 25}
         for key, value in pressure_opts.items():
             outer_dict[key] = value
         logger.debug("Using the method, {}, with the following options:\n{}".format(meth,outer_dict))
-        Pfinal = root(solve_P_yiT, P, args=(yi, T, eos, rhodict, zi_opts), method=meth, options=outer_dict)
+        Pfinal = spo.root(solve_P_yiT, P, args=(yi, T, eos, rhodict, zi_opts), method=meth, options=outer_dict)
     elif meth in ['hybr', 'lm', 'linearmixing', 'diagbroyden', 'excitingmixing', 'krylov', 'df-sane']:
         outer_dict = {}
         for key, value in pressure_opts.items():
             outer_dict[key] = value
         logger.debug("Using the method, {}, with the following options:\n{}".format(meth,outer_dict))
-        Pfinal = root(solve_P_yiT, P, args=(yi, T, eos, rhodict, zi_opts), method=meth, options=outer_dict)
+        Pfinal = spo.root(solve_P_yiT, P, args=(yi, T, eos, rhodict, zi_opts), method=meth, options=outer_dict)
 
 #################### Minimization Methods with Boundaries ###################
     elif meth in ["TNC", "L-BFGS-B", "SLSQP"]:
@@ -1556,9 +1652,9 @@ def calc_yT_phase(yi, T, eos, rhodict={}, zi_opts={}, Pguess=-1, meth="broyden1"
             outer_dict[key] = value
         logger.debug("Using the method, {}, with the following options:\n{}".format(meth,outer_dict))
         if len(Prange) == 2:
-            Pfinal = minimize(solve_P_yiT, P, args=(yi, T, eos, rhodict, zi_opts), method=meth, bounds=[tuple(Prange)], options=outer_dict)
+            Pfinal = spo.minimize(solve_P_yiT, P, args=(yi, T, eos, rhodict, zi_opts), method=meth, bounds=[tuple(Prange)], options=outer_dict)
         else:
-            Pfinal = minimize(solve_P_yiT, P, args=(yi, T, eos, rhodict, zi_opts), method=meth, options=outer_dict)
+            Pfinal = spo.minimize(solve_P_yiT, P, args=(yi, T, eos, rhodict, zi_opts), method=meth, options=outer_dict)
 
 #################### Root Finding with Boundaries ###################
     elif meth == "brent":
@@ -1567,11 +1663,18 @@ def calc_yT_phase(yi, T, eos, rhodict={}, zi_opts={}, Pguess=-1, meth="broyden1"
             if key in ["xtol","rtol","maxiter","full_output","disp"]:
                 outer_dict[key] = value
         logger.debug("Using the method, {}, with the following options:\n{}".format(meth,outer_dict))
-        P = brentq(solve_P_yiT, Prange[0], Prange[1], args=(yi, T, eos, rhodict, zi_opts), **outer_dict)
+        P = spo.brentq(solve_P_yiT, Prange[0], Prange[1], args=(yi, T, eos, rhodict, zi_opts), **outer_dict)
+    elif meth == "least_squares":
+        outer_dict = {}
+        for key, value in pressure_opts.items():
+            outer_dict[key] = value
+        logger.debug("Using the method, {}, with the following options:\n{}".format(meth,outer_dict))
+        Pfinal = spo.least_squares(solve_P_xiT, P, bounds=(Prange[0],Prange[1]), args=(xi, T, eos, rhodict, zi_opts), **outer_dict)
 
     #Given final P estimate
     if meth != "brent":
         P = Pfinal.x
+        logger.info("Optimization terminated successfully: {} {}".format(Pfinal.success,Pfinal.message))
 
     #find vapor density and fugacity
     phiv, rhov, flagv = calc_phiv(P, T, yi, eos, rhodict={})
@@ -1590,7 +1693,7 @@ def calc_yT_phase(yi, T, eos, rhodict={}, zi_opts={}, Pguess=-1, meth="broyden1"
 #                              Calc xT phase                         #
 #                                                                    #
 ######################################################################
-def calc_xT_phase(xi, T, eos, rhodict={}, zi_opts={}, Pguess=-1, meth="broyden1", pressure_opts={}):
+def calc_xT_phase(xi, T, eos, rhodict={}, zi_opts={}, Pguess=-1, meth="hybr", pressure_opts={}):
     r"""
     Calculate bubble point mole fraction and pressure given system liquid mole fraction and temperature.
     
@@ -1646,10 +1749,10 @@ def calc_xT_phase(xi, T, eos, rhodict={}, zi_opts={}, Pguess=-1, meth="broyden1"
         P = Pguess
 
     if ("yi_global" not in globals() or any(np.isnan(yi_global))):
-        logger.info("Guess yi in calc_xT_phase with Psat")
         yi_global = xi * Psat / P
         yi_global /= np.sum(yi_global)
         yi_global = copy.deepcopy(yi_global)
+        logger.info("Guess yi in calc_xT_phase with Psat: {}".format(yi_global))
     yi = yi_global
 
 #    logger.info("Initial: P: {}, yi: {}".format(Pguess,str(yi)))
@@ -1666,25 +1769,25 @@ def calc_xT_phase(xi, T, eos, rhodict={}, zi_opts={}, Pguess=-1, meth="broyden1"
         for key, value in pressure_opts.items():
             outer_dict[key] = value
         logger.debug("Using the method, {}, with the following options:\n{}".format(meth,outer_dict))
-        Pfinal = root(solve_P_xiT, P, args=(xi, T, eos, rhodict, zi_opts), method=meth, options=outer_dict)
+        Pfinal = spo.root(solve_P_xiT, P, args=(xi, T, eos, rhodict, zi_opts), method=meth, options=outer_dict)
     elif meth in ['hybr_broyden1', 'hybr_broyden2']:
         outer_dict = {'fatol': 1e-5, 'maxiter': 25, 'jac_options': {'reduction_method': 'simple'}}
         for key, value in pressure_opts.items():
             outer_dict[key] = value
-        Pfinal = root(solve_P_xiT, P, args=(xi, T, eos, rhodict, zi_opts), method="hybr")
-        Pfinal = root(solve_P_xiT, Pfinal.x, args=(xi, T, eos, rhodict, zi_opts), method=meth, options=outer_dict)
+        Pfinal = spo.root(solve_P_xiT, P, args=(xi, T, eos, rhodict, zi_opts), method="hybr")
+        Pfinal = spo.root(solve_P_xiT, Pfinal.x, args=(xi, T, eos, rhodict, zi_opts), method=meth, options=outer_dict)
     elif meth == 'anderson':
         outer_dict = {'fatol': 1e-5, 'maxiter': 25}
         for key, value in pressure_opts.items():
             outer_dict[key] = value
         logger.debug("Using the method, {}, with the following options:\n{}".format(meth,outer_dict))
-        Pfinal = root(solve_P_xiT, P, args=(xi, T, eos, rhodict, zi_opts), method=meth, options=outer_dict)
+        Pfinal = spo.root(solve_P_xiT, P, args=(xi, T, eos, rhodict, zi_opts), method=meth, options=outer_dict)
     elif meth in ['hybr', 'lm', 'linearmixing', 'diagbroyden', 'excitingmixing', 'krylov', 'df-sane']:
         outer_dict = {}
         for key, value in pressure_opts.items():
             outer_dict[key] = value
         logger.debug("Using the method, {}, with the following options:\n{}".format(meth,outer_dict))
-        Pfinal = root(solve_P_xiT, P, args=(xi, T, eos, rhodict, zi_opts), method=meth, options=outer_dict)
+        Pfinal = spo.root(solve_P_xiT, P, args=(xi, T, eos, rhodict, zi_opts), method=meth, options=outer_dict)
 
 #################### Minimization Methods with Boundaries ###################
     elif meth in ["TNC", "L-BFGS-B", "SLSQP"]:
@@ -1693,9 +1796,9 @@ def calc_xT_phase(xi, T, eos, rhodict={}, zi_opts={}, Pguess=-1, meth="broyden1"
             outer_dict[key] = value
         logger.debug("Using the method, {}, with the following options:\n{}".format(meth,outer_dict))
         if len(Prange) == 2:
-            Pfinal = minimize(solve_P_xiT, P, args=(xi, T, eos, rhodict, zi_opts), method=meth, bounds=[tuple(Prange)], options=outer_dict)
+            Pfinal = spo.minimize(solve_P_xiT, P, args=(xi, T, eos, rhodict, zi_opts), method=meth, bounds=[tuple(Prange)], options=outer_dict)
         else:
-            Pfinal = minimize(solve_P_xiT, P, args=(xi, T, eos, rhodict, zi_opts), method=meth, options=outer_dict)
+            Pfinal = spo.minimize(solve_P_xiT, P, args=(xi, T, eos, rhodict, zi_opts), method=meth, options=outer_dict)
 
 #################### Root Finding with Boundaries ###################
     elif meth == "brent":
@@ -1704,7 +1807,13 @@ def calc_xT_phase(xi, T, eos, rhodict={}, zi_opts={}, Pguess=-1, meth="broyden1"
             if key in ["xtol","rtol","maxiter","full_output","disp"]:
                 outer_dict[key] = value
         logger.debug("Using the method, {}, with the following options:\n{}".format(meth,outer_dict))
-        P = brentq(solve_P_xiT, Prange[0], Prange[1], args=(xi, T, eos, rhodict, zi_opts), **outer_dict)
+        P = spo.brentq(solve_P_xiT, Prange[0], Prange[1], args=(xi, T, eos, rhodict, zi_opts), **outer_dict)
+    elif meth == "least_squares":
+        outer_dict = {}
+        for key, value in pressure_opts.items():
+            outer_dict[key] = value
+        logger.debug("Using the method, {}, with the following options:\n{}".format(meth,outer_dict))
+        Pfinal = spo.least_squares(solve_P_xiT, P, bounds=(Prange[0],Prange[1]), args=(xi, T, eos, rhodict, zi_opts), **outer_dict)
 
     #Given final P estimate
     if meth != "brent":
