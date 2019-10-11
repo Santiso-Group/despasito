@@ -1,20 +1,20 @@
 import numpy as np
+cimport numpy as np
 import logging
 import os
 
-if 'NUMBA_DISABLE_JIT' in os.environ:
-    disable_jit = os.environ['NUMBA_DISABLE_JIT']
-else:
-    from .. import disable_jit
-
-if disable_jit:
-    os.environ['NUMBA_DISABLE_JIT'] = '1'
-
-from numba import jit
-
 from .constants import ckl_coef
 
-@jit(nopython=True)
+def calc_a1s(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
+    r""" wrapper function for calling 2d/3d versions of calc_a1s ... this is done for stupid Numba 
+    """
+    if len(l_kl.shape) == 2:
+        output = calc_a1s_2d(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl)
+    elif len(l_kl.shape) == 1:
+        output = calc_a1s_1d(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl)
+
+    return output
+
 def calc_a1s_2d(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
     r""" 
     Return a1s,kl(rho*Cmol2seg,l_kl) in K as defined in eq. 25, used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy.
@@ -36,30 +36,29 @@ def calc_a1s_2d(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
 
     Returns
     -------
-    a1s : numpy.ndarray
+    numpy.ndarray
         Matrix used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy, size is the Ngroups by Ngroups
+
+    :note: output seems to be a tensor of size (N x Ngroups x Ngroups)
     """
-
-    logger = logging.getLogger(__name__)
     # Andrew: why is the 4 hard-coded here?
-
     nbeads = len(dkl)
-    zetax_pow = np.zeros((rho.size, 4))
+    zetax_pow = np.empty((len(rho), 4), dtype=rho.dtype)
     zetax_pow[:, 0] = zetax
-    for i in range(1, 4):
-        zetax_pow[:, i] = zetax_pow[:, i - 1] * zetax_pow[:, 0]
+    for i in range(1,4):
+        zetax_pow[:, i] = zetax_pow[:, i-1] * zetax_pow[:, 0]
 
     # check if you have more than 1 bead types
-    etakl = np.zeros((len(rho), nbeads, nbeads))
+    etakl = np.empty((len(rho), nbeads, nbeads), dtype=rho.dtype)
 
     for k in range(nbeads):
         for l in range(nbeads):
-            etakl[:, k, l] = np.dot( zetax_pow, np.dot(ckl_coef, np.array( (1.0, 1.0/l_kl[k, l], 1.0/l_kl[k, l]**2, 1.0/l_kl[k, l]**3) )) )
+            tmp = np.dot(ckl_coef, np.array( (1.0, 1.0/l_kl[k, l], 1.0/l_kl[k, l]**2, 1.0/l_kl[k, l]**3), dtype=ckl_coef.dtype ))
+            etakl[:, k, l] = np.dot( zetax_pow, tmp )
 
-    a1s = (1.0 - (etakl / 2.0)) / ((1.0 - etakl)**3) * -2.0 * np.pi * Cmol2seg * ((epsilonkl * (dkl**3)) / (l_kl - 3.0))
-    return (a1s.T * rho).T
+    a1s = - (1.0 - (etakl / 2.0)) / ((1.0 - etakl)**3) * 2.0 * np.pi * Cmol2seg * ((epsilonkl * (dkl**3)) / (l_kl - 3.0))
+    return np.transpose(np.transpose(a1s) * rho)
 
-@jit(nopython=True)
 def calc_a1s_1d(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
     r""" 
     Return a1s,kl(rho*Cmol2seg,l_kl) in K as defined in eq. 25, used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy.
@@ -81,22 +80,22 @@ def calc_a1s_1d(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
 
     Returns
     -------
-    a1s : numpy.ndarray
+    numpy.ndarray
         Matrix used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy, size is the Ngroups by Ngroups
     """
-
     nbeads = len(dkl)
-    zetax_pow = np.zeros((rho.size, 4))
+    zetax_pow = np.empty((len(rho), 4), dtype=rho.dtype)
     zetax_pow[:, 0] = zetax
-    for i in range(1, 4):
-        zetax_pow[:, i] = zetax_pow[:, i - 1] * zetax_pow[:, 0]
+    for i in range(1,4):
+        zetax_pow[:, i] = zetax_pow[:, i-1] * zetax_pow[:, 0]
 
     # check if you have more than 1 bead types
-    etakl = np.zeros((len(rho), nbeads))
+    etakl = np.empty((len(rho), nbeads), dtype=rho.dtype)
 
     for k in range(nbeads):
-        etakl[:, k] = np.dot( zetax_pow, np.dot(ckl_coef, np.array( (1.0, 1.0/l_kl[k], 1.0/l_kl[k]**2, 1.0/l_kl[k]**3) ) ))
+        tmp = np.dot(ckl_coef, np.array( (1.0, 1.0/l_kl[k], 1.0/l_kl[k]**2, 1.0/l_kl[k]**3), dtype=ckl_coef.dtype ) )
+        etakl[:, k] = np.dot( zetax_pow, tmp )
 
-    a1s = (1.0 - (etakl / 2.0)) / (1.0 - etakl)**3 * (- 2.0 * np.pi * Cmol2seg * ((epsilonkl * (dkl**3)) / (l_kl - 3.0) ))
+    a1s = - (1.0 - (etakl / 2.0)) / (1.0 - etakl)**3 * 2.0 * np.pi * Cmol2seg * ((epsilonkl * (dkl**3)) / (l_kl - 3.0) )
 
-    return (a1s.T * rho).T
+    return np.transpose(np.transpose(a1s) * rho)

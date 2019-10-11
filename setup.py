@@ -8,7 +8,15 @@ from setuptools import find_packages
 import versioneer
 from numpy.distutils.core import Extension, setup
 
+try:
+    from Cython.Build import cythonize
+    cy_exts = cythonize('despasito/equations_of_state/saft/c_exts.pyx')
+except:
+    print('Cython not available on your system. Proceeding without C-extentions.')
+    cy_exts = []
+
 short_description = __doc__.split("\n")
+fpath = os.path.join("despasito","equations_of_state","saft")
 
 # from https://github.com/pytest-dev/pytest-runner#conditional-requirement
 needs_pytest = {'pytest', 'test', 'ptr'}.intersection(sys.argv)
@@ -21,9 +29,9 @@ except:
     long_description = "\n".join(short_description[2:])
 
 try:
-    fpath = os.path.join("despasito","equations_of_state","saft")
     ext1 = Extension(name="solv_assoc",sources=[os.path.join(fpath,"solv_assoc.f90")],include_dirs=[fpath])
     ext2 = Extension(name="solv_assoc_matrix",sources=[os.path.join(fpath,"solv_assoc_matrix.f90")])
+    extensions = [ext1, ext2]
 except:
     raise OSError("Fortran compiler is not found")
 # try Extension and compile
@@ -52,10 +60,10 @@ setup(
     include_package_data=True,
 
     # Allows `setup.py test` to work correctly with pytest
-    setup_requires=["numpy","scipy","deap","numba","matplotlib"] + pytest_runner,
+    setup_requires=["numpy","scipy","deap","matplotlib"] + pytest_runner,
     ext_package=fpath,
-    ext_modules = [ext1,ext2],
-    extras_require={'extra': ['pytest']},
+    ext_modules = extensions,
+    extras_require={'extra': ['pytest', 'numba', 'cython']},
 
     # Additional entries you may want simply uncomment the lines you want and fill in the data
     # url='http://www.my_package.com',  # Website

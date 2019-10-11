@@ -25,21 +25,21 @@ def run(filename="input.json", path=".", **args):
     #read input file (need to add command line specification)
     logger.info("Begin processing input file: %s" % filename)
     eos_dict, thermo_dict, output_file = readwrite_input.extract_calc_data(filename, path, **args)
+    eos_dict['jit'] = args['jit']
+
     if output_file:
         file_dict = {"output_file":output_file}
 
-    eos_dict['jit'] = args['jit']
-
-    logger.debug("EOS dict:",eos_dict)
-    logger.debug("Thermo dict:",thermo_dict)
-    logger.info("Finish processing input file: %s" % filename)
+    logger.debug("EOS dict:", eos_dict)
+    logger.debug("Thermo dict:", thermo_dict)
+    logger.info("Finish processing input file: {}".format(filename))
     
-    logger.info("Creating eos object: %s" % (eos_obj_name))
+    logger.info("Creating eos object: {}".format(eos_obj_name))
     try:
         eos = eos_mod(eos_obj_name, **eos_dict)
     except:
         raise
-    logger.info("Created %s eos object" % (eos_obj_name))
+    logger.info("Created {} eos object".format(eos_obj_name))
     
     # Run either parametrization or thermodynamic calculation
     if "opt_params" in list(thermo_dict.keys()):
