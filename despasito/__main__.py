@@ -40,24 +40,15 @@ log_file_handler.setFormatter( logging.Formatter('%(asctime)s [%(levelname)s](%(
 log_file_handler.setLevel(args.verbose)
 logger.addHandler(log_file_handler)
 
-<<<<<<< HEAD
-if not args.quiet:
-=======
 if quiet == False:
->>>>>>> update
     # Set up logging to console
     console_handler = logging.StreamHandler() # sys.stderr
     console_handler.setFormatter( logging.Formatter('[%(levelname)s](%(name)s): %(message)s') )
     console_handler.setLevel(args.verbose)
     logger.addHandler(console_handler)
 
-<<<<<<< HEAD
 logging.info("Input args: {}".format(args))
 logging.info("JIT compilation: {}".format(args.jit))
-=======
-logging.info("Input args: %r", args)
-logging.info("JIT compilation: %r", bool(args.jit))
->>>>>>> update
 
 # Threads
 # if args.threads != None:
@@ -70,18 +61,9 @@ if args.input:
     kwargs = {"filename":args.input}
 else:
     kwargs = {}
-<<<<<<< HEAD
-
-=======
-    
 #kwargs["logFile"] = args.logFile
->>>>>>> update
 kwargs["threads"] = args.threads
 kwargs["path"] = args.path
 kwargs["jit" ] = args.jit
 
 run(**kwargs)
-<<<<<<< HEAD
-=======
-
->>>>>>> update
