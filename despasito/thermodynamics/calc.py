@@ -150,7 +150,7 @@ def calc_CC_Pguess(xilist, Tlist, CriticalProp):
 #                      Pressure-Density Curve                        #
 #                                                                    #
 ######################################################################
-def PvsRho(T, xi, eos, minrhofrac=(1.0 / 100000.0), rhoinc=5.0, vspacemax=1.0E-4, maxpack=0.65):
+def PvsRho(T, xi, eos, minrhofrac=(1.0 / 500000.0), rhoinc=5.0, vspacemax=1.0E-4, maxpack=0.65):
 
     r"""
     Computes the Mie parameters of a mixture from the mixed critical properties of the pure components. 
@@ -164,7 +164,7 @@ def PvsRho(T, xi, eos, minrhofrac=(1.0 / 100000.0), rhoinc=5.0, vspacemax=1.0E-4
         Mole fraction of each component, sum(xi) should equal 1.0
     eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
-    minrhofrac : float, Optional, default: (1.0/100000.0)
+    minrhofrac : float, Optional, default: (1.0/500000.0)
         Fraction of the maximum density used to calculate, and is equal to, the minimum density of the density array. The minimum density is the reciprocal of the maximum specific volume used to calculate the roots. Passed from inputs to through the dictionary rhodict.
     rhoinc : float, Optional, default: 5.0
         The increment between density values in the density array. Passed from inputs to through the dictionary rhodict.
@@ -271,6 +271,7 @@ def PvsV_plot(vlist, Plist, Pvspline, markers=[]):
 
     logger = logging.getLogger(__name__)
 
+    plt.figure(1)
     plt.plot(vlist,Plist,label="Orig.")
     plt.plot(vlist,Pvspline(vlist),label="Smoothed")
     plt.plot([vlist[0], vlist[-1]],[0,0],"k")
@@ -320,11 +321,9 @@ def calc_Psat(T, xi, eos, rhodict={}):
     if np.count_nonzero(xi) != 1:
         if np.count_nonzero(xi>0.1) != 1:
             raise ValueError("Multiple components have compositions greater than 10%, check code for source")
-            logger.error("Multiple components have compositions greater than 10%, check code for source")
         else:
             ind = np.where((xi>0.1)==True)[0]
             raise ValueError("Multiple components have compositions greater than 0. Do you mean to obtain the saturation pressure of {} with a mole fraction of {}?".format(eos._beads[ind],xi[ind]))
-            logger.error("Multiple components have compositions greater than 0. Do you mean to obtain the saturation pressure of {} with a mole fraction of {}?".format(eos._beads[ind],xi[ind]))
 
     vlist, Plist = PvsRho(T, xi, eos, **rhodict)
     Pvspline, roots, extrema = PvsV_spline(vlist, Plist)
@@ -354,6 +353,10 @@ def calc_Psat(T, xi, eos, rhodict={}):
         roots = Pvspline.roots()
         Psat = Psat.x
 
+        if len(roots) ==2:
+            slope, root2 = np.polyfit(vlist[-4:], Plist[-4:]-Psat, 1)
+            roots = np.append(roots,[root2])
+
     #Psat,rholsat,rhogsat
     return Psat, 1.0 / roots[0], 1.0 / roots[2]
 
@@ -365,6 +368,9 @@ def calc_Psat(T, xi, eos, rhodict={}):
 def eq_area(shift, Pv, vlist):
     r"""
     Objective function used to calculate the saturation pressure.
+
+    Note: If the curve hasn't decayed to 0 yet, estimate the remaining area as a triangle. This isn't super acc
+urate but we are just using the saturation pressure to get started.
     
     Parameters
     ----------
@@ -385,13 +391,17 @@ def eq_area(shift, Pv, vlist):
 
     Pvspline, roots, extrema = PvsV_spline(vlist, Pv-shift)
 
-    try:
+    if len(roots) >=3:
         a = Pvspline.integral(roots[0], roots[1])
         b = Pvspline.integral(roots[1], roots[2])
-    except:
-        logger.warning("Pressure curve without cubic properties has wrongly been excepted.")
+    elif len(roots) == 2:
+        a = Pvspline.integral(roots[0], roots[1])
+        # If the curve hasn't decayed to 0 yet, estimate the remaining area as a triangle. This isn't super accurate but we are just using the saturation pressure to get started.
+        slope, root2 = np.polyfit(vlist[-4:], Pv[-4:]-shift, 1)
+        b = Pvspline.integral(roots[1], vlist[-1]) + (Pv[-1]-shift)*(root2-vlist[-1])/2
+    else:
+        logger.warning("Pressure curve without cubic properties has wrongly been accepted. Try decreasing minrhofrac")
         PvsV_plot(vlist, Pv-shift, Pvspline, markers=extrema)
-
 
     return (a + b)**2
 
@@ -435,7 +445,7 @@ def calc_rhov(P, T, xi, eos, rhodict={}):
 
     l_roots = len(roots)
     if l_roots == 0:
-        if Plist[0] < 0:
+        if Pvspline(1/vlist[-1]) < 0:
             if not len(extrema):
                 flag = 2
                 logger.info("    Flag 2: The T and yi, {} {}, combination produces a critical fluid at this pressure".format(T,xi))
@@ -454,7 +464,6 @@ def calc_rhov(P, T, xi, eos, rhodict={}):
         else:
             logger.warning("    Flag 3: The T and yi, {} {}, won't produce a fluid (vapor or liquid) at this pressure".format(T,xi))
             flag = 3
-            print("Check here",Plist[0],P)
             PvsV_plot(vlist, Plist, Pvspline, markers=extrema)
             rho_tmp = np.nan
     elif l_roots == 1:
@@ -546,7 +555,7 @@ def calc_rhol(P, T, xi, eos, rhodict={}):
     # Assess roots, what is the liquid density
     l_roots = len(roots)
     if l_roots == 0: # zero roots
-        if Plist[0] < 0:
+        if Pvspline(1/vlist[-1]):
             if not len(extrema):
                 flag = 2
                 logger.info("    Flag 2: The T and yi, {} {}, combination produces a critical fluid at this pressure".format(T,xi))
@@ -808,7 +817,6 @@ def calc_Prange_xi(T, xi, yi, eos, rhodict={}, Pmin=1000, zi_opts={}):
             phil, rhol, flagl = calc_phil(p, T, xi, eos, rhodict=rhodict)
             if any(np.isnan(phil)):
                 raise ValueError
-                logger.error("Fugacity coefficient should not be NaN")
             yi_range, phiv, flagv = solve_yi_xiT(yi_range, xi, phil, p, T, eos, rhodict=rhodict, **zi_opts)
             ObjArray[1] = (np.sum(xi * phil / phiv) - 1.0)
             logger.info("Estimate Maximum Pressure: {},  Obj. Func: {}".format(Parray[1],ObjArray[1]))
@@ -835,7 +843,6 @@ def calc_Prange_xi(T, xi, yi, eos, rhodict={}, Pmin=1000, zi_opts={}):
                 plt.ylabel("Obj. Function")
                 plt.xlabel("Pressure / Pa")
                 plt.show()
-                logger.error('A change in sign for the objective function could not be found')
             else:
                 p = 2 * Parray[-1]
                 Parray.append(p)
@@ -944,7 +951,6 @@ def calc_Prange_yi(T, xi, yi, eos, rhodict={}, Pmin=1000, zi_opts={}):
                     Parray[0] = newPmin
                 else:
                     raise ValueError("No VLE data may be found given this temperature and vapor composition. If there are no errors in parameter definitions, consider updating the thermo function 'solve_xi_yiT'.")
-                    logger.error("No VLE data may be found given this temperature and vapor composition. If there are no errors in parameter definitions, consider updating the thermo function 'solve_xi_yiT'.")
             
     Prange = Parray[-2:]
     ObjRange = ObjArray[-2:]
@@ -1004,6 +1010,7 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxiter=30, tol=1e-6):
     yi /= np.sum(yi)
     yi_total = [np.sum(yi)]
     flag_check_vapor = True # Make sure we only search for vapor compositions once
+    logger.info("T {}, xi {}, phil {}".format(T, xi, phil))
     for z in range(maxiter):
 
         yi_tmp = yi/np.sum(yi)
@@ -1030,6 +1037,9 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxiter=30, tol=1e-6):
 
         # Check for bouncing between values
         if len(yi_total) > 3:
+            tmp1 =  (np.abs(np.sum(yinew)-yi_total[-2]) + np.abs(yi_total[-1]-yi_total[-3]))
+            tmp2 = (np.abs(np.sum(yinew)-yi_total[-2]) + np.abs(yi_total[-1]-yi_total[-3])) < tol/1000
+           # print("bouncing? {} {}".format(tmp1,tmp2))
             if (np.abs(np.sum(yinew)-yi_total[-2]) + np.abs(yi_total[-1]-yi_total[-3])) < tol/1000:
                 # This occurs when the P vs. v curve doesn't cross the 0 axis, there could be a larger problem causing this, but in my experience, it's because the curve is not long enough to converge to zero. Instead of the possible endless increase in vector length and a substantial increase in computational time, we simply set the fugacity coefficient to ideal and the density to 0. When an iteration on our assumption produces a vapor near ideality, it then may predict an ideal gas. This causes the constant back and forth that really isn't that important to solve, as the fugacity coefficients are unity regardless.
                 logger.info("    yi_total is bouncing between {} and {}, choose the lowest value (outer loop obj. function).".format(np.sum(yinew),yi_total[-1]))
@@ -1050,8 +1060,8 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxiter=30, tol=1e-6):
                 break
 
         if z < maxiter-1:
-            yi = yinew
             yi_total.append(np.sum(yinew))
+            yi = yinew
 
     ## If yi wasn't found in defined number of iterations
     yi_tmp = yi/np.sum(yi)
@@ -1123,7 +1133,6 @@ def solve_xi_yiT(xi, yi, phiv, P, T, eos, rhodict={}, maxiter=20, tol=1e-6):
 
         if (any(np.isnan(phil)) or flagl==0): # If liquid density doesn't exist
             raise ValueError("This composition under these system conditions doesn't produce a liquid or critical fluid. This system must be approaching its critical point and has a suitably small pressure. No contingency function has been established.")
-            logger.error("This composition under these system conditions doesn't produce a liquid or critical fluid. This system must be approaching its critical point and has a suitably small pressure. No contingency function has been established.")
 
         xinew = yi * phiv / phil
         logger.info("    xi calc {}".format(xinew))
@@ -1249,12 +1258,13 @@ def find_new_yi(P, T, phil, xi, eos, rhodict={}):
 
     logger = logging.getLogger(__name__)
 
-    yi_ext = np.linspace(0.01,.99,30) # Guess for yi
+    yi_ext = np.linspace(0.01,.99,15) # Guess for yi
     obj_ext = []
     flag_ext = []
     yi_total2_ext = []
     rho_ext = []
     phi_ext = []
+
     for yi in yi_ext:
         yi = [yi, 1-yi]
 
@@ -1262,12 +1272,12 @@ def find_new_yi(P, T, phil, xi, eos, rhodict={}):
         yinew = xi * phil / phiv
         yinew_total_1 = np.sum(yinew)
 
-   #     yi2 = yinew/np.sum(yinew)
-   #     phiv2, rhov2, flagv2 = calc_phiv(P, T, yi2, eos, rhodict=rhodict)
-   #     yinew = xi * phil / phiv
-   #     yi_total2_ext.append(abs(np.sum(yinew)-1))
+        yi2 = yinew/np.sum(yinew)
+        phiv2, rhov2, flagv2 = calc_phiv(P, T, yi2, eos, rhodict=rhodict)
+        yinew = xi * phil / phiv
+        yinew_total_2 = np.sum(yinew)
 
-        obj_ext.append(abs(yinew_total_1-1))
+        obj_ext.append(abs(yinew_total_2-yinew_total_1))
         flag_ext.append(flagv)
 
         logger.debug("    Obj yi_total1 {}, flagv {}".format(yinew_total_1,flagv))
@@ -1609,7 +1619,6 @@ def calc_yT_phase(yi, T, eos, rhodict={}, zi_opts={}, Pguess=-1, meth="hybr", pr
             Psat[i], NaNbead = setPsat(i, eos)
             if np.isnan(Psat[i]):
                 raise ValueError("Component, {}, is beyond it's critical point at {} K. Add an exception to setPsat".format(NaNbead,T))
-                logger.error("Component, {}, is beyond it's critical point at {} K. Add an exception to setPsat".format(NaNbead,T))
 
     # Estimate initial pressure
     if Pguess < 0:
@@ -1771,6 +1780,9 @@ def calc_xT_phase(xi, T, eos, rhodict={}, zi_opts={}, Pguess=-1, meth="hybr", pr
     Prange, Pguess = calc_Prange_xi(T, xi, yi, eos, rhodict, zi_opts=zi_opts)
     logger.info("Given Pguess: {}, Suggested: {}".format(P, Pguess))
     P = Pguess
+
+    if meth not in ["brent", "least_squares", "TNC", "L-BFGS-B", "SLSQP", 'hybr', 'lm', 'linearmixing', 'diagbroyden', 'excitingmixing', 'krylov', 'df-sane', 'anderson', 'hybr_broyden1', 'hybr_broyden2', 'broyden1', 'broyden2']:
+        logger.error("Optimization method, {}, not supported.".format(meth))
 
     #################### Root Finding without Boundaries ###################
     if meth in ['broyden1', 'broyden2']:

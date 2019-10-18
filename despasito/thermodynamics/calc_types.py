@@ -60,7 +60,6 @@ def phase_xiT(eos, sys_dict):
     variables = list(locals().keys())
     if all([key not in variables for key in ["xi_list", "T_list"]]):
         raise ValueError('Tlist or xilist are not specified')
-        logger.error('Tlist or xilist are not specified')
 
     if np.size(T_list) != np.size(xi_list, axis=0):
         if len(T_list) == 1:
@@ -68,7 +67,6 @@ def phase_xiT(eos, sys_dict):
             logger.info("The same temperature, {}, was used for all mole fraction values".format(T_list[0]))
         else:
             raise ValueError("The number of provided temperatures and mole fraction sets are different")
-            logger.error("The number of provided temperatures and mole fraction sets are different")
 
     ## Optional values
     opts = {}
@@ -85,7 +83,6 @@ def phase_xiT(eos, sys_dict):
                 logger.info("The same pressure, {}, was used for all mole fraction values".format(Pguess))
             else:
                 raise ValueError("The number of provided pressure and mole fraction sets are different")
-                logger.error("The number of provided pressure and mole fraction sets are different")
         logger.info("Using user defined inital guess has been provided")
     else:
         if 'CriticalProp' in sys_dict:
@@ -121,13 +118,14 @@ def phase_xiT(eos, sys_dict):
         opts["zi_opts"] = sys_dict["mole fraction options"]
 
     ## Calculate P and yi
+    l_x, l_c = np.array(xi_list).shape
     T_list = np.array(T_list)
-    P_list = np.zeros_like(T_list)
-    flagv_list = np.zeros_like(T_list)
-    flagl_list = np.zeros_like(T_list)
-    yi_list = np.zeros_like(xi_list)
-    obj_list = np.zeros(len(T_list))
-    for i in range(np.size(T_list)):
+    P_list = np.zeros(l_x)
+    flagv_list = np.zeros(l_x)
+    flagl_list = np.zeros(l_x)
+    yi_list = np.zeros((l_x,l_c))
+    obj_list = np.zeros(l_x)
+    for i in range(l_x):
         optsi = opts
         if "Pguess" in opts:
             optsi["Pguess"] = optsi["Pguess"][i]
@@ -187,7 +185,6 @@ def phase_yiT(eos, sys_dict):
     variables = list(locals().keys())
     if all([key not in variables for key in ["yi_list", "T_list"]]):
         raise ValueError('Tlist or yilist are not specified')
-        logger.error('Tlist or yilist are not specified')
 
     if np.size(T_list) != np.size(yi_list, axis=0):
         if len(T_list) == 1:
@@ -195,7 +192,6 @@ def phase_yiT(eos, sys_dict):
             logger.info("The same temperature, {}, was used for all mole fraction values".format(T_list[0]))
         else:
             raise ValueError("The number of provided temperatures and mole fraction sets are different")
-            logger.error("The number of provided temperatures and mole fraction sets are different")
 
     ## Optional values
     opts = {}
@@ -212,7 +208,6 @@ def phase_yiT(eos, sys_dict):
                 logger.info("The same pressure, {}, was used for all mole fraction values".format(Pguess))
             else:
                 raise ValueError("The number of provided pressure and mole fraction sets are different")
-                logger.error("The number of provided pressure and mole fraction sets are different")
         logger.info("Using user defined inital guess has been provided")
     else:
         if 'CriticalProp' in sys_dict:
@@ -248,13 +243,14 @@ def phase_yiT(eos, sys_dict):
         opts["zi_opts"] = sys_dict["mole fraction options"]
 
     ## Calculate P and xi
+    l_x, l_c = np.array(yi_list).shape
     T_list = np.array(T_list)
-    P_list = np.zeros_like(T_list)
-    flagv_list = np.zeros(len(T_list))
-    flagl_list = np.zeros(len(T_list))
-    xi_list = np.zeros(len(yi_list))
-    obj_list = np.zeros(len(T_list))
-    for i in range(np.size(T_list)):
+    P_list = np.zeros(l_x)
+    flagv_list = np.zeros(l_x)
+    flagl_list = np.zeros(l_x)
+    xi_list = np.zeros((l_x,l_c))
+    obj_list = np.zeros(l_x)
+    for i in range(l_x):
         optsi = opts
         if "Pguess" in opts:
             optsi["Pguess"] = optsi["Pguess"][i]
@@ -312,7 +308,6 @@ def sat_props(eos, sys_dict):
     variables = list(locals().keys())
     if all([key not in variables for key in ["xi_list", "T_list"]]):
         raise ValueError('Tlist or xilist are not specified')
-        logger.error('Tlist or xilist are not specified')
 
     if np.size(T_list) != np.size(xi_list, axis=0):
         if len(T_list) == 1:
@@ -320,7 +315,6 @@ def sat_props(eos, sys_dict):
             logger.info("The same temperature, {}, was used for all mole fraction values".format(T_list[0]))
         else:
             raise ValueError("The number of provided temperatures and mole fraction sets are different")
-            logger.error("The number of provided temperatures and mole fraction sets are different")
 
     ## Optional values
     opts = {}
@@ -338,12 +332,13 @@ def sat_props(eos, sys_dict):
         opts["rhodict"] = sys_dict["rhodict"]
 
     ## Calculate saturation properties
+    l_x = len(T_list)
     T_list = np.array(T_list)
-    Psat = np.zeros(len(T_list))
-    rholsat = np.zeros(len(T_list))
-    rhovsat = np.zeros(len(T_list))
+    Psat = np.zeros(l_x)
+    rholsat = np.zeros(l_x)
+    rhovsat = np.zeros(l_x)
 
-    for i in range(np.size(T_list)):
+    for i in range(l_x):
 
         logger.info("T (K), xi: {} {}, Let's Begin!".format(str(T_list[i]), str(xi_list[i])))
         try:
@@ -399,7 +394,6 @@ def liquid_properties(eos, sys_dict):
     variables = list(locals().keys())
     if all([key not in variables for key in ["xi_list", "T_list"]]):
         raise ValueError('Tlist or xilist are not specified')
-        logger.error('Tlist or xilist are not specified')
 
     if np.size(T_list) != np.size(xi_list, axis=0):
         if len(T_list) == 1:
@@ -407,7 +401,6 @@ def liquid_properties(eos, sys_dict):
             logger.info("The same temperature, {}, was used for all mole fraction values".format(T_list[0]))
         else:
             raise ValueError("The number of provided temperatures and mole fraction sets are different")
-            logger.error("The number of provided temperatures and mole fraction sets are different")
 
     if "Plist" not in sys_dict:
         logger.info("Using Plist")
@@ -431,10 +424,11 @@ def liquid_properties(eos, sys_dict):
         opts["rhodict"] = sys_dict["rhodict"]
 
     ## Calculate liquid density
+    l_x = len(T_list)
     T_list = np.array(T_list)
-    rhol = np.zeros(len(T_list))
+    rhol = np.zeros(l_x)
     phil = []
-    for i in range(np.size(T_list)):
+    for i in range(l_x):
         rhol[i], flagl = calc.calc_rhol(P_list[i], T_list[i], xi_list[i], eos, **opts)
 
         if np.isnan(rhol[i]):
@@ -488,7 +482,6 @@ def vapor_properties(eos, sys_dict):
     variables = list(locals().keys())
     if all([key not in variables for key in ["yi_list", "T_list"]]):
         raise ValueError('Tlist or yilist are not specified')
-        logger.error('Tlist or yilist are not specified')
 
     if np.size(T_list) != np.size(yi_list, axis=0):
         if len(T_list) == 1:
@@ -496,7 +489,6 @@ def vapor_properties(eos, sys_dict):
             logger.info("The same temperature, {}, was used for all mole fraction values".join(T_list[0]))
         else:
             raise ValueError("The number of provided temperatures and mole fraction sets are different")
-            logger.error("The number of provided temperatures and mole fraction sets are different")
 
     if "Plist" not in sys_dict:
         logger.info("Using Plist")
@@ -520,10 +512,11 @@ def vapor_properties(eos, sys_dict):
         opts["rhodict"] = sys_dict["rhodict"]
 
     ## Calculate vapor density
+    l_x = len(T_list)
     T_list = np.array(T_list)
-    rhov = np.zeros(len(T_list))
+    rhov = np.zeros(l_x)
     phiv = []
-    for i in range(np.size(T_list)):
+    for i in range(l_x):
         rhov[i], flagv = calc.calc_rhov(P_list[i], T_list[i], yi_list[i], eos, **opts)
         if np.isnan(rhov[i]):
             logger.warning('Failed to calculate rhov at {}'.format(T_list[i]))

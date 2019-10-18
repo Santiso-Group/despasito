@@ -44,13 +44,13 @@ def test_phase_xiT(eos=eos_co2_h2o,Tlist=Tlist,xilist=xilist):
 
     output = thermo.thermo(eos,{"calculation_type":"phase_xiT","Tlist":Tlist,"xilist":xilist})
         
-    assert output["P"][0]==pytest.approx(4493471.284403669,abs=1e+1) and output["yi"][0]==pytest.approx([0.99539961, 0.00460039],abs=1e-4)
+    assert output["P"][0]==pytest.approx(4555722.774185303,abs=1e+1) and output["yi"][0]==pytest.approx([0.99539961, 0.00460039],abs=1e-4)
 
 def test_phase_yiT(eos=eos_co2_h2o,Tlist=Tlist,yilist=yilist):
 
     output = thermo.thermo(eos,{"calculation_type":"phase_yiT","Tlist":Tlist,"yilist":yilist})
 
-    assert output["P"][0]==pytest.approx(4493570.232231314,abs=1e+1) and output["xi"][0]==pytest.approx([0.9617648, 0.0382352],abs=1e-4)
+    assert output["P"][0]==pytest.approx(4300135.363671318,abs=1e+1) and output["xi"][0]==pytest.approx([0.9617648, 0.0382352],abs=1e-4)
 
 def test_sat_props(eos=eos_co2_h2o,Tlist=Tlist):
 
@@ -62,11 +62,11 @@ def test_liquid_properties(eos=eos_co2_h2o,Tlist=Tlist,xilist=xilist,Plist=Plist
 
     output = thermo.thermo(eos,{"calculation_type":"liquid_properties","Tlist":Tlist,"Plist":Plist,"xilist":xilist})
 
-    assert output["rhol"][0]==pytest.approx(17526.54149309,abs=1e-1) and output["phil"][0]==pytest.approx(np.array([84.79316501,  0.21474978]),abs=1e-1)
+    assert output["rhol"][0]==pytest.approx(17098.9876440635,abs=1e-1) and output["phil"][0]==pytest.approx(np.array([84.79316501,  0.21474978]),abs=1e-1)
 
 def test_vapor_properties(eos=eos_co2_h2o,Tlist=Tlist,yilist=yilist,Plist=Plist):
 
     output = thermo.thermo(eos,{"calculation_type":"vapor_properties","Tlist":Tlist,"Plist":Plist,"yilist":yilist})
 
-    assert output["rhov"][0]==pytest.approx(37.85936814,abs=1e-1) and output["phiv"][0]==pytest.approx(np.array([2.45619145, 0.37836254]),abs=1e-1)
+    assert output["rhov"][0]==pytest.approx(37.85937201,abs=1e-1) and output["phiv"][0]==pytest.approx(np.array([2.44609778, 0.92237671]),abs=1e-1)
     

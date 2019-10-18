@@ -28,12 +28,14 @@ else:
 
 if disable_jit:
 #    from .nojit_exts import calc_a1s, calc_Xika
-    from .nojit_exts import calc_a1s
+    from .nojit_exts import calc_a1s, calc_Xika
     #uncomment line below for cython extensions:
     #from .c_exts import calc_a1s
     #we need to add another command-line arg to replace this hackish approach
 else:
+#    from .jit_exts import calc_a1s, calc_Xika
     from .jit_exts import calc_a1s
+    from .nojit_exts import calc_Xika
 
 ############################################################
 #                                                          #
@@ -303,6 +305,7 @@ def calc_composition_dependent_variables(xi, nui, beads, beadlibrary):
     for i in range(np.size(xi)):
         for j in range(np.size(beads)):
             Cmol2seg += xi[i] * nui[i, j] * beadlibrary[beads[j]]["Vks"] * beadlibrary[beads[j]]["Sk"]
+
     # initialize variables and arrays
     nbeads = len(beads)
     xsk = np.zeros(nbeads, float)
@@ -1017,7 +1020,7 @@ def calc_assoc_matrices(beads, beadlibrary, sitenames=["H", "e1", "e2"], crossli
     nbeads = len(beads)
     sitemax = np.size(sitenames)
     epsilonHB = np.zeros((nbeads, nbeads, sitemax, sitemax))
-    Kklab = np.zeros_like(epsilonHB)
+    Kklab = np.zeros((nbeads, nbeads, sitemax, sitemax))
     nk = np.zeros((nbeads, sitemax))
 
     for i in range(nbeads):
@@ -1030,36 +1033,51 @@ def calc_assoc_matrices(beads, beadlibrary, sitenames=["H", "e1", "e2"], crossli
         # find any cross terms in the cross term library
         crosslist = []
         for (i, beadname) in enumerate(beads):
-            if beadname in list(crosslibrary.keys()):
+            if beadname in crosslibrary:
                 for (j, beadname2) in enumerate(beads):
-                    if beadname2 in list(crosslibrary[beadname].keys()):
+                    if beadname2 in crosslibrary[beadname]:
                         crosslist.append([i, j])
 
         for i in range(np.size(crosslist, axis=0)):
             for a in range(np.size(sitenames)):
                 for b in range(np.size(sitenames)):
-                    if beads[crosslist[i][0]] in list(crosslibrary.keys()):
-                        if beads[crosslist[i][1]] in list(crosslibrary[beads[crosslist[i][0]]].keys()):
+                    if beads[crosslist[i][0]] in crosslibrary:
+                        if beads[crosslist[i][1]] in crosslibrary[beads[crosslist[i][0]]]:
                             
-                            if "epsilon"+sitenames[a]+sitenames[b] in list(crosslibrary[beads[crosslist[i][0]]][beads[crosslist[i][1]]].keys()):
+                            epsilon_tmp = "epsilon"+sitenames[a]+sitenames[b]
+                            K_tmp = "K"+sitenames[a]+sitenames[b]
+                            if epsilon_tmp in crosslibrary[beads[crosslist[i][0]]][beads[crosslist[i][1]]]:
+                                if (nk[crosslist[i][0]][a] == 0 or nk[crosslist[i][1]][b] == 0):
+                                    if 0 not in [nk[crosslist[i][0]][b],nk[crosslist[i][1]][a]]:
+                                        logger.warning("Site names were listed in wrong order for parameter definitions in cross interaction library. Changing {}_{} - {}_{} interaction to {}_{} - {}_{}".format(beads[crosslist[i][0]],sitenames[a],beads[crosslist[i][1]],sitenames[b],beads[crosslist[i][0]],sitenames[b],beads[crosslist[i][1]],sitenames[a]))
+                                        a, b = [b, a]
+                                    elif nk[crosslist[i][0]][a] == 0:
+                                        logger.warning("Cross interaction library parameters suggest a {}_{} - {}_{} interaction, but {} doesn't have site {}.".format(beads[crosslist[i][0]],sitenames[a],beads[crosslist[i][1]],sitenames[b],beads[crosslist[i][0]],sitenames[a]))
+                                    elif nk[crosslist[i][1]][b] == 0:
+                                        logger.warning("Cross interaction library parameters suggest a {}_{} - {}_{} interaction, but {} doesn't have site {}.".format(beads[crosslist[i][0]],sitenames[a],beads[crosslist[i][1]],sitenames[b],beads[crosslist[i][1]],sitenames[b]))
+
                                 epsilonHB[crosslist[i][0], crosslist[i][1], a, b] = \
-                                crosslibrary[beads[crosslist[i][0]]][beads[crosslist[i][1]]]["epsilon"+sitenames[a]+sitenames[b]]
+                                crosslibrary[beads[crosslist[i][0]]][beads[crosslist[i][1]]][epsilon_tmp]
                                 epsilonHB[crosslist[i][1], crosslist[i][0], b, a] = epsilonHB[crosslist[i][0], crosslist[i][1],a, b]
 
-                            if "K"+sitenames[a]+sitenames[b] in list(crosslibrary[beads[crosslist[i][0]]][beads[crosslist[i][1]]].keys()):
+                            if K_tmp in crosslibrary[beads[crosslist[i][0]]][beads[crosslist[i][1]]]:
                                 Kklab[crosslist[i][0], crosslist[i][1], a, b] = \
-                                crosslibrary[beads[crosslist[i][0]]][beads[crosslist[i][1]]]["K"+sitenames[a]+sitenames[b]]
+                                crosslibrary[beads[crosslist[i][0]]][beads[crosslist[i][1]]][K_tmp]
                                 Kklab[crosslist[i][1], crosslist[i][0], b, a] = Kklab[crosslist[i][0], crosslist[i][1], a, b]
 
     for i in range(nbeads):
         for a in range(np.size(sitenames)):
             for b in range(np.size(sitenames)):
                 tmp = ["epsilon"+sitenames[a]+sitenames[b], "K"+sitenames[a]+sitenames[b]]
-                if all(x in list(beadlibrary[beads[i]].keys()) for x in tmp):
+                if all(x in beadlibrary[beads[i]] for x in tmp):
                     epsilonHB[i, i, a, b] = beadlibrary[beads[i]]["epsilon" + sitenames[a] + sitenames[b]]
                     epsilonHB[i, i, b, a] = epsilonHB[i, i, a, b]
                     Kklab[i, i, a, b] = beadlibrary[beads[i]]["K" + sitenames[a] + sitenames[b]]
                     Kklab[i, i, b, a] = Kklab[i, i, a, b]
+
+    if Kklab.size:
+        if max(Kklab.flatten()) > 1e-27:
+            raise ValueError("Check units for association site parameter K. Should be in units of m^3.")
 
     return epsilonHB, Kklab, nk
 
@@ -1093,7 +1111,7 @@ def calc_Xika_wrap(Xika0, xi, rho, nui, nk, delta):
     obj_func, Xika = solv_assoc.calc_xika(Xika0, xi, rho, nui, nk, delta)
     return obj_func
 
-def calc_A_assoc(rho, xi, T, nui, Cmol2seg, xskl, sigmakl, sigmaii_avg, epsilonii_avg, epsilonHB, Kklab, nk):
+def calc_A_assoc(rho, xi, T, nui, xskl, sigmakl, sigmaii_avg, epsilonii_avg, epsilonHB, Kklab, nk):
     r"""
     Calculates the association contribution of the Helmholtz energy, :math:`A^{assoc.}`.
 
@@ -1107,8 +1125,6 @@ def calc_A_assoc(rho, xi, T, nui, Cmol2seg, xskl, sigmakl, sigmaii_avg, epsiloni
         Temperature of the system [K]
     nui : numpy.array
         :math:`\nu_{i,k}/k_B`, Array of number of components by number of bead types. Defines the number of each type of group in each component. 
-    Cmol2seg : float
-        Conversion factor from from molecular number density, :math:`\rho`, to segment (i.e. group) number density, :math:`\rho_S`. Shown in eq. 13
     xskl : numpy.ndarray
         Matrix of mole fractions of bead (i.e. segment or group) k multiplied by bead l
     sigmakl : numpy.ndarray
@@ -1153,7 +1169,7 @@ def calc_A_assoc(rho, xi, T, nui, Cmol2seg, xskl, sigmakl, sigmaii_avg, epsiloni
                 (sigmaii_avg[i] + sigmaii_avg[j]) / 2.0)**3)
             epsilonij[j, i] = epsilonij[i, j]
     # compute sigmax3
-    sigmax3 = Cmol2seg * np.sum(xskl * (sigmakl**3))
+    sigmax3 = np.sum(xskl * (sigmakl**3))
 
     # compute Iijklab 
     # {BottleNeck}
@@ -1181,48 +1197,56 @@ def calc_A_assoc(rho, xi, T, nui, Cmol2seg, xskl, sigmakl, sigmaii_avg, epsiloni
             elif p == 10: Iij += np.einsum("i,jk->ijk", constants.cij[p, q] * ((sigmax3**p * rho5*rho5)), ((kT / epsilonij)**q))
 
     # Compute Xika: with Fortran   {BottleNeck}
+    # compute deltaijklab
+    for i in range(ncomp):
+        for j in range(ncomp):
+            for k in range(nbeads):
+                for l in range(nbeads):
+                    for a in range(nsitesmax):
+                        for b in range(nsitesmax):
+                            # print(Fklab[k,l,a,b],Kklab[k,l,a,b],Iij[i,j])
+                            if nui[i, k] and nui[j, l] > 0:
+                                delta[:, i, j, k, l, a, b] = Fklab[k, l, a, b] * Kklab[k, l, a, b] * Iij[:, i, j]
 
-#    # compute deltaijklab
-#    for i in range(ncomp):
-#        for j in range(ncomp):
-#            for k in range(nbeads):
-#                for l in range(nbeads):
-#                    for a in range(nsitesmax):
-#                        for b in range(nsitesmax):
-#                            # print(Fklab[k,l,a,b],Kklab[k,l,a,b],Iij[i,j])
-#                            if nui[i, k] and nui[j, l] > 0:
-#                                delta[:, i, j, k, l, a, b] = Fklab[k, l, a, b] * Kklab[k, l, a, b] * Iij[:, i, j]
-#
-#    Xika0 = np.zeros((ncomp, nbeads, nsitesmax))
-#    Xika0[:, :, :] = 1.0
-#    Xika = solv_assoc.min_xika(rho, Xika0, xi, nui, nk, delta, 500, 1.0E-12) # {BottleNeck}
-#    if np.any(Xika < 0.0):
-#        Xika0[:, :, :] = 0.5
-#        sol = spo.root(calc_Xika_wrap, Xika0, args=(xi, rho[0], nui, nk, delta[0]), method='broyden1')
-#        Xika0 = sol.x
-#        Xika = solv_assoc.min_xika(rho, Xika0, xi, nui, nk, delta, 500, 1.0E-12) # {BottleNeck}
-#        logger.warning('Xika out of bounds')
+    Xika0 = np.zeros((ncomp, nbeads, nsitesmax))
+    Xika0[:, :, :] = 1.0
+    Xika = solv_assoc.min_xika(rho, Xika0, xi, nui, nk, delta, 500, 1.0E-12) # {BottleNeck}
+    if np.any(Xika < 0.0):
+        Xika0[:, :, :] = 0.5
+        sol = spo.root(calc_Xika_wrap, Xika0, args=(xi, rho[0], nui, nk, delta[0]), method='broyden1')
+        Xika0 = sol.x
+        Xika = solv_assoc.min_xika(rho, Xika0, xi, nui, nk, delta, 500, 1.0E-12) # {BottleNeck}
+        logger.warning('Xika out of bounds')
+
+ #   obj = 0
+ #   for i in range(len(rho)):
+ #       obj += abs(calc_Xika_wrap(Xika[i], xi, rho[i], nui, nk, delta[i]))
+ #   print("obj",np.sum(obj))
+
+    # Compute Xika: with python with same method as fortran   {BottleNeck}
+#    indices = assoc_site_indices(xi, nui, nk)
+#    Xika, err_array = calc_Xika(indices,rho, xi, nui, nk, Fklab, Kklab, Iij)
+#    print("Max Error",np.sum(err_array))
 
     # Compute Xika: with python numba or cython  {BottleNeck}
-    ind = 28460
-    indices = assoc_site_indices(xi, nui, nk)
-    Xika = []
-    status = []
-    l_ind = len(indices)
-    #logger.debug("association site indices {}".format(indices))
-    Xika_elements = np.ones(l_ind)*.5
-    for i in range(len(rho)):
-        #sol = spo.root(obj_Xika, np.ones(len(indices))*.5, args=(indices,rho[i], xi, nui, nk, delta[i]), options={"xtol":1e-15})
-        bounds = (np.zeros(l_ind),np.ones(l_ind))
-        sol = spo.least_squares(obj_Xika, Xika_elements, bounds=bounds, args=(indices,rho[i], xi, nui, nk, Fklab,Kklab,Iij[i]))
-        Xika_elements = sol.x
-        print("Xika elements {}".format(sol.x))
-        status.append(sol.status)
-        Xika_tmp = np.ones((ncomp, nbeads, nsitesmax))
-        Xika.append(assemble_Xika(Xika_elements,indices,Xika_tmp))
-    Xika = np.array(Xika)
-    unique, counts = np.unique(status, return_counts=True)
-    logger.debug("    Xika Status Flags: {}: {}".format(unique, counts))
+#    Xika = []
+#    status = []
+#    l_ind = len(indices)
+#    #logger.debug("association site indices {}".format(indices))
+#    Xika_elements = np.ones(l_ind)*.5
+#    err = 0
+#    for i in range(len(rho)):
+#        bounds = (np.zeros(l_ind),np.ones(l_ind))
+#        sol = spo.least_squares(obj_Xika, Xika_elements, bounds=bounds, args=(indices,rho[i], xi, nui, nk, Fklab,Kklab,Iij[i]))
+#        Xika_elements = sol.x
+#        err += np.sum(obj_Xika(Xika_elements,indices,rho[i], xi, nui, nk, Fklab,Kklab,Iij[i]))
+#        status.append(sol.status)
+#        Xika_tmp = np.ones((ncomp, nbeads, nsitesmax))
+#        Xika.append(assemble_Xika(Xika_elements,indices,Xika_tmp))
+#    Xika = np.array(Xika)
+#    unique, counts = np.unique(status, return_counts=True)
+#    logger.debug("    Xika Status Flags: {}: {}".format(unique, counts))
+#    print("error {}".format(err))
 
     # Compute A_assoc
     for i in range(ncomp):
@@ -1231,6 +1255,12 @@ def calc_A_assoc(rho, xi, T, nui, Cmol2seg, xskl, sigmakl, sigmaii_avg, epsiloni
                 if nk[k, a] != 0.0:
                     Aassoc += xi[i] * nui[i, k] * nk[k, a] * (np.log(Xika[:, i, k, a]) +
                                                               ((1.0 - Xika[:, i, k, a]) / 2.0))
+
+   # nrho = int(len(Aassoc)/2)
+   # print("Total Aassoc {}".format(np.sum(Aassoc[:nrho]-Aassoc[nrho:])))
+   # plt.plot([rho[0],rho[nrho-1]],[0,0])
+   # plt.plot(rho[:nrho],Aassoc[:nrho]-Aassoc[nrho:])
+   # plt.show()
 
     return Aassoc
 
@@ -1329,21 +1359,20 @@ def obj_Xika(Xika_elements, indices, rho, xi, nui, nk, Fklab, Kklab, Iij):
     ## Option 2: Fewer forloops
     Xika_elements_new = np.ones(len(Xika_elements))
     Xika_elements = np.array(Xika_elements)
-    print("indices",indices)
     ind = 0
     for i,k,a in indices:
         jnd = 0
         for j,l,b in indices:
             delta = Fklab[k, l, a, b] * Kklab[k, l, a, b] * Iij[i, j]
-            print(k, l, a, b, Fklab[k, l, a, b], Kklab[k, l, a, b], Iij[i, j], delta)
             Xika_elements_new[ind] += rho * xi[j] * nui[j,l] * nk[l,b] * Xika_elements[jnd] * delta
             jnd += 1
         ind += 1
     Xika_elements_new = 1./Xika_elements_new
 
-    obj = Xika_elements_new - Xika_elements
+    obj = (Xika_elements_new - Xika_elements)/Xika_elements
 
-    print("Xika guess and obj ",Xika_elements,obj)
+    
+    #print("Xika guess and obj ",Xika_elements,Xika_elements_new,obj)
 
     #logger.debug("    Xika: {}, Error: {}".format(Xika_elements_new,obj))
 
@@ -1455,8 +1484,17 @@ def calc_A(rho, xi, T, beads, beadlibrary, massi, nui, Cmol2seg, xsk, xskl, dkk,
     AHS, A1, A2, A3, zetax, zetaxstar, KHS = calc_Amono(rho, xi, nui, Cmol2seg, xsk, xskl, dkk, T,epsilonkl, sigmakl, dkl, l_akl, l_rkl, Ckl, x0kl)
     Achain, sigmaii_avg, epsilonii_avg = calc_Achain(rho, Cmol2seg, xi, T, nui, sigmakl, epsilonkl, dkl, xskl, l_rkl, l_akl, beads, beadlibrary, zetax, zetaxstar, KHS)
 
-    if np.sum(nk) > 0.0:
-        Aassoc = calc_A_assoc(rho, xi, T, nui,  Cmol2seg, xskl, sigmakl, sigmaii_avg, epsilonii_avg, epsilonHB, Kklab, nk)
+    indices = assoc_site_indices(xi, nui, nk)
+    if indices:
+        tmp = 0
+        for i,k,a in indices:
+            for j,l,b in indices:
+                tmp += epsilonHB[k, l, a, b]
+    else:
+        tmp = 0.
+
+    if tmp != 0.:
+        Aassoc = calc_A_assoc(rho, xi, T, nui, xskl, sigmakl, sigmaii_avg, epsilonii_avg, epsilonHB, Kklab, nk)
         A = Aideal + AHS + A1 + A2 + A3 + Achain + Aassoc
         nrho = int(len(A)/2)
     # NoteHere
@@ -1544,8 +1582,17 @@ def calc_Ares(rho, xi, T, beads, beadlibrary, massi, nui, Cmol2seg, xsk, xskl, d
     AHS, A1, A2, A3, zetax, zetaxstar, KHS = calc_Amono(rho, xi, nui, Cmol2seg, xsk, xskl, dkk, T, epsilonkl, sigmakl, dkl, l_akl, l_rkl, Ckl, x0kl)
     Achain, sigmaii_avg, epsilonii_avg = calc_Achain(rho, Cmol2seg, xi, T, nui, sigmakl, epsilonkl, dkl, xskl, l_rkl, l_akl, beads, beadlibrary, zetax, zetaxstar, KHS)
 
-    if np.sum(nk) > 0.0:
-        Aassoc = calc_A_assoc(rho, xi, T, nui, Cmol2seg, xskl, sigmakl, sigmaii_avg, epsilonii_avg, epsilonHB, Kklab, nk)
+    indices = assoc_site_indices(xi, nui, nk)
+    if indices:
+        tmp = 0
+        for i,k,a in indices:
+            for j,l,b in indices:
+                tmp += epsilonHB[k, l, a, b]
+    else:
+        tmp = 0.
+
+    if tmp != 0.:
+        Aassoc = calc_A_assoc(rho, xi, T, nui, xskl, sigmakl, sigmaii_avg, epsilonii_avg, epsilonHB, Kklab, nk)
         Ares = AHS + A1 + A2 + A3 + Achain + Aassoc
     else:
         Ares = AHS + A1 + A2 + A3 + Achain
