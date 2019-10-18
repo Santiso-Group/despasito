@@ -72,12 +72,14 @@ def calc_a1s(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
     return a1s
 
 #@profile
-def calc_Xika(rho, xi, nui, nk, delta, maxiter=500, tol=1e-12):
+def calc_Xika(indices, rho, xi, nui, nk, Fklab, Kklab, Iij, maxiter=500, tol=1e-12, damp=.1):
     r""" 
     Calculate the fraction of molecules of component i that are not bonded at a site of type a on group k in an iterative fashion.
 
     Parameters
     ----------
+    indices : list[list]
+        A list of sets of (component, bead, site) to identify the values of the Xika matrix that are being fit
     rho : numpy.ndarray
         Number density of system [molecules/m^3]
     xi : numpy.ndarray
@@ -92,6 +94,8 @@ def calc_Xika(rho, xi, nui, nk, delta, maxiter=500, tol=1e-12):
         Maximum number of iteration for minimization
     tol : float, Optional, default: 1e-12
         Once matrix converges.
+    damp : float, Optional, default: 0.1
+        Only add a fraction of the new matrix values to update the guess
 
     Returns
     -------
@@ -103,41 +107,45 @@ def calc_Xika(rho, xi, nui, nk, delta, maxiter=500, tol=1e-12):
     ncomp     = np.size(xi)
     nsitesmax = np.size(nk, axis=1)
     nrho      = len(rho)
+    l_ind = len(indices)
 
 
-    Xika_final = []
+    Xika_final = np.ones((nrho,ncomp, nbeads, nsitesmax))
     err_array   = np.zeros(nrho)
-    Xika = np.ones((ncomp, nbeads, nsitesmax))
 
     # Parallelize here, wrt rho!
+    Xika_elements = .5*np.ones(len(indices))
     for r in range(nrho):
-        for ind in range(maxiter):
-            Xika0 = Xika
-            # start fortran calc
-            Xika = np.ones((ncomp, nbeads, nsitesmax))
-            for i in range(ncomp):
-                for k in range(nbeads):
-                    for a in range(nsitesmax):
+        Xika = np.ones((ncomp, nbeads, nsitesmax))
+        for knd in range(maxiter):
 
-                        for j in range(ncomp):
-                            for l in range(nbeads):
-                                for b in range(nsitesmax):
-                                    Xika[i,k,a] += (rho[r] * xi[j] * nui[j,l] * nk[l,b] * Xika0[j,l,b] * delta[r,i,j,k,l,a,b])
-            Xika = 1./Xika
-            err = np.amax(abs(Xika-Xika0))
-            # end fortran calc
-            print("    Xika: {}, Error: {}".format(Xika,err))
-            if len(rho) == 2*28460:
-                print("    Xika: {}, Error: {}".format(Xika,err))
-            if err < tol:
+            Xika_elements_new = np.ones(len(Xika_elements))
+            ind = 0
+            for iind in range(l_ind):
+                i, k, a = indices[iind]
+                jnd = 0
+                for jjnd in range(l_ind):
+                    j, l, b = indices[jjnd]
+                    delta = Fklab[k, l, a, b] * Kklab[k, l, a, b] * Iij[r,i, j]
+                    Xika_elements_new[ind] += rho[r] * xi[j] * nui[j,l] * nk[l,b] *    Xika_elements[jnd] * delta
+                    jnd += 1
+                ind += 1
+            Xika_elements_new = 1./Xika_elements_new
+            obj = np.sum(np.abs(Xika_elements_new - Xika_elements))
+
+            if obj < tol:
                 break
-                print("Found Xika")
-        if len(rho) == 2*28460:
-            print("Density: {}, Error: {}".format(rho[r],err))
-        err_array[r] = err
-        Xika_final.append(Xika)
+            else:
+                if obj/max(Xika_elements) > 1e+3:
+                    Xika_elements = Xika_elements + damp*(Xika_elements_new - Xika_elements)
+                else:
+                    Xika_elements = Xika_elements_new
 
-    Xika_final = np.array(Xika_final)
+        err_array[r] = obj
+
+        for jjnd in range(l_ind):
+            i,k,a = indices[jjnd]
+            Xika_final[r,i,k,a] = Xika_elements[jjnd]
+    
     return Xika_final, err_array
-
 

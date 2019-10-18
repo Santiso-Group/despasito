@@ -17,7 +17,7 @@ beads_co2_ben = ['CO2', 'benzene']
 nui_co2_ben = np.array([[1., 0.],[0., 1.]])
 beadlibrary_co2_ben = {'CO2': {'epsilon': 361.69, 'l_a': 6.66, 'l_r': 23.0, 'sigma': 3.741e-10, 'Sk': 1.0, 'Vks': 1.0, 'mass': 0.04401}, 'baCH': {'epsilon': 371.53, 'l_a': 6.0, 'l_r': 14.756, 'sigma': 4.0578e-10, 'Sk': 0.32184, 'Vks': 1.0, 'mass': 0.01302}, 'baCHCH': {'epsilon': 243.88, 'l_a': 6.0, 'l_r': 11.58, 'sigma': 3.482e-10, 'Sk': 1.0, 'Vks': 1.0, 'mass': 0.02604}, 'baCHCHCH': {'epsilon': 353.93, 'l_a': 6.0, 'l_r': 14.23, 'sigma': 3.978e-10, 'Sk': 1.0, 'Vks': 1.0, 'mass': 0.03905}, 'benzene': {'epsilon': 658.17, 'l_a': 6.0, 'l_r': 32.0, 'sigma': 3.842e-10, 'Sk': 1.0, 'Vks': 1.0, 'mass': 0.07811}}
 
-xi_co2_h2o = np.array([0.89885627, 0.10114373])
+xi_co2_h2o = np.array([0.78988277, 0.21011723])
 beads_co2_h2o = ['CO2', 'H2O']
 nui_co2_h2o = np.array([[1., 0.],[0., 1.]])
 beadlibrary_co2_h2o = {'CO2': {'epsilon': 207.89, 'l_a': 5.055, 'l_r': 26.408, 'sigma': 3.05e-10, 'Sk': 0.8468, 'Vks': 2, 'mass': 0.04401, 'NkH': 1, 'Nka1': 1},'H2O': {'epsilon': 266.68, 'l_a': 6.0, 'l_r': 17.02, 'sigma': 3.0063e-10, 'Sk': 1.0, 'Vks': 1, 'mass': 0.018015, 'NkH': 2, 'Nke1': 2, 'epsilonHe1': 1985.4, 'KHe1': 1.0169e-28}}
@@ -37,8 +37,8 @@ epsilonHB_co2_h2o = np.array([[[[   0.,     0.,     0. ], \
                        [   0.,     0.,     0. ]]]])
 eos_co2_h2o = despasito.equations_of_state.eos("saft.gamma_mie",xi=xi_co2_h2o,beads=beads_co2_h2o,nui=nui_co2_h2o,beadlibrary=beadlibrary_co2_h2o,crosslibrary=crosslibrary_co2_h2o,sitenames=sitenames_co2_h2o)
 T = 323.2 
-rho_co2_h2o = np.array([19986.78358869]) 
-P = np.array([1713500.6504282905])
+rho_co2_h2o = np.array([21146.16997993]) 
+P = np.array([1713500.67089664])
 
 def test_saft_gamma_mie_imported():
 #    """Sample test, will always pass so long as import statement worked"""
@@ -62,6 +62,6 @@ def test_saft_gamma_mie_class_assoc_P(xi=xi_co2_h2o,T=T,eos=eos_co2_h2o,rho=rho_
 def test_saft_gamma_mie_class_assoc_mu(P=P,xi=xi_co2_h2o,T=T,eos=eos_co2_h2o,rho=rho_co2_h2o):
 #   """Test ability to predict P with association sites"""
     mui = eos.chemicalpotential(P,rho,xi,T)
-    assert mui == pytest.approx(np.array([1.64614086, -4.36308284]),abs=1e-4)
+    assert mui == pytest.approx(np.array([ 1.68544731, -4.34059122]),abs=1e-4)
 
 
