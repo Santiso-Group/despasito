@@ -1074,9 +1074,11 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxiter=30, tol=1e-6):
     ind_tmp = np.where(yi_tmp == min(yi_tmp[yi_tmp>0]))[0]
     if z == maxiter - 1:
         yi2 = yinew/np.sum(yinew)
-        logger.warning('    More than {} iterations needed. Error in Smallest Fraction: {} %%'.format(maxiter, (np.abs(yinew[ind_tmp] - yi_tmp[ind_tmp]) / yi_tmp[ind_tmp])*100))
-        yinew = find_new_yi(P, T, phil, xi, eos, rhodict=rhodict)
-        yinew = spo.root(obj_yi,yinew[0],bounds=(0,1),args=(P, T, phil, xi, eos, rhodict))
+        tmp = (np.abs(yinew[ind_tmp] - yi_tmp[ind_tmp]) / yi_tmp[ind_tmp])
+        logger.warning('    More than {} iterations needed. Error in Smallest Fraction: {} %%'.format(maxiter, tmp*100))
+        if tmp > .05: # If difference is greater than 5%
+            yinew = find_new_yi(P, T, phil, xi, eos, rhodict=rhodict)
+        yinew = spo.root(obj_yi,yinew[0],args=(P, T, phil, xi, eos, rhodict))
         yi = [yinew, 1-yinew]
         obj = obj_yi(yi, P, T, phil, xi, eos, rhodict=rhodict)
         logger.warning('    Find yi with root algorithm, yi {}, obj {}'.format(yi,obj))
@@ -1269,7 +1271,7 @@ def find_new_yi(P, T, phil, xi, eos, rhodict={}):
 
     yi_ext = np.linspace(0.01,.99,15) # Guess for yi
     obj_ext = []
-    flag_ext = []
+    #flag_ext = []
     yi_total2_ext = []
     rho_ext = []
     phi_ext = []
@@ -1279,15 +1281,14 @@ def find_new_yi(P, T, phil, xi, eos, rhodict={}):
 
         obj = obj_yi(yi, P, T, phil, xi, eos, rhodict=rhodict)
         obj_ext.append(abs(obj))
-
-        logger.debug("    Obj yi_total1 {}".format(yinew_total_1))
+        logger.debug("    Obj yi {} total1 - total2 = {}".format(yi,obj))
 
    # plt.plot(yi_ext,obj_ext,".-b")
    # plt.plot(yi_ext,np.array(obj_ext)+np.array(yi_total2_ext),".-r")
    # plt.show()
 
     obj_ext = np.array(obj_ext)
-    flag_ext = np.array(flag_ext)
+    #flag_ext = np.array(flag_ext)
 
     tmp = np.count_nonzero(~np.isnan(obj_ext))
     logger.debug("    Number of valid mole fractions: {}".format(tmp))
@@ -1298,7 +1299,7 @@ def find_new_yi(P, T, phil, xi, eos, rhodict={}):
         # Remove any NaN
         obj_tmp  =  obj_ext[~np.isnan(obj_ext)]
         yi_tmp   =   yi_ext[~np.isnan(obj_ext)]
-        flag_tmp = flag_ext[~np.isnan(obj_ext)]
+        #flag_tmp = flag_ext[~np.isnan(obj_ext)]
  
     #    # Assess vapor values
     #    ind = [i for i in range(len(flag_tmp)) if flag_tmp[i] not in [1,4]]
@@ -1352,6 +1353,7 @@ def obj_yi(yi, P, T, phil, xi, eos, rhodict={}):
         Objective function for solving for vapor mole fractions
     """
 
+    print(yi, type(yi), len(yi))
     if type(yi) == float or len(yi) == 1:
         yi = [yi, 1-yi]
 
@@ -1361,7 +1363,7 @@ def obj_yi(yi, P, T, phil, xi, eos, rhodict={}):
 
     yi2 = yinew/yinew_total_1
     phiv2, rhov2, flagv2 = calc_phiv(P, T, yi2, eos, rhodict=rhodict)
-    yinew = xi * phil / phiv
+    yinew = xi * phil / phiv2
     yinew_total_2 = np.sum(yinew)
 
     print("yi_totals {} {}".format(yinew_total_1,yinew_total_2))
@@ -1567,7 +1569,7 @@ def solve_P_yiT(P, yi, T, eos, rhodict, zi_opts={}):
 
     Pv_test = eos.P(rhov*const.Nav, T, xi_global)
     obj_value = (np.sum(xi_global * phil / phiv) - 1.0)
-    logger.info('    Obj Func: {}, Pset: {}, Pcalc: {}'.format(obj_value, P, Pv_test[0]))
+    logger.info('Obj Func: {}, Pset: {}, Pcalc: {}'.format(obj_value, P, Pv_test[0]))
 
     return obj_value
 

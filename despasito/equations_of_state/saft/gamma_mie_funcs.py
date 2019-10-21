@@ -1496,8 +1496,8 @@ def calc_A(rho, xi, T, beads, beadlibrary, massi, nui, Cmol2seg, xsk, xskl, dkk,
     if tmp != 0.:
         Aassoc = calc_A_assoc(rho, xi, T, nui, xskl, sigmakl, sigmaii_avg, epsilonii_avg, epsilonHB, Kklab, nk)
         A = Aideal + AHS + A1 + A2 + A3 + Achain + Aassoc
-        nrho = int(len(A)/2)
     # NoteHere
+     #   nrho = int(len(A)/2)
      #   plt.plot(rho[:nrho],Aideal[:nrho]-Aideal[nrho:],"b",linewidth=1)
      #   plt.plot(rho[:nrho],AHS[:nrho]-AHS[nrho:],"r",linewidth=1)
      #   plt.plot(rho[:nrho],A1[:nrho]-A1[nrho:],"g",linewidth=1)

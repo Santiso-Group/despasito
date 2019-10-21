@@ -212,7 +212,7 @@ class saft_gamma_mie(EOStemplate):
         daresdxi = np.zeros_like(xi)
         mui = np.zeros_like(xi)
         nmol = 1.0
-        dnmol = 1.0E-8
+        dnmol = 1.0E-4
 
         # compute mui
         for i in range(np.size(mui)):
@@ -221,11 +221,11 @@ class saft_gamma_mie(EOStemplate):
             for j, delta in enumerate((dnmol, -dnmol)):
                 xi_temp = np.array(xi,float)
                 xi_temp[i] += delta
-                Cmol2seg, xsk_tmp, xskl_tmp = funcs.calc_composition_dependent_variables(xi_temp, self._nui, self._beads, self._beadlibrary)
+                Cmol2seg_tmp, xsk_tmp, xskl_tmp = funcs.calc_composition_dependent_variables(xi_temp, self._nui, self._beads, self._beadlibrary)
                 # xi_temp/=(nmol+delta)
-                dAres[j] = funcs.calc_Ares(rho * constants.Nav, xi_temp, T, self._beads, self._beadlibrary, self._massi, self._nui, self._Cmol2seg, xsk_tmp, xskl_tmp, self._dkk, self._epsilonkl, self._sigmakl, self._dkl, self._l_akl, self._l_rkl, self._Ckl, self._x0kl, self._epsilonHB, self._Kklab, self._nk)
+                dAres[j] = funcs.calc_Ares(rho * constants.Nav, xi_temp, T, self._beads, self._beadlibrary, self._massi, self._nui, Cmol2seg_tmp, xsk_tmp, xskl_tmp, self._dkk, self._epsilonkl, self._sigmakl, self._dkl, self._l_akl, self._l_rkl, self._Ckl, self._x0kl, self._epsilonHB, self._Kklab, self._nk)
             daresdxi[i] = (dAres[0] - dAres[1]) / (2.0 * dnmol)
-            print("daresdxi",i, daresdxi[i], dAres[0], dAres[1], dnmol)
+         #   print("daresdxi",i, daresdxi[i], dAres[0], dAres[1], dnmol)
 
         # compute Z
         Z = P / (rho * T * constants.Nav * constants.kb)

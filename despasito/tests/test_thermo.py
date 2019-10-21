@@ -11,7 +11,7 @@ import sys
 import numpy as np
 
 Tlist = [323.2]
-xilist = [[0.96176473, 0.03823527]]
+xilist = [[0.01,0.99]]
 yilist = [[0.9954, 0.0046]]
 Plist = [4492927.45]
 rho_co2_h2o = np.array([19986.78358869])
@@ -44,13 +44,13 @@ def test_phase_xiT(eos=eos_co2_h2o,Tlist=Tlist,xilist=xilist):
 
     output = thermo.thermo(eos,{"calculation_type":"phase_xiT","Tlist":Tlist,"xilist":xilist})
         
-    assert output["P"][0]==pytest.approx(4555722.774185303,abs=1e+1) and output["yi"][0]==pytest.approx([0.99805277, 0.00194723],abs=1e-4)
+    assert output["P"][0]==pytest.approx(1223211.573700886,abs=1e+1) and output["yi"][0]==pytest.approx([0.94880358, 0.05119642],abs=1e-4)
 
 def test_phase_yiT(eos=eos_co2_h2o,Tlist=Tlist,yilist=yilist):
 
     output = thermo.thermo(eos,{"calculation_type":"phase_yiT","Tlist":Tlist,"yilist":yilist})
 
-    assert output["P"][0]==pytest.approx(4300135.363671318,abs=1e+1) and output["xi"][0]==pytest.approx([0.91158647, 0.08841353],abs=1e-4)
+    assert output["P"][0]==pytest.approx(4516184.662934669,abs=1e+1) and output["xi"][0]==pytest.approx([0.96543738, 0.03456262],abs=1e-4)
 
 def test_sat_props(eos=eos_co2_h2o,Tlist=Tlist):
 
@@ -62,11 +62,11 @@ def test_liquid_properties(eos=eos_co2_h2o,Tlist=Tlist,xilist=xilist,Plist=Plist
 
     output = thermo.thermo(eos,{"calculation_type":"liquid_properties","Tlist":Tlist,"Plist":Plist,"xilist":xilist})
 
-    assert output["rhol"][0]==pytest.approx(17098.9876440635,abs=1e-1) and output["phil"][0]==pytest.approx(np.array([85.67737402,  0.17372717]),abs=1e-1)
+    assert output["rhol"][0]==pytest.approx(54072.87630577754,abs=1e-1) and output["phil"][0]==pytest.approx(np.array([2646.44010, 0.120295122]),abs=1e-1)
 
 def test_vapor_properties(eos=eos_co2_h2o,Tlist=Tlist,yilist=yilist,Plist=Plist):
 
     output = thermo.thermo(eos,{"calculation_type":"vapor_properties","Tlist":Tlist,"Plist":Plist,"yilist":yilist})
 
-    assert output["rhov"][0]==pytest.approx(37.85937201,abs=1e-1) and output["phiv"][0]==pytest.approx(np.array([2.44609778, 0.92237671]),abs=1e-1)
+    assert output["rhov"][0]==pytest.approx(37.85937201,abs=1e-1) and output["phiv"][0]==pytest.approx(np.array([2.45619145, 0.37836741]),abs=1e-1)
     
