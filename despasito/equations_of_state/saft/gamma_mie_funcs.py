@@ -1224,9 +1224,9 @@ def calc_A_assoc(rho, xi, T, nui, xskl, sigmakl, sigmaii_avg, epsilonii_avg, eps
  #   print("obj",np.sum(obj))
 
     # Compute Xika: with python with same method as fortran   {BottleNeck}
- #   indices = assoc_site_indices(xi, nui, nk)
- #   Xika, err_array = calc_Xika(indices,rho, xi, nui, nk, Fklab, Kklab, Iij)
- #   print("Max Error",np.sum(err_array))
+#    indices = assoc_site_indices(xi, nui, nk)
+#    Xika, err_array = calc_Xika(indices,rho, xi, nui, nk, Fklab, Kklab, Iij)
+#    print("Max Error",np.sum(err_array))
 
     # Compute Xika: with python numba or cython  {BottleNeck}
 #    Xika = []

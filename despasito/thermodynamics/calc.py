@@ -356,6 +356,10 @@ def calc_Psat(T, xi, eos, rhodict={}):
         Psat = Psat.x
         Pvspline, roots, extrema = PvsV_spline(vlist, Plist-Psat)
 
+        if len(roots) ==2:
+            slope, root2 = np.polyfit(vlist[-4:], Plist[-4:]-Psat, 1)
+            roots = np.append(roots,[root2])
+
     #Psat,rholsat,rhogsat
     return Psat, 1.0 / roots[0], 1.0 / roots[2]
 
@@ -1275,9 +1279,8 @@ def find_new_yi(P, T, phil, xi, eos, rhodict={}):
 
         obj = obj_yi(yi, P, T, phil, xi, eos, rhodict=rhodict)
         obj_ext.append(abs(obj))
-        flag_ext.append(flagv)
 
-        logger.debug("    Obj yi_total1 {}, flagv {}".format(yinew_total_1,flagv))
+        logger.debug("    Obj yi_total1 {}".format(yinew_total_1))
 
    # plt.plot(yi_ext,obj_ext,".-b")
    # plt.plot(yi_ext,np.array(obj_ext)+np.array(yi_total2_ext),".-r")
