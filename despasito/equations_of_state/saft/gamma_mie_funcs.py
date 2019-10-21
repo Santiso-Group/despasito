@@ -7,7 +7,7 @@ r"""
     
 """
 
-import logging
+import logging # NoteHere
 import numpy as np
 from scipy import misc
 from scipy import integrate

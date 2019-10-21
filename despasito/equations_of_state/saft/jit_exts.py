@@ -17,9 +17,9 @@ import numba
 
 # For Numba, ckl_coef cannot be encapsulated
 from .constants import ckl_coef
-#from profilehooks import profile
+from profilehooks import profile
 
-#@profile
+@profile
 def calc_a1s(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
     r""" wrapper function for calling 2d/3d versions of calc_a1s ... this is done for stupid Numba 
     """
