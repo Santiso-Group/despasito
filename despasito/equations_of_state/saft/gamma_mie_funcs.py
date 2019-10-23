@@ -33,9 +33,9 @@ if disable_jit:
     #from .c_exts import calc_a1s
     #we need to add another command-line arg to replace this hackish approach
 else:
-#    from .jit_exts import calc_a1s, calc_Xika
-    from .jit_exts import calc_a1s
-    from .nojit_exts import calc_Xika
+    from .jit_exts import calc_a1s, calc_Xika
+#    from .jit_exts import calc_a1s
+#    from .nojit_exts import calc_Xika
 
 ############################################################
 #                                                          #
@@ -89,8 +89,7 @@ def calc_Aideal(xi, rho, massi, T):
 
 #    if not any(np.sum(xi_tmp * np.log(Aideal_tmp), axis=1)):
     if np.isnan(np.sum(np.sum(xi_tmp * np.log(Aideal_tmp), axis=1))):
-        raise ValueError("Aideal has values of zero when taking the log. All mole fraction values should be nonzero. Mole fraction: %s".format(xi_tmp))
-        logger.exception("Aideal has values of zero when taking the log. All mole fraction values should be nonzero. Mole fraction: %s".format(xi_tmp))
+        raise ValueError("Aideal has values of zero when taking the log. All mole fraction values should be nonzero. Mole fraction: {}".format(xi_tmp))
     else:
         Aideal = np.sum(xi_tmp * np.log(Aideal_tmp), axis=1) - 1.0
 
@@ -403,9 +402,7 @@ def calc_Bkl(rho, l_kl, Cmol2seg, dkl, epsilonkl, x0kl, zetax):
 
     logger = logging.getLogger(__name__)
 
-    # initialize Ikl and Jkl
-    # Ikl = np.zeros_like(l_kl)
-    # Jkl = np.zeros_like(l_kl)
+    rhos = Cmol2seg * rho
 
     # compute Ikl(l_kl), eq. 23
     Ikl = (1.0 - (x0kl**(3.0 - l_kl))) / (l_kl - 3.0)
@@ -415,12 +412,12 @@ def calc_Bkl(rho, l_kl, Cmol2seg, dkl, epsilonkl, x0kl, zetax):
     if np.size(np.shape(l_kl)) == 2:
         # Bkl=np.zeros((np.size(rho),np.size(l_kl,axis=0),np.size(l_kl,axis=0)))
 
-        Bkl = np.einsum("i,jk", rho * (Cmol2seg * 2.0 * np.pi),
+        Bkl = np.einsum("i,jk", rhos * (2.0 * np.pi),
                         (dkl**3) * epsilonkl) * (np.einsum("i,jk", (1.0 - (zetax / 2.0)) / (
                             (1.0 - zetax)**3), Ikl) - np.einsum("i,jk", ((9.0 * zetax * (1.0 + zetax)) /
                                                                         (2.0 * ((1 - zetax)**3))), Jkl))
     elif np.size(np.shape(l_kl)) == 1:
-        Bkl = np.einsum("i,j", rho * (Cmol2seg * 2.0 * np.pi),
+        Bkl = np.einsum("i,j", rhos * (2.0 * np.pi),
                         (dkl**3) * epsilonkl) * (np.einsum("i,j", (1.0 - (zetax / 2.0)) / (
                             (1.0 - zetax)**3), Ikl) - np.einsum("i,j", ((9.0 * zetax * (1.0 + zetax)) /
                                                                        (2.0 * ((1 - zetax)**3))), Jkl))
@@ -550,19 +547,7 @@ def calc_Amono(rho, xi, nui, Cmol2seg, xsk, xskl, dkk, T, epsilonkl, sigmakl, dk
     zetax = rhos * ((np.pi / 6.0) * np.sum(xskl * (dkl**3)))
 
     # compute components of eq. 19
-
-    # compute Bkl(rhos,lambdakl_a)
-    Bakl = calc_Bkl(rho, l_akl, Cmol2seg, dkl, epsilonkl, x0kl, zetax)
-    # compute Bkl(rhos,lambdakl_r)
-    Brkl = calc_Bkl(rho, l_rkl, Cmol2seg, dkl, epsilonkl, x0kl, zetax)
-
-    # compute a1,kl_s(rhos,lambdakl_a)
-    a1s_la = calc_a1s(rho, Cmol2seg, l_akl, zetax, epsilonkl, dkl)
-    # compute a1,kl_s(rhos,lambdakl_r)
-    a1s_lr = calc_a1s(rho, Cmol2seg, l_rkl, zetax, epsilonkl, dkl)
-
-    # compute a1kl, eq. 19
-    a1kl = Ckl * (((x0kl**l_akl) * (a1s_la + Bakl)) - ((x0kl**l_rkl) * (a1s_lr + Brkl)))
+    a1kl = calc_a1ii(rho, Cmol2seg, dkl, l_akl, l_rkl, x0kl, epsilonkl, zetax)
 
     ##### compute a2kl, eq. 30 #####
 
@@ -793,7 +778,7 @@ def calc_da2ii_1pchi_drhos(rho, Cmol2seg, epsilonii_avg, dii_eff, x0ii, l_rii_av
 
     logger = logging.getLogger(__name__)
 
-    step = np.sqrt(np.finfo(float).eps) * rho * Cmol2seg * stepmult
+    step = np.sqrt(np.finfo(float).eps) * rho * stepmult
     a2ii_1pchi_p = calc_a2ii_1pchi(rho + step, Cmol2seg, epsilonii_avg, dii_eff, x0ii, l_rii_avg, l_aii_avg, zetax)
     a2ii_1pchi_m = calc_a2ii_1pchi(rho - step, Cmol2seg, epsilonii_avg, dii_eff, x0ii, l_rii_avg, l_aii_avg, zetax)
 
@@ -940,11 +925,11 @@ def calc_Achain(rho, Cmol2seg, xi, T, nui, sigmakl, epsilonkl, dkl, xskl, l_rkl,
 
     a1sii_2l_aii_avg = calc_a1s(rho, Cmol2seg, 2.0 * l_aii_avg, zetax, epsilonii_avg, dii_eff)
     a1sii_2l_rii_avg = calc_a1s(rho, Cmol2seg, 2.0 * l_rii_avg, zetax, epsilonii_avg, dii_eff)
-    a1sii_l_rii_avgl_aii_avg = calc_a1s(rhos, 1.0, l_aii_avg + l_rii_avg, zetax, epsilonii_avg, dii_eff)
+    a1sii_l_rii_avgl_aii_avg = calc_a1s(rho, Cmol2seg, l_aii_avg + l_rii_avg, zetax, epsilonii_avg, dii_eff)
 
     Bii_2l_aii_avg = calc_Bkl(rho, 2.0 * l_aii_avg, Cmol2seg, dii_eff, epsilonii_avg, x0ii, zetax)
     Bii_2l_rii_avg = calc_Bkl(rho, 2.0 * l_rii_avg, Cmol2seg, dii_eff, epsilonii_avg, x0ii, zetax)
-    Bii_l_aii_avgl_rii_avg = calc_Bkl(rhos, l_aii_avg + l_rii_avg, 1.0, dii_eff, epsilonii_avg, x0ii, zetax)
+    Bii_l_aii_avgl_rii_avg = calc_Bkl(rho, l_aii_avg + l_rii_avg, Cmol2seg, dii_eff, epsilonii_avg, x0ii, zetax)
 
     eKC2 = np.einsum("i,j->ij", KHS / rhos, epsilonii_avg * (Cii**2))
 
@@ -1174,7 +1159,7 @@ def calc_A_assoc(rho, xi, T, nui, xskl, sigmakl, sigmaii_avg, epsilonii_avg, eps
     # compute Iijklab 
     # {BottleNeck}
     for p in range(11):
-        for q in range(11 - i):
+        for q in range(11 - p):
             #Iij += np.einsum("i,jk->ijk", constants.cij[p, q] * ((sigmax3 * rho)**p), ((kT / epsilonij)**q))
             if p == 0: Iij += np.einsum("i,jk->ijk", constants.cij[p, q] * np.ones(len(rho)), ((kT / epsilonij)**q))
             elif p == 1: Iij += np.einsum("i,jk->ijk", constants.cij[p, q] * ((sigmax3 * rho)), ((kT / epsilonij)**q))
@@ -1196,39 +1181,40 @@ def calc_A_assoc(rho, xi, T, nui, xskl, sigmakl, sigmaii_avg, epsilonii_avg, eps
             elif p == 9: Iij += np.einsum("i,jk->ijk", constants.cij[p, q] * ((sigmax3**p * rho4*rho5)), ((kT / epsilonij)**q))
             elif p == 10: Iij += np.einsum("i,jk->ijk", constants.cij[p, q] * ((sigmax3**p * rho5*rho5)), ((kT / epsilonij)**q))
 
-    # Compute Xika: with Fortran   {BottleNeck}
-    # compute deltaijklab
-    for i in range(ncomp):
-        for j in range(ncomp):
-            for k in range(nbeads):
-                for l in range(nbeads):
-                    for a in range(nsitesmax):
-                        for b in range(nsitesmax):
-                            # print(Fklab[k,l,a,b],Kklab[k,l,a,b],Iij[i,j])
-                            if nui[i, k] and nui[j, l] > 0:
-                                delta[:, i, j, k, l, a, b] = Fklab[k, l, a, b] * Kklab[k, l, a, b] * Iij[:, i, j]
-
-    Xika0 = np.zeros((ncomp, nbeads, nsitesmax))
-    Xika0[:, :, :] = 1.0
-    Xika = solv_assoc.min_xika(rho, Xika0, xi, nui, nk, delta, 500, 1.0E-12) # {BottleNeck}
-    if np.any(Xika < 0.0):
-        Xika0[:, :, :] = 0.5
-        sol = spo.root(calc_Xika_wrap, Xika0, args=(xi, rho[0], nui, nk, delta[0]), method='broyden1')
-        Xika0 = sol.x
+    if disable_jit:
+        # Compute Xika: with Fortran   {BottleNeck}
+        # compute deltaijklab
+        for i in range(ncomp):
+            for j in range(ncomp):
+                for k in range(nbeads):
+                    for l in range(nbeads):
+                        for a in range(nsitesmax):
+                            for b in range(nsitesmax):
+                                # print(Fklab[k,l,a,b],Kklab[k,l,a,b],Iij[i,j])
+                                if nui[i, k] and nui[j, l] > 0:
+                                    delta[:, i, j, k, l, a, b] = Fklab[k, l, a, b] * Kklab[k, l, a, b] * Iij[:, i, j]
+    
+        Xika0 = np.zeros((ncomp, nbeads, nsitesmax))
+        Xika0[:, :, :] = 1.0
         Xika = solv_assoc.min_xika(rho, Xika0, xi, nui, nk, delta, 500, 1.0E-12) # {BottleNeck}
-        logger.warning('Xika out of bounds')
+        if np.any(Xika < 0.0):
+            Xika0[:, :, :] = 0.5
+            sol = spo.root(calc_Xika_wrap, Xika0, args=(xi, rho[0], nui, nk, delta[0]), method='broyden1')
+            Xika0 = sol.x
+            Xika = solv_assoc.min_xika(rho, Xika0, xi, nui, nk, delta, 500, 1.0E-12) # {BottleNeck}
+            logger.warning('Xika out of bounds')
 
- #   obj = 0
- #   for i in range(len(rho)):
- #       obj += abs(calc_Xika_wrap(Xika[i], xi, rho[i], nui, nk, delta[i]))
- #   print("obj",np.sum(obj))
+      #  obj = 0
+      #  for i in range(len(rho)):
+      #      obj += abs(calc_Xika_wrap(Xika[i], xi, rho[i], nui, nk, delta[i]))
+      #  print("obj",np.sum(obj))
 
-    # Compute Xika: with python with same method as fortran   {BottleNeck}
-#    indices = assoc_site_indices(xi, nui, nk)
-#    Xika, err_array = calc_Xika(indices,rho, xi, nui, nk, Fklab, Kklab, Iij)
-#    print("Max Error",np.sum(err_array))
+    else:
+        # Compute Xika: with python with numba  {BottleNeck}
+        indices = assoc_site_indices(xi, nui, nk)
+        Xika, err_array = calc_Xika(indices,rho, xi, nui, nk, Fklab, Kklab, Iij)
 
-    # Compute Xika: with python numba or cython  {BottleNeck}
+    # Compute Xika: with python  {BottleNeck}
 #    Xika = []
 #    status = []
 #    l_ind = len(indices)
@@ -1301,6 +1287,9 @@ def assoc_site_indices(xi, nui, nk):
                 if (bead != 0 and bead_sites[j]):
                     for k in bead_sites[j]:
                         indices.append([i,j,k])
+
+    indices = np.array([np.array(x) for x in indices])
+
     return indices
 
 def obj_Xika(Xika_elements, indices, rho, xi, nui, nk, Fklab, Kklab, Iij):
@@ -1480,12 +1469,15 @@ def calc_A(rho, xi, T, beads, beadlibrary, massi, nui, Cmol2seg, xsk, xskl, dkk,
 
     logger = logging.getLogger(__name__)
 
+    if any(np.array(xi) < 0.):
+        raise ValueError("Mole fractions cannot be less than zero.")
+
     Aideal = calc_Aideal(xi, rho, massi, T)
     AHS, A1, A2, A3, zetax, zetaxstar, KHS = calc_Amono(rho, xi, nui, Cmol2seg, xsk, xskl, dkk, T,epsilonkl, sigmakl, dkl, l_akl, l_rkl, Ckl, x0kl)
     Achain, sigmaii_avg, epsilonii_avg = calc_Achain(rho, Cmol2seg, xi, T, nui, sigmakl, epsilonkl, dkl, xskl, l_rkl, l_akl, beads, beadlibrary, zetax, zetaxstar, KHS)
 
     indices = assoc_site_indices(xi, nui, nk)
-    if indices:
+    if indices.size != 0:
         tmp = 0
         for i,k,a in indices:
             for j,l,b in indices:
@@ -1579,11 +1571,14 @@ def calc_Ares(rho, xi, T, beads, beadlibrary, massi, nui, Cmol2seg, xsk, xskl, d
 
     logger = logging.getLogger(__name__)
 
+    if any(np.array(xi) < 0.):
+        raise ValueError("Mole fractions cannot be less than zero.")
+
     AHS, A1, A2, A3, zetax, zetaxstar, KHS = calc_Amono(rho, xi, nui, Cmol2seg, xsk, xskl, dkk, T, epsilonkl, sigmakl, dkl, l_akl, l_rkl, Ckl, x0kl)
     Achain, sigmaii_avg, epsilonii_avg = calc_Achain(rho, Cmol2seg, xi, T, nui, sigmakl, epsilonkl, dkl, xskl, l_rkl, l_akl, beads, beadlibrary, zetax, zetaxstar, KHS)
 
     indices = assoc_site_indices(xi, nui, nk)
-    if indices:
+    if indices.size != 0:
         tmp = 0
         for i,k,a in indices:
             for j,l,b in indices:

@@ -182,6 +182,8 @@ def PvsRho(T, xi, eos, minrhofrac=(1.0 / 500000.0), rhoinc=5.0, vspacemax=1.0E-4
     """
 
     logger = logging.getLogger(__name__)
+    if type(xi) == list:
+        xi = np.array(xi)
 
     #estimate the maximum density based on the hard sphere packing fraction, part of EOS
     maxrho = eos.density_max(xi, T, maxpack=maxpack)
@@ -1022,7 +1024,7 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxiter=30, tol=1e-6):
 
         # Try yi
         phiv, rhov, flagv = calc_phiv(P, T, yi_tmp, eos, rhodict=rhodict)
-        
+
         if ((any(np.isnan(phiv)) or flagv==1) and flag_check_vapor): # If vapor density doesn't exist
             flag_check_vapor = False
             logger.info("    Composition doesn't produce a vapor, let's find one!")
@@ -1043,7 +1045,6 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxiter=30, tol=1e-6):
         if len(yi_total) > 3:
             tmp1 =  (np.abs(np.sum(yinew)-yi_total[-2]) + np.abs(yi_total[-1]-yi_total[-3]))
             tmp2 = (np.abs(np.sum(yinew)-yi_total[-2]) + np.abs(yi_total[-1]-yi_total[-3])) < tol/1000
-            print("bouncing? {} {}".format(tmp1,tmp2))
             if (tmp1 < np.abs(np.sum(yinew)-yi_total[-1]) and tmp1 < 1e-5):
                 # This occurs when the P vs. v curve doesn't cross the 0 axis, there could be a larger problem causing this, but in my experience, it's because the curve is not long enough to converge to zero. Instead of the possible endless increase in vector length and a substantial increase in computational time, we simply set the fugacity coefficient to ideal and the density to 0. When an iteration on our assumption produces a vapor near ideality, it then may predict an ideal gas. This causes the constant back and forth that really isn't that important to solve, as the fugacity coefficients are unity regardless.
                 logger.info("    yi_total is bouncing between {} and {}, choose the lowest value (outer loop obj. function).".format(np.sum(yinew),yi_total[-1]))
@@ -1076,10 +1077,10 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxiter=30, tol=1e-6):
         yi2 = yinew/np.sum(yinew)
         tmp = (np.abs(yinew[ind_tmp] - yi_tmp[ind_tmp]) / yi_tmp[ind_tmp])
         logger.warning('    More than {} iterations needed. Error in Smallest Fraction: {} %%'.format(maxiter, tmp*100))
-        if tmp > .05: # If difference is greater than 5%
+        if tmp > .1: # If difference is greater than 10%
             yinew = find_new_yi(P, T, phil, xi, eos, rhodict=rhodict)
-        yinew = spo.root(obj_yi,yinew[0],args=(P, T, phil, xi, eos, rhodict))
-        yi = [yinew, 1-yinew]
+        yinew = spo.root(obj_yi,yinew[0],args=(P, T, phil, xi, eos, rhodict),tol=tol)
+        yi = yinew.x
         obj = obj_yi(yi, P, T, phil, xi, eos, rhodict=rhodict)
         logger.warning('    Find yi with root algorithm, yi {}, obj {}'.format(yi,obj))
     else:
@@ -1353,9 +1354,13 @@ def obj_yi(yi, P, T, phil, xi, eos, rhodict={}):
         Objective function for solving for vapor mole fractions
     """
 
-    print(yi, type(yi), len(yi))
+    logger = logging.getLogger(__name__)
+
     if type(yi) == float or len(yi) == 1:
-        yi = [yi, 1-yi]
+        if type(yi) in [list, np.ndarray]:
+            yi = [yi[0], 1-yi[0]]
+        else:
+            yi = [yi, 1-yi]
 
     phiv, rhov, flagv = calc_phiv(P, T, yi, eos, rhodict=rhodict)
     yinew = xi * phil / phiv
@@ -1366,7 +1371,7 @@ def obj_yi(yi, P, T, phil, xi, eos, rhodict={}):
     yinew = xi * phil / phiv2
     yinew_total_2 = np.sum(yinew)
 
-    print("yi_totals {} {}".format(yinew_total_1,yinew_total_2))
+    logger.debug("yi_totals {} {}".format(yinew_total_1,yinew_total_2))
 
     obj = yinew_total_1 - yinew_total_2
     
