@@ -278,17 +278,29 @@ def process_bead_data(bead_data):
 def process_param_fit_inputs(thermo_dict):
 
     """
-    Process parameter fitting information and data formatting
+    Process parameter fitting information and data formatting according to input file instructions.
 
     Parameters
     ----------
     thermo_dict : dict
         Dictionary of instructions for thermodynamic calculations or parameter fitting. This dictionary is directly from the input file.
+        * opt_params (dict) - Parameters used in basin fitting algorithm
+        - fit_bead (str) - Name of bead whose parameters are being fit, should be in bead list of beadconfig
+        - fit_params (list[str]) - This list of contains the name of the parameter being fit (e.g. epsilon). See EOS mentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
+        - *_bounds (list[float]), Optional - This list contains the minimum and maximum of the parameter from a parameter listed in fit_params, represented in place of the asterisk. See input file instructions for more information.
+        * *name* (dict) - Dictionary of a data set that the parameters are fit to. Each dictionary is added to the exp_data dictionary before being passed to the fitting algorithm. Each *name* is used as the key in exp_data. *name* is an arbitrary string used to identify the data set and used later in reporting objective function values during the fitting process. See data type objects for more details.
+        - datatype (str) - One of the supported data type objects to fit parameters
 
     Returns
     -------
     new_thermo_dict : dict
-        Dictionary of instructions for thermodynamic calculations or parameter fitting. This dictionary is reformatted and includes imported data.
+        Dictionary of instructions for thermodynamic calculations or parameter fitting. This dictionary is reformatted and includes imported data. Dictionary values below are altered before being passed on, all other key and value sets are blindly passed on.
+        * opt_params (dict) - Parameters used in basin fitting algorithm
+        - fit_bead (str) - Name of bead whose parameters are being fit, should be in bead list of beadconfig
+        - fit_params (list[str]) - This list of contains the name of the parameter being fit (e.g. epsilon). See EOS mentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
+        * bounds (numpy.ndarray) - List of lists of length two, of length equal to fit_params. If no bounds were given then the default parameter boundaries are [0,1e+4], else bounds given as *_bounds in input file are used.
+        * exp_data (dict) - This dictionary is made up of a dictionary for each data set that the parameters are fit to. Each key is an arbitrary string used to identify the data set and used later in reporting objective function values during the fitting process. See data type objects for more details.
+        - name (str) - One of the supported data type objects to fit parameters
     """
 
     logger = logging.getLogger(__name__)
@@ -323,10 +335,15 @@ def process_param_fit_inputs(thermo_dict):
         elif (type(value) == dict and "datatype" in value):
             new_thermo_dict["exp_data"][key] = process_exp_data(value)
 
-        elif key == "beadparams0":
-            new_thermo_dict[key] = value
         else:
             new_thermo_dict[key] = value
+
+    # Move opt_params values to thermo_dict
+    keys = ["bounds","minimizer_dict"]
+    for key in keys:
+        if key in new_thermo_dict["opt_params"]:
+            new_thermo_dict[key] = new_thermo_dict["opt_params"][key]
+            new_thermo_dict["opt_params"].pop(key,None)
 
     test1 = set(["exp_data","opt_params"]).issubset(list(new_thermo_dict.keys()))
     test2 = set(["fit_bead","fit_params"]).issubset(list(new_thermo_dict["opt_params"].keys()))
@@ -347,13 +364,16 @@ def process_exp_data(exp_data_dict):
 
     Parameters
     ----------
-    exp_data_dict : dict
-        Raw dictionary of experimental data information, there is one dictionary per set
+    exp_data : dict
+       This dictionary is made up of a dictionary for each data set that the parameters are fit to. Each key is an arbitrary string used to identify the data set and used later in reporting objective function values during the fitting process. See data type objects for more details. Dictionary values below are altered before being passed on, all other key and value sets are blindly passed on.
+       * datatype (str) - One of the supported data type objects to fit parameters
+       * file (str) - File name in current working directory, or path to desired experimental data. See experimental data page for examples of acceptable format.
 
     Returns
     -------
     exp_data : dict
-        Reformatted dictionary of experimental data
+        Reformatted dictionary of experimental data. This dictionary is made up of a dictionary for each data set that the parameters are fit to. Each key is an arbitrary string used to identify the data set and used later in reporting objective function values during the fitting process. See data type objects for more details. Dictionary values below are altered from input dictionary, all other key and value sets are blindly passed on, or extracted from data file with process_exp_data_file function.
+        * name (str) - One of the supported data type objects to fit parameters
     """
 
     logger = logging.getLogger(__name__)
@@ -378,7 +398,7 @@ def process_exp_data(exp_data_dict):
 def process_exp_data_file(fname):
 
     """
-    Import data file and convert columns into dictionary entries, where the header is the dictionary key. The top line is skipped, and column headers are the second line. Note that column headers should be thermo properties (e.g. T, P, x1, x2, y1, y2) without suffixes. Mole fractions x1, x2, ... should be in the same order as in the beadconfig line of the input file. No mole fractions should be left out.
+    Import data file and convert columns into dictionary entries, where the headers are the dictionary keys. The top line is skipped, and column headers are the second line. Note that column headers should be thermo properties (e.g. T, P, x1, x2, y1, y2) without suffixes. Mole fractions x1, x2, ... should be in the same order as in the beadconfig line of the input file. No mole fractions should be left out.
 
     Parameters
     ----------

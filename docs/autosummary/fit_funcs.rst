@@ -1,20 +1,13 @@
 
-Supported Experimental Data Types
-=================================
+Supporting Fit Functions
+========================
 
-Available Data Objects
-----------------------
+.. autofunction:: despasito.fit_parameters.fit_funcs.compute_SAFT_obj
 
-.. toctree::
-   data_classes/tlve
-   data_classes/rhol
-   data_classes/sat_prop
+.. autoclass:: despasito.fit_parameters.fit_funcs.BasinStep
+    :members:
 
-Adding New Data Objects
------------------------
+.. autoclass:: despasito.fit_parameters.fit_funcs.BasinBounds
+    :members:
 
-New data objects must be based on
-
-.. autoclass:: despasito.fit_parameters.interface.ExpDataTemplate
-   :members:
-
+.. autofunction:: despasito.fit_parameters.fit_funcs.reformat_ouput

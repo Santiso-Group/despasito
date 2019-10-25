@@ -374,8 +374,7 @@ def eq_area(shift, Pv, vlist):
     r"""
     Objective function used to calculate the saturation pressure.
 
-    Note: If the curve hasn't decayed to 0 yet, estimate the remaining area as a triangle. This isn't super acc
-urate but we are just using the saturation pressure to get started.
+    Note: If the curve hasn't decayed to 0 yet, estimate the remaining area as a triangle. This isn't super accurate but we are just using the saturation pressure to get started.
     
     Parameters
     ----------

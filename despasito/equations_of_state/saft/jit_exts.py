@@ -117,8 +117,7 @@ def calc_a1s_1d(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
 
     return np.transpose(np.transpose(a1s) * rho)
 
-#@njit(numba.types.Tuple((numba.f8[:,:,:,:], list(numba.f8)))(list(list(numba.i8)), numba.f8[:], numba.f8[:], numba.f8[:,:], numba.f8[:,:], numba.f8[:,:,:,:], numba.f8[:,:,:,:], numba.f8[:,:,:])) # , numba.i8, numba.f8, numba.f8
-@njit
+@njit(numba.types.Tuple((numba.f8[:,:,:,:], numba.f8[:]))(numba.i8[:,:], numba.f8[:], numba.f8[:], numba.f8[:,:], numba.f8[:,:], numba.f8[:,:,:,:], numba.f8[:,:,:,:], numba.f8[:,:,:])) # , numba.i8, numba.f8, numba.f8
 def calc_Xika(indices, rho, xi, nui, nk, Fklab, Kklab, Iij): # , maxiter=500, tol=1e-12, damp=.1
     r""" 
     Calculate the fraction of molecules of component i that are not bonded at a site of type a on group k in an iterative fashion.
@@ -148,6 +147,8 @@ def calc_Xika(indices, rho, xi, nui, nk, Fklab, Kklab, Iij): # , maxiter=500, to
     -------
     Xika : numpy.ndarray
         NoteHere
+    err_array : numpy.ndarray
+        Of the same length of rho, is a list in the error of the total error Xika for each point. 
     """
 
     maxiter=500

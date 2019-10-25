@@ -68,6 +68,9 @@ def phase_xiT(eos, sys_dict):
         else:
             raise ValueError("The number of provided temperatures and mole fraction sets are different")
 
+    if len(xi_list[0]) != len(eos._nui):
+        raise ValueError("Number of components in mole fraction list doesn't match components in nui. Check bead_config.")
+
     ## Optional values
     opts = {}
 

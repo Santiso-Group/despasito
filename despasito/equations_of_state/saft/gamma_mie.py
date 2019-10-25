@@ -61,6 +61,8 @@ class saft_gamma_mie(EOStemplate):
 
     def __init__(self, kwargs):
 
+        logger = logging.getLogger(__name__)
+
         # Self interaction parameters
         self._nui = kwargs['nui']
         self._beads = kwargs['beads']
@@ -123,6 +125,8 @@ class saft_gamma_mie(EOStemplate):
             Temperature of the system
         """
 
+        logger = logging.getLogger(__name__)
+
         dkk, dkl, x0kl = funcs.calc_hard_sphere_matricies(self._beads, self._beadlibrary, self._sigmakl, T)
         self.T = T
         self._dkk = dkk
@@ -140,6 +144,9 @@ class saft_gamma_mie(EOStemplate):
             Mole fraction of component
 
         """
+
+        logger = logging.getLogger(__name__)
+
         Cmol2seg, xsk, xskl = funcs.calc_composition_dependent_variables(xi, self._nui, self._beads, self._beadlibrary)
         self._Cmol2seg = Cmol2seg
         self._xsk = xsk
@@ -163,6 +170,9 @@ class saft_gamma_mie(EOStemplate):
         P : numpy.ndarray
             Array of pressure values [Pa] associated with each density and so equal in length
         """
+
+        logger = logging.getLogger(__name__)
+
         if T != self.T:
             self._temp_dependent_variables(T)
 
@@ -203,6 +213,8 @@ class saft_gamma_mie(EOStemplate):
             Array of chemical potential values for each component
         """
 
+        logger = logging.getLogger(__name__)
+
         if T != self.T:
             self._temp_dependent_variables(T)
 
@@ -211,26 +223,35 @@ class saft_gamma_mie(EOStemplate):
         daresdxi = np.zeros_like(xi)
         mui = np.zeros_like(xi)
         nmol = 1.0
+
+        # Set step size in finite difference method
         dnmol = 1.0E-4
+        xi = np.array(xi,float)
+        xi_tmp = xi[xi!=0.]
+        if any(xi_tmp-dnmol < 0.):
+            exp = np.floor(np.log10(min(xi_tmp)))-2 # Make sure step size is two orders of magnitude lower
+            logger.debug("    Mole fraction, {}, is smaller than increment, {}. Use new increment, {}.".format(xi,dnmol,10**exp))
+            dnmol = 10**exp
 
         # compute mui
         for i in range(np.size(mui)):
             dAres = np.zeros(2)
             ares = funcs.calc_Ares(rho * constants.Nav, xi, T, self._beads, self._beadlibrary, self._massi, self._nui, self._Cmol2seg, self._xsk, self._xskl,self._dkk, self._epsilonkl, self._sigmakl, self._dkl, self._l_akl, self._l_rkl, self._Ckl, self._x0kl, self._epsilonHB, self._Kklab, self._nk)
             for j, delta in enumerate((dnmol, -dnmol)):
-                xi_temp = np.array(xi,float)
-                xi_temp[i] += delta
+                xi_temp = np.copy(xi)
+                if xi_temp[i] != 0.: xi_temp[i] += delta
                 Cmol2seg_tmp, xsk_tmp, xskl_tmp = funcs.calc_composition_dependent_variables(xi_temp, self._nui, self._beads, self._beadlibrary)
                 # xi_temp/=(nmol+delta)
                 dAres[j] = funcs.calc_Ares(rho * constants.Nav, xi_temp, T, self._beads, self._beadlibrary, self._massi, self._nui, Cmol2seg_tmp, xsk_tmp, xskl_tmp, self._dkk, self._epsilonkl, self._sigmakl, self._dkl, self._l_akl, self._l_rkl, self._Ckl, self._x0kl, self._epsilonHB, self._Kklab, self._nk)
+            print("xi dAres",xi_temp,dAres)
             daresdxi[i] = (dAres[0] - dAres[1]) / (2.0 * dnmol)
-            print("daresdxi",i, daresdxi[i], dAres[0], dAres[1], dnmol)
 
         # compute Z
         Z = P / (rho * T * constants.Nav * constants.kb)
         xjdaresdxj = np.sum(xi * daresdxi)
         for i in range(np.size(mui)):
             mui[i] = ares + Z - 1.0 + daresdxi[i] - xjdaresdxj - np.log(Z)
+            print("xi, mu comp:",xi[i],mui[i],ares,Z,daresdxi[i],xjdaresdxj)
     
         return mui
 
@@ -253,6 +274,8 @@ class saft_gamma_mie(EOStemplate):
         maxrho : float
             Maximum molar density [mol/m^3]
         """
+
+        logger = logging.getLogger(__name__)
 
         if T != self.T:
             self._temp_dependent_variables(T)
@@ -278,6 +301,9 @@ class saft_gamma_mie(EOStemplate):
         param_initial_guesses : numpy.ndarray, 
             An array of initial guesses for parameters, these will be optimized throughout the process.
     """
+
+        logger = logging.getLogger(__name__)
+
         l_fitparams = len(fit_params)
         if l_fitparams == 1:
             param_initial_guesses = np.array([l_fitparams])
@@ -317,6 +343,9 @@ class saft_gamma_mie(EOStemplate):
         param_value : float
             Value of parameter
         """
+
+        logger = logging.getLogger(__name__)
+
         param_types = ["epsilon", "sigma", "l_r", "l_a", "Sk", "K"]
 
         if len(bead_names) > 2:
@@ -381,6 +410,9 @@ class saft_gamma_mie(EOStemplate):
         r""" 
         To refresh those parameters that are dependent on _beadlibrary and _crosslibrary attributes. This **must** be run after all parameters from update_parameters method have been changed.
         """
+
+        logger = logging.getLogger(__name__)
+
         # Update Non bonded matrices
         self._epsilonkl, self._sigmakl, self._l_akl, self._l_rkl, self._Ckl = funcs.calc_interaction_matrices(self._beads, self._beadlibrary, crosslibrary=self._crosslibrary)
 
