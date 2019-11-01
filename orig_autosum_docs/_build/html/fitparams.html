@@ -1,0 +1,240 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Parametrization &mdash; DESPASITO  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Thermodynamic Calculations" href="thermo.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> DESPASITO
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API Documentation</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Modules:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="input_output.html">Input/Output</a></li>
+<li class="toctree-l1"><a class="reference internal" href="eos.html">Equations of State</a></li>
+<li class="toctree-l1"><a class="reference internal" href="thermo.html">Thermodynamic Calculations</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Parametrization</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#fit-to-experimental-data">Fit to Experimental Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#estimate-with-electronic-structure-methods">Estimate with Electronic Structure Methods</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">DESPASITO</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Parametrization</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/fitparams.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="parametrization">
+<h1>Parametrization<a class="headerlink" href="#parametrization" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="fit-to-experimental-data">
+<h2>Fit to Experimental Data<a class="headerlink" href="#fit-to-experimental-data" title="Permalink to this headline">¶</a></h2>
+<p>Parameters can be fit for one component at a time, and as many parameters as desired <em>can</em> be fit. Input file structure is very similar to before with the mandatory addition of an <cite>opt_params</cite> section whose presence will signify to DESPASITO that this is a fitting job. Here we summarize the available experimental data types that are currently supported for fitting, followed by the desciption of the main fitting function containing more details.</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="_autosummary/despasito.fit_parameters.html#module-despasito.fit_parameters" title="despasito.fit_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_parameters</span></code></a></p></td>
+<td><p>Fit Parameters</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="_autosummary/despasito.fit_parameters.fit_funcs.html#module-despasito.fit_parameters.fit_funcs" title="despasito.fit_parameters.fit_funcs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_parameters.fit_funcs</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="_autosummary/despasito.fit_parameters.data_classes.html#module-despasito.fit_parameters.data_classes" title="despasito.fit_parameters.data_classes"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_parameters.data_classes</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="estimate-with-electronic-structure-methods">
+<h2>Estimate with Electronic Structure Methods<a class="headerlink" href="#estimate-with-electronic-structure-methods" title="Permalink to this headline">¶</a></h2>
+<p>In SAFT, self-interaction parameters are often fit to experimental data, and in most cases so are the cross-interaction parameters (between segments of different types). In a work nearing publication, we derived combining rules extended to utilize multipole moments of molecular fragments from density functional theory (DFT) methods using R.E.D. server [1].
+Estimation with electronic structure methods involves using the extra functions in our <cite>scripts</cite> directory.</p>
+<p>[1] Vanquelef, E.; Simon, S.; Marquant, G.; Garcia, E.; Klimerak, G.; Delepine, J. C.; Cieplak, P.; Dupradeau, F.-Y. R.E.D. Server: A Web Service for Deriving RESP and ESP Charges and Building Force Field Libraries for New Molecules and Molecular Fragments. Nucleic Acids Res. 2011, 39 (suppl_2), W511–W517. <a class="reference external" href="https://doi.org/10.1093/nar/gkr288">https://doi.org/10.1093/nar/gkr288</a></p>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="thermo.html" class="btn btn-neutral float-left" title="Thermodynamic Calculations" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Jennifer A Clark. Project structure based on the Computational Molecular Science Python Cookiecutter version 1.0
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

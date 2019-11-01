@@ -4,13 +4,13 @@ Equations of State
 
 Here we list list the available equations of state and the function used to access them. 
 
-.. autofunction:: despasito.equations_of_state.eos
+.. automodapi:: despasito.equations_of_state
+   :no-inheritance-diagram:
 
 Available EOS
 -------------
 
-.. toctree::
-    autosummary/saft
+.. automodapi:: despasito.equations_of_state.saft
 
 Adding an EOS
 -------------
@@ -19,8 +19,7 @@ Adding an EOS family is easily implemented by adding a new directory to the ``eq
 
 .. note:: In the future, a USER folder will be included in our program so that users can collect all of their personal additions and modifications to DESPASITO in one location.
 
-.. autoclass:: despasito.equations_of_state.interface.EOStemplate
-   :members:
+.. automodapi:: despasito.equations_of_state.interface
 
 
 

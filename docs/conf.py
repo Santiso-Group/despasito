@@ -59,6 +59,7 @@ extensions = [
     'sphinx.ext.intersphinx',
     'sphinx.ext.extlinks',
     'sphinx.ext.todo',
+    'sphinx_automodapi.automodapi',
 ]
 
 autosummary_generate = True

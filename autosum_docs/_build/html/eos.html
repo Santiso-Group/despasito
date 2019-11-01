@@ -1,0 +1,270 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Equations of State &mdash; DESPASITO  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Thermodynamic Calculations" href="thermo.html" />
+    <link rel="prev" title="Input/Output" href="input_output.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> DESPASITO
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API Documentation</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Modules:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="input_output.html">Input/Output</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Equations of State</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#available-eos">Available EOS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#adding-an-eos">Adding an EOS</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="thermo.html">Thermodynamic Calculations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="fitparams.html">Parametrization</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">DESPASITO</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Equations of State</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/eos.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="equations-of-state">
+<h1>Equations of State<a class="headerlink" href="#equations-of-state" title="Permalink to this headline">¶</a></h1>
+<p>Here we list list the available equations of state and the function used to access them.</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="_autosummary/despasito.equations_of_state.html#module-despasito.equations_of_state" title="despasito.equations_of_state"><code class="xref py py-obj docutils literal notranslate"><span class="pre">equations_of_state</span></code></a></p></td>
+<td><p>This vision for this library is that this file will define an EOS class, and import sub-libraries of each EOS family</p></td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="available-eos">
+<h2>Available EOS<a class="headerlink" href="#available-eos" title="Permalink to this headline">¶</a></h2>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="_autosummary/despasito.equations_of_state.saft.gamma_mie.html#module-despasito.equations_of_state.saft.gamma_mie" title="despasito.equations_of_state.saft.gamma_mie"><code class="xref py py-obj docutils literal notranslate"><span class="pre">equations_of_state.saft.gamma_mie</span></code></a></p></td>
+<td><p>EOS object for SAFT-<span class="math notranslate nohighlight">\(\gamma\)</span>-Mie Equations referenced in this code are from V.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="_autosummary/despasito.equations_of_state.saft.gamma_mie_funcs.html#module-despasito.equations_of_state.saft.gamma_mie_funcs" title="despasito.equations_of_state.saft.gamma_mie_funcs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">equations_of_state.saft.gamma_mie_funcs</span></code></a></p></td>
+<td><p>Routines for calculating the Helmholtz energy for the SAFT-gamma equation of state.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="_autosummary/despasito.equations_of_state.saft.nojit_exts.html#module-despasito.equations_of_state.saft.nojit_exts" title="despasito.equations_of_state.saft.nojit_exts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">equations_of_state.saft.nojit_exts</span></code></a></p></td>
+<td><p>Routines for calculating the Helmholtz energy for the SAFT-gamma equation of state.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="_autosummary/despasito.equations_of_state.saft.jit_exts.html#module-despasito.equations_of_state.saft.jit_exts" title="despasito.equations_of_state.saft.jit_exts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">equations_of_state.saft.jit_exts</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="adding-an-eos">
+<h2>Adding an EOS<a class="headerlink" href="#adding-an-eos" title="Permalink to this headline">¶</a></h2>
+<p>Adding an EOS family is easily implemented by adding a new directory to the <code class="docutils literal notranslate"><span class="pre">equations_of_state</span></code> directory. A new EOS is then added by adding a module with the desired EOS inside that is derived from our EOS interface (shown below).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In the future, a USER folder will be included in our program so that users can collect all of their personal additions and modifications to DESPASITO in one location.</p>
+</div>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="_autosummary/despasito.equations_of_state.interface.html#module-despasito.equations_of_state.interface" title="despasito.equations_of_state.interface"><code class="xref py py-obj docutils literal notranslate"><span class="pre">equations_of_state.interface</span></code></a></p></td>
+<td><p>This file contains the interface needed to create further equation of state (EOS) objects.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="thermo.html" class="btn btn-neutral float-right" title="Thermodynamic Calculations" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="input_output.html" class="btn btn-neutral float-left" title="Input/Output" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Jennifer A Clark. Project structure based on the Computational Molecular Science Python Cookiecutter version 1.0
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
