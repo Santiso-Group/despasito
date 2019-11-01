@@ -27,15 +27,12 @@ else:
     disable_jit = jit_stat.disable_jit
 
 if disable_jit:
-#    from .nojit_exts import calc_a1s, calc_Xika
-    from .nojit_exts import calc_a1s, calc_Xika
+    from .nojit_exts import calc_a1s
     #uncomment line below for cython extensions:
     #from .c_exts import calc_a1s
     #we need to add another command-line arg to replace this hackish approach
 else:
     from .jit_exts import calc_a1s, calc_Xika
-#    from .jit_exts import calc_a1s
-#    from .nojit_exts import calc_Xika
 
 ############################################################
 #                                                          #

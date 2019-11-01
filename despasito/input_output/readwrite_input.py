@@ -284,23 +284,30 @@ def process_param_fit_inputs(thermo_dict):
     ----------
     thermo_dict : dict
         Dictionary of instructions for thermodynamic calculations or parameter fitting. This dictionary is directly from the input file.
-        * opt_params (dict) - Parameters used in basin fitting algorithm
-        - fit_bead (str) - Name of bead whose parameters are being fit, should be in bead list of beadconfig
-        - fit_params (list[str]) - This list of contains the name of the parameter being fit (e.g. epsilon). See EOS mentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
-        - *_bounds (list[float]), Optional - This list contains the minimum and maximum of the parameter from a parameter listed in fit_params, represented in place of the asterisk. See input file instructions for more information.
-        * *name* (dict) - Dictionary of a data set that the parameters are fit to. Each dictionary is added to the exp_data dictionary before being passed to the fitting algorithm. Each *name* is used as the key in exp_data. *name* is an arbitrary string used to identify the data set and used later in reporting objective function values during the fitting process. See data type objects for more details.
+
+        - opt_params (dict) - Parameters used in basin fitting algorithm
+
+            - fit_bead (str) - Name of bead whose parameters are being fit, should be in bead list of beadconfig
+            - fit_params (list[str]) - This list of contains the name of the parameter being fit (e.g. epsilon). See EOS mentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
+            - *_bounds (list[float]), Optional - This list contains the minimum and maximum of the parameter from a parameter listed in fit_params, represented in place of the asterisk. See input file instructions for more information.
+            - *name* (dict) - Dictionary of a data set that the parameters are fit to. Each dictionary is added to the exp_data dictionary before being passed to the fitting algorithm. Each *name* is used as the key in exp_data. *name* is an arbitrary string used to identify the data set and used later in reporting objective function values during the fitting process. See data type objects for more details.
+
         - datatype (str) - One of the supported data type objects to fit parameters
 
     Returns
     -------
     new_thermo_dict : dict
         Dictionary of instructions for thermodynamic calculations or parameter fitting. This dictionary is reformatted and includes imported data. Dictionary values below are altered before being passed on, all other key and value sets are blindly passed on.
-        * opt_params (dict) - Parameters used in basin fitting algorithm
-        - fit_bead (str) - Name of bead whose parameters are being fit, should be in bead list of beadconfig
-        - fit_params (list[str]) - This list of contains the name of the parameter being fit (e.g. epsilon). See EOS mentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
-        * bounds (numpy.ndarray) - List of lists of length two, of length equal to fit_params. If no bounds were given then the default parameter boundaries are [0,1e+4], else bounds given as *_bounds in input file are used.
-        * exp_data (dict) - This dictionary is made up of a dictionary for each data set that the parameters are fit to. Each key is an arbitrary string used to identify the data set and used later in reporting objective function values during the fitting process. See data type objects for more details.
-        - name (str) - One of the supported data type objects to fit parameters
+
+        - opt_params (dict) - Parameters used in basin fitting algorithm
+
+            - fit_bead (str) - Name of bead whose parameters are being fit, should be in bead list of beadconfig
+            - fit_params (list[str]) - This list of contains the name of the parameter being fit (e.g. epsilon). See EOS mentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
+            - bounds (numpy.ndarray) - List of lists of length two, of length equal to fit_params. If no bounds were given then the default parameter boundaries are [0,1e+4], else bounds given as *_bounds in input file are used.
+
+        - exp_data (dict) - This dictionary is made up of a dictionary for each data set that the parameters are fit to. Each key is an arbitrary string used to identify the data set and used later in reporting objective function values during the fitting process. See data type objects for more details.
+
+            - name (str) - One of the supported data type objects to fit parameters
     """
 
     logger = logging.getLogger(__name__)
@@ -366,14 +373,16 @@ def process_exp_data(exp_data_dict):
     ----------
     exp_data : dict
        This dictionary is made up of a dictionary for each data set that the parameters are fit to. Each key is an arbitrary string used to identify the data set and used later in reporting objective function values during the fitting process. See data type objects for more details. Dictionary values below are altered before being passed on, all other key and value sets are blindly passed on.
-       * datatype (str) - One of the supported data type objects to fit parameters
-       * file (str) - File name in current working directory, or path to desired experimental data. See experimental data page for examples of acceptable format.
+
+       - datatype (str) - One of the supported data type objects to fit parameters
+       - file (str) - File name in current working directory, or path to desired experimental data. See experimental data page for examples of acceptable format.
 
     Returns
     -------
     exp_data : dict
         Reformatted dictionary of experimental data. This dictionary is made up of a dictionary for each data set that the parameters are fit to. Each key is an arbitrary string used to identify the data set and used later in reporting objective function values during the fitting process. See data type objects for more details. Dictionary values below are altered from input dictionary, all other key and value sets are blindly passed on, or extracted from data file with process_exp_data_file function.
-        * name (str) - One of the supported data type objects to fit parameters
+
+        - name (str) - One of the supported data type objects to fit parameters
     """
 
     logger = logging.getLogger(__name__)

@@ -1,0 +1,361 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>despasito.fit_parameters.data_classes.sat_props &mdash; DESPASITO  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> DESPASITO
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api.html">API Documentation</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Modules:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../input_output.html">Input/Output</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../eos.html">Equations of State</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../thermo.html">Thermodynamic Calculations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../fitparams.html">Parametrization</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">DESPASITO</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../../fit_parameters.html">despasito.fit_parameters</a> &raquo;</li>
+        
+      <li>despasito.fit_parameters.data_classes.sat_props</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for despasito.fit_parameters.data_classes.sat_props</h1><div class="highlight"><pre>
+<span></span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Objects for storing and producing objective values for comparing experimental data to EOS predictions.    </span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="kn">from</span> <span class="nn">despasito.thermodynamics</span> <span class="k">import</span> <span class="n">thermo</span>
+<span class="kn">from</span> <span class="nn">despasito.fit_parameters</span> <span class="k">import</span> <span class="n">fit_funcs</span> <span class="k">as</span> <span class="n">ff</span>
+<span class="kn">from</span> <span class="nn">despasito.fit_parameters.interface</span> <span class="k">import</span> <span class="n">ExpDataTemplate</span>
+
+<span class="c1">##################################################################</span>
+<span class="c1">#                                                                #</span>
+<span class="c1">#                       Saturation Props                         #</span>
+<span class="c1">#                                                                #</span>
+<span class="c1">##################################################################</span>
+<div class="viewcode-block" id="Data"><a class="viewcode-back" href="../../../../autosummary/data_classes/sat_prop.html#despasito.fit_parameters.data_classes.sat_props.Data">[docs]</a><span class="k">class</span> <span class="nc">Data</span><span class="p">(</span><span class="n">ExpDataTemplate</span><span class="p">):</span>
+
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Object for saturation data. This data is evaluated with &quot;sat_props&quot;. </span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data_dict : dict</span>
+<span class="sd">        Dictionary of exp data of saturation properties.</span>
+<span class="sd">        * name : str, data type, in this case SatProps</span>
+<span class="sd">        * calctype : str, Optional, default: &#39;sat_props</span>
+<span class="sd">        * T : list, List of temperature values for calculation</span>
+<span class="sd">        * xi : list, List of liquid mole fractions used in saturation properties calculations, should be 1 for the molecule of focus and 0 for the rest.</span>
+<span class="sd">        * weights : list/float, Either a list as long as the number of data points to multiply by the objective value associated with each point, or a float to multiply the objective value of this data set.</span>
+<span class="sd">        * rhodict : dict, Optional, default: {&quot;minrhofrac&quot;:(1.0 / 60000.0), &quot;rhoinc&quot;:10.0, &quot;vspacemax&quot;:1.0E-4}, Dictionary of options used in calculating pressure vs. mole fraction curves.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    name : str</span>
+<span class="sd">        Data type, in this case SatProps</span>
+<span class="sd">    calctype : str, Optional, default: &#39;sat_props&#39;</span>
+<span class="sd">        Thermodynamic calculation type</span>
+<span class="sd">    T : list</span>
+<span class="sd">        List of temperature values for calculation</span>
+<span class="sd">    xi : list</span>
+<span class="sd">        List of liquid mole fractions, only one should be equal to 1.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_dict</span><span class="p">):</span>
+
+        <span class="c1"># Self interaction parameters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">data_dict</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">calctype</span> <span class="o">=</span> <span class="n">data_dict</span><span class="p">[</span><span class="s2">&quot;calctype&quot;</span><span class="p">]</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">calctype</span> <span class="o">=</span> <span class="s2">&quot;sat_props&quot;</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">T</span> <span class="o">=</span> <span class="n">data_dict</span><span class="p">[</span><span class="s2">&quot;T&quot;</span><span class="p">]</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span><span class="s2">&quot;Given saturation property data, values for T should have been provided.&quot;</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">Psat</span> <span class="o">=</span> <span class="n">data_dict</span><span class="p">[</span><span class="s2">&quot;Psat&quot;</span><span class="p">]</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">xi</span> <span class="o">=</span> <span class="n">data_dict</span><span class="p">[</span><span class="s2">&quot;xi&quot;</span><span class="p">]</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">rhol</span> <span class="o">=</span> <span class="n">data_dict</span><span class="p">[</span><span class="s2">&quot;rhol&quot;</span><span class="p">]</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">rhov</span> <span class="o">=</span> <span class="n">data_dict</span><span class="p">[</span><span class="s2">&quot;rhov&quot;</span><span class="p">]</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">weights</span> <span class="o">=</span> <span class="n">data_dict</span><span class="p">[</span><span class="s2">&quot;weights&quot;</span><span class="p">]</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">weights</span> <span class="o">=</span> <span class="mf">1.0</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_rhodict</span> <span class="o">=</span> <span class="n">data_dict</span><span class="p">[</span><span class="s2">&quot;rhodict&quot;</span><span class="p">]</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_rhodict</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;minrhofrac&quot;</span><span class="p">:(</span><span class="mf">1.0</span> <span class="o">/</span> <span class="mf">80000.0</span><span class="p">),</span> <span class="s2">&quot;rhoinc&quot;</span><span class="p">:</span><span class="mf">10.0</span><span class="p">,</span> <span class="s2">&quot;vspacemax&quot;</span><span class="p">:</span><span class="mf">1.0E-4</span><span class="p">}</span>
+
+    <span class="k">def</span> <span class="nf">_thermo_wrapper</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">eos</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generate thermodynamic predictions from eos object</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        eos : obj</span>
+<span class="sd">            EOS object with updated parameters</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        phase_list : float</span>
+<span class="sd">            A list of the predicted thermodynamic values estimated from thermo calculation. This list can be composed of lists or floats</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Check bead type</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">xi</span> <span class="o">=</span> <span class="n">data_dict</span><span class="p">[</span><span class="s2">&quot;xi&quot;</span><span class="p">]</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">eos</span><span class="o">.</span><span class="n">_nui</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Ambiguous instructions. Include xi to define intendended component to obtain saturation properties&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">xi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mf">1.0</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="p">))])</span>
+ 
+        <span class="c1"># Run thermo calculations</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">output_dict</span> <span class="o">=</span> <span class="n">thermo</span><span class="p">(</span><span class="n">eos</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;calculation_type&quot;</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">calctype</span><span class="p">,</span><span class="s2">&quot;Tlist&quot;</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="p">,</span><span class="s2">&quot;xilist&quot;</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">xi</span><span class="p">,</span><span class="s2">&quot;rhodict&quot;</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">_rhodict</span><span class="p">})</span>
+            <span class="n">output</span> <span class="o">=</span> <span class="p">[</span><span class="n">output_dict</span><span class="p">[</span><span class="s2">&quot;Psat&quot;</span><span class="p">],</span><span class="n">output_dict</span><span class="p">[</span><span class="s2">&quot;rhol&quot;</span><span class="p">],</span><span class="n">output_dict</span><span class="p">[</span><span class="s2">&quot;rhov&quot;</span><span class="p">]]</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Calculation of calc_Psat failed&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">output</span>
+
+
+<div class="viewcode-block" id="Data.objective"><a class="viewcode-back" href="../../../../autosummary/data_classes/sat_prop.html#despasito.fit_parameters.data_classes.sat_props.Data.objective">[docs]</a>    <span class="k">def</span> <span class="nf">objective</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">eos</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generate objective function value from this dataset</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        eos : obj</span>
+<span class="sd">            EOS object with updated parameters</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        obj_val : float</span>
+<span class="sd">            A value for the objective function</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">phase_list</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_thermo_wrapper</span><span class="p">(</span><span class="n">eos</span><span class="p">)</span>
+
+        <span class="c1">## Reformat array of results</span>
+        <span class="n">phase_list</span><span class="p">,</span> <span class="n">len_list</span> <span class="o">=</span> <span class="n">ff</span><span class="o">.</span><span class="n">reformat_ouput</span><span class="p">(</span><span class="n">phase_list</span><span class="p">)</span>
+        <span class="n">phase_list</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">phase_list</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+
+        <span class="c1"># objective function</span>
+        <span class="n">obj_value</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="s2">&quot;Psat&quot;</span><span class="p">):</span>
+            <span class="n">obj_value</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((((</span><span class="n">phase_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">Psat</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">Psat</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="s2">&quot;rhol&quot;</span><span class="p">):</span>
+            <span class="n">obj_value</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((((</span><span class="n">phase_list</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">rhol</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">rhol</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="s2">&quot;rhov&quot;</span><span class="p">):</span>
+            <span class="n">obj_value</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((((</span><span class="n">phase_list</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">rhov</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">rhov</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">obj_value</span></div>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">string</span> <span class="o">=</span> <span class="s2">&quot;Data Set Object</span><span class="se">\n</span><span class="s2">name: </span><span class="si">%s</span><span class="se">\n</span><span class="s2">calctype:</span><span class="si">%s</span><span class="se">\n</span><span class="s2">Ndatapts:</span><span class="si">%g</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">calctype</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="p">)}</span>
+        <span class="k">return</span> <span class="n">string</span></div>
+        
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Jennifer A Clark. Project structure based on the Computational Molecular Science Python Cookiecutter version 1.0
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

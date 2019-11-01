@@ -853,7 +853,7 @@ def calc_Prange_xi(T, xi, yi, eos, rhodict={}, Pmin=1000, zi_opts={}):
                 Parray.append(p)
                 phil, rhol, flagl = calc_phil(p, T, xi, eos, rhodict=rhodict)
                 if any(np.isnan(phil)):
-                    logger.error("Fugacity coefficient should not be NaN")
+                    raise ValueError("Fugacity coefficient should not be NaN")
                 yi_range, phiv, flagv = solve_yi_xiT(yi_range, xi, phil, p, T, eos, rhodict=rhodict, **zi_opts)
                 ObjArray.append(np.sum(xi * phil / phiv) - 1.0)
                 logger.info("New Estimate for Maximum Pressure: {},  Obj. Func: {}".format(Parray[-1],ObjArray[-1]))
@@ -1078,7 +1078,7 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxiter=30, tol=1e-6):
         logger.warning('    More than {} iterations needed. Error in Smallest Fraction: {} %%'.format(maxiter, tmp*100))
         if tmp > .1: # If difference is greater than 10%
             yinew = find_new_yi(P, T, phil, xi, eos, rhodict=rhodict)
-        yinew = spo.root(obj_yi,yinew[0],args=(P, T, phil, xi, eos, rhodict),tol=tol)
+        yinew = spo.least_squares(obj_yi, yinew[0], bounds=(0.,1.), args=(P, T, phil, xi, eos, rhodict))
         yi = yinew.x
         obj = obj_yi(yi, P, T, phil, xi, eos, rhodict=rhodict)
         logger.warning('    Find yi with root algorithm, yi {}, obj {}'.format(yi,obj))

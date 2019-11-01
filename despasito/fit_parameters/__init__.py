@@ -26,26 +26,34 @@ def fit(eos, thermo_dict):
         Equation of state output that writes pressure, max density, chemical potential, updates parameters, and evaluates objective functions. For parameter fitting algorithm See equation of state documentation for more details.
     thermo_dict : dict
         Dictionary of instructions for thermodynamic calculations and parameter fitting.
-        * opt_params (dict) - Parameters used in basin fitting algorithm.
-        - fit_bead (str) - Name of bead whose parameters are being fit, should be in bead list of beadconfig
-        - fit_params (list[str]) - This list of contains the name of the parameter being fit (e.g. epsilon). See EOS mentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
-        * bounds (numpy.ndarray) - List of length equal to fit_params with lists of pairs for minimum and maximum bounds of parameter being fit. Defaults are broad, recommend specification.
-        * exp_data (dict) - This dictionary is made up of a dictionary for each data set that the parameters are fit to. Each dictionary is converted into an object and saved back to this structure before parameter fitting begins. Each key is an arbitrary string used to identify the data set and used later in reporting objective function values during the fitting process. See data type objects for more details.
-        - name (str) - One of the supported data type objects to fit parameters
-        * beadparams0 (list[float]), Optional - Initial guess in parameter. If one is not provided, a guess is made based on the type of parameter from eos object.
-        * output_file (str), Optional - Output file name
-        * basin_dict (dict), Optional - kwargs used in scipy.optimize.basinhopping
-        - niter (int) - Number of basin hopping iterations
-        - T (float) - Temperature parameter, should be comparable to separation between local minima (i.e. the “height” of the walls separating values).
-        - take_step (obj) - Callable object that includes custom routine that produces attribute stepsize
-        - niter_success (int) - Stop run if minimum stays the same for this many iterations
-        * minimizer_dict (dict), Optional - Dictionary used to define minimization type and the associated options.
-        - method (str) - Method available to scipy.optimize.minimize
-        - options (dict) - This dictionary contains the kwargs available to the chosen method
+
+        - opt_params (dict) - Parameters used in basin fitting algorithm.
+
+            - fit_bead (str) - Name of bead whose parameters are being fit, should be in bead list of beadconfig
+            - fit_params (list[str]) - This list of contains the name of the parameter being fit (e.g. epsilon). See EOS mentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
+
+        - bounds (numpy.ndarray) - List of length equal to fit_params with lists of pairs for minimum and maximum bounds of parameter being fit. Defaults are broad, recommend specification.
+        - exp_data (dict) - This dictionary is made up of a dictionary for each data set that the parameters are fit to. Each dictionary is converted into an object and saved back to this structure before parameter fitting begins. Each key is an arbitrary string used to identify the data set and used later in reporting objective function values during the fitting process. See data type objects for more details.
+
+            - name (str) - One of the supported data type objects to fit parameters
+
+        - beadparams0 (list[float]), Optional - Initial guess in parameter. If one is not provided, a guess is made based on the type of parameter from eos object.
+        - output_file (str), Optional - Output file name
+        - basin_dict (dict), Optional - kwargs used in scipy.optimize.basinhopping
+
+            - niter (int) - Number of basin hopping iterations
+            - T (float) - Temperature parameter, should be comparable to separation between local minima (i.e. the “height” of the walls separating values).
+            - take_step (obj) - Callable object that includes custom routine that produces attribute stepsize
+            - niter_success (int) - Stop run if minimum stays the same for this many iterations
+
+        - minimizer_dict (dict), Optional - Dictionary used to define minimization type and the associated options.
+
+            - method (str) - Method available to scipy.optimize.minimize
+            - options (dict) - This dictionary contains the kwargs available to the chosen method
   
     Returns
     -------
-        Output file saved in current working directory
+    Output file saved in current working directory
     """
 
     logger = logging.getLogger(__name__)

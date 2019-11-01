@@ -187,8 +187,10 @@ def compute_SAFT_obj(beadparams, opt_params, eos, exp_dict, output_file="fit_par
         An array of initial guesses for parameters, these will be optimized throughout the process.
     opt_params : dict
         Parameters used in basin fitting algorithm
-        * fit_bead (str) - Name of bead whose parameters are being fit, should be in bead list of beadconfig
-        * fit_params (list[str]) - This list of contains the name of the parameter being fit (e.g. epsilon). See EOS mentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
+
+        - fit_bead (str) - Name of bead whose parameters are being fit, should be in bead list of beadconfig
+        - fit_params (list[str]) - This list of contains the name of the parameter being fit (e.g. epsilon). See EOS mentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
+
     eos : obj
         Equation of state output that writes pressure, max density, chemical potential, updates parameters, and evaluates objective functions. For parameter fitting algorithm See equation of state documentation for more details.
     exp_dict : dict
@@ -198,10 +200,9 @@ def compute_SAFT_obj(beadparams, opt_params, eos, exp_dict, output_file="fit_par
 
     Returns
     -------
-        Output file saved in current working directory
-        Objective : float
-            Value of sum of objective values according to appropriate weights.
-            
+    Objective : float
+        Value of sum of objective values according to appropriate weights. Output file saved in current working directory.
+        
     """
 
     logger = logging.getLogger(__name__)
