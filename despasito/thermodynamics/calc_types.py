@@ -274,7 +274,7 @@ def phase_yiT(eos, sys_dict):
 
 ######################################################################
 #                                                                    #
-#                Saturation calc for 1 Component               #
+#                Saturation calc for 1 Component                     #
 #                                                                    #
 ######################################################################
 def sat_props(eos, sys_dict):
@@ -303,10 +303,17 @@ def sat_props(eos, sys_dict):
     if 'Tlist' in sys_dict:
         T_list = np.array(sys_dict['Tlist'])
         logger.info("Using Tlist")
+    else:
+        raise ValueError('Tlist is not specified')
 
     if 'xilist' in sys_dict:
         xi_list = np.array(sys_dict['xilist'])
         logger.info("Using xilist")
+    else:
+        if len(eos._nui) > 1:
+            raise ValueError('xi_list should be specified for more than 1 component.')
+        else:
+            xi_list = np.array([[1.0] for x in range(len(T_list))])
 
     variables = list(locals().keys())
     if all([key not in variables for key in ["xi_list", "T_list"]]):
@@ -439,8 +446,7 @@ def liquid_properties(eos, sys_dict):
             phil[i] = np.nan
         else:
             logger.info("P (Pa), T (K), xi, rhol: {} {} {} {}".format(P_list[i],T_list[i],xi_list[i],rhol[i]))
-            muil_tmp = eos.chemicalpotential(P_list[i], np.array([rhol[i]]), xi_list[i], T_list[i])
-            phil.append(np.exp(muil_tmp))
+            phil.append(eos.fugacity_coefficient(P_list[i], np.array([rhol[i]]), xi_list[i], T_list[i]))
 
     logger.info("--- Calculation liquid_density Complete ---")
 
@@ -526,8 +532,7 @@ def vapor_properties(eos, sys_dict):
             phiv[i] = np.nan
         else:
             logger.info("P (Pa), T (K), yi, rhov: {} {} {} {}".format(P_list[i],T_list[i],yi_list[i],rhov[i]))
-            muiv_tmp = eos.chemicalpotential(P_list[i], np.array([rhov[i]]), yi_list[i], T_list[i])
-            phiv.append(np.exp(muiv_tmp))
+            phiv.append(eos.fugacity_coefficient(P_list[i], np.array([rhov[i]]), yi_list[i], T_list[i]))
 
     logger.info("--- Calculation vapor_density Complete ---")
 

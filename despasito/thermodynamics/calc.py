@@ -14,8 +14,6 @@ from scipy import interpolate
 import scipy.optimize as spo
 from scipy.misc import derivative
 from scipy.ndimage.filters import gaussian_filter1d
-import random
-#import deap
 import copy
 import time
 import matplotlib.pyplot as plt
@@ -694,8 +692,13 @@ def calc_phiv(P, T, yi, eos, rhodict={}):
         rhov = 0.
         logger.info("    rhov set to 0.")
     else:
-        muiv = eos.chemicalpotential(P, np.array([rhov]), yi, T)
-        phiv = np.exp(muiv)
+
+        phiv = eos.fugacity_coefficient(P, np.array([rhov]), yi, T)
+
+        #muiv = eos.chemicalpotential_old(P, np.array([rhov]), yi, T)
+        #phiv = np.exp(muiv)
+
+    print("Vapor Fugacity Coeff",phiv)
 
     return phiv, rhov, flagv
 
@@ -739,8 +742,13 @@ def calc_phil(P, T, xi, eos, rhodict={}):
         rhol = 0.
         logger.info("    rhol set to 0.")
     else:
-        muil = eos.chemicalpotential(P, np.array([rhol]), xi, T)
-        phil = np.exp(muil)
+
+        phil = eos.fugacity_coefficient(P, np.array([rhol]), xi, T)
+
+        #muil = eos.chemicalpotential(P, np.array([rhol]), xi, T)
+        #phil = np.exp(muil)
+
+    print("Liquid Fugacity Coeff",phil)
 
     return phil, rhol, flagl
 
@@ -811,6 +819,8 @@ def calc_Prange_xi(T, xi, yi, eos, rhodict={}, Pmin=1000, zi_opts={}):
         logger.info("Estimated Minimum Pressure: {},  Obj. Func: {}".format(Parray[0],ObjArray[0]))
         if ObjArray[0] > 0:
             break
+        else:
+            Parray[0] /= 2
 
     if z == maxiter-1:
         logger.error("Proper minimum pressure for liquid density could not be found")
@@ -1206,86 +1216,46 @@ def find_new_yi(P, T, phil, xi, eos, rhodict={}):
         Vapor mole fraction of each component, sum(yi) should equal 1.0
     """
 
-    #    # have three functions, make sum close to zero, mui isn't np.nan, and rho is a vapor
-    #    deap.creator.create("FitnessMulti",deap.base.Fitness,weights=(-1.0, -1.0, 0.5))
-    #    deap.creator.create("Inividual", list, fitness=deap.creator.FitnessMax)
-    #    toolbox = deap.base.Toolbox()
-    # # NoteHere, make individuals add up to 1?
-    #    toolbox.register("attr_bool", random.randit, 0, 1)
-    #    toolbox.register("individual", deap.tools.initRepeat, deap.creator.Individual, toolbox.attr_bool, n=l_yi)
-    #    toolbox.register("population", deap.tools.initRepeat, list, toolbox.individual)
-    #
-    #    def obj_func(individual):
-    #        return np.sum(individual)
-    #
-    #    toolbox.register("evaluate", obj_func)
-    #    toolbox.register("mate", tools.cxTwoPoint)
-    #    toolbox.register("mutate", tools.mutFlipBit, indpb=0.05)
-    #    toolbox.register("select", tools.selTournament, tournsize=3)
-    #
-    #    population = toolbox.population(n=300)
-    #
-    #    NGEN=40
-    #    for gen in range(NGEN):
-    #        offspring = algorithms.varAnd(population, toolbox, cxpb=0.5, mutpb=0.1)
-    #        fits = toolbox.map(toolbox.evaluate, offspring)
-    #        for fit, ind in zip(fits, offspring):
-    #            ind.fitness.values = fit
-    #        population = toolbox.select(offspring, k=len(population))
-    #    top10 = tools.selBest(population, k=10)
-
-   # # My attempt at using a heuristic approach
-   # # Make new random guesses for yi, and test to find a feasible one
-   # l_yi = len(xi)
-   # Nguess = 10
-   # yiguess = eos.chemicalpotential(P, np.array([rhov_tmp]), yi_g_tmp, T)[]
-   # rhov_guess = []
-   # obj_guess = []
-   # for j in range(maxiter):  # iterate until 10 feasible options are found
-   #     yi_g_tmp = np.zeros(l_yi)
-   #     # Make guesses for yi
-   #     yi_g_tmp[0:-1] = np.random.random((1, l_yi - 1))[0]
-   #     yi_g_tmp[-1] = 1 - np.sum(yi_g_tmp)
-   #     # Test guess
-   #     phiv, rhov, flagv = calc_phiv(P, T, yi, eos, rhodict={})
-   #     if all(np.isnan(muiv_tmp) == False):
-
-   #         yiguess.append(yi_g_tmp)
-   #         rhov_guess.append(rhov_tmp)
-
-   #         phiv = np.exp(muiv_tmp)
-   #         obj_tmp = np.sum(xi * phil / phiv) - 1
-   #         logger.debug("rhov, muiv, phiv, obj_tmp" % str([rhov_tmp, muiv, phiv, obj_tmp]))
-
-   #         obj_guess.append(np.abs(obj_tmp))
-
-   #     if len(yiguess) == Nguess:
-   #         break
-   # # Choose the yi value to continue with based on new guesses
-   # ind = np.where(obj_guess == min(obj_guess))[0]
-   # logger.info("Obj Value: {}, Index: {}".format(obj_guess,ind))
-   # yi = yiguess[ind]
-   # rhov = rhov_guess[ind]
-
     logger = logging.getLogger(__name__)
 
-    yi_ext = np.linspace(0.01,.99,15) # Guess for yi
+    yi_ext = np.linspace(0.01,.99,30) # Guess for yi
     obj_ext = []
     #flag_ext = []
     yi_total2_ext = []
     rho_ext = []
     phi_ext = []
+    flag_ext = [[],[]]
 
     for yi in yi_ext:
-        yi = [yi, 1-yi]
+        yi = np.array([yi, 1-yi])
+        ####
+        phiv, rhov, flagv = calc_phiv(P, T, yi, eos, rhodict=rhodict)
+        yinew = xi * phil / phiv
+        yinew_total_1 = np.sum(yinew)
 
-        obj = obj_yi(yi, P, T, phil, xi, eos, rhodict=rhodict)
+        yi2 = yinew/yinew_total_1
+        phiv2, rhov2, flagv2 = calc_phiv(P, T, yi2, eos, rhodict=rhodict)
+        yinew = xi * phil / phiv2
+        yinew_total_2 = np.sum(yinew)
+
+        logger.debug("yi_totals {} {}".format(yinew_total_1,yinew_total_2))
+
+        obj = yinew_total_1 - yinew_total_2
+
+        flag_ext[0].append(flagv)
+        flag_ext[1].append(flagv2)
+        ######
+    #    obj = obj_yi(yi, P, T, phil, xi, eos, rhodict=rhodict)
         obj_ext.append(abs(obj))
         logger.debug("    Obj yi {} total1 - total2 = {}".format(yi,obj))
 
-   # plt.plot(yi_ext,obj_ext,".-b")
+    plt.figure(1)
+    plt.plot(yi_ext,obj_ext,".-b")
    # plt.plot(yi_ext,np.array(obj_ext)+np.array(yi_total2_ext),".-r")
-   # plt.show()
+    plt.figure(2)
+    plt.plot(yi_ext,flag_ext[0],".-b")
+    plt.plot(yi_ext,flag_ext[1],".-r")
+    plt.show()
 
     obj_ext = np.array(obj_ext)
     #flag_ext = np.array(flag_ext)
@@ -1357,9 +1327,9 @@ def obj_yi(yi, P, T, phil, xi, eos, rhodict={}):
 
     if type(yi) == float or len(yi) == 1:
         if type(yi) in [list, np.ndarray]:
-            yi = [yi[0], 1-yi[0]]
+            yi = np.array([yi[0], 1-yi[0]])
         else:
-            yi = [yi, 1-yi]
+            yi = np.array([yi, 1-yi])
 
     phiv, rhov, flagv = calc_phiv(P, T, yi, eos, rhodict=rhodict)
     yinew = xi * phil / phiv

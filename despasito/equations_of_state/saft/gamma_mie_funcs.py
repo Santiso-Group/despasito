@@ -83,12 +83,13 @@ def calc_Aideal(xi, rho, massi, T):
     rhoi = np.outer(rho, xi_tmp)
     Lambda3 = (constants.h / np.sqrt(2.0 * np.pi * (massi_tmp / constants.Nav) * constants.kb * T))**3
     Aideal_tmp = rhoi*Lambda3
+    log_broglie3_rho = np.log(Aideal_tmp)
 
 #    if not any(np.sum(xi_tmp * np.log(Aideal_tmp), axis=1)):
-    if np.isnan(np.sum(np.sum(xi_tmp * np.log(Aideal_tmp), axis=1))):
+    if np.isnan(np.sum(np.sum(xi_tmp * log_broglie3_rho, axis=1))):
         raise ValueError("Aideal has values of zero when taking the log. All mole fraction values should be nonzero. Mole fraction: {}".format(xi_tmp))
     else:
-        Aideal = np.sum(xi_tmp * np.log(Aideal_tmp), axis=1) - 1.0
+        Aideal = np.sum(xi_tmp * log_broglie3_rho, axis=1) - 1.0
 
     return Aideal
 
