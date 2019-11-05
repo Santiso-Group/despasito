@@ -192,7 +192,173 @@ class saft_gamma_mie(EOStemplate):
 
         return P_tmp
 
-    def chemicalpotential(self, P, rho, xi, T):
+    def chemicalpotential(self, rho, xi, T):
+        """
+        Compute chemical potential
+      
+        Parameters
+        ----------
+        rho : float
+            Molar density of system [mol/m^3]
+        T : float
+            Temperature of the system [K]
+        xi : list[float]
+            Mole fraction of each component
+    
+        Returns
+        -------
+        mui : numpy.ndarray
+            Array of chemical potential values for each component
+        """
+
+        logger = logging.getLogger(__name__)
+
+        if T != self.T:
+            self._temp_dependent_variables(T)
+
+        self._xi_dependent_variables(xi)
+
+        mui = np.zeros(len(xi))
+        nmol = 1e+3
+        ni = nmol*np.array(xi,float)
+
+        # Set step size in finite difference method
+        dnmol = 1.0e-3
+        ni_tmp = ni[ni!=0.]
+        if any(ni_tmp-dnmol < 0.):
+            exp = np.floor(np.log10(min(ni_tmp)))-2 # Make sure step size is two orders of magnitude lower
+            logger.debug("    number of moles, {}, is smaller than increment, {}. Use new increment, {}.".format(xi,dnmol,10**exp))
+            dnmol = 10**exp
+
+        # compute mui
+        for i in range(np.size(mui)):
+            A = funcs.calc_A(rho *  constants.Nav, xi, T, self._beads, self._beadlibrary, self._massi, self._nui, self._Cmol2seg, self._xsk, self._xskl, self._dkk, self._epsilonkl, self._sigmakl, self._dkl, self._l_akl, self._l_rkl, self._Ckl,self._x0kl, self._epsilonHB, self._Kklab, self._nk)
+            dA = np.zeros(2)
+            for j, delta in enumerate((dnmol, -dnmol)):
+                ni_temp = np.copy(ni)
+                if ni_temp[i] != 0.:
+                    ni_temp[i] += delta
+                dA[j] = self.calc_A_n_wrap(rho, T, ni_temp)
+            mui[i] = A + nmol*(dA[0] - dA[1]) / (2.0 * dnmol)
+
+        # Reset composition dependent variables
+        self._xi_dependent_variables(xi)
+
+        return mui
+
+    def calc_A_n_wrap(self, rho, T, ni):
+        """
+        Compute total Helmholtz energy given number of moles of each component
+      
+        Parameters
+        ----------
+        rho : float
+            Molar density of system [mol/m^3]
+        T : float
+            Temperature of the system [K]
+        ni : list[float]
+            Number of moles of each component
+    
+        Returns
+        -------
+        A : float
+            Helmholtz energy give number of moles, length of array rho
+        """
+
+        logger = logging.getLogger(__name__)
+
+        if T != self.T:
+            self._temp_dependent_variables(T)
+
+        # Calculate new xi values
+        xi = ni/np.sum(ni)
+
+        self._xi_dependent_variables(xi)
+
+        Cmol2seg, xsk, xskl = funcs.calc_composition_dependent_variables(xi, self._nui, self._beads, self._beadlibrary)
+
+        A = funcs.calc_A(rho * constants.Nav, xi, T, self._beads, self._beadlibrary, self._massi, self._nui, Cmol2seg, xsk, xskl, self._dkk, self._epsilonkl, self._sigmakl, self._dkl, self._l_akl, self._l_rkl, self._Ckl, self._x0kl, self._epsilonHB, self._Kklab, self._nk)
+
+        return A
+
+    def chemicalpotential_ig(self, P, xi, T):
+        """
+        Compute ideal gas chemical potential
+      
+        Parameters
+        ----------
+        P : float
+            Pressure of the system [Pa]
+        T : float
+            Temperature of the system [K]
+        xi : list[float]
+            Mole fraction of each component
+    
+        Returns
+        -------
+        mui_ig : numpy.ndarray
+            (len(rho),len(xi)) From Lee L., Molecular Thermodynamics of Nonideal Fluids ISBN , this eqpression is the same as the chemical potential of an ideal gas for each component.
+        """
+
+        logger = logging.getLogger(__name__)
+
+        if T != self.T:
+            self._temp_dependent_variables(T)
+
+        # Identify negligible mole fractions
+        xi = np.array(xi)
+        ind = np.where(xi<1e-32)[0]
+
+        # compute mui
+        Lambda3 = (constants.h / np.sqrt(2.0 * np.pi * (self._massi / constants.Nav) * constants.kb * T))**3
+        rhoi = xi*P/(constants.kb * T)
+
+        mui_ig = np.zeros(len(xi))
+        for i in range(len(xi)):
+            if i not in ind:
+                mui_ig[i] = np.log(rhoi[i]*Lambda3[i])
+
+        return mui_ig
+
+    def fugacity_coefficient(self, P, rho, xi, T):
+
+        """
+        Compute fugacity coefficient
+      
+        Parameters
+        ----------
+        P : float
+            Pressure of the system [Pa]
+        rho : float
+            Molar density of system [mol/m^3]
+        T : float
+            Temperature of the system [K]
+        xi : list[float]
+            Mole fraction of each component
+    
+        Returns
+        -------
+        mui : numpy.ndarray
+            Array of chemical potential values for each component
+        """
+
+        logger = logging.getLogger(__name__)
+
+        if T != self.T:
+            self._temp_dependent_variables(T)
+
+        self._xi_dependent_variables(xi)
+
+        mui = self.chemicalpotential(rho, xi, T)
+        mui_ig = self.chemicalpotential_ig(P, xi, T)
+
+        if type(mui_ig[0]) in [list,np.ndarray]:
+            mui_ig = mui_ig[0]
+
+        phi = np.exp((mui-mui_ig))
+        return phi
+
+    def chemicalpotential_old(self, P, rho, xi, T):
         """
         Compute pressure given system information
       
@@ -239,7 +405,8 @@ class saft_gamma_mie(EOStemplate):
             ares = funcs.calc_Ares(rho * constants.Nav, xi, T, self._beads, self._beadlibrary, self._massi, self._nui, self._Cmol2seg, self._xsk, self._xskl,self._dkk, self._epsilonkl, self._sigmakl, self._dkl, self._l_akl, self._l_rkl, self._Ckl, self._x0kl, self._epsilonHB, self._Kklab, self._nk)
             for j, delta in enumerate((dnmol, -dnmol)):
                 xi_temp = np.copy(xi)
-                if xi_temp[i] != 0.: xi_temp[i] += delta
+                if xi_temp[i] != 0.:
+                    xi_temp[i] += delta
                 Cmol2seg_tmp, xsk_tmp, xskl_tmp = funcs.calc_composition_dependent_variables(xi_temp, self._nui, self._beads, self._beadlibrary)
                 # xi_temp/=(nmol+delta)
                 dAres[j] = funcs.calc_Ares(rho * constants.Nav, xi_temp, T, self._beads, self._beadlibrary, self._massi, self._nui, Cmol2seg_tmp, xsk_tmp, xskl_tmp, self._dkk, self._epsilonkl, self._sigmakl, self._dkl, self._l_akl, self._l_rkl, self._Ckl, self._x0kl, self._epsilonHB, self._Kklab, self._nk)
@@ -251,7 +418,6 @@ class saft_gamma_mie(EOStemplate):
         xjdaresdxj = np.sum(xi * daresdxi)
         for i in range(np.size(mui)):
             mui[i] = ares + Z - 1.0 + daresdxi[i] - xjdaresdxj - np.log(Z)
-            print("xi, mu comp:",xi[i],mui[i],ares,Z,daresdxi[i],xjdaresdxj)
     
         return mui
 
