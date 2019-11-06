@@ -8,6 +8,9 @@ This vision for this library is that this file will define an EOS class, and imp
 from importlib import import_module
 import logging
 
+class jax_stat:
+    disable_jax = True
+
 class jit_stat:
     disable_jit = True
 
@@ -27,6 +30,11 @@ def eos(eos_type, **kwargs):
         instance : obj
             An instance of the defined EOS class to be used in thermodynamic computations.
     """
+
+    if 'jax' not in kwargs:
+        jax_stat.disable_jax = True
+    else:
+        jax_stat.disable_jax = not kwargs['jax']
 
     if 'jit' not in kwargs:
         jit_stat.disable_jit = True

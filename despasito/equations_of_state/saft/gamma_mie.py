@@ -8,14 +8,25 @@ r"""
 """
 
 import sys
-import numpy as np
 import logging
 import matplotlib.pyplot as plt
 
 from . import constants
-from . import gamma_mie_funcs as funcs
 # Later this line will be in an abstract class file in this directory, and all versions of SAFT will reference it
 from despasito.equations_of_state.interface import EOStemplate
+
+###### JAX ##########
+
+from .. import jax_stat
+disable_jax = jax_stat.disable_jax
+
+if disable_jax:
+    import numpy as np
+    from . import gamma_mie_funcs as funcs
+else:
+    import jax.numpy as np
+    from jax import grad
+    from . import gamma_mie_funcs_jax as funcs
 
 # ________________ Saft Family ______________
 # NoteHere: Insert SAFT family abstract class in this directory to clean up
@@ -71,9 +82,9 @@ class saft_gamma_mie(EOStemplate):
         if "xi" in list(kwargs.keys()):
             xi = kwargs['xi']
 
-        massi = np.zeros_like(xi)
-        for i in range(np.size(xi)):
-            for k in range(np.size(self._beads)):
+        massi = np.zeros(len(xi))
+        for i in range(len(xi)):
+            for k in range(len(self._beads)):
                 massi[i] += self._nui[i, k] * self._beadlibrary[self._beads[k]]["mass"]
         self._massi = massi
 
@@ -223,7 +234,7 @@ class saft_gamma_mie(EOStemplate):
         ni = nmol*np.array(xi,float)
 
         # Set step size in finite difference method
-        dnmol = 1.0e-3
+        dnmol = 1.0e-1
         ni_tmp = ni[ni!=0.]
         if any(ni_tmp-dnmol < 0.):
             exp = np.floor(np.log10(min(ni_tmp)))-2 # Make sure step size is two orders of magnitude lower
@@ -231,7 +242,7 @@ class saft_gamma_mie(EOStemplate):
             dnmol = 10**exp
 
         # compute mui
-        for i in range(np.size(mui)):
+        for i in range(len(mui)):
             A = funcs.calc_A(rho *  constants.Nav, xi, T, self._beads, self._beadlibrary, self._massi, self._nui, self._Cmol2seg, self._xsk, self._xskl, self._dkk, self._epsilonkl, self._sigmakl, self._dkl, self._l_akl, self._l_rkl, self._Ckl,self._x0kl, self._epsilonHB, self._Kklab, self._nk)
             dA = np.zeros(2)
             for j, delta in enumerate((dnmol, -dnmol)):
@@ -386,8 +397,8 @@ class saft_gamma_mie(EOStemplate):
 
         self._xi_dependent_variables(xi)
 
-        daresdxi = np.zeros_like(xi)
-        mui = np.zeros_like(xi)
+        daresdxi = np.zeros(len(xi))
+        mui = np.zeros(len(xi))
         nmol = 1.0
 
         # Set step size in finite difference method
@@ -400,7 +411,7 @@ class saft_gamma_mie(EOStemplate):
             dnmol = 10**exp
 
         # compute mui
-        for i in range(np.size(mui)):
+        for i in range(len(mui)):
             dAres = np.zeros(2)
             ares = funcs.calc_Ares(rho * constants.Nav, xi, T, self._beads, self._beadlibrary, self._massi, self._nui, self._Cmol2seg, self._xsk, self._xskl,self._dkk, self._epsilonkl, self._sigmakl, self._dkl, self._l_akl, self._l_rkl, self._Ckl, self._x0kl, self._epsilonHB, self._Kklab, self._nk)
             for j, delta in enumerate((dnmol, -dnmol)):
@@ -416,7 +427,7 @@ class saft_gamma_mie(EOStemplate):
         Z = P / (rho * T * constants.Nav * constants.kb)
 
         xjdaresdxj = np.sum(xi * daresdxi)
-        for i in range(np.size(mui)):
+        for i in range(len(mui)):
             mui[i] = ares + Z - 1.0 + daresdxi[i] - xjdaresdxj - np.log(Z)
     
         return mui

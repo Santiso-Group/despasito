@@ -1,7 +1,19 @@
-import numpy as np
 import logging
 import os
 from timeit import default_timer as timer
+
+###### JAX ##########
+
+from .. import jax_stat
+disable_jax = jax_stat.disable_jax
+
+if disable_jax:
+    import numpy as np
+else:
+    import jax.numpy as np
+    from jax import jit
+
+###### JIT ##########
 
 if 'NUMBA_DISABLE_JIT' in os.environ:
     disable_jit = os.environ['NUMBA_DISABLE_JIT']

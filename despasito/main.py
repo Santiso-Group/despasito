@@ -26,6 +26,7 @@ def run(filename="input.json", path=".", **args):
     logger.info("Begin processing input file: %s" % filename)
     eos_dict, thermo_dict, output_file = readwrite_input.extract_calc_data(filename, path, **args)
     eos_dict['jit'] = args['jit']
+    eos_dict['jax'] = args['jax']
 
     if output_file:
         file_dict = {"output_file":output_file}

@@ -851,15 +851,21 @@ def calc_Prange_xi(T, xi, yi, eos, rhodict={}, Pmin=1000, zi_opts={}):
                 #plt.xlabel("Pressure / Pa")
                 #plt.show()
                 break
-            elif z == maxiter:
-                raise ValueError('A change in sign for the objective function could not be found, inspect progress')
+            elif z == maxiter-1:
+                logger.error('A change in sign for the objective function could not be found, inspect progress')
                 plt.plot(Parray, ObjArray)
                 plt.plot([Parray[0], Parray[-1]], [0, 0], 'k')
                 plt.ylabel("Obj. Function")
                 plt.xlabel("Pressure / Pa")
                 plt.show()
             else:
-                p = 2 * Parray[-1]
+                if len(ObjArray) < 2:
+                    p = 2 * Parray[-1]
+                else:
+                    slope = (ObjArray[-1] - ObjArray[-2]) / (Parray[-1] - Parray[-2])
+                    intercept = ObjArray[-1] - slope * Parray[-1]
+                    p = (-intercept / slope)*1.2 # Add additional 20% to ensure negative value
+                
                 Parray.append(p)
                 phil, rhol, flagl = calc_phil(p, T, xi, eos, rhodict=rhodict)
                 if any(np.isnan(phil)):
@@ -1251,14 +1257,14 @@ def find_new_yi(P, T, phil, xi, eos, rhodict={}):
 
     plt.figure(1)
     plt.plot(yi_ext,obj_ext,".-b")
-   # plt.plot(yi_ext,np.array(obj_ext)+np.array(yi_total2_ext),".-r")
     plt.figure(2)
     plt.plot(yi_ext,flag_ext[0],".-b")
     plt.plot(yi_ext,flag_ext[1],".-r")
     plt.show()
 
     obj_ext = np.array(obj_ext)
-    #flag_ext = np.array(flag_ext)
+    flag_ext = np.array(flag_ext)
+    print(type(flag_ext),type(flag_ext[0]))
 
     tmp = np.count_nonzero(~np.isnan(obj_ext))
     logger.debug("    Number of valid mole fractions: {}".format(tmp))
@@ -1269,13 +1275,13 @@ def find_new_yi(P, T, phil, xi, eos, rhodict={}):
         # Remove any NaN
         obj_tmp  =  obj_ext[~np.isnan(obj_ext)]
         yi_tmp   =   yi_ext[~np.isnan(obj_ext)]
-        #flag_tmp = flag_ext[~np.isnan(obj_ext)]
+        flag_tmp = flag_ext[1][~np.isnan(obj_ext)]
  
-    #    # Assess vapor values
-    #    ind = [i for i in range(len(flag_tmp)) if flag_tmp[i] not in [1,4]]
-    #    if ind:
-    #        obj_tmp = [obj_tmp[i] for i in ind]
-    #        yi_tmp = [yi_tmp[i] for i in ind]
+        # Assess vapor values
+        ind = [i for i in range(len(flag_tmp)) if flag_tmp[i] not in [1,4]]
+        if ind:
+            obj_tmp = [obj_tmp[i] for i in ind]
+            yi_tmp = [yi_tmp[i] for i in ind]
 
         # Choose values with lowest objective function
         ind = np.where(np.abs(obj_tmp)==min(np.abs(obj_tmp)))[0][0]
@@ -1284,8 +1290,8 @@ def find_new_yi(P, T, phil, xi, eos, rhodict={}):
 
     logger.info("    Found new guess in yi: {}, Obj: {}".format(yi_tmp,obj_tmp))
     yi = yi_tmp
-    if type(yi) != list:
-        yi = [yi, 1-yi]
+    if type(yi) not in [list,np.ndarray]:
+        yi = np.array([yi, 1-yi])
 
     return yi
 

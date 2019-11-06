@@ -8,17 +8,18 @@ r"""
 """
 
 import logging # NoteHere
-import numpy as np
-from scipy import misc
-from scipy import integrate
-import scipy.optimize as spo
 import time
 import sys
 import matplotlib.pyplot as plt
+import numpy as np
 import os
+from scipy import integrate
+import scipy.optimize as spo
 
 from . import constants
 from . import solv_assoc
+
+###### JIT ##########
 
 if 'NUMBA_DISABLE_JIT' in os.environ:
     disable_jit = os.environ['NUMBA_DISABLE_JIT']
@@ -245,7 +246,7 @@ def calc_interaction_matrices(beads, beadlibrary, crosslibrary={}):
                     if beadname2 in list(crosslibrary[beadname].keys()):
                         crosslist.append([i, j])
 
-        for i in range(np.size(crosslist, axis=0)):
+        for i in range(len(crosslist)):
             a = crosslist[i][0]
             b = crosslist[i][1]
             if beads[a] in list(crosslibrary.keys()):
@@ -299,8 +300,8 @@ def calc_composition_dependent_variables(xi, nui, beads, beadlibrary):
 
     # compute Conversion factor
     Cmol2seg = 0.0
-    for i in range(np.size(xi)):
-        for j in range(np.size(beads)):
+    for i in range(len(xi)):
+        for j in range(len(beads)):
             Cmol2seg += xi[i] * nui[i, j] * beadlibrary[beads[j]]["Vks"] * beadlibrary[beads[j]]["Sk"]
 
     # initialize variables and arrays
@@ -357,8 +358,8 @@ def calc_hard_sphere_matricies(beads, beadlibrary, sigmakl, T):
     logger = logging.getLogger(__name__)
 
     nbeads = len(beads)
-    dkk = np.zeros(np.size(beads))
-    for i in range(np.size(beads)):
+    dkk = np.zeros(len(beads))
+    for i in range(len(beads)):
         dkk[i] = calc_dkk(beadlibrary[beads[i]]["epsilon"], beadlibrary[beads[i]]["sigma"], T,
                           beadlibrary[beads[i]]["l_r"], beadlibrary[beads[i]]["l_a"])
     dkl = np.zeros((nbeads, nbeads))
@@ -407,7 +408,7 @@ def calc_Bkl(rho, l_kl, Cmol2seg, dkl, epsilonkl, x0kl, zetax):
     # compute Jkl(l_kl), eq. 24
     Jkl = (1.0 - ((x0kl**(4.0 - l_kl)) * (l_kl - 3.0)) + ((x0kl**(3.0 - l_kl)) * (l_kl - 4.0))) / ((l_kl - 3.0) * (l_kl - 4.0))
 
-    if np.size(np.shape(l_kl)) == 2:
+    if len(np.shape(l_kl)) == 2:
         # Bkl=np.zeros((np.size(rho),np.size(l_kl,axis=0),np.size(l_kl,axis=0)))
 
         Bkl = np.einsum("i,jk", rhos * (2.0 * np.pi),
@@ -443,8 +444,8 @@ def calc_fm(alphakl, mlist):
 
     logger = logging.getLogger(__name__)
 
-    nbeads = np.size(alphakl, axis=0)
-    if np.size(np.shape(alphakl)) == 2:
+    nbeads = len(alphakl)
+    if len(np.shape(alphakl)) == 2:
         fmlist = np.zeros((np.size(mlist), np.size(alphakl, axis=0), np.size(alphakl, axis=0)))
     elif np.size(np.shape(alphakl)) == 1:
         fmlist = np.zeros((np.size(mlist), np.size(alphakl, axis=0)))

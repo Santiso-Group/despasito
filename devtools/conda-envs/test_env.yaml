@@ -6,7 +6,7 @@ dependencies:
   - pip
   - numpy
   - scipy
-  - deap
+  - jax
   - matplotlib
   - numba
 
