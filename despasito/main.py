@@ -18,8 +18,6 @@ def run(filename="input.json", path=".", **args):
     """ Main function for running despasito calculations. All inputs and settings should be in the supplied JSON file(s).
     """
 
-    eos_obj_name = "saft.gamma_mie"
-    
     logger = logging.getLogger(__name__)
     
     #read input file (need to add command line specification)
@@ -34,12 +32,7 @@ def run(filename="input.json", path=".", **args):
     logger.debug("Thermo dict:", thermo_dict)
     logger.info("Finish processing input file: {}".format(filename))
     
-    logger.info("Creating eos object: {}".format(eos_obj_name))
-    try:
-        eos = eos_mod(eos_obj_name, **eos_dict)
-    except:
-        raise
-    logger.info("Created {} eos object".format(eos_obj_name))
+    eos = eos_mod(**eos_dict)
     
     # Run either parametrization or thermodynamic calculation
     if "opt_params" in list(thermo_dict.keys()):

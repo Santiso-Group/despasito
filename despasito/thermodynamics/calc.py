@@ -197,7 +197,7 @@ def PvsRho(T, xi, eos, minrhofrac=(1.0 / 500000.0), rhoinc=5.0, vspacemax=1.0E-4
         rholist = np.append(rholist_2, rholist[vspaceswitch + 2:])
 
     #compute Pressures (Plist) for rholsit
-    Plist = eos.P(rholist * const.Nav, T, xi)
+    Plist = eos.P(rholist, T, xi)
 
     #Flip Plist and rholist arrays
     Plist = Plist[:][::-1]
@@ -345,6 +345,9 @@ def calc_Psat(T, xi, eos, rhodict={}):
 
         Pconverged = 10 # If the pressure is negative (under tension), we search from a value just above vacuum 
         Pminsearch = max(Pconverged, np.amin(Plist[ind_Pmin1:ind_Pmax1]))
+
+        #print(Pminsearch,Pmaxsearch)
+        #PvsV_plot(vlist, Plist, Pvspline, markers=extrema)
 
         #search Pressure that gives equal area in maxwell construction
         Psat = spo.minimize_scalar(eq_area,
@@ -648,7 +651,7 @@ def Pdiff(rho, Pset, T, xi, eos):
 
     logger = logging.getLogger(__name__)
 
-    Pguess = eos.P(rho * const.Nav, T, xi)
+    Pguess = eos.P(rho, T, xi)
 
     return (Pguess - Pset)
 
@@ -839,10 +842,14 @@ def calc_Prange_xi(T, xi, yi, eos, rhodict={}, Pmin=1000, zi_opts={}):
             tmp_sum = np.abs(ObjArray[-2] + ObjArray[-1])
             tmp_dif = np.abs(ObjArray[-2] - ObjArray[-1])
             if tmp_dif > tmp_sum:
-                logger.info("Got the pressure range!")
-                slope = (ObjArray[-1] - ObjArray[-2]) / (Parray[-1] - Parray[-2])
-                intercept = ObjArray[-1] - slope * Parray[-1]
-                Pguess = -intercept / slope
+                if flagv not in [0,2,4]:
+                    logger.info("Estimated pressure {}  doesn't produce a vapor, flag={}, Obj Func: {}".format(Parray[-1],flagv,ObjArray[-1]))
+                    p = 0.9*Parray[-1]
+                else:
+                    logger.info("Got the pressure range!")
+                    slope = (ObjArray[-1] - ObjArray[-2]) / (Parray[-1] - Parray[-2])
+                    intercept = ObjArray[-1] - slope * Parray[-1]
+                    Pguess = -intercept / slope
 
                 #plt.plot(Parray,ObjArray)
                 #plt.plot([Pguess,Pguess],[ObjArray[-1],ObjArray[-2]],'k')
@@ -851,22 +858,28 @@ def calc_Prange_xi(T, xi, yi, eos, rhodict={}, Pmin=1000, zi_opts={}):
                 #plt.xlabel("Pressure / Pa")
                 #plt.show()
                 break
-            elif z == maxiter:
-                raise ValueError('A change in sign for the objective function could not be found, inspect progress')
+            elif z == maxiter-1:
+                logger.error('A change in sign for the objective function could not be found, inspect progress')
                 plt.plot(Parray, ObjArray)
                 plt.plot([Parray[0], Parray[-1]], [0, 0], 'k')
                 plt.ylabel("Obj. Function")
                 plt.xlabel("Pressure / Pa")
                 plt.show()
             else:
-                p = 2 * Parray[-1]
-                Parray.append(p)
-                phil, rhol, flagl = calc_phil(p, T, xi, eos, rhodict=rhodict)
-                if any(np.isnan(phil)):
-                    raise ValueError("Fugacity coefficient should not be NaN")
-                yi_range, phiv, flagv = solve_yi_xiT(yi_range, xi, phil, p, T, eos, rhodict=rhodict, **zi_opts)
-                ObjArray.append(np.sum(xi * phil / phiv) - 1.0)
-                logger.info("New Estimate for Maximum Pressure: {},  Obj. Func: {}".format(Parray[-1],ObjArray[-1]))
+                if len(ObjArray) < 2:
+                    p = 2 * Parray[-1]
+                else:
+                    slope = (ObjArray[-1] - ObjArray[-2]) / (Parray[-1] - Parray[-2])
+                    intercept = ObjArray[-1] - slope * Parray[-1]
+                    p = (-intercept / slope)*1.2 # Add additional 20% to ensure negative value
+            
+            Parray.append(p)
+            phil, rhol, flagl = calc_phil(p, T, xi, eos, rhodict=rhodict)
+            if any(np.isnan(phil)):
+                raise ValueError("Fugacity coefficient should not be NaN")
+            yi_range, phiv, flagv = solve_yi_xiT(yi_range, xi, phil, p, T, eos, rhodict=rhodict, **zi_opts)
+            ObjArray.append(np.sum(xi * phil / phiv) - 1.0)
+            logger.info("New Estimate for Maximum Pressure: {},  Obj. Func: {}".format(Parray[-1],ObjArray[-1]))
 
     Prange = Parray[-2:]
     ObjRange = ObjArray[-2:]
@@ -1090,6 +1103,7 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxiter=30, tol=1e-6):
             yinew = find_new_yi(P, T, phil, xi, eos, rhodict=rhodict)
         yinew = spo.least_squares(obj_yi, yinew[0], bounds=(0.,1.), args=(P, T, phil, xi, eos, rhodict))
         yi = yinew.x
+        yi = np.array([yi,1-yi])
         obj = obj_yi(yi, P, T, phil, xi, eos, rhodict=rhodict)
         logger.warning('    Find yi with root algorithm, yi {}, obj {}'.format(yi,obj))
     else:
@@ -1249,16 +1263,16 @@ def find_new_yi(P, T, phil, xi, eos, rhodict={}):
         obj_ext.append(abs(obj))
         logger.debug("    Obj yi {} total1 - total2 = {}".format(yi,obj))
 
-    plt.figure(1)
-    plt.plot(yi_ext,obj_ext,".-b")
-   # plt.plot(yi_ext,np.array(obj_ext)+np.array(yi_total2_ext),".-r")
-    plt.figure(2)
-    plt.plot(yi_ext,flag_ext[0],".-b")
-    plt.plot(yi_ext,flag_ext[1],".-r")
-    plt.show()
+    #plt.figure(1)
+    #plt.plot(yi_ext,obj_ext,".-b")
+    #plt.figure(2)
+    #plt.plot(yi_ext,flag_ext[0],".-b")
+    #plt.plot(yi_ext,flag_ext[1],".-r")
+    #plt.show()
 
     obj_ext = np.array(obj_ext)
-    #flag_ext = np.array(flag_ext)
+    flag_ext = np.array(flag_ext)
+    print(type(flag_ext),type(flag_ext[0]))
 
     tmp = np.count_nonzero(~np.isnan(obj_ext))
     logger.debug("    Number of valid mole fractions: {}".format(tmp))
@@ -1269,13 +1283,13 @@ def find_new_yi(P, T, phil, xi, eos, rhodict={}):
         # Remove any NaN
         obj_tmp  =  obj_ext[~np.isnan(obj_ext)]
         yi_tmp   =   yi_ext[~np.isnan(obj_ext)]
-        #flag_tmp = flag_ext[~np.isnan(obj_ext)]
+        flag_tmp = flag_ext[1][~np.isnan(obj_ext)]
  
-    #    # Assess vapor values
-    #    ind = [i for i in range(len(flag_tmp)) if flag_tmp[i] not in [1,4]]
-    #    if ind:
-    #        obj_tmp = [obj_tmp[i] for i in ind]
-    #        yi_tmp = [yi_tmp[i] for i in ind]
+        # Assess vapor values
+        ind = [i for i in range(len(flag_tmp)) if flag_tmp[i] not in [1,3]]
+        if ind:
+            obj_tmp = [obj_tmp[i] for i in ind]
+            yi_tmp = [yi_tmp[i] for i in ind]
 
         # Choose values with lowest objective function
         ind = np.where(np.abs(obj_tmp)==min(np.abs(obj_tmp)))[0][0]
@@ -1284,8 +1298,8 @@ def find_new_yi(P, T, phil, xi, eos, rhodict={}):
 
     logger.info("    Found new guess in yi: {}, Obj: {}".format(yi_tmp,obj_tmp))
     yi = yi_tmp
-    if type(yi) != list:
-        yi = [yi, 1-yi]
+    if type(yi) not in [list,np.ndarray]:
+        yi = np.array([yi, 1-yi])
 
     return yi
 
@@ -1489,7 +1503,7 @@ def solve_P_xiT(P, xi, T, eos, rhodict, zi_opts={}):
     #given final yi recompute
     phiv, rhov, flagv = calc_phiv(P, T, yi_global, eos, rhodict={})
 
-    Pv_test = eos.P(rhov*const.Nav, T, yi_global)
+    Pv_test = eos.P(rhov, T, yi_global)
     obj_value = float((np.sum(xi * phil / phiv) - 1.0))
     logger.info('Obj Func: {}, Pset: {}, Pcalc: {}'.format(obj_value, P, Pv_test[0]))
 
@@ -1541,7 +1555,7 @@ def solve_P_yiT(P, yi, T, eos, rhodict, zi_opts={}):
     #given final yi recompute
     phil, rhol, flagl = calc_phil(P, T, xi_global, eos, rhodict={})
 
-    Pv_test = eos.P(rhov*const.Nav, T, xi_global)
+    Pv_test = eos.P(rhov, T, xi_global)
     obj_value = (np.sum(xi_global * phil / phiv) - 1.0)
     logger.info('Obj Func: {}, Pset: {}, Pcalc: {}'.format(obj_value, P, Pv_test[0]))
 

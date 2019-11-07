@@ -102,10 +102,13 @@ def extract_calc_data(input_fname, path='.', **args):
     except:
         logger.info('No association sites specified')
 
+    if "eos" in input_dict:
+        eos_dict['eos'] = input_dict["eos"]
+
     ## Make dictionary of data needed for thermodynamic calculation
     thermo_dict = {}
     # Extract relevant system state inputs
-    EOS_dict_keys = ['beadconfig', 'SAFTgroup', 'SAFTcross','association_site_names',"output_file"]
+    EOS_dict_keys = ['beadconfig', 'SAFTgroup', 'SAFTcross','association_site_names',"output_file","eos"]
     for key, value in input_dict.items():
         if key not in EOS_dict_keys:
             thermo_dict[key] = value

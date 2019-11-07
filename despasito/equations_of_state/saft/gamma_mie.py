@@ -159,7 +159,7 @@ class saft_gamma_mie(EOStemplate):
         Parameters
         ----------
         rho : numpy.ndarray
-            Number density of system [molecules/m^3]
+            Number density of system [mol/m^3]
         T : float
             Temperature of the system [K]
         xi : list[float]
@@ -173,22 +173,27 @@ class saft_gamma_mie(EOStemplate):
 
         logger = logging.getLogger(__name__)
 
+        if len(xi) != len(self._nui):
+            raise ValueError("Number of components in mole fraction list doesn't match components in nui. Check bead_config.")
+
         if T != self.T:
             self._temp_dependent_variables(T)
 
         self._xi_dependent_variables(xi)
         
         if type(rho) != np.ndarray:
-            rho = np.array(rho)
+            rho = np.array(rho)*constants.Nav
 
-        step = np.sqrt(np.finfo(float).eps) * rho * 10000.0
+        rho = rho*constants.Nav
+
+        step = np.sqrt(np.finfo(float).eps) *rho * 10000.0
         # Decreasing step size by 2 orders of magnitude didn't reduce noise in P values
         nrho = np.size(rho)
 
         # computer rho+step and rho-step for better a bit better performance
         A = funcs.calc_A(np.append(rho + step, rho - step), xi, T, self._beads, self._beadlibrary, self._massi, self._nui, self._Cmol2seg, self._xsk, self._xskl, self._dkk, self._epsilonkl, self._sigmakl, self._dkl, self._l_akl, self._l_rkl, self._Ckl,self._x0kl, self._epsilonHB, self._Kklab, self._nk)
 
-        P_tmp = (A[:nrho]-A[nrho:])*((constants.kb*T)/(2.0*step))*(rho**2)
+        P_tmp = (A[:nrho]-A[nrho:])*((constants.kb*T)/(2.0*step))*rho**2
 
         return P_tmp
 
@@ -212,6 +217,9 @@ class saft_gamma_mie(EOStemplate):
         """
 
         logger = logging.getLogger(__name__)
+
+        if len(xi) != len(self._nui):
+            raise ValueError("Number of components in mole fraction list doesn't match components in nui. Check bead_config.")
 
         if T != self.T:
             self._temp_dependent_variables(T)
@@ -302,6 +310,9 @@ class saft_gamma_mie(EOStemplate):
 
         logger = logging.getLogger(__name__)
 
+        if len(xi) != len(self._nui):
+            raise ValueError("Number of components in mole fraction list doesn't match components in nui. Check bead_config.")
+
         if T != self.T:
             self._temp_dependent_variables(T)
 
@@ -344,6 +355,9 @@ class saft_gamma_mie(EOStemplate):
 
         logger = logging.getLogger(__name__)
 
+        if len(xi) != len(self._nui):
+            raise ValueError("Number of components in mole fraction list doesn't match components in nui. Check bead_config.")
+
         if T != self.T:
             self._temp_dependent_variables(T)
 
@@ -380,6 +394,9 @@ class saft_gamma_mie(EOStemplate):
         """
 
         logger = logging.getLogger(__name__)
+
+        if len(xi) != len(self._nui):
+            raise ValueError("Number of components in mole fraction list doesn't match components in nui. Check bead_config.")
 
         if T != self.T:
             self._temp_dependent_variables(T)
@@ -451,6 +468,7 @@ class saft_gamma_mie(EOStemplate):
         # estimate the maximum density based on the hard sphere packing fraction
         # etax, assuming a maximum packing fraction specified by maxpack
         maxrho = maxpack * 6.0 / (self._Cmol2seg * np.pi * np.sum(self._xskl * (self._dkl**3))) / constants.Nav
+
         return maxrho
 
     def param_guess(self,fit_params):

@@ -68,9 +68,6 @@ def phase_xiT(eos, sys_dict):
         else:
             raise ValueError("The number of provided temperatures and mole fraction sets are different")
 
-    if len(xi_list[0]) != len(eos._nui):
-        raise ValueError("Number of components in mole fraction list doesn't match components in nui. Check bead_config.")
-
     ## Optional values
     opts = {}
 
@@ -310,9 +307,6 @@ def sat_props(eos, sys_dict):
         xi_list = np.array(sys_dict['xilist'])
         logger.info("Using xilist")
     else:
-        if len(eos._nui) > 1:
-            raise ValueError('xi_list should be specified for more than 1 component.')
-        else:
             xi_list = np.array([[1.0] for x in range(len(T_list))])
 
     variables = list(locals().keys())

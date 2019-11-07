@@ -23,7 +23,7 @@ class EOStemplate(ABC):
         pass
 
     @abstractmethod
-    def chemicalpotential(self):
+    def fugacity_coefficient(self):
         """
         Output chemical potential predicted by EOS.
         """
@@ -50,9 +50,3 @@ class EOStemplate(ABC):
         """
         pass
 
-    @abstractmethod
-    def parameter_refresh(self):
-        """
-        Update calculated parameters internal to EOS that depend on those changed in update_parameters
-        """
-        pass
