@@ -8,7 +8,6 @@ License: MIT
 import autograd.numpy as np
 import autograd
 from scipy import optimize
-import test_optim
 
 class Minimizer:
     """A wrapper class for scipy.optimize.minimize that computes derivatives with JAX (AD).
@@ -101,6 +100,7 @@ class Minimizer:
         
             return obj, g_vectorized
 
+        print(x)
         return _scipy_func(self.objective_converted, self._gradient, x, self._shapes, self._args)
 
     def minimize(self, **kwargs):
@@ -144,6 +144,7 @@ class Minimizer:
 
         # Compute the gradient
         self._gradient = autograd.grad(self.objective_converted)
+
         # Vectorize optimization variables
         x0, self._shapes = Minimizer._vectorize(self._optim_vars)
 
@@ -151,8 +152,6 @@ class Minimizer:
         if bounds_in_kwargs:
             bounds = self._convert_bounds(bounds, shapes)
             self._kwargs['bounds'] = bounds
-
-        print('x0 = ', x0)
 
         res = optimize.minimize(self._objFunc, x0, jac=True, **self._kwargs)
 
@@ -179,7 +178,7 @@ class Minimizer:
         return optim_vars
 
     def objective_converted(self, optim_vars, *args):
-        """ Converts loss to readable autograd format """
+        """ Converts loss to readable jax format """
         return self._objective_function(*optim_vars, *args)
 
     def _convert_bounds(self, bounds, shapes):
