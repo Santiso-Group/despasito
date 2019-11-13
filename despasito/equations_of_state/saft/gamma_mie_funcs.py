@@ -417,9 +417,6 @@ def calc_Bkl(rho, l_kl, Cmol2seg, dkl, epsilonkl, x0kl, zetax):
     elif np.size(np.shape(l_kl)) == 1:
         Bkl = np.einsum("i,j", rhos * (2.0 * np.pi),
                         (dkl**3) * epsilonkl) * (np.einsum("i,j", (1.0 - (zetax / 2.0)) / ((1.0 - zetax)**3), Ikl) - np.einsum("i,j", ((9.0 * zetax * (1.0 + zetax)) / (2.0 * ((1 - zetax)**3))), Jkl))
-        print("Bkl a", (1.0 - (zetax / 2.0)) / ((1.0 - zetax)**3).shape, Ikl.shape, np.einsum("i,j", (1.0 - (zetax / 2.0)) / ((1.0 - zetax)**3), Ikl).shape)
-        print("Bkl b", ((dkl**3) * epsilonkl).shape, (np.einsum("i,j", (1.0 - (zetax / 2.0)) / ((1.0 - zetax)**3), Ikl) - np.einsum("i,j", ((9.0 * zetax * (1.0 + zetax)) / (2.0 * ((1 - zetax)**3))), Jkl)).shape)
-        print("Bkl c",(rhos * (2.0 * np.pi)).shape, Bkl)
     else:
         logger.warning('Error unexpeced l_kl shape in Bkl')
 
@@ -461,15 +458,9 @@ def calc_dBkl_drhos(l_kl, dkl, epsilonkl, x0kl, zetax):
         tmp2 = np.einsum("i,jk", (5.0 - 2.0*zetax) / (2*(1.0 - zetax)**4), Ikl) - np.einsum("i,jk", ((9.0 * (zetax**2 + 4.0*zetax + 1)) / (2.0 * ((1 - zetax)**4))), Jkl)
         dBkl_drhos = (2.0 * np.pi)*(dkl**3) * epsilonkl * (tmp1 + np.einsum("i,jk", zetax, tmp2))
     elif np.size(np.shape(l_kl)) == 1:
-        print(((1.0 - (zetax / 2.0)) / ((1.0 - zetax)**3)).shape, Ikl.shape, np.einsum("i,j", (1.0 - (zetax / 2.0)) / ((1.0 - zetax)**3), Ikl).shape)
-        print(((9.0 * zetax * (1.0 + zetax)) / (2.0 * ((1 - zetax)**3))).shape,Jkl.shape,np.einsum("i,j", ((9.0 * zetax * (1.0 + zetax)) / (2.0 * ((1 - zetax)**3))), Jkl).shape)
         tmp1 = np.einsum("i,j", (1.0 - (zetax / 2.0)) / ((1.0 - zetax)**3), Ikl) - np.einsum("i,j", ((9.0 * zetax * (1.0 + zetax)) / (2.0 * ((1 - zetax)**3))), Jkl)
-        print(((5.0 - 2.0*zetax) / (2*(1.0 - zetax)**4)).shape, np.einsum("i,j", (5.0 - 2.0*zetax) / (2*(1.0 - zetax)**4), Ikl).shape)
-        print(((9.0 * (zetax**2 + 4.0*zetax + 1)) / (2.0 * ((1 - zetax)**4))).shape,np.einsum("i,j", ((9.0 * (zetax**2 + 4.0*zetax + 1)) / (2.0 * ((1 - zetax)**4))), Jkl).shape)
         tmp2 = np.einsum("i,j", (5.0 - 2.0*zetax) / (2*(1.0 - zetax)**4), Ikl) - np.einsum("i,j", ((9.0 * (zetax**2 + 4.0*zetax + 1)) / (2.0 * ((1 - zetax)**4))), Jkl)
-        print(zetax.shape,tmp2.shape)
-        print(np.einsum("i,j", zetax, tmp2).shape)
-        dBkl_drhos = (2.0 * np.pi)*(dkl**3) * epsilonkl * (tmp1 + np.einsum("i,j", zetax, tmp2))
+        dBkl_drhos = np.einsum( "i,j", 2.0*np.pi*np.ones_like(zetax), (dkl**3)*epsilonkl)*tmp1 + np.einsum("i,j", zetax, (dkl**3)*epsilonkl)*tmp2
 
     return dBkl_drhos
 
@@ -732,6 +723,7 @@ def calc_da1iidrhos(rho, Cmol2seg, dii_eff, l_aii_avg, l_rii_avg, x0ii, epsiloni
     logger = logging.getLogger(__name__)
 
     # NoteHere g1 der_a1kl
+    Cii = C(l_rii_avg, l_aii_avg)
 
     das1_drhos_r = calc_da1sii_drhos(rho, Cmol2seg, l_rii_avg, zetax, epsilonii_avg, dii_eff)
     das1_drhos_a = calc_da1sii_drhos(rho, Cmol2seg, l_aii_avg, zetax, epsilonii_avg, dii_eff)
