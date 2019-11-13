@@ -3,8 +3,8 @@
 Routines for passing input files from .json files to dictionaries and extracting relevant information for program use, as well as write properly structures .json files for later calculations.
     
 .. todo::
-    * extract_calc_data input_fname: Add link to available thermodynamic calculations
-    * extract_calc_data density_fname: Add link to available density options
+    - extract_calc_data input_fname: Add link to available thermodynamic calculations
+    - extract_calc_data density_fname: Add link to available density options
 """
 
 import logging

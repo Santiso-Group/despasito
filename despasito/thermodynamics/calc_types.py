@@ -21,7 +21,7 @@ from . import calc
 
 ######################################################################
 #                                                                    #
-#                Phase Equilibrium given xi and T                     #
+#                Phase Equilibrium given xi and T                    #
 #                                                                    #
 ######################################################################
 def phase_xiT(eos, sys_dict):
@@ -406,7 +406,8 @@ def liquid_properties(eos, sys_dict):
         else:
             raise ValueError("The number of provided temperatures and mole fraction sets are different")
 
-    if "Plist" not in sys_dict:
+    if "Plist" in sys_dict:
+        P_list = np.array(sys_dict['Plist'])
         logger.info("Using Plist")
     else:
         P_list = 101325.0 * np.ones_like(T_list)
@@ -493,7 +494,8 @@ def vapor_properties(eos, sys_dict):
         else:
             raise ValueError("The number of provided temperatures and mole fraction sets are different")
 
-    if "Plist" not in sys_dict:
+    if "Plist" in sys_dict:
+        P_list = np.array(sys_dict['Plist'])
         logger.info("Using Plist")
     else:
         P_list = 101325.0 * np.ones_like(T_list)

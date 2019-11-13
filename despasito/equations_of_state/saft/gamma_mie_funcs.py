@@ -27,7 +27,7 @@ else:
     disable_jit = jit_stat.disable_jit
 
 if disable_jit:
-    from .nojit_exts import calc_a1s
+    from .nojit_exts import calc_a1s, calc_da1sii_drhos
     #uncomment line below for cython extensions:
     #from .c_exts import calc_a1s
     #we need to add another command-line arg to replace this hackish approach
@@ -190,18 +190,19 @@ def calc_interaction_matrices(beads, beadlibrary, crosslibrary={}):
     beadlibrary : dict
         A dictionary where bead names are the keys to access EOS self interaction parameters:
 
-        * epsilon: :math:`\epsilon_{k,k}/k_B`, Energy well depth scaled by Boltzmann constant
-        * sigma: :math:`\sigma_{k,k}`, Size parameter [m]
-        * mass: Bead mass [kg/mol]
-        * l_r: :math:`\lambda^{r}_{k,k}`, Exponent of repulsive term between groups of type k
-        * l_a: :math:`\lambda^{a}_{k,k}`, Exponent of attractive term between groups of type k
-        * Sk: :math:`S_{k}`, Shape parameter of group k
-        * Vks: :math:`V_{k,s}`, Number of groups, k, in component
+        - epsilon: :math:`\epsilon_{k,k}/k_B`, Energy well depth scaled by Boltzmann constant
+        - sigma: :math:`\sigma_{k,k}`, Size parameter [m]
+        - mass: Bead mass [kg/mol]
+        - l_r: :math:`\lambda^{r}_{k,k}`, Exponent of repulsive term between groups of type k
+        - l_a: :math:`\lambda^{a}_{k,k}`, Exponent of attractive term between groups of type k
+        - Sk: :math:`S_{k}`, Shape parameter of group k
+        - Vks: :math:`V_{k,s}`, Number of groups, k, in component
+
     crosslibrary : dict, Optional, default: {}
         Optional library of bead cross interaction parameters. As many or as few of the desired parameters may be defined for whichever group combinations are desired. If this matrix isn't provided, the SAFT mixing rules are used.
 
-        * epsilon: :math:`\epsilon_{k,l}/k_B`, Energy parameter scaled by Boltzmann Constant
-        * l_r: :math:`\lambda^{r}_{k,l}`, Exponent of repulsive term between groups of type k and l
+        - epsilon: :math:`\epsilon_{k,l}/k_B`, Energy parameter scaled by Boltzmann Constant
+        - l_r: :math:`\lambda^{r}_{k,l}`, Exponent of repulsive term between groups of type k and l
 
     Returns
     -------
@@ -277,13 +278,13 @@ def calc_composition_dependent_variables(xi, nui, beads, beadlibrary):
     beadlibrary : dict
         A dictionary where bead names are the keys to access EOS self interaction parameters:
 
-        * epsilon: :math:`\epsilon_{k,k}/k_B`, Energy well depth scaled by Boltzmann constant
-        * sigma: :math:`\sigma_{k,k}`, Size parameter [m]
-        * mass: Bead mass [kg/mol]
-        * l_r: :math:`\lambda^{r}_{k,k}`, Exponent of repulsive term between groups of type k
-        * l_a: :math:`\lambda^{a}_{k,k}`, Exponent of attractive term between groups of type k
-        * Sk: :math:`S_{k}`, Shape parameter of group k
-        * Vks: :math:`V_{k,s}`, Number of groups, k, in component
+        - epsilon: :math:`\epsilon_{k,k}/k_B`, Energy well depth scaled by Boltzmann constant
+        - sigma: :math:`\sigma_{k,k}`, Size parameter [m]
+        - mass: Bead mass [kg/mol]
+        - l_r: :math:`\lambda^{r}_{k,k}`, Exponent of repulsive term between groups of type k
+        - l_a: :math:`\lambda^{a}_{k,k}`, Exponent of attractive term between groups of type k
+        - Sk: :math:`S_{k}`, Shape parameter of group k
+        - Vks: :math:`V_{k,s}`, Number of groups, k, in component
 
     Returns
     -------
@@ -332,13 +333,14 @@ def calc_hard_sphere_matricies(beads, beadlibrary, sigmakl, T):
     beadlibrary : dict
         A dictionary where bead names are the keys to access EOS self interaction parameters:
 
-        * epsilon: :math:`\epsilon_{k,k}/k_B`, Energy well depth scaled by Boltzmann constant
-        * sigma: :math:`\sigma_{k,k}`, Size parameter [m]
-        * mass: Bead mass [kg/mol]
-        * l_r: :math:`\lambda^{r}_{k,k}`, Exponent of repulsive term between groups of type k
-        * l_a: :math:`\lambda^{a}_{k,k}`, Exponent of attractive term between groups of type k
-        * Sk: :math:`S_{k}`, Shape parameter of group k
-        * Vks: :math:`V_{k,s}`, Number of groups, k, in component
+        - epsilon: :math:`\epsilon_{k,k}/k_B`, Energy well depth scaled by Boltzmann constant
+        - sigma: :math:`\sigma_{k,k}`, Size parameter [m]
+        - mass: Bead mass [kg/mol]
+        - l_r: :math:`\lambda^{r}_{k,k}`, Exponent of repulsive term between groups of type k
+        - l_a: :math:`\lambda^{a}_{k,k}`, Exponent of attractive term between groups of type k
+        - Sk: :math:`S_{k}`, Shape parameter of group k
+        - Vks: :math:`V_{k,s}`, Number of groups, k, in component
+
     sigmakl : numpy.ndarray
         Matrix of mie diameter for groups (k,l)
     T : float
@@ -411,18 +413,65 @@ def calc_Bkl(rho, l_kl, Cmol2seg, dkl, epsilonkl, x0kl, zetax):
         # Bkl=np.zeros((np.size(rho),np.size(l_kl,axis=0),np.size(l_kl,axis=0)))
 
         Bkl = np.einsum("i,jk", rhos * (2.0 * np.pi),
-                        (dkl**3) * epsilonkl) * (np.einsum("i,jk", (1.0 - (zetax / 2.0)) / (
-                            (1.0 - zetax)**3), Ikl) - np.einsum("i,jk", ((9.0 * zetax * (1.0 + zetax)) /
-                                                                        (2.0 * ((1 - zetax)**3))), Jkl))
+                        (dkl**3) * epsilonkl) * (np.einsum("i,jk", (1.0 - (zetax / 2.0)) / ((1.0 - zetax)**3), Ikl) - np.einsum("i,jk", ((9.0 * zetax * (1.0 + zetax)) / (2.0 * ((1 - zetax)**3))), Jkl))
     elif np.size(np.shape(l_kl)) == 1:
         Bkl = np.einsum("i,j", rhos * (2.0 * np.pi),
-                        (dkl**3) * epsilonkl) * (np.einsum("i,j", (1.0 - (zetax / 2.0)) / (
-                            (1.0 - zetax)**3), Ikl) - np.einsum("i,j", ((9.0 * zetax * (1.0 + zetax)) /
-                                                                       (2.0 * ((1 - zetax)**3))), Jkl))
+                        (dkl**3) * epsilonkl) * (np.einsum("i,j", (1.0 - (zetax / 2.0)) / ((1.0 - zetax)**3), Ikl) - np.einsum("i,j", ((9.0 * zetax * (1.0 + zetax)) / (2.0 * ((1 - zetax)**3))), Jkl))
+        print("Bkl a", (1.0 - (zetax / 2.0)) / ((1.0 - zetax)**3).shape, Ikl.shape, np.einsum("i,j", (1.0 - (zetax / 2.0)) / ((1.0 - zetax)**3), Ikl).shape)
+        print("Bkl b", ((dkl**3) * epsilonkl).shape, (np.einsum("i,j", (1.0 - (zetax / 2.0)) / ((1.0 - zetax)**3), Ikl) - np.einsum("i,j", ((9.0 * zetax * (1.0 + zetax)) / (2.0 * ((1 - zetax)**3))), Jkl)).shape)
+        print("Bkl c",(rhos * (2.0 * np.pi)).shape, Bkl)
     else:
         logger.warning('Error unexpeced l_kl shape in Bkl')
 
     return Bkl
+
+def calc_dBkl_drhos(l_kl, dkl, epsilonkl, x0kl, zetax):
+    r""" 
+    Return Bkl(rho*Cmol2seg,l_kl) in K as defined in eq. 20, used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy.
+
+    Parameters
+    ----------
+    l_kl : numpy.ndarray
+        :math:`\lambda_{k,l}` Matrix of Mie potential exponents for k,l groups
+    dkl : numpy.ndarray
+        Matrix of hardsphere diameters for groups (k,l)
+    epsilonkl : numpy.ndarray
+        Matrix of well depths for groups (k,l)
+    x0kl : numpy.ndarray
+        Matrix of sigmakl/dkl, ratio of Mie radius for groups scaled by hard sphere interaction (k,l)
+    zetax : numpy.ndarray
+        Matrix of hypothetical packing fraction based on hard sphere diameter for groups (k,l)
+
+    Returns
+    -------
+    dBkl_drhos : numpy.ndarray
+        Matrix used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy, size is rho x l_kl.shape
+
+    """
+    # NoteHere
+    logger = logging.getLogger(__name__)
+
+    # compute Ikl(l_kl), eq. 23
+    Ikl = (1.0 - (x0kl**(3.0 - l_kl))) / (l_kl - 3.0)
+    # compute Jkl(l_kl), eq. 24
+    Jkl = (1.0 - ((x0kl**(4.0 - l_kl)) * (l_kl - 3.0)) + ((x0kl**(3.0 - l_kl)) * (l_kl - 4.0))) / ((l_kl - 3.0) * (l_kl - 4.0))
+
+    if np.size(np.shape(l_kl)) == 2:
+        tmp1 = np.einsum("i,jk", (1.0 - (zetax / 2.0)) / ((1.0 - zetax)**3), Ikl) - np.einsum("i,jk", ((9.0 * zetax * (1.0 + zetax)) / (2.0 * ((1 - zetax)**3))), Jkl)
+        tmp2 = np.einsum("i,jk", (5.0 - 2.0*zetax) / (2*(1.0 - zetax)**4), Ikl) - np.einsum("i,jk", ((9.0 * (zetax**2 + 4.0*zetax + 1)) / (2.0 * ((1 - zetax)**4))), Jkl)
+        dBkl_drhos = (2.0 * np.pi)*(dkl**3) * epsilonkl * (tmp1 + np.einsum("i,jk", zetax, tmp2))
+    elif np.size(np.shape(l_kl)) == 1:
+        print(((1.0 - (zetax / 2.0)) / ((1.0 - zetax)**3)).shape, Ikl.shape, np.einsum("i,j", (1.0 - (zetax / 2.0)) / ((1.0 - zetax)**3), Ikl).shape)
+        print(((9.0 * zetax * (1.0 + zetax)) / (2.0 * ((1 - zetax)**3))).shape,Jkl.shape,np.einsum("i,j", ((9.0 * zetax * (1.0 + zetax)) / (2.0 * ((1 - zetax)**3))), Jkl).shape)
+        tmp1 = np.einsum("i,j", (1.0 - (zetax / 2.0)) / ((1.0 - zetax)**3), Ikl) - np.einsum("i,j", ((9.0 * zetax * (1.0 + zetax)) / (2.0 * ((1 - zetax)**3))), Jkl)
+        print(((5.0 - 2.0*zetax) / (2*(1.0 - zetax)**4)).shape, np.einsum("i,j", (5.0 - 2.0*zetax) / (2*(1.0 - zetax)**4), Ikl).shape)
+        print(((9.0 * (zetax**2 + 4.0*zetax + 1)) / (2.0 * ((1 - zetax)**4))).shape,np.einsum("i,j", ((9.0 * (zetax**2 + 4.0*zetax + 1)) / (2.0 * ((1 - zetax)**4))), Jkl).shape)
+        tmp2 = np.einsum("i,j", (5.0 - 2.0*zetax) / (2*(1.0 - zetax)**4), Ikl) - np.einsum("i,j", ((9.0 * (zetax**2 + 4.0*zetax + 1)) / (2.0 * ((1 - zetax)**4))), Jkl)
+        print(zetax.shape,tmp2.shape)
+        print(np.einsum("i,j", zetax, tmp2).shape)
+        dBkl_drhos = (2.0 * np.pi)*(dkl**3) * epsilonkl * (tmp1 + np.einsum("i,j", zetax, tmp2))
+
+    return dBkl_drhos
 
 def calc_fm(alphakl, mlist):
     r""" 
@@ -535,9 +584,10 @@ def calc_Amono(rho, xi, nui, Cmol2seg, xsk, xskl, dkk, T, epsilonkl, sigmakl, dk
     if rho.any() == 0.0:
         logger.warning("rho:",rho)
     # compute AHS, eq. 16
-    AHS = (6.0 / (np.pi * rho)) * (np.log(1.0 - eta[:, 3]) * (((eta[:, 2]**3) / (eta[:, 3]**2)) - eta[:, 0]) +
-                                   (3.0 * eta[:, 1] * eta[:, 2] /
-                                    (1 - eta[:, 3])) + ((eta[:, 2]**3) / (eta[:, 3] * ((1.0 - eta[:, 3])**2))))
+    tmp1 = np.log(1.0 - eta[:, 3]) * (((eta[:, 2]**3) / (eta[:, 3]**2)) - eta[:, 0])
+    tmp2 = (3.0 * eta[:, 1] * eta[:, 2] / (1 - eta[:, 3]))
+    tmp3 = ((eta[:, 2]**3) / (eta[:, 3] * ((1.0 - eta[:, 3])**2)))
+    AHS = (6.0 / (np.pi * rho)) * (np.log(1.0 - eta[:, 3]) * (((eta[:, 2]**3) / (eta[:, 3]**2)) - eta[:, 0]) + (3.0 * eta[:, 1] * eta[:, 2] / (1 - eta[:, 3])) + ((eta[:, 2]**3) / (eta[:, 3] * ((1.0 - eta[:, 3])**2))))
 
     ##### compute a1kl, eq. 19 #####
 
@@ -648,8 +698,8 @@ def calc_a1ii(rho, Cmol2seg, dii_eff, l_aii_avg, l_rii_avg, x0ii, epsilonii_avg,
     a1s_a = calc_a1s(rho, Cmol2seg, l_aii_avg, zetax, epsilonii_avg, dii_eff)
 
     return (Cii * (((x0ii**l_aii_avg) * (a1s_a + Bii_a)) - ((x0ii**l_rii_avg) * (a1s_r + Bii_r))))
-    
-def calc_da1iidrhos(rho, Cmol2seg, dii_eff, l_aii_avg, l_rii_avg, x0ii, epsilonii_avg, zetax, stepmult=1.0):
+
+def calc_da1iidrhos(rho, Cmol2seg, dii_eff, l_aii_avg, l_rii_avg, x0ii, epsilonii_avg, zetax):
 
     r""" 
     Compute derivative of the term, :math:`\bar{a}_{1,ii}` with respect to :math:`\rho_s`
@@ -672,9 +722,6 @@ def calc_da1iidrhos(rho, Cmol2seg, dii_eff, l_aii_avg, l_rii_avg, x0ii, epsiloni
         Average bead (i.e. group or segment) potential well depth in component (i.e. molecule) i.
     zetax : numpy.ndarray 
         Matrix of hypothetical packing fraction based on hard sphere diameter for groups (k,l)
-    stepmult : float, Optional, default: 1.0
-        Factor, :math:`f_{step}`, used to change the step size used in derivative that is computed from the smallest representable positive number on the machine being used, where:
-        :math:`step = f_{step} \sqrt{\epsilon_{smallest}}\rho_s`
 
     Returns
     -------
@@ -684,11 +731,17 @@ def calc_da1iidrhos(rho, Cmol2seg, dii_eff, l_aii_avg, l_rii_avg, x0ii, epsiloni
 
     logger = logging.getLogger(__name__)
 
-    step = np.sqrt(np.finfo(float).eps) * rho * Cmol2seg * stepmult
-    a1ii_p = calc_a1ii(rho + step, Cmol2seg, dii_eff, l_aii_avg, l_rii_avg, x0ii, epsilonii_avg, zetax)
-    a1ii_m = calc_a1ii(rho - step, Cmol2seg, dii_eff, l_aii_avg, l_rii_avg, x0ii, epsilonii_avg, zetax)
+    # NoteHere g1 der_a1kl
 
-    return np.einsum("ij,i->ij", (a1ii_p - a1ii_m), 0.5 / step)
+    das1_drhos_r = calc_da1sii_drhos(rho, Cmol2seg, l_rii_avg, zetax, epsilonii_avg, dii_eff)
+    das1_drhos_a = calc_da1sii_drhos(rho, Cmol2seg, l_aii_avg, zetax, epsilonii_avg, dii_eff)
+
+    dB_drhos_r = calc_dBkl_drhos(l_rii_avg, dii_eff, epsilonii_avg, x0ii, zetax) 
+    dB_drhos_a = calc_dBkl_drhos(l_aii_avg, dii_eff, epsilonii_avg, x0ii, zetax)
+
+    da1iidrhos = (Cii * (((x0ii**l_aii_avg) * (das1_drhos_a + dB_drhos_a)) - ((x0ii**l_rii_avg) * (das1_drhos_r + dB_drhos_r))))
+
+    return da1iidrhos
 
 def calc_a2ii_1pchi(rho, Cmol2seg, epsilonii_avg, dii_eff, x0ii, l_rii_avg, l_aii_avg, zetax):
 
@@ -776,6 +829,8 @@ def calc_da2ii_1pchi_drhos(rho, Cmol2seg, epsilonii_avg, dii_eff, x0ii, l_rii_av
 
     logger = logging.getLogger(__name__)
 
+    # NoteHere g2mca der_a2kl
+
     step = np.sqrt(np.finfo(float).eps) * rho * stepmult
     a2ii_1pchi_p = calc_a2ii_1pchi(rho + step, Cmol2seg, epsilonii_avg, dii_eff, x0ii, l_rii_avg, l_aii_avg, zetax)
     a2ii_1pchi_m = calc_a2ii_1pchi(rho - step, Cmol2seg, epsilonii_avg, dii_eff, x0ii, l_rii_avg, l_aii_avg, zetax)
@@ -816,13 +871,14 @@ def calc_Achain(rho, Cmol2seg, xi, T, nui, sigmakl, epsilonkl, dkl, xskl, l_rkl,
     beadlibrary : dict
         A dictionary where bead names are the keys to access EOS self interaction parameters:
 
-        * epsilon: :math:`\epsilon_{k,k}/k_B`, Energy well depth scaled by Boltzmann constant
-        * sigma: :math:`\sigma_{k,k}`, Size parameter [m]
-        * mass: Bead mass [kg/mol]
-        * l_r: :math:`\lambda^{r}_{k,k}`, Exponent of repulsive term between groups of type k
-        * l_a: :math:`\lambda^{a}_{k,k}`, Exponent of attractive term between groups of type k
-        * Sk: :math:`S_{k}`, Shape parameter of group k
-        * Vks: :math:`V_{k,s}`, Number of groups, k, in component
+        - epsilon: :math:`\epsilon_{k,k}/k_B`, Energy well depth scaled by Boltzmann constant
+        - sigma: :math:`\sigma_{k,k}`, Size parameter [m]
+        - mass: Bead mass [kg/mol]
+        - l_r: :math:`\lambda^{r}_{k,k}`, Exponent of repulsive term between groups of type k
+        - l_a: :math:`\lambda^{a}_{k,k}`, Exponent of attractive term between groups of type k
+        - Sk: :math:`S_{k}`, Shape parameter of group k
+        - Vks: :math:`V_{k,s}`, Number of groups, k, in component
+
     zetax : numpy.ndarray 
         Matrix of hypothetical packing fraction based on hard sphere diameter for groups (k,l)
     zetaxstar : numpy.ndarray
@@ -895,7 +951,7 @@ def calc_Achain(rho, Cmol2seg, xi, T, nui, sigmakl, epsilonkl, dkl, xskl, l_rkl,
     for i in range(ncomp):
         gdHS[:, i] = np.exp(km[:, 0] + km[:, 1] * x0ii[i] + km[:, 2] * x0ii[i]**2 + km[:, 3] * x0ii[i]**3)
 
-    da1iidrhos = calc_da1iidrhos(rho, Cmol2seg, dii_eff, l_aii_avg, l_rii_avg, x0ii, epsilonii_avg, zetax, stepmult=stepmult)
+    da1iidrhos = calc_da1iidrhos(rho, Cmol2seg, dii_eff, l_aii_avg, l_rii_avg, x0ii, epsilonii_avg, zetax)
 
     a1sii_l_aii_avg = calc_a1s(rho, Cmol2seg, l_aii_avg, zetax, epsilonii_avg, dii_eff)
     a1sii_l_rii_avg = calc_a1s(rho, Cmol2seg, l_rii_avg, zetax, epsilonii_avg, dii_eff)
@@ -931,12 +987,19 @@ def calc_Achain(rho, Cmol2seg, xi, T, nui, sigmakl, epsilonkl, dkl, xskl, l_rkl,
 
     eKC2 = np.einsum("i,j->ij", KHS / rhos, epsilonii_avg * (Cii**2))
 
-    g2MCA = (1.0 / (2.0 * np.pi * (epsilonii_avg**2) * dii_eff**3)) * ((3.0 * da2iidrhos) - (eKC2 * l_rii_avg * (x0ii**(2.0 * l_rii_avg))) * (a1sii_2l_rii_avg + Bii_2l_rii_avg) + eKC2 * (l_rii_avg + l_aii_avg) * (x0ii**(l_rii_avg + l_aii_avg)) * (a1sii_l_rii_avgl_aii_avg + Bii_l_aii_avgl_rii_avg) - eKC2 * l_aii_avg * (x0ii**(2.0 * l_aii_avg)) * (a1sii_2l_aii_avg + Bii_2l_aii_avg))
+    g2MCA = (1.0 / (2.0 * np.pi * (epsilonii_avg**2) * dii_eff**3)) * (( \
+        3.0 * da2iidrhos) - \
+        (eKC2 * l_rii_avg * (x0ii**(2.0 * l_rii_avg))) * (a1sii_2l_rii_avg + Bii_2l_rii_avg) + \
+        eKC2 * (l_rii_avg + l_aii_avg) * (x0ii**(l_rii_avg + l_aii_avg)) * (a1sii_l_rii_avgl_aii_avg + Bii_l_aii_avgl_rii_avg) - \
+        eKC2 * l_aii_avg * (x0ii**(2.0 * l_aii_avg)) * (a1sii_2l_aii_avg + Bii_2l_aii_avg))
 
     g2 = (1.0 + gammacii) * g2MCA
     #g2=np.einsum("i,ij->ij",1.0+gammacii,g2MCA)
 
-    #print(np.exp((epsilonii_avg*g1/(kT*gdHS))+(((epsilonii_avg/kT)**2)*g2/gdHS)))
+    # NoteHere
+    print("g1",g1)
+    print("g2",g2)
+
     gii = gdHS * np.exp((epsilonii_avg * g1 / (kT * gdHS)) + (((epsilonii_avg / kT)**2) * g2 / gdHS))
     tmp = [(epsilonii_avg * g1 / (kT * gdHS)), (((epsilonii_avg / kT)**2) * g2 / gdHS)]
     Achain = 0.0
@@ -972,20 +1035,21 @@ def calc_assoc_matrices(beads, beadlibrary, sitenames=["H", "e1", "e2"], crossli
     beadlibrary : dict
         A dictionary where bead names are the keys to access EOS self interaction parameters:
 
-        * epsilon: :math:`\epsilon_{k,k}/k_B`, Energy well depth scaled by Boltzmann constant
-        * sigma: :math:`\sigma_{k,k}`, Size parameter [m]
-        * mass: Bead mass [kg/mol]
-        * l_r: :math:`\lambda^{r}_{k,k}`, Exponent of repulsive term between groups of type k
-        * l_a: :math:`\lambda^{a}_{k,k}`, Exponent of attractive term between groups of type k
-        * Sk: :math:`S_{k}`, Shape parameter of group k
-        * Vks: :math:`V_{k,s}`, Number of groups, k, in component
+        - epsilon: :math:`\epsilon_{k,k}/k_B`, Energy well depth scaled by Boltzmann constant
+        - sigma: :math:`\sigma_{k,k}`, Size parameter [m]
+        - mass: Bead mass [kg/mol]
+        - l_r: :math:`\lambda^{r}_{k,k}`, Exponent of repulsive term between groups of type k
+        - l_a: :math:`\lambda^{a}_{k,k}`, Exponent of attractive term between groups of type k
+        - Sk: :math:`S_{k}`, Shape parameter of group k
+        - Vks: :math:`V_{k,s}`, Number of groups, k, in component
+
     sitenames : list[str], Optional, default: []
         List of unique association sites used among components
     crosslibrary : dict, Optional, default: {}
         Optional library of bead cross interaction parameters. As many or as few of the desired parameters may be defined for whichever group combinations are desired.
 
-        * epsilon: :math:`\epsilon_{k,l}/k_B`, Energy parameter scaled by Boltzmann Constant
-        * l_r: :math:`\lambda^{r}_{k,l}`, Exponent of repulsive term between groups of type k and l
+        - epsilon: :math:`\epsilon_{k,l}/k_B`, Energy parameter scaled by Boltzmann Constant
+        - l_r: :math:`\lambda^{r}_{k,l}`, Exponent of repulsive term between groups of type k and l
 
     Returns
     -------
@@ -1419,13 +1483,14 @@ def calc_A(rho, xi, T, beads, beadlibrary, massi, nui, Cmol2seg, xsk, xskl, dkk,
     beadlibrary : dict
         A dictionary where bead names are the keys to access EOS self interaction parameters:
 
-        * epsilon: :math:`\epsilon_{k,k}/k_B`, Energy well depth scaled by Boltzmann constant
-        * sigma: :math:`\sigma_{k,k}`, Size parameter [m]
-        * mass: Bead mass [kg/mol]
-        * l_r: :math:`\lambda^{r}_{k,k}`, Exponent of repulsive term between groups of type k
-        * l_a: :math:`\lambda^{a}_{k,k}`, Exponent of attractive term between groups of type k
-        * Sk: :math:`S_{k}`, Shape parameter of group k
-        * Vks: :math:`V_{k,s}`, Number of groups, k, in component
+        - epsilon: :math:`\epsilon_{k,k}/k_B`, Energy well depth scaled by Boltzmann constant
+        - sigma: :math:`\sigma_{k,k}`, Size parameter [m]
+        - mass: Bead mass [kg/mol]
+        - l_r: :math:`\lambda^{r}_{k,k}`, Exponent of repulsive term between groups of type k
+        - l_a: :math:`\lambda^{a}_{k,k}`, Exponent of attractive term between groups of type k
+        - Sk: :math:`S_{k}`, Shape parameter of group k
+        - Vks: :math:`V_{k,s}`, Number of groups, k, in component
+
     massi : numpy.ndarray
         Mass for each component [kg/mol]
     nui : numpy.array
@@ -1486,20 +1551,13 @@ def calc_A(rho, xi, T, beads, beadlibrary, massi, nui, Cmol2seg, xsk, xskl, dkk,
     if tmp != 0.:
         Aassoc = calc_A_assoc(rho, xi, T, nui, xskl, sigmakl, sigmaii_avg, epsilonii_avg, epsilonHB, Kklab, nk)
         A = Aideal + AHS + A1 + A2 + A3 + Achain + Aassoc
-    # NoteHere
-     #   nrho = int(len(A)/2)
-     #   plt.plot(rho[:nrho],Aideal[:nrho]-Aideal[nrho:],"b",linewidth=1)
-     #   plt.plot(rho[:nrho],AHS[:nrho]-AHS[nrho:],"r",linewidth=1)
-     #   plt.plot(rho[:nrho],A1[:nrho]-A1[nrho:],"g",linewidth=1)
-     #   plt.plot(rho[:nrho],A2[:nrho]-A2[nrho:],"c",linewidth=1)
-     #   plt.plot(rho[:nrho],A3[:nrho]-A3[nrho:],"m",linewidth=1)
-     #   plt.plot(rho[:nrho],Achain[:nrho]-Achain[nrho:],"y",linewidth=1)
-     #   plt.plot(rho[:nrho],Aassoc[:nrho]-Aassoc[nrho:],"k",linewidth=1)
-     #   plt.plot(rho[:nrho],A[:nrho]-A[nrho:],"k",linewidth=2)
-     #   plt.show()
         
     else:
         A = Aideal + AHS + A1 + A2 + A3 + Achain
+
+    print("Aideal",Aideal[0])
+    print("Amono",(AHS+A1+A2+A3)[0])
+    print("Achain",Achain[0])
 
     return A
 
@@ -1521,13 +1579,14 @@ def calc_Ares(rho, xi, T, beads, beadlibrary, massi, nui, Cmol2seg, xsk, xskl, d
     beadlibrary : dict
         A dictionary where bead names are the keys to access EOS self interaction parameters:
 
-        * epsilon: :math:`\epsilon_{k,k}/k_B`, Energy well depth scaled by Boltzmann constant
-        * sigma: :math:`\sigma_{k,k}`, Size parameter [m]
-        * mass: Bead mass [kg/mol]
-        * l_r: :math:`\lambda^{r}_{k,k}`, Exponent of repulsive term between groups of type k
-        * l_a: :math:`\lambda^{a}_{k,k}`, Exponent of attractive term between groups of type k
-        * Sk: :math:`S_{k}`, Shape parameter of group k
-        * Vks: :math:`V_{k,s}`, Number of groups, k, in component
+        - epsilon: :math:`\epsilon_{k,k}/k_B`, Energy well depth scaled by Boltzmann constant
+        - sigma: :math:`\sigma_{k,k}`, Size parameter [m]
+        - mass: Bead mass [kg/mol]
+        - l_r: :math:`\lambda^{r}_{k,k}`, Exponent of repulsive term between groups of type k
+        - l_a: :math:`\lambda^{a}_{k,k}`, Exponent of attractive term between groups of type k
+        - Sk: :math:`S_{k}`, Shape parameter of group k
+        - Vks: :math:`V_{k,s}`, Number of groups, k, in component
+
     massi : numpy.ndarray
         Mass for each component [kg/mol]
     nui : numpy.array

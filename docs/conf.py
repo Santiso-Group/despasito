@@ -59,10 +59,12 @@ extensions = [
     'sphinx.ext.intersphinx',
     'sphinx.ext.extlinks',
     'sphinx.ext.todo',
-    'sphinx_automodapi.automodapi',
 ]
+#     'sphinx.ext.napoleon',
+#    'numpydoc',
 
 autosummary_generate = True
+add_module_names = False
 napoleon_google_docstring = False
 napoleon_use_param = False
 napoleon_use_ivar = True

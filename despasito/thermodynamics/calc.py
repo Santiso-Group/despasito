@@ -701,7 +701,7 @@ def calc_phiv(P, T, yi, eos, rhodict={}):
         #muiv = eos.chemicalpotential_old(P, np.array([rhov]), yi, T)
         #phiv = np.exp(muiv)
 
-    print("Vapor Fugacity Coeff",phiv)
+    logger.debug("    Vapor Fugacity Coefficients {}".format(phiv))
 
     return phiv, rhov, flagv
 
@@ -751,7 +751,7 @@ def calc_phil(P, T, xi, eos, rhodict={}):
         #muil = eos.chemicalpotential(P, np.array([rhol]), xi, T)
         #phil = np.exp(muil)
 
-    print("Liquid Fugacity Coeff",phil)
+    logger.debug("    Liquid Fugacity Coefficients {}".format(phil))
 
     return phil, rhol, flagl
 
@@ -850,6 +850,7 @@ def calc_Prange_xi(T, xi, yi, eos, rhodict={}, Pmin=1000, zi_opts={}):
                     slope = (ObjArray[-1] - ObjArray[-2]) / (Parray[-1] - Parray[-2])
                     intercept = ObjArray[-1] - slope * Parray[-1]
                     Pguess = -intercept / slope
+                    break
 
                 #plt.plot(Parray,ObjArray)
                 #plt.plot([Pguess,Pguess],[ObjArray[-1],ObjArray[-2]],'k')
@@ -857,7 +858,6 @@ def calc_Prange_xi(T, xi, yi, eos, rhodict={}, Pmin=1000, zi_opts={}):
                 #plt.ylabel("Obj. Function")
                 #plt.xlabel("Pressure / Pa")
                 #plt.show()
-                break
             elif z == maxiter-1:
                 logger.error('A change in sign for the objective function could not be found, inspect progress')
                 plt.plot(Parray, ObjArray)
@@ -1038,11 +1038,10 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxiter=30, tol=1e-6):
     yi /= np.sum(yi)
     yi_total = [np.sum(yi)]
     flag_check_vapor = True # Make sure we only search for vapor compositions once
-    logger.info("T {}, xi {}, phil {}".format(T, xi, phil))
+    logger.info("    Solve yi: P {}, T {}, xi {}, phil {}".format(P, T, xi, phil))
     for z in range(maxiter):
 
         yi_tmp = yi/np.sum(yi)
-        logger.info("    yi guess {}".format(yi_tmp))
 
         # Try yi
         phiv, rhov, flagv = calc_phiv(P, T, yi_tmp, eos, rhodict=rhodict)
@@ -1074,7 +1073,7 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxiter=30, tol=1e-6):
                     yinew = yi
                     phiv, rhov, flagv = calc_phiv(P, T, yi_tmp, eos, rhodict=rhodict)
 
-        logger.info("    yi calc {}, phiv {}".format(yinew,phiv))
+        logger.info("    yi guess {}, yi calc {}, phiv {}".format(yi_tmp,yinew,phiv))
         logger.info("    Old yi_total: {}, New yi_total: {}, Change: {}".format(yi_total[-1],np.sum(yinew),np.sum(yinew)-yi_total[-1])) 
 
         # Check convergence
@@ -1102,7 +1101,7 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxiter=30, tol=1e-6):
         if tmp > .1: # If difference is greater than 10%
             yinew = find_new_yi(P, T, phil, xi, eos, rhodict=rhodict)
         yinew = spo.least_squares(obj_yi, yinew[0], bounds=(0.,1.), args=(P, T, phil, xi, eos, rhodict))
-        yi = yinew.x
+        yi = yinew.x[0]
         yi = np.array([yi,1-yi])
         obj = obj_yi(yi, P, T, phil, xi, eos, rhodict=rhodict)
         logger.warning('    Find yi with root algorithm, yi {}, obj {}'.format(yi,obj))
@@ -1252,7 +1251,7 @@ def find_new_yi(P, T, phil, xi, eos, rhodict={}):
         yinew = xi * phil / phiv2
         yinew_total_2 = np.sum(yinew)
 
-        logger.debug("yi_totals {} {}".format(yinew_total_1,yinew_total_2))
+        logger.debug("    yi_totals {} {}".format(yinew_total_1,yinew_total_2))
 
         obj = yinew_total_1 - yinew_total_2
 
@@ -1272,7 +1271,6 @@ def find_new_yi(P, T, phil, xi, eos, rhodict={}):
 
     obj_ext = np.array(obj_ext)
     flag_ext = np.array(flag_ext)
-    print(type(flag_ext),type(flag_ext[0]))
 
     tmp = np.count_nonzero(~np.isnan(obj_ext))
     logger.debug("    Number of valid mole fractions: {}".format(tmp))
@@ -1354,9 +1352,9 @@ def obj_yi(yi, P, T, phil, xi, eos, rhodict={}):
     yinew = xi * phil / phiv2
     yinew_total_2 = np.sum(yinew)
 
-    logger.debug("yi_totals {} {}".format(yinew_total_1,yinew_total_2))
+    logger.debug("    yi_totals {} {}".format(yinew_total_1,yinew_total_2))
 
-    obj = yinew_total_1 - yinew_total_2
+    obj = np.abs(yinew_total_1 - yinew_total_2)
     
     return obj
 
@@ -1739,13 +1737,14 @@ def calc_yT_phase(yi, T, eos, rhodict={}, zi_opts={}, Pguess=-1, meth="hybr", pr
 
     #find vapor density and fugacity
     phiv, rhov, flagv = calc_phiv(P, T, yi, eos, rhodict={})
+    phil, rhol, flagl = calc_phil(P, T, xi, eos, rhodict={})
     if "tol" in zi_opts:
         if zi_opts["tol"] > 1e-10:
             zi_opts["tol"] = 1e-10
 
-    xi, phil, flagl = solve_xi_yiT(xi_global, yi, phiv, P, T, eos, rhodict, **zi_opts)
-    xi_global = xi
-    obj = solve_P_yiT(P, yi, T, eos, rhodict=rhodict)
+    obj = solve_P_yiT(P, yi, T, eos, rhodict=rhodict, zi_opts=zi_opts)
+
+    logger.info("Final Output: Obj {}, P {} Pa, flagl {}, xi {}".format(obj,P,flagl,xi_global))
 
     return P, xi, flagl, flagv, obj
 
@@ -1882,16 +1881,20 @@ def calc_xT_phase(xi, T, eos, rhodict={}, zi_opts={}, Pguess=-1, meth="hybr", pr
     #Given final P estimate
     if meth != "brent":
         P = Pfinal.x
+        logger.info("Optimization terminated successfully: {} {}".format(Pfinal.success,Pfinal.message))
 
     #find liquid density and fugacity
     phil, rhol, flagl = calc_phil(P, T, xi, eos, rhodict={})
+    phiv, rhov, flagv = calc_phiv(P, T, yi, eos, rhodict={})
     if "tol" in zi_opts:
         if zi_opts["tol"] > 1e-10:
             zi_opts["tol"] = 1e-10
 
-    yi, phiv, flagv = solve_yi_xiT(yi_global, xi, phil, P, T, eos, rhodict, **zi_opts)
-    yi_global = yi
-    obj = solve_P_xiT(P, xi, T, eos, rhodict=rhodict)
+    obj = solve_P_xiT(P, xi, T, eos, rhodict=rhodict, zi_opts=zi_opts)
+
+    # NoteHere
+
+    logger.info("Final Output: Obj {}, P {} Pa, flagv {}, yi {}".format(obj,P,flagv,yi_global))
 
     return P, yi_global, flagv, flagl, obj
 
