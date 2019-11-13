@@ -722,7 +722,6 @@ def calc_da1iidrhos(rho, Cmol2seg, dii_eff, l_aii_avg, l_rii_avg, x0ii, epsiloni
 
     logger = logging.getLogger(__name__)
 
-    # NoteHere g1 der_a1kl
     Cii = C(l_rii_avg, l_aii_avg)
 
     das1_drhos_r = calc_da1sii_drhos(rho, Cmol2seg, l_rii_avg, zetax, epsilonii_avg, dii_eff)
@@ -735,59 +734,9 @@ def calc_da1iidrhos(rho, Cmol2seg, dii_eff, l_aii_avg, l_rii_avg, x0ii, epsiloni
 
     return da1iidrhos
 
-def calc_a2ii_1pchi(rho, Cmol2seg, epsilonii_avg, dii_eff, x0ii, l_rii_avg, l_aii_avg, zetax):
+def calc_da2ii_1pchi_drhos(rho, Cmol2seg, epsilonii_avg, dii_eff, x0ii, l_rii_avg, l_aii_avg, zetax):
 
     r""" 
-    Calculate the term, :math:`\frac{\bar{a}_{2,ii}}{1+\bar{\chi}_{ii}}`, used in the calculation of the second-order term from the macroscopic compressibility approximation based on the fluctuation term of the Sutherland potential.
-
-    Parameters
-    ----------
-    rho : numpy.ndarray
-        Number density of system [molecules/m^3]
-    Cmol2seg : float
-        Conversion factor from from molecular number density, :math:`\rho`, to segment (i.e. group) number density, :math:`\rho_S`. Shown in eq. 13
-    epsilonii_avg : numpy.ndarray
-        Average bead (i.e. group or segment) potential well depth in component (i.e. molecule) i.
-    dii_eff : numpy.ndarray
-        Effective hard sphere diameter of the beads (i.e. groups or segments) in component (i.e. molecule) i.
-    x0ii : numpy.ndarray
-        Matrix of sigmaii_avg/dii_eff
-    l_rii_avg : numpy.ndarray
-        Average bead (i.e. group or segment) attractive exponent in component (i.e. molecule) i.
-    l_aii_avg : numpy.ndarray
-        Average bead (i.e. group or segment) attractive exponent in component (i.e. molecule) i.
-    zetax : numpy.ndarray 
-        Matrix of hypothetical packing fraction based on hard sphere diameter for groups (k,l)
-
-    Returns
-    -------
-    a2ii_1pchi : nump.ndarray
-        Term used in the calculation of the second-order term from the macroscopic compressibility
-        
-    """
-
-    logger = logging.getLogger(__name__)
-
-    KHS = ((1.0 - zetax)**4) / (1.0 + (4.0 * zetax) + (4.0 * (zetax**2)) - (4.0 * (zetax**3)) + (zetax**4))
-    Cii = C(l_rii_avg, l_aii_avg)
-
-    a1sii_2l_aii_avg = calc_a1s(rho, Cmol2seg, 2.0 * l_aii_avg, zetax, epsilonii_avg, dii_eff)
-    a1sii_2l_rii_avg = calc_a1s(rho, Cmol2seg, 2.0 * l_rii_avg, zetax, epsilonii_avg, dii_eff)
-    a1sii_l_rii_avgl_aii_avg = calc_a1s(rho, Cmol2seg, l_aii_avg + l_rii_avg, zetax, epsilonii_avg, dii_eff)
-
-    Bii_2l_aii_avg = calc_Bkl(rho, 2.0 * l_aii_avg, Cmol2seg, dii_eff, epsilonii_avg, x0ii, zetax)
-    Bii_2l_rii_avg = calc_Bkl(rho, 2.0 * l_rii_avg, Cmol2seg, dii_eff, epsilonii_avg, x0ii, zetax)
-    Bii_l_aii_avgl_rii_avg = calc_Bkl(rho, l_aii_avg + l_rii_avg, Cmol2seg, dii_eff, epsilonii_avg, x0ii, zetax)
-
-    a2ii_1pchi = 0.5 * epsilonii_avg * (Cii**2) * ((x0ii**(2.0 * l_aii_avg)) * (a1sii_2l_aii_avg + Bii_2l_aii_avg) - (2.0 * (x0ii**(l_aii_avg + l_rii_avg))) * (a1sii_l_rii_avgl_aii_avg + Bii_l_aii_avgl_rii_avg) +
- (x0ii**(2.0 * l_rii_avg)) * (a1sii_2l_rii_avg + Bii_2l_rii_avg))
-
-    a2ii_1pchi = np.einsum("i,ij->ij", KHS, a2ii_1pchi)
-    return a2ii_1pchi
-
-def calc_da2ii_1pchi_drhos(rho, Cmol2seg, epsilonii_avg, dii_eff, x0ii, l_rii_avg, l_aii_avg, zetax, stepmult=1.0):
-
-    r"""
     Compute derivative of the term, :math:`\frac{\bar{a}_{2,ii}}{1+\bar{\chi}_{ii}}` with respect to :math:`\rho_s`
 
     Parameters
@@ -808,26 +757,50 @@ def calc_da2ii_1pchi_drhos(rho, Cmol2seg, epsilonii_avg, dii_eff, x0ii, l_rii_av
         Average bead (i.e. group or segment) attractive exponent in component (i.e. molecule) i.
     zetax : numpy.ndarray 
         Matrix of hypothetical packing fraction based on hard sphere diameter for groups (k,l)
-    stepmult : float, Optional, default: 1.0
-        Factor, :math:`f_{step}`, used to change the step size used in derivative that is computed from the smallest representable positive number on the machine being used, where:
-        :math:`step = f_{step} \sqrt{\epsilon_{smallest}}\rho_s`
 
     Returns
     -------
     da2ii_1pchi_drhos : nump.ndarray
-        Derivative of term with respect to segment density
+        Term used in the calculation of the second-order term from the macroscopic compressibility
         
     """
 
-    logger = logging.getLogger(__name__)
-
     # NoteHere g2mca der_a2kl
 
-    step = np.sqrt(np.finfo(float).eps) * rho * stepmult
-    a2ii_1pchi_p = calc_a2ii_1pchi(rho + step, Cmol2seg, epsilonii_avg, dii_eff, x0ii, l_rii_avg, l_aii_avg, zetax)
-    a2ii_1pchi_m = calc_a2ii_1pchi(rho - step, Cmol2seg, epsilonii_avg, dii_eff, x0ii, l_rii_avg, l_aii_avg, zetax)
+    logger = logging.getLogger(__name__)
 
-    return np.einsum("ij,i->ij", (a2ii_1pchi_p - a2ii_1pchi_m), 0.5 / step)
+    # Calculate terms and derivatives used in derivative chain rule 
+    KHS = ((1.0 - zetax)**4) / (1.0 + (4.0 * zetax) + (4.0 * (zetax**2)) - (4.0 * (zetax**3)) + (zetax**4))
+    dKHS_rhos = (4.0*(zetax**2 - 5.0*zetax - 2.0)*(1.0 - zetax)**3)/(zetax**4 - 4.0*zetax**3 + 4.0*zetax**2 + 4.0*zetax + 1.0)**2 *(zetax/(rho*Cmol2seg))
+
+    a1sii_2l_aii_avg = calc_a1s(rho, Cmol2seg, 2.0 * l_aii_avg, zetax, epsilonii_avg, dii_eff)
+    a1sii_2l_rii_avg = calc_a1s(rho, Cmol2seg, 2.0 * l_rii_avg, zetax, epsilonii_avg, dii_eff)
+    a1sii_l_rii_avgl_aii_avg = calc_a1s(rho, Cmol2seg, l_aii_avg + l_rii_avg, zetax, epsilonii_avg, dii_eff)
+
+    Bii_2l_aii_avg = calc_Bkl(rho, 2.0 * l_aii_avg, Cmol2seg, dii_eff, epsilonii_avg, x0ii, zetax)
+    Bii_2l_rii_avg = calc_Bkl(rho, 2.0 * l_rii_avg, Cmol2seg, dii_eff, epsilonii_avg, x0ii, zetax)
+    Bii_l_aii_avgl_rii_avg = calc_Bkl(rho, l_aii_avg + l_rii_avg, Cmol2seg, dii_eff, epsilonii_avg, x0ii, zetax)
+
+    da1sii_2l_aii_avg = calc_da1sii_drhos(rho, Cmol2seg, 2.0 * l_aii_avg, zetax, epsilonii_avg, dii_eff)
+    da1sii_2l_rii_avg = calc_da1sii_drhos(rho, Cmol2seg, 2.0 * l_rii_avg, zetax, epsilonii_avg, dii_eff)
+    da1sii_l_rii_avgl_aii_avg = calc_da1sii_drhos(rho, Cmol2seg, l_aii_avg + l_rii_avg, zetax, epsilonii_avg, dii_eff)
+
+    dBii_2l_aii_avg = cdBkl_drhos(2.0 * l_aii_avg, dii_eff, epsilonii_avg, x0ii, zetax)
+    dBii_2l_rii_avg = dBkl_drhos(2.0 * l_rii_avg, dii_eff, epsilonii_avg, x0ii, zetax)
+    dBii_l_aii_avgl_rii_avg = dBkl_drhos(l_aii_avg + l_rii_avg, dii_eff, epsilonii_avg, x0ii, zetax)
+
+    # Calculate Derivative
+    Cii = C(l_rii_avg, l_aii_avg)
+
+    B = x0ii**(2.0 * l_aii_avg) * (a1sii_2l_aii_avg + Bii_2l_aii_avg) - 2.0 * x0ii**(l_aii_avg + l_rii_avg) * (a1sii_l_rii_avgl_aii_avg + Bii_l_aii_avgl_rii_avg) + x0ii**(2.0 * l_rii_avg) * (a1sii_2l_rii_avg + Bii_2l_rii_avg)
+    dA_B = np.einsum("i,ij->ij", KHS, 0.5*epsilonii_avg*Cii**2 * B)
+
+    dB = x0ii**(2.0 * l_aii_avg) * (da1sii_2l_aii_avg + dBii_2l_aii_avg) - 2.0 * x0ii**(l_aii_avg + l_rii_avg) * (da1sii_l_rii_avgl_aii_avg + dBii_l_aii_avgl_rii_avg) + x0ii**(2.0 * l_rii_avg) * (da1sii_2l_rii_avg + dBii_2l_rii_avg)
+    A_dB = np.einsum("i,ij->ij", dKHS_drhos, 0.5*epsilonii_avg*Cii**2 * dB)
+
+    da2ii_1pchi_drhos = A_dB + dA_B
+
+    return da2ii_1pchi_drhos
 
 def calc_Achain(rho, Cmol2seg, xi, T, nui, sigmakl, epsilonkl, dkl, xskl, l_rkl, l_akl, beads, beadlibrary, zetax, zetaxstar, KHS):
     r"""
@@ -967,7 +940,7 @@ def calc_Achain(rho, Cmol2seg, xi, T, nui, sigmakl, epsilonkl, dkl, xskl, l_rkl,
 
     a2iidchi = calc_a2ii_1pchi(rho, Cmol2seg, epsilonii_avg, dii_eff, x0ii, l_rii_avg, l_aii_avg, zetax)
 
-    da2iidrhos = calc_da2ii_1pchi_drhos(rho, Cmol2seg, epsilonii_avg, dii_eff, x0ii, l_rii_avg, l_aii_avg, zetax, stepmult=stepmult)
+    da2iidrhos = calc_da2ii_1pchi_drhos(rho, Cmol2seg, epsilonii_avg, dii_eff, x0ii, l_rii_avg, l_aii_avg, zetax, zetaxstar)
 
     a1sii_2l_aii_avg = calc_a1s(rho, Cmol2seg, 2.0 * l_aii_avg, zetax, epsilonii_avg, dii_eff)
     a1sii_2l_rii_avg = calc_a1s(rho, Cmol2seg, 2.0 * l_rii_avg, zetax, epsilonii_avg, dii_eff)
