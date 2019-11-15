@@ -199,7 +199,7 @@ class saft_gamma_mie(EOStemplate):
 
         return P_tmp
 
-    def fugacity_coefficient(self, P, rho, xi, T,dnmol=1e-3):
+    def fugacity_coefficient(self, P, rho, xi, T, dy=1e-4):
 
         """
         Compute fugacity coefficient
@@ -235,26 +235,43 @@ class saft_gamma_mie(EOStemplate):
         phi_tmp = np.zeros(len(xi))
         rhoi = rho*np.array(xi,float)
 
+#        #### Traditional Central Difference Method
+#        # Set step size in finite difference method
+#        exp = np.floor(np.log10(rho))-3 # Make sure step size is three orders of magnitude lower
+#        drho = 10**exp
+#        logger.debug("    Compute phi for density, {}, with step size {}.".format(rho,drho))
+#
+#        # compute phi
+#        Ares = funcs.calc_Ares(rho *  constants.Nav, xi, T, self._beads, self._beadlibrary, self._massi, self._nui, self._Cmol2seg, self._xsk, self._xskl, self._dkk, self._epsilonkl, self._sigmakl, self._dkl, self._l_akl, self._l_rkl, self._Ckl,self._x0kl, self._epsilonHB, self._Kklab, self._nk)
+#        for i in range(np.size(phi_tmp)):
+#            dAres = np.zeros(2)
+#            for j, delta in enumerate((drho, -drho)):
+#                rhoi_temp = np.copy(rhoi)
+#                if rhoi_temp[i] != 0.:
+#                    rhoi_temp[i] += delta
+#                dAres[j] = self.calc_dAres_drhoi_wrap(T, rhoi_temp)
+#            phi_tmp[i] = Ares + rho*(dAres[0] - dAres[1]) / (2.0 * drho) - np.log(Z) 
+#            #with open("OldPhi.csv","a") as f:
+#            #    f.write("{}, {}, {}, {}, {}, {}, {}\n".format(i,xi[i],phi_tmp[i], Ares, rho, dAres, drho))
+
+        #### Transform y=log(rhoi) Central Difference Method without worrying about negative mole fractions 
         # Set step size in finite difference method
-        exp = np.floor(np.log10(rho))-3 # Make sure step size is three orders of magnitude lower
-        drho = 10**exp
-        logger.debug("    Compute phi for density, {}, with step size {}.".format(rho,drho))
+        y = np.log(rho*np.array(xi,float))
+        #dy = 0.05
 
         # compute phi
-        # NoteHere
         Ares = funcs.calc_Ares(rho *  constants.Nav, xi, T, self._beads, self._beadlibrary, self._massi, self._nui, self._Cmol2seg, self._xsk, self._xskl, self._dkk, self._epsilonkl, self._sigmakl, self._dkl, self._l_akl, self._l_rkl, self._Ckl,self._x0kl, self._epsilonHB, self._Kklab, self._nk)
-        A = funcs.calc_A(rho *  constants.Nav, xi, T, self._beads, self._beadlibrary, self._massi, self._nui, self._Cmol2seg, self._xsk, self._xskl, self._dkk, self._epsilonkl, self._sigmakl, self._dkl, self._l_akl, self._l_rkl, self._Ckl,self._x0kl, self._epsilonHB, self._Kklab, self._nk)
-        print("Aideal",(A-Ares)[0])
-        print("Ares",Ares[0])
-        print("A",A[0])
         for i in range(np.size(phi_tmp)):
             dAres = np.zeros(2)
-            for j, delta in enumerate((drho, -drho)):
-                rhoi_temp = np.copy(rhoi)
-                if rhoi_temp[i] != 0.:
-                    rhoi_temp[i] += delta
-                dAres[j] = self.calc_dAres_drhoi_wrap(T, rhoi_temp)
-            phi_tmp[i] = Ares + rho*(dAres[0] - dAres[1]) / (2.0 * drho) - np.log(Z) 
+            for j, delta in enumerate((dy, -dy)):
+                y_temp = np.copy(y)
+                if xi[i] != 0.:
+                    y_temp[i] += delta
+                dAres[j] = self.calc_dAres_drhoi_wrap(T, np.exp(y_temp))
+            phi_tmp[i] = Ares + rho/np.exp(y[i])*(dAres[0] - dAres[1]) / (2.0 * dy) - np.log(Z)
+            #with open("NewPhi.csv","a") as f:
+            #    f.write("{}, {}, {}, {}, {}, {}, {}, {}, {}, {}\n".format(i,xi[i],phi_tmp[i], Ares, rho/np.exp(y[i]), dAres, dy,rho,y[i],np.exp(y[i])))
+        ##########################################
 
         phi = np.exp(phi_tmp)
 

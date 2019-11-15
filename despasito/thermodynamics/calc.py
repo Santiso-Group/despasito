@@ -701,7 +701,7 @@ def calc_phiv(P, T, yi, eos, rhodict={}):
         #muiv = eos.chemicalpotential_old(P, np.array([rhov]), yi, T)
         #phiv = np.exp(muiv)
 
-    logger.debug("    Vapor Fugacity Coefficients {}".format(phiv))
+    #logger.debug("    Vapor Fugacity Coefficients {}".format(phiv))
 
     return phiv, rhov, flagv
 
@@ -751,7 +751,7 @@ def calc_phil(P, T, xi, eos, rhodict={}):
         #muil = eos.chemicalpotential(P, np.array([rhol]), xi, T)
         #phil = np.exp(muil)
 
-    logger.debug("    Liquid Fugacity Coefficients {}".format(phil))
+    #logger.debug("    Liquid Fugacity Coefficients {}".format(phil))
 
     return phil, rhol, flagl
 
@@ -1062,16 +1062,16 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxiter=30, tol=1e-6):
         else:
             yinew = xi * phil / phiv
 
-        # Check for bouncing between values
-        if len(yi_total) > 3:
-            tmp1 =  (np.abs(np.sum(yinew)-yi_total[-2]) + np.abs(yi_total[-1]-yi_total[-3]))
-            tmp2 = (np.abs(np.sum(yinew)-yi_total[-2]) + np.abs(yi_total[-1]-yi_total[-3])) < tol/1000
-            if (tmp1 < np.abs(np.sum(yinew)-yi_total[-1]) and tmp1 < 1e-5):
-                # This occurs when the P vs. v curve doesn't cross the 0 axis, there could be a larger problem causing this, but in my experience, it's because the curve is not long enough to converge to zero. Instead of the possible endless increase in vector length and a substantial increase in computational time, we simply set the fugacity coefficient to ideal and the density to 0. When an iteration on our assumption produces a vapor near ideality, it then may predict an ideal gas. This causes the constant back and forth that really isn't that important to solve, as the fugacity coefficients are unity regardless.
-                logger.info("    yi_total is bouncing between {} and {}, choose the lowest value (outer loop obj. function).".format(np.sum(yinew),yi_total[-1]))
-                if np.sum(yinew) > yi_total[-1]:
-                    yinew = yi
-                    phiv, rhov, flagv = calc_phiv(P, T, yi_tmp, eos, rhodict=rhodict)
+        ## Check for bouncing between values
+        #if len(yi_total) > 3:
+        #    tmp1 =  (np.abs(np.sum(yinew)-yi_total[-2]) + np.abs(yi_total[-1]-yi_total[-3]))
+        #    tmp2 = (np.abs(np.sum(yinew)-yi_total[-2]) + np.abs(yi_total[-1]-yi_total[-3])) < tol/1000
+        #    if (tmp1 < np.abs(np.sum(yinew)-yi_total[-1]) and tmp1 < 1e-5):
+        #        # This occurs when the P vs. v curve doesn't cross the 0 axis, there could be a larger problem causing this, but in my experience, it's because the curve is not long enough to converge to zero. Instead of the possible endless increase in vector length and a substantial increase in computational time, we simply set the fugacity coefficient to ideal and the density to 0. When an iteration on our assumption produces a vapor near ideality, it then may predict an ideal gas. This causes the constant back and forth that really isn't that important to solve, as the fugacity coefficients are unity regardless.
+        #        logger.info("    yi_total is bouncing between {} and {}, choose the lowest value (outer loop obj. function).".format(np.sum(yinew),yi_total[-1]))
+        #        if np.sum(yinew) > yi_total[-1]:
+        #            yinew = yi
+        #            phiv, rhov, flagv = calc_phiv(P, T, yi_tmp, eos, rhodict=rhodict)
 
         logger.info("    yi guess {}, yi calc {}, phiv {}".format(yi_tmp,yinew,phiv))
         logger.info("    Old yi_total: {}, New yi_total: {}, Change: {}".format(yi_total[-1],np.sum(yinew),np.sum(yinew)-yi_total[-1])) 
@@ -1156,34 +1156,47 @@ def solve_xi_yiT(xi, yi, phiv, P, T, eos, rhodict={}, maxiter=20, tol=1e-6):
     global xi_global
 
     xi /= np.sum(xi)
-    xi_total = np.sum(xi)
+    xi_total = [np.sum(xi)]
+    flag_check_liquid = True # Make sure we only search for vapor compositions once
+    logger.info("    Solve xi: P {}, T {}, yi {}, phiv {}".format(P, T, yi, phiv))
     for z in range(maxiter):
 
-        xi /= np.sum(xi)
-        logger.info("    xi guess {}".format(xi))
+        xi_tmp = xi/np.sum(xi)
 
         # Try xi
-        phil, rhol, flagl = calc_phil(P, T, xi, eos, rhodict=rhodict)
+        phil, rhol, flagl = calc_phil(P, T, xi_tmp, eos, rhodict=rhodict)
 
         if (any(np.isnan(phil)) or flagl==0): # If liquid density doesn't exist
-            raise ValueError("This composition under these system conditions doesn't produce a liquid or critical fluid. This system must be approaching its critical point and has a suitably small pressure. No contingency function has been established.")
+            flag_check_liquid = False
+            logger.info("    Composition doesn't produce a liquid, let's find one!")
+            if all(xi != 0.):
+                xinew = find_new_xi(P, T, phiv, yi, eos, rhodict=rhodict)
+                phil, rhol, flagl = calc_phil(P, T, xinew, eos, rhodict=rhodict)
+                xinew = yi * phiv / phil
+            else:
+                xinew = xi
+            
+            if any(np.isnan(phil)):
+                phil = np.nan
+                logger.error("Fugacity coefficient of liquid should not be NaN")
+        else:
+            xinew = yi * phiv / phil
 
-        xinew = yi * phiv / phil
-        logger.info("    xi calc {}".format(xinew))
-        logger.info("    Old xi_total: {}, New xi_total: {}, Change: {}".format(xi_total,np.sum(xinew),np.sum(xinew)-xi_total))
+        logger.info("    xi guess {}, xi calc {}, phil {}".format(xi_tmp,xinew,phil))
+        logger.info("    Old xi_total: {}, New xi_total: {}, Change: {}".format(xi_total[-1],np.sum(xinew),np.sum(xinew)-xi_total[-1]))
 
         # Check convergence
-        if abs(np.sum(xinew)-xi_total) < tol:
-            ind_tmp = np.where(xi == min(xi[xi>0]))[0]
+        if abs(np.sum(xinew)-xi_total[-1]) < tol:
+            ind_tmp = np.where(xi_tmp == min(xi_tmp[xi_tmp>0]))[0]
             xi2 = xinew/np.sum(xinew)
-            if np.abs(xi2[ind_tmp] - xi[ind_tmp]) / xi[ind_tmp] < tol:
-                xi_global = xi
+            if np.abs(xi2[ind_tmp] - xi_tmp[ind_tmp]) / xi_tmp[ind_tmp] < tol:
+                xi_global = xi_tmp
                 logger.info("    Found xi")
                 break
 
         if z < maxiter-1:
-            xi = xinew/np.sum(xinew)
-            xi_total = np.sum(xinew)
+            xi_total.append(np.sum(xinew))
+            xi = xinew
 
     ## If xi wasn't found in defined number of iterations
     xinew /= np.sum(xinew)
@@ -1191,11 +1204,19 @@ def solve_xi_yiT(xi, yi, phiv, P, T, eos, rhodict={}, maxiter=20, tol=1e-6):
     ind_tmp = np.where(xi == min(xi[xi>0]))[0]
     if z == maxiter - 1:
         xi2 = xinew/np.sum(xinew)
-        logger.warning('    More than {} iterations needed. Error in Smallest Fraction: {} %%'.format(maxiter, (np.abs(xi2[ind_tmp] - xi[ind_tmp]) / xi[ind_tmp])*100))
+        tmp = (np.abs(xinew[ind_tmp] - xi_tmp[ind_tmp]) / xi_tmp[ind_tmp])
+        logger.warning('    More than {} iterations needed. Error in Smallest Fraction: {} %%'.format(maxiter, tmp*100))
+        if tmp > .1: # If difference is greater than 10%
+            xinew = find_new_xi(P, T, phiv, yi, eos, rhodict=rhodict)
+        xinew = spo.least_squares(obj_xi, xinew[0], bounds=(0.,1.), args=(P, T, phiv, yi, eos, rhodict))
+        xi = xinew.x[0]
+        xi = np.array([xi,1-xi])
+        obj = obj_xi(xi, P, T, phiv, yi, eos, rhodict=rhodict)
+        logger.warning('    Find xi with root algorithm, xi {}, obj {}'.format(xi,obj))
     else:
-        logger.info("    Inner Loop Final xi: {}, Final Error on Smallest Fraction: {}".format(xi,np.abs(xi2[ind_tmp] - xi[ind_tmp]) / xi[ind_tmp]*100))
+        logger.info("    Inner Loop Final xi: {}, Final Error on Smallest Fraction: {}".format(xi_tmp,np.abs(xi2[ind_tmp] - xi_tmp[ind_tmp]) / xi_tmp[ind_tmp]*100))
 
-    return xi, phil, flagl
+    return xi_tmp, phil, flagl
 
 ######################################################################
 #                                                                    #
@@ -1284,6 +1305,7 @@ def find_new_yi(P, T, phil, xi, eos, rhodict={}):
         flag_tmp = flag_ext[1][~np.isnan(obj_ext)]
  
         # Assess vapor values
+        # A value of 0 is vapor, 1 is liquid, 2 mean a critical fluid, 3 means that neither is true, 4 means we should assume ideal gas
         ind = [i for i in range(len(flag_tmp)) if flag_tmp[i] not in [1,3]]
         if ind:
             obj_tmp = [obj_tmp[i] for i in ind]
@@ -1295,11 +1317,10 @@ def find_new_yi(P, T, phil, xi, eos, rhodict={}):
         yi_tmp = yi_tmp[ind]
 
     logger.info("    Found new guess in yi: {}, Obj: {}".format(yi_tmp,obj_tmp))
-    yi = yi_tmp
-    if type(yi) not in [list,np.ndarray]:
-        yi = np.array([yi, 1-yi])
+    if type(yi_tmp) not in [list,np.ndarray]:
+        yi_tmp = np.array([yi_tmp, 1-yi_tmp])
 
-    return yi
+    return yi_tmp
 
 ######################################################################
 #                                                                    #
@@ -1358,99 +1379,160 @@ def obj_yi(yi, P, T, phil, xi, eos, rhodict={}):
     
     return obj
 
+######################################################################
+#                                                                    #
+#                       Find new Xi                                  #
+#                                                                    #
+######################################################################
 
-######################################################################
-#                                                                    #
-#                              Solve Xi in root finding              #
-#                                                                    #
-######################################################################
-def solve_xi_root(xi0, yi, phiv, P, T, eos, rhodict):
+
+def find_new_xi(P, T, phiv, yi, eos, rhodict={}):
     r"""
-    Objective function used to search liquid mole fraction and solve inner loop of dew point calculations.
-    
+    Search liquid mole fraction combinations for a new estimate that produces a liquid density.
+        
     Parameters
     ----------
-    xi : numpy.ndarray
-        Guess in liquid mole fraction of each component, sum(xi) should equal 1.0
-    yi : numpy.ndarray
-        Vapor mole fraction of each component, sum(yi) should equal 1.0
+    P : float
+        Pressure of the system [Pa]
+    T : float
+        Temperature of the system [K]
     phiv : float
         Fugacity coefficient of vapor at system pressure
-    P : float
-        Pressure of the system [Pa]
-    T : float
-        Temperature of the system [K]
+    yi : numpy.ndarray
+        Vapor mole fraction of each component, sum(yi) should equal 1.0
     eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
     rhodict : dict, Optional, default: {}
-        Dictionary of options used in calculating pressure vs. mole 
-
+        Dictionary of options used in calculating pressure vs. mole
+        
     Returns
     -------
-    obj_value : list
-        List of percent change between guess that is input and the updated version from recalculating with fugacity coefficients.
+    xi : numpy.ndarray
+        Vapor mole fraction of each component, sum(yi) should equal 1.0
     """
-
-    logger = logging.getLogger(__name__)
-
-    xi0 /= np.sum(xi0)
-    xi = xi0
-
-    phil, rhol, flagl = calc_phil(P, T, xi, eos, rhodict={})
-    xinew = yi * phiv / phil
-    xinew /= np.sum(xinew)
-
-    logger.info('    xi: {}, xinew: {}, Percent Error: {}'.format(xi,xinew,((xinew - xi)/xi*100)))
-
-    ind_tmp = np.where(xi==min(xi))[0]
-    return np.abs(xinew[ind_tmp]-xi[ind_tmp])/xi[ind_tmp]
-
-######################################################################
-#                                                                    #
-#                       Solve Yi in Root Finding                     #
-#                                                                    #
-######################################################################
-
-def solve_yi_root(yi0, xi, phil, P, T, eos, rhodict={}):
-    r"""
-    Objective function used to search vapor mole fraction and solve inner loop of bubble point calculations.
     
+    logger = logging.getLogger(__name__)
+    
+    xi_ext = np.linspace(0.01,.99,30) # Guess for yi
+    obj_ext = []
+    #flag_ext = []
+    xi_total2_ext = []
+    rho_ext = []
+    phi_ext = []
+    flag_ext = [[],[]]
+    
+    for xi in xi_ext:
+        xi = np.array([xi, 1-xi])
+        ####
+        phil, rhol, flagl = calc_phil(P, T, xi, eos, rhodict=rhodict)
+        xinew = yi * phiv / phil
+        xinew_total_1 = np.sum(xinew)
+        
+        xi2 = xinew/xinew_total_1
+        phil2, rhol2, flagl2 = calc_phil(P, T, xi2, eos, rhodict=rhodict)
+        xinew = yi * phiv / phil2
+        xinew_total_2 = np.sum(xinew)
+        
+        logger.debug("    xi_totals {} {}".format(xinew_total_1,xinew_total_2))
+        
+        obj = xinew_total_1 - xinew_total_2
+        
+        flag_ext[0].append(flagl)
+        flag_ext[1].append(flagl2)
+        ######
+        #    obj = obj_yi(yi, P, T, phil, xi, eos, rhodict=rhodict)
+        obj_ext.append(abs(obj))
+        logger.debug("    Obj xi {} total1 - total2 = {}".format(xi,obj))
+
+    obj_ext = np.array(obj_ext)
+    flag_ext = np.array(flag_ext)
+
+    tmp = np.count_nonzero(~np.isnan(obj_ext))
+    logger.debug("    Number of valid mole fractions: {}".format(tmp))
+    if tmp == 0:
+        xi_tmp = np.nan
+        obj_tmp = np.nan
+    else:
+        # Remove any NaN
+        obj_tmp  =  obj_ext[~np.isnan(obj_ext)]
+        xi_tmp   =   xi_ext[~np.isnan(obj_ext)]
+        flag_tmp = flag_ext[1][~np.isnan(obj_ext)]
+    
+        # Assess vapor values
+        # A value of 0 is vapor, 1 is liquid, 2 mean a critical fluid, 3 means that neither is true, 4 means we should assume ideal gas
+        ind = [i for i in range(len(flag_tmp)) if flag_tmp[i] not in [0,3,4]]
+        if ind:
+            obj_tmp = [obj_tmp[i] for i in ind]
+            xi_tmp = [xi_tmp[i] for i in ind]
+    
+        # Choose values with lowest objective function
+        ind = np.where(np.abs(obj_tmp)==min(np.abs(obj_tmp)))[0][0]
+        obj_tmp = obj_tmp[ind]
+        xi_tmp = xi_tmp[ind]
+    
+    logger.info("    Found new guess in xi: {}, Obj: {}".format(xi_tmp,obj_tmp))
+
+    if type(xi_tmp) not in [list,np.ndarray]:
+        xi_tmp = np.array([xi_tmp, 1-xi_tmp])
+    
+    return xi_tmp
+
+######################################################################
+#                                                                    #
+#                       Find new Xi                                  #
+#                                                                    #
+######################################################################
+
+
+def obj_xi(xi, P, T, phiv, yi, eos, rhodict={}):
+    r"""
+    Objective function for solving for stable vapor mole fraction.
+        
     Parameters
     ----------
-    yi0 : numpy.ndarray
-        Guess in vapor mole fraction of each component, sum(yi) should equal 1.0
     xi : numpy.ndarray
         Liquid mole fraction of each component, sum(xi) should equal 1.0
-    phil : float
-        Fugacity coefficient of liquid at system pressure
     P : float
         Pressure of the system [Pa]
     T : float
         Temperature of the system [K]
+    phiv : float
+        Fugacity coefficient of vapor at system pressure
+    yi : numpy.ndarray
+        Vapor mole fraction of each component, sum(yi) should equal 1.0
     eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
     rhodict : dict, Optional, default: {}
-        Dictionary of options used in calculating pressure vs. mole 
-
+        Dictionary of options used in calculating pressure vs. mole
+        
     Returns
     -------
-    obj_value : list
-        List of absolute change between guess that is input and the updated version from recalculating with fugacity coefficients.
+    obj : numpy.ndarray
+        Objective function for solving for liquid mole fractions
     """
-
+    
     logger = logging.getLogger(__name__)
+    
+    if type(xi) == float or len(xi) == 1:
+        if type(xi) in [list, np.ndarray]:
+            xi = np.array([xi[0], 1-xi[0]])
+        else:
+            xi = np.array([xi, 1-xi])
 
-    yi0 /= np.sum(yi0)
-    yi = yi0
-
-    phiv, rhov, flagv = calc_phiv(P, T, yi, eos, rhodict={})
-    yinew = xi * phil / phiv
-    yinew = yinew / np.sum(yinew)
-
-    logger.info('    yi: {}, yinew: {}, Percent Error: {}'.format(yi,yinew,((yinew - yi)/yi*100)))
-
-    ind_tmp = np.where(yi==min(yi))[0]
-    return np.abs(yinew[ind_tmp]-yi[ind_tmp])/yi[ind_tmp]
+    phil, rhol, flagl = calc_phil(P, T, xi, eos, rhodict=rhodict)
+    xinew = yi * phiv / phil
+    xinew_total_1 = np.sum(xinew)
+    
+    xi2 = xinew/xinew_total_1
+    phil2, rhol2, flagl2 = calc_phil(P, T, xi2, eos, rhodict=rhodict)
+    xinew = yi * phiv / phil2
+    xinew_total_2 = np.sum(xinew)
+    
+    logger.debug("    xi_totals {} {}".format(xinew_total_1,xinew_total_2))
+    
+    obj = np.abs(xinew_total_1 - xinew_total_2)
+    
+    return obj
 
 ######################################################################
 #                                                                    #

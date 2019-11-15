@@ -5,6 +5,6 @@
     "output_file": "out_xi.txt",
     "calculation_type" : "sat_props",
     "association_site_names": ["H","e1","a1"],
-    "Tlist" : [323.2,323.2],
-    "xilist": [[0.00, 1.00],[1.00, 0.00]]
+    "Tlist" : [323.2],
+    "xilist": [[0.00, 1.00]]
 }

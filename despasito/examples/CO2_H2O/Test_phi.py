@@ -8,7 +8,6 @@ import despasito.equations_of_state
 
 T = 323.2
 xi = np.array([0.78988277, 0.21011723])
-P = 4492927.45
 rho = np.array([21146.16997993])
 P = np.array([1713500.67089664])
 
@@ -31,57 +30,22 @@ epsilonHB_co2_h2o = np.array([[[[   0.,     0.,     0. ], \
                        [   0.,     0.,     0. ]]]])
 eos = despasito.equations_of_state.eos(eos="saft.gamma_mie",xi=xi,beads=beads_co2_h2o,nui=nui_co2_h2o,beadlibrary=beadlibrary_co2_h2o,crosslibrary=crosslibrary_co2_h2o,sitenames=sitenames_co2_h2o)
 
-Nmol = [1, 10, 100, 1000, 10000, 100000]
-DNmol = [1e-1,1e-2,1e-3,1e-4,1e-5,1e-6,1e-7,1e-8,1e-9]
-ratio = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
+dy_array = [1.0, 0.1, 0.01, 1e-3, 1e-4, 1e-5, 1e-6]
+dy_array = [1e-4]
+x1_array = np.linspace(0.,0.01,100)
 
-#for i,nmol in enumerate(Nmol):
-#    mui = []
-#    for j,dnmol in enumerate(DNmol):
-#        mui.append(eos.chemicalpotential(rho,xi,T,nmol=nmol,dnmol=dnmol))
-#    mui = np.array(mui).T
-#    plt.figure(1)
-#    plt.plot(range(1,len(DNmol)+1),mui[0],"-.",label=str(nmol))
-#    plt.figure(2)
-#    plt.plot(range(1,len(DNmol)+1),mui[1],"-.",label=str(nmol))
-#
-#plt.figure(1)
-##plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-#plt.legend(loc="best")
-#plt.figure(2)
-##plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-#plt.legend(loc="best")
-
-######### 
-for i,nmol in enumerate(Nmol):
-    mui = []
-    for r in ratio:
-        mui.append(eos.chemicalpotential(rho,xi,T,nmol=nmol,dnmol=nmol/10**r))
-    mui = np.array(mui).T
+for dy in dy_array:
+    phi = []
+    for x1 in x1_array:
+        xi = np.array([x1,1.-x1])
+        try:
+            phi.append(eos.fugacity_coefficient(P,rho,xi,T,dy=dy))
+        except:
+            phi.append(np.array([0.,0.]))
+    phi = np.array(phi).T
     plt.figure(1)
-    plt.plot(range(1,len(ratio)+1),mui[0],"-o",label="".format(nmol,))
+    plt.plot(x1_array,phi[0],label="dy={}".format(dy))
     plt.figure(2)
-    plt.plot(range(1,len(ratio)+1),mui[1],"-o",label=str(nmol))
-
-######### 
-for i,dnmol in enumerate(DNmol):
-    mui = []
-    for r in ratio:
-        mui.append(eos.chemicalpotential(rho,xi,T,nmol=dnmol*10**r,dnmol=dnmol))
-    mui = np.array(mui).T
-    plt.figure(3)
-    plt.plot(range(1,len(ratio)+1),mui[0],"-o",label=str(dnmol))
-    plt.figure(4)
-    plt.plot(range(1,len(ratio)+1),mui[1],"-o",label=str(dnmol))
-
-plt.figure(1)
+    plt.plot(x1_array,phi[1],label="dy={}".format(dy))
 plt.legend(loc="best")
-plt.figure(2)
-plt.legend(loc="best")
-plt.figure(3)
-plt.legend(loc="best")
-plt.figure(4)
-plt.legend(loc="best")
-
 plt.show()
-

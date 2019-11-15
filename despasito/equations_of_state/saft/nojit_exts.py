@@ -114,8 +114,8 @@ def calc_da1sii_drhos(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
                 # Constants to calculate eta_eff
                 cikl = np.inner(constants.ckl_coef, np.array([1.0, l_kl[k, l]**-1, l_kl[k, l]**-2, l_kl[k, l]**-3]).T)
                 etakl[:, k, l] = np.einsum("ij,j", zetax_pow, cikl)
-                rhos_detakl_drhos[:, k, l] = np.einsum("ij,j", zetax_pow, cikl*np.array([1.,2.,3.,4.]))
-        da1s_drhos = np.einsum("ijk,jk->ijk", (1.0 - (etakl / 2.0)) / ((1.0 - etakl)**3) + (5-2*etakl)/(2*(1-etakl)**4)*rhos_detakl_drhos,
+                rhos_detakl_drhos[:, k, l] = np.einsum("ij,j", zetax_pow, cikl*np.array([1.0,2.0,3.0,4.0]))
+        da1s_drhos = np.einsum("ijk,jk->ijk", (1.0 - (etakl / 2.0)) / ((1.0 - etakl)**3) + (5.0-2.0*etakl)/(2.0*(1.0-etakl)**4)*rhos_detakl_drhos,
                         -2.0 * np.pi * ((epsilonkl * (dkl**3)) / (l_kl - 3.0)))
 
     elif np.size(np.shape(l_kl)) == 1:
@@ -125,10 +125,13 @@ def calc_da1sii_drhos(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
             cikl = np.inner(constants.ckl_coef, np.array([1.0, l_kl[k]**-1, l_kl[k]**-2, l_kl[k]**-3]).T)
             etakl[:, k] = np.einsum("ij,j", zetax_pow, cikl)
             rhos_detakl_drhos[:, k] = np.einsum("ij,j", zetax_pow, cikl*np.array([1.,2.,3.,4.]))
-        da1s_drhos = np.einsum("ij,j->ij", (1.0 - (etakl / 2.0)) / ((1.0 - etakl)**3) + (5-2*etakl)/(2*(1-etakl)**4)*rhos_detakl_drhos,
-                        -2.0 * np.pi * ((epsilonkl * (dkl**3)) / (l_kl - 3.0)))
+#            print(zetax_pow.shape,cikl.shape,(cikl*np.array([1.,2.,3.,4.])).shape)
+#            print("    eta",etakl)
+#            print("    deta_drho",rhos_detakl_drhos)
+        da1s_drhos = np.einsum("ij,j->ij", (1.0 - (etakl / 2.0)) / ((1.0 - etakl)**3) + (5.0-2.0*etakl)/(2.0*(1.0-etakl)**4)*rhos_detakl_drhos, -2.0 * np.pi * ((epsilonkl * (dkl**3)) / (l_kl - 3.0)))
+#        print("da1s_drho",da1s_drhos)
     else:
-        print('Error in calc_a1s, unexpected array size')
+        print('Error in calc_da1s_drhos, unexpected array size')
 
     return da1s_drhos
 

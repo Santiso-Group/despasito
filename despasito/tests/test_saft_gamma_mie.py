@@ -57,12 +57,12 @@ def test_saft_gamma_mie_class_assoc(xi=xi_co2_h2o,beads=beads_co2_h2o,nui=nui_co
 def test_saft_gamma_mie_class_assoc_P(xi=xi_co2_h2o,T=T,eos=eos_co2_h2o,rho=rho_co2_h2o):
 #   """Test ability to predict P with association sites"""
     P = eos.P(rho,T,xi)[0]
-    assert P == pytest.approx(1713511.5399049097,abs=1e-1)
+    assert P == pytest.approx(14807939.23,abs=1e-1)
 
 def test_saft_gamma_mie_class_assoc_mu(P=P,xi=xi_co2_h2o,T=T,eos=eos_co2_h2o,rho=rho_co2_h2o):
 #   """Test ability to predict P with association sites"""
-    mui = eos.chemicalpotential(rho,xi,T)
+    phi = eos.fugacity_coefficient(P, rho, xi, T)
 #    assert mui == pytest.approx(np.array([1.61884825, -4.09022886]),abs=1e-4)
-    assert mui == pytest.approx(np.array([-12.27665471, -17.97013912]),abs=1e-4)
+    assert phi == pytest.approx(np.array([4.35827475, 0.02554506]),abs=1e-4)
 
 
