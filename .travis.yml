@@ -16,11 +16,13 @@ matrix:
       language: generic
       env: PYTHON_VER=3.6
       before_install:
+      - brew update > /dev/null
       - brew install gcc > /dev/null
     - os: osx
       language: generic
       env: PYTHON_VER=3.7
       before_install:
+      - brew update > /dev/null
       - brew install gcc > /dev/null
 
 
