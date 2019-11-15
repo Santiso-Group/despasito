@@ -58,7 +58,7 @@ def calc_Aideal(xi, rho, massi, T):
 
     Returns
     -------
-    Aideal : nd.array
+    Aideal : numpy.ndarray
         Helmholtz energy of ideal gas for each density given.
     """
 
@@ -195,14 +195,19 @@ def calc_interaction_matrices(beads, beadlibrary, crosslibrary={}):
         - mass: Bead mass [kg/mol]
         - l_r: :math:`\lambda^{r}_{k,k}`, Exponent of repulsive term between groups of type k
         - l_a: :math:`\lambda^{a}_{k,k}`, Exponent of attractive term between groups of type k
-        - Sk: :math:`S_{k}`, Shape parameter of group k
         - Vks: :math:`V_{k,s}`, Number of groups, k, in component
+        - Sk: Optional, :math:`S_{k}`, Shape parameter of group k
+        - epsilon*: Optional, Interaction energy between each bead and association site. Asterisk represents string from sitenames.
+        - K**: Optional, Bonding volume between each association site. Asterisk represents two strings from sitenames.
+        - Nk*: Optional, The number of sites of from list sitenames. Asterisk represents string from sitenames.
 
     crosslibrary : dict, Optional, default: {}
         Optional library of bead cross interaction parameters. As many or as few of the desired parameters may be defined for whichever group combinations are desired. If this matrix isn't provided, the SAFT mixing rules are used.
 
         - epsilon: :math:`\epsilon_{k,l}/k_B`, Energy parameter scaled by Boltzmann Constant
         - l_r: :math:`\lambda^{r}_{k,l}`, Exponent of repulsive term between groups of type k and l
+        - epsilon*: Optional, Interaction energy between each bead and association site. Asterisk represents string from sitenames.
+        - K**: Optional, Bonding volume between each association site. Asterisk represents two strings from sitenames.
 
     Returns
     -------
@@ -283,8 +288,11 @@ def calc_composition_dependent_variables(xi, nui, beads, beadlibrary):
         - mass: Bead mass [kg/mol]
         - l_r: :math:`\lambda^{r}_{k,k}`, Exponent of repulsive term between groups of type k
         - l_a: :math:`\lambda^{a}_{k,k}`, Exponent of attractive term between groups of type k
-        - Sk: :math:`S_{k}`, Shape parameter of group k
         - Vks: :math:`V_{k,s}`, Number of groups, k, in component
+        - Sk: Optional, :math:`S_{k}`, Shape parameter of group k
+        - epsilon*: Optional, Interaction energy between each bead and association site. Asterisk represents string from sitenames.
+        - K**: Optional, Bonding volume between each association site. Asterisk represents two strings from sitenames.
+        - Nk*: Optional, The number of sites of from list sitenames. Asterisk represents string from sitenames.
 
     Returns
     -------
@@ -338,8 +346,11 @@ def calc_hard_sphere_matricies(beads, beadlibrary, sigmakl, T):
         - mass: Bead mass [kg/mol]
         - l_r: :math:`\lambda^{r}_{k,k}`, Exponent of repulsive term between groups of type k
         - l_a: :math:`\lambda^{a}_{k,k}`, Exponent of attractive term between groups of type k
-        - Sk: :math:`S_{k}`, Shape parameter of group k
         - Vks: :math:`V_{k,s}`, Number of groups, k, in component
+        - Sk: Optional, :math:`S_{k}`, Shape parameter of group k
+        - epsilon*: Optional, Interaction energy between each bead and association site. Asterisk represents string from sitenames.
+        - K**: Optional, Bonding volume between each association site. Asterisk represents two strings from sitenames.
+        - Nk*: Optional, The number of sites of from list sitenames. Asterisk represents string from sitenames.
 
     sigmakl : numpy.ndarray
         Matrix of mie diameter for groups (k,l)
@@ -617,8 +628,7 @@ def calc_Amono(rho, xi, nui, Cmol2seg, xsk, xskl, dkk, T, epsilonkl, sigmakl, dk
     B_lalr = calc_Bkl(rho, l_akl + l_rkl, Cmol2seg, dkl, epsilonkl, x0kl, zetax)
 
     a2kl = (x0kl**(2.0 * l_akl)) * (a1s_2la + B_2la) - ((2.0 * x0kl**(l_akl + l_rkl)) *
-                                                        (a1s_lalr + B_lalr)) + ((x0kl**(2.0 * l_rkl)) *
-                                                                                (a1s_2lr + B_2lr))
+                                                        (a1s_lalr + B_lalr)) + ((x0kl**(2.0 * l_rkl)) * (a1s_2lr + B_2lr))
     a2kl *= (1.0 + chikl) * epsilonkl * (Ckl**2)  # *(KHS/2.0)
     a2kl = np.einsum("i,ijk->ijk", KHS / 2.0, a2kl)
 
@@ -891,8 +901,11 @@ def calc_Achain(rho, Cmol2seg, xi, T, nui, sigmakl, epsilonkl, dkl, xskl, l_rkl,
         - mass: Bead mass [kg/mol]
         - l_r: :math:`\lambda^{r}_{k,k}`, Exponent of repulsive term between groups of type k
         - l_a: :math:`\lambda^{a}_{k,k}`, Exponent of attractive term between groups of type k
-        - Sk: :math:`S_{k}`, Shape parameter of group k
         - Vks: :math:`V_{k,s}`, Number of groups, k, in component
+        - Sk: Optional, :math:`S_{k}`, Shape parameter of group k
+        - epsilon*: Optional, Interaction energy between each bead and association site. Asterisk represents string from sitenames.
+        - K**: Optional, Bonding volume between each association site. Asterisk represents two strings from sitenames.
+        - Nk*: Optional, The number of sites of from list sitenames. Asterisk represents string from sitenames.
 
     zetax : numpy.ndarray 
         Matrix of hypothetical packing fraction based on hard sphere diameter for groups (k,l)
@@ -1051,8 +1064,11 @@ def calc_assoc_matrices(beads, beadlibrary, sitenames=["H", "e1", "e2"], crossli
         - mass: Bead mass [kg/mol]
         - l_r: :math:`\lambda^{r}_{k,k}`, Exponent of repulsive term between groups of type k
         - l_a: :math:`\lambda^{a}_{k,k}`, Exponent of attractive term between groups of type k
-        - Sk: :math:`S_{k}`, Shape parameter of group k
         - Vks: :math:`V_{k,s}`, Number of groups, k, in component
+        - Sk: Optional, :math:`S_{k}`, Shape parameter of group k
+        - epsilon*: Optional, Interaction energy between each bead and association site. Asterisk represents string from sitenames.
+        - K**: Optional, Bonding volume between each association site. Asterisk represents two strings from sitenames.
+        - Nk*: Optional, The number of sites of from list sitenames. Asterisk represents string from sitenames.
 
     sitenames : list[str], Optional, default: []
         List of unique association sites used among components
@@ -1061,6 +1077,8 @@ def calc_assoc_matrices(beads, beadlibrary, sitenames=["H", "e1", "e2"], crossli
 
         - epsilon: :math:`\epsilon_{k,l}/k_B`, Energy parameter scaled by Boltzmann Constant
         - l_r: :math:`\lambda^{r}_{k,l}`, Exponent of repulsive term between groups of type k and l
+        - epsilon*: Interaction energy between each bead and association site. Asterisk represents string from sitenames.
+        - K**: Bonding volume between each association site. Asterisk represents two strings from sitenames.
 
     Returns
     -------
@@ -1499,8 +1517,11 @@ def calc_A(rho, xi, T, beads, beadlibrary, massi, nui, Cmol2seg, xsk, xskl, dkk,
         - mass: Bead mass [kg/mol]
         - l_r: :math:`\lambda^{r}_{k,k}`, Exponent of repulsive term between groups of type k
         - l_a: :math:`\lambda^{a}_{k,k}`, Exponent of attractive term between groups of type k
-        - Sk: :math:`S_{k}`, Shape parameter of group k
         - Vks: :math:`V_{k,s}`, Number of groups, k, in component
+        - Sk: Optional, :math:`S_{k}`, Shape parameter of group k
+        - epsilon*: Optional, Interaction energy between each bead and association site. Asterisk represents string from sitenames.
+        - K**: Optional, Bonding volume between each association site. Asterisk represents two strings from sitenames.
+        - Nk*: Optional, The number of sites of from list sitenames. Asterisk represents string from sitenames.
 
     massi : numpy.ndarray
         Mass for each component [kg/mol]
@@ -1591,8 +1612,11 @@ def calc_Ares(rho, xi, T, beads, beadlibrary, massi, nui, Cmol2seg, xsk, xskl, d
         - mass: Bead mass [kg/mol]
         - l_r: :math:`\lambda^{r}_{k,k}`, Exponent of repulsive term between groups of type k
         - l_a: :math:`\lambda^{a}_{k,k}`, Exponent of attractive term between groups of type k
-        - Sk: :math:`S_{k}`, Shape parameter of group k
         - Vks: :math:`V_{k,s}`, Number of groups, k, in component
+        - Sk: Optional, :math:`S_{k}`, Shape parameter of group k
+        - epsilon*: Optional, Interaction energy between each bead and association site. Asterisk represents string from sitenames.
+        - K**: Optional, Bonding volume between each association site. Asterisk represents two strings from sitenames.
+        - Nk*: Optional, The number of sites of from list sitenames. Asterisk represents string from sitenames.
 
     massi : numpy.ndarray
         Mass for each component [kg/mol]

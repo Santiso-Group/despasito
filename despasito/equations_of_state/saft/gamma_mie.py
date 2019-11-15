@@ -41,15 +41,20 @@ class saft_gamma_mie(EOStemplate):
         - sigma: :math:`\sigma_{k,k}`, Size parameter [m]
         - mass: Bead mass [kg/mol]
         - l_r: :math:`\lambda^{r}_{k,k}`, Exponent of repulsive term between groups of type k
-        - l_a: :math:`\lambda^{a}_{k,k}`, Exponent of attractive term between groups of type k
-        - Sk: :math:`S_{k}`, Shape parameter of group k
+        - l_a: :math:`\lambda^{a}_{k,k}`, Exponent of attractive term between groups of type k\
         - Vks: :math:`V_{k,s}`, Number of groups, k, in component
+        - Sk: Optional, :math:`S_{k}`, Shape parameter of group k
+        - epsilon*: Optional, Interaction energy between each bead and association site. Asterisk represents string from sitenames.
+        - K**: Optional, Bonding volume between each association site. Asterisk represents two strings from sitenames.
+        - Nk*: Optional, The number of sites of from list sitenames. Asterisk represents string from sitenames.
 
     crosslibrary : dict, Optional, default: {}
         Optional library of bead cross interaction parameters. As many or as few of the desired parameters may be defined for whichever group combinations are desired.
 
         - epsilon: :math:`\epsilon_{k,l}/k_B`, Energy parameter scaled by Boltzmann Constant
         - l_r: :math:`\lambda^{r}_{k,l}`, Exponent of repulsive term between groups of type k and l
+        - epsilon*: Optional, Interaction energy between each bead and association site. Asterisk represents string from sitenames.
+        - K**: Optional, Bonding volume between each association site. Asterisk represents two strings from sitenames.
 
     sitenames : list[str], Optional, default: []
         List of unique association sites used among components
@@ -100,10 +105,8 @@ class saft_gamma_mie(EOStemplate):
         else:
             self._sitenames = []
 
-        epsilonHB, Kklab, nk = funcs.calc_assoc_matrices(self._beads,
-                                                         self._beadlibrary,
-                                                         sitenames=self._sitenames,
-                                                         crosslibrary=self._crosslibrary)
+        epsilonHB, Kklab, nk = funcs.calc_assoc_matrices(self._beads, self._beadlibrary, sitenames=self._sitenames, crosslibrary=self._crosslibrary)
+
         self._epsilonHB = epsilonHB
         self._Kklab = Kklab
         self._nk = nk
@@ -420,7 +423,7 @@ class saft_gamma_mie(EOStemplate):
         Parameters
         ----------
         fit_params : list[str]
-        A list of parameters to be fit. See EOS mentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
+            A list of parameters to be fit. See EOS mentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
 
         Returns
         -------

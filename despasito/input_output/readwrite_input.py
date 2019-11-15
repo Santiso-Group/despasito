@@ -1,6 +1,6 @@
 """
 
-Routines for passing input files from .json files to dictionaries and extracting relevant information for program use, as well as write properly structures .json files for later calculations.
+Routines for parsing input .json files to dictionaries for program use, as well as write properly structures .json files for later calculations.
     
 .. todo::
     - extract_calc_data input_fname: Add link to available thermodynamic calculations
@@ -48,7 +48,7 @@ def append_data_file_path(input_dict, path='.'):
 def extract_calc_data(input_fname, path='.', **args):
 
     """
-    Uses dictionary from .json input file to process and divide information into two dictionaries, one for creating the equation of state, and one for the thermodynamic calculations.
+    Parse dictionary from .json input file into a dictionary for creating the equation of state, and one for the thermodynamic calculations.
 
     Parameters
     ----------
