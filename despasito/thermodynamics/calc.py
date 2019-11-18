@@ -841,7 +841,9 @@ def calc_Prange_xi(T, xi, yi, eos, rhodict={}, Pmin=1000, zi_opts={}):
         else:
             tmp_sum = np.abs(ObjArray[-2] + ObjArray[-1])
             tmp_dif = np.abs(ObjArray[-2] - ObjArray[-1])
-            if tmp_dif > tmp_sum:
+            if Parray[-1] == Parray[-2]:
+                raise ValueError("Maximum pressure value could not be found to bound problem.")
+            elif tmp_dif > tmp_sum:
                 if flagv not in [0,2,4]:
                     logger.info("Estimated pressure {}  doesn't produce a vapor, flag={}, Obj Func: {}".format(Parray[-1],flagv,ObjArray[-1]))
                     p = 0.9*Parray[-1]
@@ -872,12 +874,15 @@ def calc_Prange_xi(T, xi, yi, eos, rhodict={}, Pmin=1000, zi_opts={}):
                     slope = (ObjArray[-1] - ObjArray[-2]) / (Parray[-1] - Parray[-2])
                     intercept = ObjArray[-1] - slope * Parray[-1]
                     p = (-intercept / slope)*1.2 # Add additional 20% to ensure negative value
+                    if p < 0.0:
+                        ind = ObjArray.index(min(ObjArray))
+                        p = Parray[ind]*1.1
             
-            Parray.append(p)
             phil, rhol, flagl = calc_phil(p, T, xi, eos, rhodict=rhodict)
             if any(np.isnan(phil)):
                 raise ValueError("Fugacity coefficient should not be NaN")
             yi_range, phiv, flagv = solve_yi_xiT(yi_range, xi, phil, p, T, eos, rhodict=rhodict, **zi_opts)
+            Parray.append(p)
             ObjArray.append(np.sum(xi * phil / phiv) - 1.0)
             logger.info("New Estimate for Maximum Pressure: {},  Obj. Func: {}".format(Parray[-1],ObjArray[-1]))
 
