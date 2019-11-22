@@ -59,13 +59,13 @@ def calc_a1s_2d(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
     """
     # Andrew: why is the 4 hard-coded here?
     nbeads = len(dkl)
-    zetax_pow = np.empty((len(rho), 4), dtype=rho.dtype)
+    zetax_pow = np.zeros((len(rho), 4), dtype=rho.dtype)
     zetax_pow[:, 0] = zetax
     for i in range(1,4):
         zetax_pow[:, i] = zetax_pow[:, i-1] * zetax_pow[:, 0]
 
     # check if you have more than 1 bead types
-    etakl = np.empty((len(rho), nbeads, nbeads), dtype=rho.dtype)
+    etakl = np.zeros((len(rho), nbeads, nbeads), dtype=rho.dtype)
 
     for k in range(nbeads):
         for l in range(nbeads):
@@ -102,13 +102,13 @@ def calc_a1s_1d(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
     """
 
     nbeads = len(dkl)
-    zetax_pow = np.empty((len(rho), 4), dtype=rho.dtype)
+    zetax_pow = np.zeros((len(rho), 4), dtype=rho.dtype)
     zetax_pow[:, 0] = zetax
     for i in range(1,4):
         zetax_pow[:, i] = zetax_pow[:, i-1] * zetax_pow[:, 0]
 
     # check if you have more than 1 bead types
-    etakl = np.empty((len(rho), nbeads), dtype=rho.dtype)
+    etakl = np.zeros((len(rho), nbeads), dtype=rho.dtype)
 
     for k in range(nbeads):
         tmp = np.dot(ckl_coef, np.array( (1.0, 1.0/l_kl[k], 1.0/l_kl[k]**2, 1.0/l_kl[k]**3), dtype=ckl_coef.dtype ) )
@@ -158,14 +158,14 @@ def calc_da1sii_drhos_2d(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
     """
 
     nbeads = len(dkl)
-    zetax_pow = np.empty((len(rho), 4), dtype=rho.dtype)
+    zetax_pow = np.zeros((len(rho), 4), dtype=rho.dtype)
     zetax_pow[:, 0] = zetax
     for i in range(1,4):
         zetax_pow[:, i] = zetax_pow[:, i-1] * zetax_pow[:, 0]
 
     # check if you have more than 1 bead types
-    etakl = np.empty((len(rho), nbeads, nbeads), dtype=rho.dtype)
-    rhos_detakl_drhos = np.empty((len(rho), nbeads, nbeads), dtype=rho.dtype)
+    etakl = np.zeros((len(rho), nbeads, nbeads), dtype=rho.dtype)
+    rhos_detakl_drhos = np.zeros((len(rho), nbeads, nbeads), dtype=rho.dtype)
 
     for k in range(nbeads):
         for l in range(nbeads):
@@ -174,7 +174,9 @@ def calc_da1sii_drhos_2d(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
             etakl[:, k, l] = np.dot( zetax_pow, tmp )
             rhos_detakl_drhos[:, k, l] = np.dot( zetax_pow, tmp_dr)
 
-    da1s_drhos = - 2.0 * np.pi * ((1.0 - (etakl / 2.0)) / ((1.0 - etakl)**3) + (5.0 - 2.0*etakl)/(2.0*(1.0-etakl)**4)) * rhos_detakl_drhos * ((epsilonkl * (dkl**3)) / (l_kl - 3.0))
+    tmp1 = (1.0 - (etakl / 2.0)) / ((1.0 - etakl)**3) + (5.0-2.0*etakl)/(2.0*(1.0-etakl)**4)*rhos_detakl_drhos
+    tmp2 = - 2.0 * np.pi * ((epsilonkl * (dkl**3)) / (l_kl - 3.0))
+    da1s_drhos = tmp1*tmp2
 
     return da1s_drhos
 
@@ -203,30 +205,27 @@ def calc_da1sii_drhos_1d(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
     numpy.ndarray
         Matrix used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy, size is the Ngroups by Ngroups
     """
-    print("l_kl, zetax, epsilonkl, dkl",l_kl, zetax, epsilonkl, dkl)
-
     nbeads = len(dkl)
-    zetax_pow = np.empty((len(rho), 4), dtype=rho.dtype)
+    zetax_pow = np.zeros((len(rho), 4), dtype=rho.dtype)
     zetax_pow[:, 0] = zetax
     for i in range(1,4):
         zetax_pow[:, i] = zetax_pow[:, i-1] * zetax_pow[:, 0]
 
     # check if you have more than 1 bead types
-    etakl = np.empty((len(rho), nbeads), dtype=rho.dtype)
-    rhos_detakl_drhos = np.empty((len(rho), nbeads), dtype=rho.dtype)
+    etakl = np.zeros((len(rho), nbeads), dtype=rho.dtype)
+    rhos_detakl_drhos = np.zeros((len(rho), nbeads), dtype=rho.dtype)
 
     for k in range(nbeads):
         tmp = np.dot(ckl_coef, np.array( (1.0, 1.0/l_kl[k], 1.0/l_kl[k]**2, 1.0/l_kl[k]**3), dtype=ckl_coef.dtype ) )
         tmp_dr = np.dot(ckl_coef, np.array( (1.0, 1.0/l_kl[k], 1.0/l_kl[k]**2, 1.0/l_kl[k]**3), dtype=ckl_coef.dtype ) )*np.array((1.0,2.0,3.0,4.0))
         etakl[:, k] = np.dot( zetax_pow, tmp )
         rhos_detakl_drhos[:, k] = np.dot( zetax_pow, tmp_dr )
-        print(zetax_pow.shape,tmp.shape,tmp_dr.shape)
-        print("    eta",etakl)
-        print("    deta_drho",rhos_detakl_drhos)
 
-    da1s_drhos = - 2.0 * np.pi * ((1.0 - (etakl / 2.0)) / ((1.0 - etakl)**3) + (5.0 - 2.0*etakl)/(2.0*(1.0-etakl)**4)) * rhos_detakl_drhos * ((epsilonkl * (dkl**3)) / (l_kl - 3.0))
-    print("da1s_drho",da1s_drhos)
+    tmp1 = (1.0 - (etakl / 2.0)) / ((1.0 - etakl)**3) + (5.0-2.0*etakl)/(2.0*(1.0-etakl)**4)*rhos_detakl_drhos
+    tmp2 = - 2.0 * np.pi * ((epsilonkl * (dkl**3)) / (l_kl - 3.0))
+    da1s_drhos = tmp1*tmp2
 
+    #da1s_drhos = - 2.0 * np.pi * ((1.0 - (etakl / 2.0)) / ((1.0 - etakl)**3) + (5.0 - 2.0*etakl)/(2.0*(1.0-etakl)**4)) * rhos_detakl_drhos * ((epsilonkl * (dkl**3)) / (l_kl - 3.0))
     return da1s_drhos
 
 @njit(numba.types.Tuple((numba.f8[:,:,:,:], numba.f8[:]))(numba.i8[:,:], numba.f8[:], numba.f8[:], numba.f8[:,:], numba.f8[:,:], numba.f8[:,:,:,:], numba.f8[:,:,:,:], numba.f8[:,:,:])) # , numba.i8, numba.f8, numba.f8

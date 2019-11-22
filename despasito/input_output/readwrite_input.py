@@ -82,12 +82,12 @@ def extract_calc_data(input_fname, path='.', **args):
     xi, beads, nui = process_bead_data(input_dict['beadconfig'])
     eos_dict = {'xi':xi,'beads':beads,'nui':nui}
 
-    #read SAFT groups file
+    #read EOS groups file
     with open(input_dict['SAFTgroup'], 'r') as f:
         output = f.read()
     eos_dict['beadlibrary'] = json.loads(output)
 
-    #read SAFT cross file
+    #read EOS cross file
     try:
         with open(input_dict['SAFTcross'], 'r') as f:
             output = f.read()

@@ -12,7 +12,7 @@ parser.add_argument("-v", "--verbose", action="count", default=0, help="Verbose 
 parser.add_argument("--log", nargs='?', dest="logFile", default="despasito.log", help="Output a log file. The default name is despasito.log.")
 parser.add_argument("-t", "--threads", dest="threads", type=int, help="Set the number of theads used. This hasn't been implemented yet.",default=1)
 parser.add_argument("-p", "--path", default=".", help="Set the location of the data/library files (e.g. SAFTcross, etc.) for despasito to look for")
-parser.add_argument("--jit", action='store_true', default=0, help="turn on Numba's JIT compilation for accelerated computation")
+parser.add_argument("--jit", action='store_true', default=0, help="Turn on Numba's JIT compilation for accelerated computation")
 
 ## Extract arguements
 quiet = False
@@ -35,6 +35,8 @@ logger = logging.getLogger()
 logger.setLevel(args.verbose)
 
 # Set up rotating log files
+if os.path.isfile(args.logFile):
+    os.remove(args.logFile)
 log_file_handler = logging.handlers.RotatingFileHandler(args.logFile)
 log_file_handler.setFormatter( logging.Formatter('%(asctime)s [%(levelname)s](%(name)s:%(funcName)s:%(lineno)d): %(message)s') )
 log_file_handler.setLevel(args.verbose)

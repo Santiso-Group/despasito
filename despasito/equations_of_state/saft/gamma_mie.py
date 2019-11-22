@@ -265,15 +265,15 @@ class saft_gamma_mie(EOStemplate):
         # compute phi
         Ares = funcs.calc_Ares(rho *  constants.Nav, xi, T, self._beads, self._beadlibrary, self._massi, self._nui, self._Cmol2seg, self._xsk, self._xskl, self._dkk, self._epsilonkl, self._sigmakl, self._dkl, self._l_akl, self._l_rkl, self._Ckl,self._x0kl, self._epsilonHB, self._Kklab, self._nk)
         for i in range(np.size(phi_tmp)):
-            dAres = np.zeros(2)
-            for j, delta in enumerate((dy, -dy)):
-                y_temp = np.copy(y)
-                if xi[i] != 0.:
+            if xi[i] != 0.0:
+                dAres = np.zeros(2)
+                for j, delta in enumerate((dy, -dy)):
+                    y_temp = np.copy(y)
                     y_temp[i] += delta
-                dAres[j] = self.calc_dAres_drhoi_wrap(T, np.exp(y_temp))
-            phi_tmp[i] = Ares + rho/np.exp(y[i])*(dAres[0] - dAres[1]) / (2.0 * dy) - np.log(Z)
-            #with open("NewPhi.csv","a") as f:
-            #    f.write("{}, {}, {}, {}, {}, {}, {}, {}, {}, {}\n".format(i,xi[i],phi_tmp[i], Ares, rho/np.exp(y[i]), dAres, dy,rho,y[i],np.exp(y[i])))
+                    dAres[j] = self.calc_dAres_drhoi_wrap(T, np.exp(y_temp))
+                phi_tmp[i] = Ares + rho/np.exp(y[i])*(dAres[0] - dAres[1]) / (2.0 * dy) - np.log(Z)
+            else:
+                phi_tmp[i] = 0.0 # This should be zero, but to prevent the thermo calculation from complaining about diving by zero we give it a value, the mole fraction is zero though, so it'll go away.
         ##########################################
 
         phi = np.exp(phi_tmp)

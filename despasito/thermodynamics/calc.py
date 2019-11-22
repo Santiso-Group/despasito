@@ -449,24 +449,26 @@ def calc_rhov(P, T, xi, eos, rhodict={}):
 
     logger.debug("    Find rhov: P {} Pa, roots {} m^3/mol".format(P,roots))
 
+    flag_NoOpt = False
     l_roots = len(roots)
     if l_roots == 0:
         if Pvspline(1/vlist[-1]) < 0:
             if not len(extrema):
                 flag = 2
-                logger.info("    Flag 2: The T and yi, {} {}, combination produces a critical fluid at this pressure".format(T,xi))
+                logger.debug("    Flag 2: The T and yi, {} {}, combination produces a critical fluid at this pressure".format(T,xi))
             else:
                 flag = 1
-                logger.info("    Flag 1: The T and yi, {} {}, combination produces a liquid at this pressure".format(T,xi))
+                logger.debug("    Flag 1: The T and yi, {} {}, combination produces a liquid at this pressure".format(T,xi))
             rho_tmp = 1/vlist[0]
+            flag_NoOpt = True
         elif min(Plist)+P > 0:
             rho_tmp = np.nan
             if not len(extrema):
                 flag = 4
-                logger.info("    Flag 2: The T and yi, {} {}, combination produces a critical fluid at this pressure".format(T,xi))
+                logger.debug("    Flag 2: The T and yi, {} {}, combination produces a critical fluid at this pressure".format(T,xi))
             else:
                 flag = 4
-                logger.info("    Flag 0: This T and xi, {} {}, combination produces a vapor at this pressure. Warning! approaching critical fluid".format(T,xi))
+                logger.debug("    Flag 0: This T and xi, {} {}, combination produces a vapor at this pressure. Warning! approaching critical fluid".format(T,xi))
         else:
             logger.warning("    Flag 3: The T and yi, {} {}, won't produce a fluid (vapor or liquid) at this pressure".format(T,xi))
             flag = 3
@@ -476,13 +478,13 @@ def calc_rhov(P, T, xi, eos, rhodict={}):
         if not len(extrema):
             flag = 2
             rho_tmp = 1.0 / roots[0]
-            logger.info("    Flag 2: The T and yi, {} {}, combination produces a critical fluid at this pressure".format(T,xi))
+            logger.debug("    Flag 2: The T and yi, {} {}, combination produces a critical fluid at this pressure".format(T,xi))
         elif (Pvspline(roots[0])+P) > (Pvspline(max(extrema))+P):
             #logger.debug("Extrema: {}".format(extrema))
             #logger.debug("Roots: {}".format(roots))
             flag = 1
             rho_tmp = 1.0 / roots[0]
-            logger.info("    Flag 1: The T and yi, {} {}, combination produces a liquid at this pressure".format(T,xi))
+            logger.debug("    Flag 1: The T and yi, {} {}, combination produces a liquid at this pressure".format(T,xi))
         elif len(extrema) > 1:
             flag = 0
             rho_tmp = 1.0 / roots[0]
@@ -491,7 +493,7 @@ def calc_rhov(P, T, xi, eos, rhodict={}):
         if (Pvspline(roots[0])+P) < 0.:
             flag = 1
             rho_tmp = 1.0 / roots[0]
-            logger.info("    Flag 1: This T and xi, {} {}, combination produces a liquid under tension at this pressure".format(T,xi))
+            logger.debug("    Flag 1: This T and xi, {} {}, combination produces a liquid under tension at this pressure".format(T,xi))
         else:
             flag = 4
             rho_tmp = np.nan
@@ -507,9 +509,11 @@ def calc_rhov(P, T, xi, eos, rhodict={}):
         else:
             if Plist[0] < 0:
                 logger.warning("Density value could not be bounded with (rhomin,rhomax), {}. Using approximate density value".format(tmp))
-            else:
+            elif not flag_NoOpt:
                 rho_tmp = spo.root(Pdiff, rho_tmp, args=(P, T, xi, eos), method="hybr", tol=0.0000001)
                 rho_tmp = rho_tmp.x[0]
+
+    logger.info("    Vapor Density: {} mol/m^3, flag".format(rho_tmp,flag))
 
     # Flag: 0 is vapor, 1 is liquid, 2 mean a critical fluid, 3 means that neither is true, 4 means we should assume ideal gas
     return rho_tmp, flag
@@ -553,6 +557,7 @@ def calc_rhol(P, T, xi, eos, rhodict={}):
     Pvspline, roots, extrema = PvsV_spline(vlist, Plist)
 
     logger.debug("    Find rhol: P {} Pa, roots {} m^3/mol".format(P,str(roots)))
+    flag_NoOpt = False
 
     if extrema:
         if len(extrema) == 1:
@@ -564,19 +569,20 @@ def calc_rhol(P, T, xi, eos, rhodict={}):
         if Pvspline(1/vlist[-1]):
             if not len(extrema):
                 flag = 2
-                logger.info("    Flag 2: The T and yi, {} {}, combination produces a critical fluid at this pressure".format(T,xi))
+                logger.debug("    Flag 2: The T and yi, {} {}, combination produces a critical fluid at this pressure".format(T,xi))
             else:
                 flag = 1
-                logger.info("    Flag 1: The T and yi, {} {}, combination produces a liquid at this pressure".format(T,xi))
+                logger.debug("    Flag 1: The T and yi, {} {}, combination produces a liquid at this pressure".format(T,xi))
             rho_tmp = 1/vlist[1]
+            flag_NoOpt = True
         elif min(Plist)+P > 0:
             rho_tmp = np.nan
             if not len(extrema):
                 flag = 4
-                logger.info("    Flag 2: The T and yi, {} {}, combination produces a critical fluid at this pressure".format(T,xi))
+                logger.debug("    Flag 2: The T and yi, {} {}, combination produces a critical fluid at this pressure".format(T,xi))
             else:
                 flag = 4
-                logger.info("    Flag 0: This T and xi, {} {}, combination produces a vapor at this pressure. Warning! approaching critical fluid".format(T,xi))
+                logger.debug("    Flag 0: This T and xi, {} {}, combination produces a vapor at this pressure. Warning! approaching critical fluid".format(T,xi))
         else:
             flag = 3
             logger.error("    Flag 3: The T and xi, {} {}, won't produce a fluid (vapor or liquid) at this pressure".format(str(T),str(xi)))
@@ -586,7 +592,7 @@ def calc_rhol(P, T, xi, eos, rhodict={}):
         if (Pvspline(roots[0])+P) < 0.:
             flag = 1
             rho_tmp = 1.0 / roots[0]
-            logger.info("    Flag 1: This T and xi, {} {}, combination produces a liquid under tension at this pressure".format(T,xi))
+            logger.debug("    Flag 1: This T and xi, {} {}, combination produces a liquid under tension at this pressure".format(T,xi))
         else: # There should be three roots, but the values of specific volume don't go far enough to pick up the last one
             flag = 1
             rho_tmp = 1.0 / roots[0]
@@ -594,7 +600,7 @@ def calc_rhol(P, T, xi, eos, rhodict={}):
         if not len(extrema):
             flag = 2
             rho_tmp = 1.0 / roots[0]
-            logger.info("    Flag 2: The T and xi, {} {}, combination produces a critical fluid at this pressure".format(T,xi))
+            logger.debug("    Flag 2: The T and xi, {} {}, combination produces a critical fluid at this pressure".format(T,xi))
         elif (Pvspline(roots[0])+P) > (Pvspline(max(extrema))+P):
             flag = 1
             rho_tmp = 1.0 / roots[0]
@@ -602,7 +608,7 @@ def calc_rhol(P, T, xi, eos, rhodict={}):
         elif len(extrema) > 1:
             flag = 0
             rho_tmp = 1.0 / roots[0]
-            logger.info("    Flag 0: This T and xi, {} {}, combination produces a vapor at this pressure. Warning! approaching critical fluid".format(T,xi))
+            logger.debug("    Flag 0: This T and xi, {} {}, combination produces a vapor at this pressure. Warning! approaching critical fluid".format(T,xi))
     else: # 3 roots
         rho_tmp = 1.0 / roots[0]
         flag = 1
@@ -614,9 +620,10 @@ def calc_rhol(P, T, xi, eos, rhodict={}):
         else:
             if Plist[0] < 0:
                 logger.warning("Density value could not be bounded with (rhomin,rhomax), {}. Using approximate density value".format(tmp))
-            else:
-                rho_tmp = spo.root(Pdiff, rho_tmp, args=(P, T, xi, eos), method="hybr", tol=0.0000001)
+            elif not flag_NoOpt:
+                rho_tmp = spo.root(Pdiff, rho_tmp, args=(P, T, xi, eos), method="hybr", tol=1e-7)
                 rho_tmp = rho_tmp.x[0]
+    logger.info("    Liquid Density: {} mol/m^3, flag".format(rho_tmp,flag))
 
     # Flag: 0 is vapor, 1 is liquid, 2 mean a critical fluid, 3 means that neither is true
     return rho_tmp, flag
@@ -694,8 +701,9 @@ def calc_phiv(P, T, yi, eos, rhodict={}):
         phiv = np.ones_like(yi)
         rhov = 0.
         logger.info("    rhov set to 0.")
+    elif flagv == 3:
+        phiv = np.array([np.nan,np.nan])
     else:
-
         phiv = eos.fugacity_coefficient(P, np.array([rhov]), yi, T)
 
         #muiv = eos.chemicalpotential_old(P, np.array([rhov]), yi, T)
@@ -744,8 +752,9 @@ def calc_phil(P, T, xi, eos, rhodict={}):
         phil = np.ones(len(xi))
         rhol = 0.
         logger.info("    rhol set to 0.")
+    elif flagl == 3:
+        phil = np.array([np.nan,np.nan])
     else:
-
         phil = eos.fugacity_coefficient(P, np.array([rhol]), xi, T)
 
         #muil = eos.chemicalpotential(P, np.array([rhol]), xi, T)
@@ -754,6 +763,68 @@ def calc_phil(P, T, xi, eos, rhodict={}):
     #logger.debug("    Liquid Fugacity Coefficients {}".format(phil))
 
     return phil, rhol, flagl
+
+######################################################################
+#                                                                    #
+#                          Calc xi                                   #
+#                                                                    #
+######################################################################
+def calc_yi(xi, phil, phiv):
+    r"""
+    Computes vapor fugacity coefficient under system conditions.
+    
+    Parameters
+    ----------
+    xi : numpy.ndarray
+        Mole fraction of each component, sum(xi) should equal 1.0
+    phil : float
+        Fugacity coefficient of liquid at system pressure
+    phiv : float
+        Fugacity coefficient of vapor at system pressure
+
+    Returns
+    -------
+    yi : numpy.ndarray
+        Mole fraction of each component, sum(xi) should equal 1.0
+    """
+
+    yi = np.zeros(len(xi))
+    ind = np.where(xi != 0.0)[0]
+    for i in ind:
+        yi[i] = xi[i] * phil[i] / phiv[i]
+
+    return yi
+
+######################################################################
+#                                                                    #
+#                          Calc yi                                   #
+#                                                                    #
+######################################################################
+def calc_xi(yi, phiv, phil):
+    r"""
+    Computes vapor fugacity coefficient under system conditions.
+    
+    Parameters
+    ----------
+    yi : numpy.ndarray
+        Mole fraction of each component, sum(yi) should equal 1.0
+    phiv : float
+        Fugacity coefficient of vapor at system pressure
+    phil : float
+        Fugacity coefficient of liquid at system pressure
+
+    Returns
+    -------
+    xi : numpy.ndarray
+        Mole fraction of each component, sum(xi) should equal 1.0
+    """
+
+    xi = np.zeros(len(yi))
+    ind = np.where(yi != 0.0)[0]
+    for i in ind:
+        xi[i] = yi[i] * phiv[i] / phil[i]
+
+    return xi
 
 ######################################################################
 #                                                                    #
@@ -795,6 +866,8 @@ def calc_Prange_xi(T, xi, yi, eos, rhodict={}, Pmin=1000, zi_opts={}):
     vlist, Plist = PvsRho(T, xi, eos, **rhodict)
     Pvspline, roots, extrema = PvsV_spline(vlist, Plist)
 
+    #PvsV_plot(vlist, Plist, Pvspline, markers=extrema)
+
     if not len(extrema):
         Pmax = 100000 # 1 MPa
     else:
@@ -828,13 +901,15 @@ def calc_Prange_xi(T, xi, yi, eos, rhodict={}, Pmin=1000, zi_opts={}):
     if z == maxiter-1:
         logger.error("Proper minimum pressure for liquid density could not be found")
             
+
+    flag = 0
     for z in range(maxiter):
         if z == 0:
             # Find Obj function for Max Pressure above
             p = Parray[1]
             phil, rhol, flagl = calc_phil(p, T, xi, eos, rhodict=rhodict)
             if any(np.isnan(phil)):
-                raise ValueError
+                raise ValueError("Fugacity Coefficient should not be NaN")
             yi_range, phiv, flagv = solve_yi_xiT(yi_range, xi, phil, p, T, eos, rhodict=rhodict, **zi_opts)
             ObjArray[1] = (np.sum(xi * phil / phiv) - 1.0)
             logger.info("Estimate Maximum Pressure: {},  Obj. Func: {}".format(Parray[1],ObjArray[1]))
@@ -842,7 +917,11 @@ def calc_Prange_xi(T, xi, yi, eos, rhodict={}, Pmin=1000, zi_opts={}):
             tmp_sum = np.abs(ObjArray[-2] + ObjArray[-1])
             tmp_dif = np.abs(ObjArray[-2] - ObjArray[-1])
             if Parray[-1] == Parray[-2]:
-                raise ValueError("Maximum pressure value could not be found to bound problem.")
+                if flag == 0:
+                    p = 2*p
+                    flag = 1
+                else:
+                    raise ValueError("Maximum pressure value could not be found to bound search.")
             elif tmp_dif > tmp_sum:
                 if flagv not in [0,2,4]:
                     logger.info("Estimated pressure {}  doesn't produce a vapor, flag={}, Obj Func: {}".format(Parray[-1],flagv,ObjArray[-1]))
@@ -853,20 +932,6 @@ def calc_Prange_xi(T, xi, yi, eos, rhodict={}, Pmin=1000, zi_opts={}):
                     intercept = ObjArray[-1] - slope * Parray[-1]
                     Pguess = -intercept / slope
                     break
-
-                #plt.plot(Parray,ObjArray)
-                #plt.plot([Pguess,Pguess],[ObjArray[-1],ObjArray[-2]],'k')
-                #plt.plot([Parray[0],Parray[-1]],[0,0],'k')
-                #plt.ylabel("Obj. Function")
-                #plt.xlabel("Pressure / Pa")
-                #plt.show()
-            elif z == maxiter-1:
-                logger.error('A change in sign for the objective function could not be found, inspect progress')
-                plt.plot(Parray, ObjArray)
-                plt.plot([Parray[0], Parray[-1]], [0, 0], 'k')
-                plt.ylabel("Obj. Function")
-                plt.xlabel("Pressure / Pa")
-                plt.show()
             else:
                 if len(ObjArray) < 2:
                     p = 2 * Parray[-1]
@@ -885,6 +950,14 @@ def calc_Prange_xi(T, xi, yi, eos, rhodict={}, Pmin=1000, zi_opts={}):
             Parray.append(p)
             ObjArray.append(np.sum(xi * phil / phiv) - 1.0)
             logger.info("New Estimate for Maximum Pressure: {},  Obj. Func: {}".format(Parray[-1],ObjArray[-1]))
+
+    if z == maxiter-1:
+        logger.error('A change in sign for the objective function could not be found, inspect progress')
+        plt.plot(Parray, ObjArray)
+        plt.plot([Parray[0], Parray[-1]], [0, 0], 'k')
+        plt.ylabel("Obj. Function")
+        plt.xlabel("Pressure / Pa")
+        plt.savefig("CannotFindMax_{}_{}.png".format(T,xi[0]))
 
     Prange = Parray[-2:]
     ObjRange = ObjArray[-2:]
@@ -1785,7 +1858,7 @@ def calc_yT_phase(yi, T, eos, rhodict={}, zi_opts={}, Pguess=-1, meth="hybr", pr
         logger.debug("Using the method, {}, with the following options:\n{}".format(meth,outer_dict))
         Pfinal = spo.root(solve_P_yiT, P, args=(yi, T, eos, rhodict, zi_opts), method=meth, options=outer_dict)
     elif meth in ['hybr', 'lm', 'linearmixing', 'diagbroyden', 'excitingmixing', 'krylov', 'df-sane']:
-        outer_dict = {}
+        outer_dict = {'xtol': 1e-10}
         for key, value in pressure_opts.items():
             outer_dict[key] = value
         logger.debug("Using the method, {}, with the following options:\n{}".format(meth,outer_dict))
