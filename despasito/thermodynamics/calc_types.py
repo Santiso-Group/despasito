@@ -21,7 +21,7 @@ from . import calc
 
 ######################################################################
 #                                                                    #
-#                Phase Equilibrium given xi and T                     #
+#                Phase Equilibrium given xi and T                    #
 #                                                                    #
 ######################################################################
 def phase_xiT(eos, sys_dict):
@@ -50,11 +50,11 @@ def phase_xiT(eos, sys_dict):
 
     ## Extract and check input data
     if 'Tlist' in sys_dict:
-        T_list = np.array(sys_dict['Tlist'])
+        T_list = np.array(sys_dict['Tlist'],float)
         logger.info("Using Tlist") 
 
     if 'xilist' in sys_dict:
-        xi_list = np.array(sys_dict['xilist'])
+        xi_list = np.array(sys_dict['xilist'],float)
         logger.info("Using xilist")
 
     variables = list(locals().keys())
@@ -68,15 +68,12 @@ def phase_xiT(eos, sys_dict):
         else:
             raise ValueError("The number of provided temperatures and mole fraction sets are different")
 
-    if len(xi_list[0]) != len(eos._nui):
-        raise ValueError("Number of components in mole fraction list doesn't match components in nui. Check bead_config.")
-
     ## Optional values
     opts = {}
 
     # Process initial guess in pressure
     if 'Pguess' in sys_dict:
-        Pguess = sys_dict['Pguess']
+        Pguess = float(sys_dict['Pguess'])
         if np.size(T_list) != np.size(Pguess):
             if type(Pguess) not in [list, numpy.ndarray]:
                 opts["Pguess"] = np.ones(len(T_list))*Pguess
@@ -178,11 +175,11 @@ def phase_yiT(eos, sys_dict):
 
     ## Extract and check input data
     if 'Tlist' in sys_dict:
-        T_list = np.array(sys_dict['Tlist'])
+        T_list = np.array(sys_dict['Tlist'],float)
         logger.info("Using Tlist")
 
     if 'yilist' in sys_dict:
-        yi_list = np.array(sys_dict['yilist'])
+        yi_list = np.array(sys_dict['yilist'],float)
         logger.info("Using yilist")
 
     variables = list(locals().keys())
@@ -301,18 +298,15 @@ def sat_props(eos, sys_dict):
 
     ## Extract and check input data
     if 'Tlist' in sys_dict:
-        T_list = np.array(sys_dict['Tlist'])
+        T_list = np.array(sys_dict['Tlist'],float)
         logger.info("Using Tlist")
     else:
         raise ValueError('Tlist is not specified')
 
     if 'xilist' in sys_dict:
-        xi_list = np.array(sys_dict['xilist'])
+        xi_list = np.array(sys_dict['xilist'],float)
         logger.info("Using xilist")
     else:
-        if len(eos._nui) > 1:
-            raise ValueError('xi_list should be specified for more than 1 component.')
-        else:
             xi_list = np.array([[1.0] for x in range(len(T_list))])
 
     variables = list(locals().keys())
@@ -394,11 +388,11 @@ def liquid_properties(eos, sys_dict):
 
     ## Extract and check input data
     if 'Tlist' in sys_dict:
-        T_list = np.array(sys_dict['Tlist'])
+        T_list = np.array(sys_dict['Tlist'],float)
         logger.info("Using Tlist")
 
     if 'xilist' in sys_dict:
-        xi_list = np.array(sys_dict['xilist'])
+        xi_list = np.array(sys_dict['xilist'],float)
         logger.info("Using xilist")
 
     variables = list(locals().keys())
@@ -412,7 +406,8 @@ def liquid_properties(eos, sys_dict):
         else:
             raise ValueError("The number of provided temperatures and mole fraction sets are different")
 
-    if "Plist" not in sys_dict:
+    if "Plist" in sys_dict:
+        P_list = np.array(sys_dict['Plist'])
         logger.info("Using Plist")
     else:
         P_list = 101325.0 * np.ones_like(T_list)
@@ -481,11 +476,11 @@ def vapor_properties(eos, sys_dict):
 
     ## Extract and check input data
     if 'Tlist' in sys_dict:
-        T_list = np.array(sys_dict['Tlist'])
+        T_list = np.array(sys_dict['Tlist'],float)
         logger.info("Using Tlist")
 
     if 'yilist' in sys_dict:
-        yi_list = np.array(sys_dict['yilist'])
+        yi_list = np.array(sys_dict['yilist'],float)
         logger.info("Using yilist")
 
     variables = list(locals().keys())
@@ -499,7 +494,8 @@ def vapor_properties(eos, sys_dict):
         else:
             raise ValueError("The number of provided temperatures and mole fraction sets are different")
 
-    if "Plist" not in sys_dict:
+    if "Plist" in sys_dict:
+        P_list = np.array(sys_dict['Plist'])
         logger.info("Using Plist")
     else:
         P_list = 101325.0 * np.ones_like(T_list)

@@ -36,6 +36,8 @@ logger = logging.getLogger()
 logger.setLevel(args.verbose)
 
 # Set up rotating log files
+if os.path.isfile(args.logFile):
+    os.remove(args.logFile)
 log_file_handler = logging.handlers.RotatingFileHandler(args.logFile)
 log_file_handler.setFormatter( logging.Formatter('%(asctime)s [%(levelname)s](%(name)s:%(funcName)s:%(lineno)d): %(message)s') )
 log_file_handler.setLevel(args.verbose)

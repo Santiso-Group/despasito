@@ -2,9 +2,24 @@
 Thermodynamic Calculations
 =========================================================
 
+.. automodule:: despasito.thermodynamics
+   :members:
+
 Available Calculation Types
 ---------------------------
 
-.. automodapi:: despasito.thermodynamics
+.. currentmodule:: despasito
+
+.. autosummary::
+   :toctree: _autosummary
+
+   thermodynamics.calc_types
+
+Supporting Thermodynamic Functions
+----------------------------------
+.. autosummary::
+   :toctree: _autosummary
+
+   thermodynamics.calc
 
 

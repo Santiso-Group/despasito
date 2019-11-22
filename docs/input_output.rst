@@ -6,7 +6,12 @@ Package Inputs
 --------------
 Inputs are .json files of the intructions for thermodynamic calculations and paths to the .json files containing parameters for the eos object. 
 
-.. automodapi:: despasito.input_output.readwrite_input
+.. currentmodule:: despasito
+
+.. autosummary::
+   :toctree: _autosummary
+
+   input_output.readwrite_input
 
 Package Outputs
 ---------------

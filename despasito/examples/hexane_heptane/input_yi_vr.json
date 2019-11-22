@@ -1,0 +1,10 @@
+{
+    "beadconfig": [[0.2, [["CH_hex", 1]]], [0.8, [["CH_hep", 1]]]],              
+    "SAFTgroup": "SAFTgroup_vr_mie.json",
+    "SAFTcross": "SAFTcross_vr_mie.json",
+    "output_file": "out_yi_vr.txt",
+    "calculation_type" : "vapor_properties",
+    "Tlist" : [320.0],
+    "Plist" : [1e+5],
+    "yilist": [[0.4,0.6]]
+}

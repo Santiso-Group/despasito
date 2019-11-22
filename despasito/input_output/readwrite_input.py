@@ -1,10 +1,10 @@
 """
 
-Routines for passing input files from .json files to dictionaries and extracting relevant information for program use, as well as write properly structures .json files for later calculations.
+Routines for parsing input .json files to dictionaries for program use, as well as write properly structures .json files for later calculations.
     
 .. todo::
-    * extract_calc_data input_fname: Add link to available thermodynamic calculations
-    * extract_calc_data density_fname: Add link to available density options
+    - extract_calc_data input_fname: Add link to available thermodynamic calculations
+    - extract_calc_data density_fname: Add link to available density options
 """
 
 import logging
@@ -48,7 +48,7 @@ def append_data_file_path(input_dict, path='.'):
 def extract_calc_data(input_fname, path='.', **args):
 
     """
-    Uses dictionary from .json input file to process and divide information into two dictionaries, one for creating the equation of state, and one for the thermodynamic calculations.
+    Parse dictionary from .json input file into a dictionary for creating the equation of state, and one for the thermodynamic calculations.
 
     Parameters
     ----------
@@ -82,12 +82,12 @@ def extract_calc_data(input_fname, path='.', **args):
     xi, beads, nui = process_bead_data(input_dict['beadconfig'])
     eos_dict = {'xi':xi,'beads':beads,'nui':nui}
 
-    #read SAFT groups file
+    #read EOS groups file
     with open(input_dict['SAFTgroup'], 'r') as f:
         output = f.read()
     eos_dict['beadlibrary'] = json.loads(output)
 
-    #read SAFT cross file
+    #read EOS cross file
     try:
         with open(input_dict['SAFTcross'], 'r') as f:
             output = f.read()
@@ -102,10 +102,13 @@ def extract_calc_data(input_fname, path='.', **args):
     except:
         logger.info('No association sites specified')
 
+    if "eos" in input_dict:
+        eos_dict['eos'] = input_dict["eos"]
+
     ## Make dictionary of data needed for thermodynamic calculation
     thermo_dict = {}
     # Extract relevant system state inputs
-    EOS_dict_keys = ['beadconfig', 'SAFTgroup', 'SAFTcross','association_site_names',"output_file"]
+    EOS_dict_keys = ['beadconfig', 'SAFTgroup', 'SAFTcross','association_site_names',"output_file","eos"]
     for key, value in input_dict.items():
         if key not in EOS_dict_keys:
             thermo_dict[key] = value

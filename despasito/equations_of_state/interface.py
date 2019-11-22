@@ -12,7 +12,7 @@ from abc import ABC, abstractmethod
 class EOStemplate(ABC):
 
     """
-    Equation of state (EOS ) interface needed to create additional EOS objects. All classes in this directory refer back to this interface. Using this template all EOS objects are then easily exchanged.
+    All classes in this directory refer back to this interface. Using this template all EOS objects are then easily exchanged.
     """
 
     @abstractmethod
@@ -23,7 +23,7 @@ class EOStemplate(ABC):
         pass
 
     @abstractmethod
-    def chemicalpotential(self):
+    def fugacity_coefficient(self):
         """
         Output chemical potential predicted by EOS.
         """
@@ -50,9 +50,3 @@ class EOStemplate(ABC):
         """
         pass
 
-    @abstractmethod
-    def parameter_refresh(self):
-        """
-        Update calculated parameters internal to EOS that depend on those changed in update_parameters
-        """
-        pass

@@ -7,17 +7,28 @@ Fit to Experimental Data
 ------------------------
 Parameters can be fit for one component at a time, and as many parameters as desired *can* be fit. Input file structure is very similar to before with the mandatory addition of an `opt_params` section whose presence will signify to DESPASITO that this is a fitting job. Here we summarize the available experimental data types that are currently supported for fitting, followed by the desciption of the main fitting function containing more details.
 
-.. automodapi:: despasito.fit_parameters
+.. automodule:: despasito.fit_parameters
+   :members:
 
-.. automodapi:: despasito.fit_parameters.fit_funcs
+Available Data Types
+####################
 
-.. automodapi:: despasito.fit_parameters.interface
+.. currentmodule:: despasito
 
-.. automodapi:: despasito.fit_parameters.data_classes.TLVE
+.. autosummary::
 
-.. automodapi:: despasito.fit_parameters.data_classes.sat_props
+   :toctree: _autosummary
 
-.. automodapi:: despasito.fit_parameters.data_classes.liquid_density
+   fit_parameters.data_classes
+
+Supporting Thermodynamic Functions
+##################################
+
+.. autosummary::
+
+   :toctree: _autosummary
+
+   fit_parameters.fit_funcs
 
 Estimate with Electronic Structure Methods
 ------------------------------------------
