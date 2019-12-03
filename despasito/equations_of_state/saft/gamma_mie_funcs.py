@@ -160,6 +160,7 @@ def calc_dkk(epsilon, sigma, T, l_r, l_a=6.0):
 
 #    # Option 1
 #    results = integrate.quad(lambda r: _dkk_int(r, Ce_kT, sigma, l_r, l_a), 0.0, sigma, epsabs=1.0e-16, epsrel=1.0e-16)
+#    results = results[0]
 
     # Option 2: 10pt Gauss Langedre
     # 5pt
@@ -175,7 +176,7 @@ def calc_dkk(epsilon, sigma, T, l_r, l_a=6.0):
     r = 0.5*sigma*(x+1)
     results = 0.5*sigma*np.sum(w*_dkk_int(r, Ce_kT, sigma, l_r, l_a))
 
-    return results[0]
+    return results
 
 def C(l_r, l_a):
     r""" 

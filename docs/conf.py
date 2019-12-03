@@ -62,13 +62,14 @@ extensions = [
 ]
 
 autosummary_generate = True
+autosummary_imported_members = True
 add_module_names = False
 napoleon_google_docstring = False
 napoleon_use_param = False
 napoleon_use_ivar = True
 todo_include_todos = True
 
-autodoc_mock_imports = ['importlib', 'despasito.equations_of_state.saft.solv_assoc', "deap"]
+autodoc_mock_imports = ['importlib', 'despasito.equations_of_state.saft.solv_assoc']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

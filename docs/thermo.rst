@@ -2,14 +2,12 @@
 Thermodynamic Calculations
 =========================================================
 
-.. automodule:: despasito.thermodynamics
-   :members:
+.. autofunction:: despasito.thermodynamics.thermo
 
 Available Calculation Types
 ---------------------------
 
 .. currentmodule:: despasito
-
 .. autosummary::
    :toctree: _autosummary
 
