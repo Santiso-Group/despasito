@@ -1,7 +1,6 @@
 import numpy as np
-import logging
 import os
-from timeit import default_timer as timer
+#from timeit import default_timer as timer
 
 if 'NUMBA_DISABLE_JIT' in os.environ:
     disable_jit = os.environ['NUMBA_DISABLE_JIT']
@@ -12,16 +11,15 @@ else:
 if disable_jit:
     os.environ['NUMBA_DISABLE_JIT'] = '1'
 
-from numba import njit
 import numba
 
 # For Numba, ckl_coef cannot be encapsulated
 from .constants import ckl_coef
-#from profilehooks import profile
+from profilehooks import profile
 
-#@profile
+@profile
 def calc_a1s(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
-    r""" wrapper function for calling 2d/3d versions of calc_a1s ... this is done for stupid Numba 
+    r""" Wrapper function for calling 2d/3d versions of calc_a1s (this is done for Numba)
     """
     if len(l_kl.shape) == 2:
         output = calc_a1s_2d(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl)
@@ -30,10 +28,12 @@ def calc_a1s(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
 
     return output
 
-@njit(numba.f8[:,:,:](numba.f8[:], numba.f8, numba.f8[:,:], numba.f8[:], numba.f8[:,:], numba.f8[:,:]))
+@numba.njit(numba.f8[:,:,:](numba.f8[:], numba.f8, numba.f8[:,:], numba.f8[:], numba.f8[:,:], numba.f8[:,:]))
 def calc_a1s_2d(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
     r""" 
-    Return a1s,kl(rho*Cmol2seg,l_kl) in K as defined in eq. 25, used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy.
+    Return a1s,kl(rho*Cmol2seg,l_kl) in K as defined in eq. 25.
+    
+    Used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy.
 
     Parameters
     ----------
@@ -59,13 +59,13 @@ def calc_a1s_2d(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
     """
     # Andrew: why is the 4 hard-coded here?
     nbeads = len(dkl)
-    zetax_pow = np.empty((len(rho), 4), dtype=rho.dtype)
+    zetax_pow = np.zeros((len(rho), 4), dtype=rho.dtype)
     zetax_pow[:, 0] = zetax
     for i in range(1,4):
         zetax_pow[:, i] = zetax_pow[:, i-1] * zetax_pow[:, 0]
 
     # check if you have more than 1 bead types
-    etakl = np.empty((len(rho), nbeads, nbeads), dtype=rho.dtype)
+    etakl = np.zeros((len(rho), nbeads, nbeads), dtype=rho.dtype)
 
     for k in range(nbeads):
         for l in range(nbeads):
@@ -75,10 +75,121 @@ def calc_a1s_2d(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
     a1s = - (1.0 - (etakl / 2.0)) / ((1.0 - etakl)**3) * 2.0 * np.pi * Cmol2seg * ((epsilonkl * (dkl**3)) / (l_kl - 3.0))
     return np.transpose(np.transpose(a1s) * rho)
 
-@njit(numba.f8[:,:](numba.f8[:], numba.f8, numba.f8[:], numba.f8[:], numba.f8[:], numba.f8[:]))
+@numba.njit(numba.f8[:,:](numba.f8[:], numba.f8, numba.f8[:], numba.f8[:], numba.f8[:], numba.f8[:]))
 def calc_a1s_1d(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
     r""" 
-    Return a1s,kl(rho*Cmol2seg,l_kl) in K as defined in eq. 25, used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy.
+    Return a1s,kl(rho*Cmol2seg,l_kl) in K as defined in eq. 25.
+    
+    Used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy.
+
+    Parameters
+    ----------
+    rho : numpy.ndarray
+        Number density of system [molecules/m^3]
+    Cmol2seg : float
+        Conversion factor from from molecular number density, :math:`\rho`, to segment (i.e. group) number density, :math:`\rho_S`. Shown in eq. 13
+    l_kl : numpy.ndarray
+        Matrix of mie potential exponents for k,l groups
+    zetax : numpy.ndarray
+        Matrix of hypothetical packing fraction based on hard sphere diameter for groups (k,l)
+    epsilonkl : numpy.ndarray
+        Matrix of well depths for groups (k,l)
+    dkl : numpy.ndarray
+        Matrix of hardsphere diameters for groups (k,l)
+
+    Returns
+    -------
+    numpy.ndarray
+        Matrix used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy, size is the Ngroups by Ngroups
+    """
+
+    nbeads = len(dkl)
+    zetax_pow = np.zeros((len(rho), 4), dtype=rho.dtype)
+    zetax_pow[:, 0] = zetax
+    for i in range(1,4):
+        zetax_pow[:, i] = zetax_pow[:, i-1] * zetax_pow[:, 0]
+
+    # check if you have more than 1 bead types
+    etakl = np.zeros((len(rho), nbeads), dtype=rho.dtype)
+
+    for k in range(nbeads):
+        tmp = np.dot(ckl_coef, np.array( (1.0, 1.0/l_kl[k], 1.0/l_kl[k]**2, 1.0/l_kl[k]**3), dtype=ckl_coef.dtype ) )
+        etakl[:, k] = np.dot( zetax_pow, tmp )
+
+    a1s = - (1.0 - (etakl / 2.0)) / (1.0 - etakl)**3 * 2.0 * np.pi * Cmol2seg * ((epsilonkl * (dkl**3)) / (l_kl - 3.0) )
+
+    return np.transpose(np.transpose(a1s) * rho)
+
+@profile
+def calc_da1sii_drhos(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
+    r""" Wrapper function for calling 2d/3d versions of calc_da1sii_drhos (this is done for Numba)
+    """
+    if len(l_kl.shape) == 2:
+        output = calc_da1sii_drhos_2d(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl)
+    elif len(l_kl.shape) == 1:
+        output = calc_da1sii_drhos_1d(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl)
+
+    return output
+
+@numba.njit(numba.f8[:,:,:](numba.f8[:], numba.f8, numba.f8[:,:], numba.f8[:], numba.f8[:,:], numba.f8[:,:]))
+def calc_da1sii_drhos_2d(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
+    r""" 
+    Return a1s,kl(rho*Cmol2seg,l_kl) in K as defined in eq. 25.
+    
+    Used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy.
+
+    Parameters
+    ----------
+    rho : numpy.ndarray
+        Number density of system [molecules/m^3]
+    Cmol2seg : float
+        Conversion factor from from molecular number density, :math:`\rho`, to segment (i.e. group) number density, :math:`\rho_S`. Shown in eq. 13
+    l_kl : numpy.ndarray
+        Matrix of mie potential exponents for k,l groups
+    zetax : numpy.ndarray
+        Matrix of hypothetical packing fraction based on hard sphere diameter for groups (k,l)
+    epsilonkl : numpy.ndarray
+        Matrix of well depths for groups (k,l)
+    dkl : numpy.ndarray
+        Matrix of hardsphere diameters for groups (k,l)
+
+    Returns
+    -------
+    da1sii_drhos : numpy.ndarray
+        Matrix used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy, size is the Ngroups by Ngroups
+
+    :note: output seems to be a tensor of size (N x Ngroups x Ngroups)
+    """
+
+    nbeads = len(dkl)
+    zetax_pow = np.zeros((len(rho), 4), dtype=rho.dtype)
+    zetax_pow[:, 0] = zetax
+    for i in range(1,4):
+        zetax_pow[:, i] = zetax_pow[:, i-1] * zetax_pow[:, 0]
+
+    # check if you have more than 1 bead types
+    etakl = np.zeros((len(rho), nbeads, nbeads), dtype=rho.dtype)
+    rhos_detakl_drhos = np.zeros((len(rho), nbeads, nbeads), dtype=rho.dtype)
+
+    for k in range(nbeads):
+        for l in range(nbeads):
+            tmp = np.dot(ckl_coef, np.array( (1.0, 1.0/l_kl[k, l], 1.0/l_kl[k, l]**2, 1.0/l_kl[k, l]**3), dtype=ckl_coef.dtype ))
+            tmp_dr = np.dot(ckl_coef, np.array( (1.0, 2.0/l_kl[k, l], 3.0/l_kl[k, l]**2, 4.0/l_kl[k, l]**3), dtype=ckl_coef.dtype ))
+            etakl[:, k, l] = np.dot( zetax_pow, tmp )
+            rhos_detakl_drhos[:, k, l] = np.dot( zetax_pow, tmp_dr)
+
+    tmp1 = (1.0 - (etakl / 2.0)) / ((1.0 - etakl)**3) + (5.0-2.0*etakl)/(2.0*(1.0-etakl)**4)*rhos_detakl_drhos
+    tmp2 = - 2.0 * np.pi * ((epsilonkl * (dkl**3)) / (l_kl - 3.0))
+    da1s_drhos = tmp1*tmp2
+
+    return da1s_drhos
+
+@numba.njit(numba.f8[:,:](numba.f8[:], numba.f8, numba.f8[:], numba.f8[:], numba.f8[:], numba.f8[:]))
+def calc_da1sii_drhos_1d(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
+    r""" 
+    Return a1s,kl(rho*Cmol2seg,l_kl) in K as defined in eq. 25.
+    
+    Used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy.
 
     Parameters
     ----------
@@ -101,26 +212,32 @@ def calc_a1s_1d(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
         Matrix used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy, size is the Ngroups by Ngroups
     """
     nbeads = len(dkl)
-    zetax_pow = np.empty((len(rho), 4), dtype=rho.dtype)
+    zetax_pow = np.zeros((len(rho), 4), dtype=rho.dtype)
     zetax_pow[:, 0] = zetax
     for i in range(1,4):
         zetax_pow[:, i] = zetax_pow[:, i-1] * zetax_pow[:, 0]
 
     # check if you have more than 1 bead types
-    etakl = np.empty((len(rho), nbeads), dtype=rho.dtype)
+    etakl = np.zeros((len(rho), nbeads), dtype=rho.dtype)
+    rhos_detakl_drhos = np.zeros((len(rho), nbeads), dtype=rho.dtype)
 
     for k in range(nbeads):
         tmp = np.dot(ckl_coef, np.array( (1.0, 1.0/l_kl[k], 1.0/l_kl[k]**2, 1.0/l_kl[k]**3), dtype=ckl_coef.dtype ) )
+        tmp_dr = np.dot(ckl_coef, np.array( (1.0, 1.0/l_kl[k], 1.0/l_kl[k]**2, 1.0/l_kl[k]**3), dtype=ckl_coef.dtype ) )*np.array((1.0,2.0,3.0,4.0))
         etakl[:, k] = np.dot( zetax_pow, tmp )
+        rhos_detakl_drhos[:, k] = np.dot( zetax_pow, tmp_dr )
 
-    a1s = - (1.0 - (etakl / 2.0)) / (1.0 - etakl)**3 * 2.0 * np.pi * Cmol2seg * ((epsilonkl * (dkl**3)) / (l_kl - 3.0) )
+    tmp1 = (1.0 - (etakl / 2.0)) / ((1.0 - etakl)**3) + (5.0-2.0*etakl)/(2.0*(1.0-etakl)**4)*rhos_detakl_drhos
+    tmp2 = - 2.0 * np.pi * ((epsilonkl * (dkl**3)) / (l_kl - 3.0))
+    da1s_drhos = tmp1*tmp2
 
-    return np.transpose(np.transpose(a1s) * rho)
+    #da1s_drhos = - 2.0 * np.pi * ((1.0 - (etakl / 2.0)) / ((1.0 - etakl)**3) + (5.0 - 2.0*etakl)/(2.0*(1.0-etakl)**4)) * rhos_detakl_drhos * ((epsilonkl * (dkl**3)) / (l_kl - 3.0))
+    return da1s_drhos
 
-@njit(numba.types.Tuple((numba.f8[:,:,:,:], numba.f8[:]))(list(list(numba.i8)), numba.f8[:], numba.f8[:], numba.f8[:,:], numba.f8[:,:], numba.f8[:,:,:,:], numba.f8[:,:,:,:], numba.f8[:,:,:])) # , numba.i8, numba.f8, numba.f8
+@numba.njit(numba.types.Tuple((numba.f8[:,:,:,:], numba.f8[:]))(numba.i8[:,:], numba.f8[:], numba.f8[:], numba.f8[:,:], numba.f8[:,:], numba.f8[:,:,:,:], numba.f8[:,:,:,:], numba.f8[:,:,:])) # , numba.i8, numba.f8, numba.f8
 def calc_Xika(indices, rho, xi, nui, nk, Fklab, Kklab, Iij): # , maxiter=500, tol=1e-12, damp=.1
     r""" 
-    Calculate the fraction of molecules of component i that are not bonded at a site of type a on group k in an iterative fashion.
+    Calculate the fraction of molecules of component i that are not bonded at a site of type a on group k.
 
     Parameters
     ----------
@@ -147,6 +264,8 @@ def calc_Xika(indices, rho, xi, nui, nk, Fklab, Kklab, Iij): # , maxiter=500, to
     -------
     Xika : numpy.ndarray
         NoteHere
+    err_array : numpy.ndarray
+        Of the same length of rho, is a list in the error of the total error Xika for each point. 
     """
 
     maxiter=500
@@ -166,7 +285,6 @@ def calc_Xika(indices, rho, xi, nui, nk, Fklab, Kklab, Iij): # , maxiter=500, to
     # Parallelize here, wrt rho!
     Xika_elements = .5*np.ones(len(indices))
     for r in range(nrho):
-        Xika = np.ones((ncomp, nbeads, nsitesmax))
         for knd in range(maxiter):
 
             Xika_elements_new = np.ones(len(Xika_elements))

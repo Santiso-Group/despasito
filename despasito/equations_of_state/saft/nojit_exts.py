@@ -1,7 +1,7 @@
 r"""
-    
     Routines for calculating the Helmholtz energy for the SAFT-gamma equation of state.
-    Equations referenced in this code are from V. Papaioannou et al J. Chem. Phys. 140 054107 2014
+    
+    Equations referenced in this code are from V. Papaioannou et al. J. Chem. Phys. 140 054107 2014
     
 """
 
@@ -14,7 +14,9 @@ from . import constants
 #@profile
 def calc_a1s(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
     r""" 
-    Return a1s,kl(rho*Cmol2seg,l_kl) in K as defined in eq. 25, used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy.
+    Return a1s,kl(rho*Cmol2seg,l_kl) in K as defined in eq. 25.
+    
+    Used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy.
 
     Parameters
     ----------
@@ -29,7 +31,7 @@ def calc_a1s(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
     epsilonkl : numpy.ndarray
         Matrix of well depths for groups (k,l)
     dkl : numpy.ndarray
-        Matrix of hardsphere diameters for groups (k,l)
+        Matrix of hard sphere diameters for groups (k,l)
 
     Returns
     -------
@@ -50,7 +52,7 @@ def calc_a1s(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
         etakl = np.zeros((np.size(rho), nbeads, nbeads))
         for k in range(nbeads):
             for l in range(nbeads):
-                cikl = np.inner(constants.ckl_coef, np.array([1.0, l_kl[k, l]**-1, l_kl[k, l]**-2, l_kl[k, l]**-3]).T)
+                cikl = np.inner(constants.ckl_coef, np.transpose(np.array([1.0, l_kl[k, l]**-1, l_kl[k, l]**-2, l_kl[k, l]**-3])))
                 etakl[:, k, l] = np.einsum("ij,j", zetax_pow, cikl)
         a1s = np.einsum("ijk,jk->ijk", (1.0 - (etakl / 2.0)) / ((1.0 - etakl)**3),
                         -2.0 * np.pi * Cmol2seg * ((epsilonkl * (dkl**3)) / (l_kl - 3.0)))
@@ -60,7 +62,7 @@ def calc_a1s(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
     elif np.size(np.shape(l_kl)) == 1:
         etakl = np.zeros((np.size(rho), nbeads))
         for k in range(nbeads):
-            cikl = np.inner(constants.ckl_coef, np.array([1.0, l_kl[k]**-1, l_kl[k]**-2, l_kl[k]**-3]).T)
+            cikl = np.inner(constants.ckl_coef, np.transpose(np.array([1.0, l_kl[k]**-1, l_kl[k]**-2, l_kl[k]**-3])))
             etakl[:, k] = np.einsum("ij,j", zetax_pow, cikl)
         a1s = np.einsum("ij,j->ij", (1.0 - (etakl / 2.0)) / ((1.0 - etakl)**3),
                         -2.0 * np.pi * Cmol2seg * ((epsilonkl * (dkl**3)) / (l_kl - 3.0)))
@@ -72,9 +74,75 @@ def calc_a1s(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
     return a1s
 
 #@profile
+def calc_da1sii_drhos(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
+    r""" 
+    Return da1s,kl(rho*Cmol2seg,l_kl)/rhos in K.
+    
+    Used in the calculation of :math:`A_chain` the first order term of the perturbation expansion corresponding to the mean-attractive energy.
+
+    Parameters
+    ----------
+    rho : numpy.ndarray
+        Number density of system [molecules/m^3]
+    Cmol2seg : float
+        Conversion factor from from molecular number density, :math:`\rho`, to segment (i.e. group) number density, :math:`\rho_S`. Shown in eq. 13
+    l_kl : numpy.ndarray
+        Matrix of mie potential exponents for k,l groups
+    zetax : numpy.ndarray
+        Matrix of hypothetical packing fraction based on hard sphere diameter for groups (k,l)
+    epsilonkl : numpy.ndarray
+        Matrix of well depths for groups (k,l)
+    dkl : numpy.ndarray
+        Matrix of hard sphere diameters for groups (k,l)
+
+    Returns
+    -------
+    da1s_drhos : numpy.ndarray
+        Matrix used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy, size is the Ngroups by Ngroups
+    """
+
+    logger = logging.getLogger(__name__)
+
+    nbeads = np.size(dkl, axis=0)
+    zetax_pow = np.zeros((np.size(rho), 4))
+    zetax_pow[:, 0] = zetax
+    for i in range(1, 4):
+        zetax_pow[:, i] = zetax_pow[:, i - 1] * zetax_pow[:, 0]
+
+    # check if you have more than 1 bead types
+    if np.size(np.shape(l_kl)) == 2:
+        etakl = np.zeros((np.size(rho), nbeads, nbeads))
+        rhos_detakl_drhos = np.zeros((np.size(rho), nbeads, nbeads))
+        for k in range(nbeads):
+            for l in range(nbeads):
+                # Constants to calculate eta_eff
+                cikl = np.inner(constants.ckl_coef, np.transpose(np.array([1.0, l_kl[k, l]**-1, l_kl[k, l]**-2, l_kl[k, l]**-3])))
+                etakl[:, k, l] = np.einsum("ij,j", zetax_pow, cikl)
+                rhos_detakl_drhos[:, k, l] = np.einsum("ij,j", zetax_pow, cikl*np.array([1.0,2.0,3.0,4.0]))
+        da1s_drhos = np.einsum("ijk,jk->ijk", (1.0 - (etakl / 2.0)) / ((1.0 - etakl)**3) + (5.0-2.0*etakl)/(2.0*(1.0-etakl)**4)*rhos_detakl_drhos,
+                        -2.0 * np.pi * ((epsilonkl * (dkl**3)) / (l_kl - 3.0)))
+
+    elif np.size(np.shape(l_kl)) == 1:
+        etakl = np.zeros((np.size(rho), nbeads))
+        rhos_detakl_drhos = np.zeros((np.size(rho), nbeads))
+        for k in range(nbeads):
+            cikl = np.inner(constants.ckl_coef, np.transpose(np.array([1.0, l_kl[k]**-1, l_kl[k]**-2, l_kl[k]**-3])))
+            etakl[:, k] = np.einsum("ij,j", zetax_pow, cikl)
+            rhos_detakl_drhos[:, k] = np.einsum("ij,j", zetax_pow, cikl*np.array([1.,2.,3.,4.]))
+
+        tmp1 = (1.0 - (etakl / 2.0)) / ((1.0 - etakl)**3) + (5.0-2.0*etakl)/(2.0*(1.0-etakl)**4)*rhos_detakl_drhos
+        tmp2 = -2.0 * np.pi * ((epsilonkl * (dkl**3)) / (l_kl - 3.0))
+        da1s_drhos = np.einsum("ij,j->ij",tmp1,tmp2)
+#        da1s_drhos = np.einsum("ij,j->ij", (1.0 - (etakl / 2.0)) / ((1.0 - etakl)**3) + (5.0-2.0*etakl)/(2.0*(1.0-etakl)**4)*rhos_detakl_drhos, -2.0 * np.pi * ((epsilonkl * (dkl**3)) / (l_kl - 3.0)))
+    else:
+        print('Error in calc_da1s_drhos, unexpected array size')
+
+    return da1s_drhos
+
+#@profile
 def calc_Xika(indices, rho, xi, nui, nk, Fklab, Kklab, Iij, maxiter=500, tol=1e-12, damp=.1):
     r""" 
-    Calculate the fraction of molecules of component i that are not bonded at a site of type a on group k in an iterative fashion.
+    Calculate the fraction of molecules of component i that are not bonded at a site of type a on group k.
 
     Parameters
     ----------
@@ -113,10 +181,9 @@ def calc_Xika(indices, rho, xi, nui, nk, Fklab, Kklab, Iij, maxiter=500, tol=1e-
     Xika_final = np.ones((nrho,ncomp, nbeads, nsitesmax))
     err_array   = np.zeros(nrho)
 
-    # Parallelize here, wrt rho!
+    # Parallelize here, with respect to rho!
     Xika_elements = .5*np.ones(len(indices))
     for r in range(nrho):
-        Xika = np.ones((ncomp, nbeads, nsitesmax))
         for knd in range(maxiter):
 
             Xika_elements_new = np.ones(len(Xika_elements))

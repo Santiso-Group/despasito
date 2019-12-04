@@ -1,0 +1,12 @@
+{
+    "beadconfig": [[0.2, [["CO2", 1]]], [0.8, [["hexane", 1]]]], 
+    "eos": "cubic.peng_robinson",
+    "SAFTgroup": "../../library/PRgroup.json",
+    "SAFTcross": "PRcross_353.json",
+    "output_file": "out_xi.txt",
+    "calculation_type" : "phase_xiT",
+    "pressure options": {"maxiter":15},
+    "mole fraction options": {"maxiter":30},
+    "Tlist" : [353.0,353.0],
+    "xilist": [[0.01, 0.99],[0.017, 0.983]]
+}

@@ -5,7 +5,7 @@ The following functions are not tested because they require importing a file:
     file2paramdict, extract_calc_data, process_commandline, make_xi_matrix
 
 The following functions are not tested because they require exporting a file:
-    write_SAFTgroup
+    write_EOSparameters
 
 The following functions are tested:
     process_bead_data

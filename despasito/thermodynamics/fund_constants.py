@@ -1,12 +1,7 @@
 """
-    despasito
-    DESPASITO: Determining Equilibrium State and Parameters Applied to SAFT, Intended for Thermodynamic Output
-    
     This file contains constants that are generally used by the program
-    
 """
 
-import numpy as np
 #physical constants
 
 kb = 1.38064852e-23  #Boltzmann constant J/K

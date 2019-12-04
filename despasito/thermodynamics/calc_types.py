@@ -1,35 +1,32 @@
 """
-    This thermo module contains a series of wrappers to handle the inputs and outputs of these functions. The calc module contains the thermodynamic calculations. Calculation of pressure, chemical potential, and max density are handled by an eos object so that these functions can be used with any EOS.
+    This thermo module contains a series of wrappers to handle the inputs and outputs of these functions. The `calc` module contains the thermodynamic calculations. Calculation of pressure, chemical potential, and max density are handled by an eos object so that these functions can be used with any EOS.
     
     None of the functions in this folder need to be handled directly, as a function factory is included in our __init__.py file. Add "from thermodynamics import thermo" and use "thermo("calc_type",eos,input_dict)" to get started.
     
 """
 
-import logging
 import numpy as np
-import os
-import sys
 import logging
 
 from . import calc
 
 """
 .. todo::
-    phase_xiT: add like to rhodict options 
+    phase_xiT: add link to rhodict options 
 
 """
 
 ######################################################################
 #                                                                    #
-#                Phase Equilibrium given xi and T                     #
+#                Phase Equilibrium given xi and T                    #
 #                                                                    #
 ######################################################################
 def phase_xiT(eos, sys_dict):
 
     r"""
-    Assess input and system information and calculate phase diagram given liquid mole fractions, xi, and temperature.
+    Calculate phase diagram given liquid mole fractions, xi, and temperature.
 
-    An output file is generated with T, xi, and corresponding P and yi.
+    Input and system information is assessed first. An output file is generated with T, xi, and corresponding P and yi.
     
     Parameters
     ----------
@@ -50,11 +47,11 @@ def phase_xiT(eos, sys_dict):
 
     ## Extract and check input data
     if 'Tlist' in sys_dict:
-        T_list = np.array(sys_dict['Tlist'])
+        T_list = np.array(sys_dict['Tlist'],float)
         logger.info("Using Tlist") 
 
     if 'xilist' in sys_dict:
-        xi_list = np.array(sys_dict['xilist'])
+        xi_list = np.array(sys_dict['xilist'],float)
         logger.info("Using xilist")
 
     variables = list(locals().keys())
@@ -73,7 +70,7 @@ def phase_xiT(eos, sys_dict):
 
     # Process initial guess in pressure
     if 'Pguess' in sys_dict:
-        Pguess = sys_dict['Pguess']
+        Pguess = float(sys_dict['Pguess'])
         if np.size(T_list) != np.size(Pguess):
             if type(Pguess) not in [list, numpy.ndarray]:
                 opts["Pguess"] = np.ones(len(T_list))*Pguess
@@ -83,7 +80,7 @@ def phase_xiT(eos, sys_dict):
                 logger.info("The same pressure, {}, was used for all mole fraction values".format(Pguess))
             else:
                 raise ValueError("The number of provided pressure and mole fraction sets are different")
-        logger.info("Using user defined inital guess has been provided")
+        logger.info("Using user defined initial guess has been provided")
     else:
         if 'CriticalProp' in sys_dict:
             CriticalProp = np.array(sys_dict['CriticalProp'])
@@ -92,7 +89,7 @@ def phase_xiT(eos, sys_dict):
             # Critical properties: [Tc, Pc, omega, rho_0.7, Zc, Vc, M]
             Pguess = calc.calc_CC_Pguess(xi_list, T_list, CriticalProp)
             if np.isnan(Pguess):
-                logger.info("Critical properties were not used to guess an intial pressure")
+                logger.info("Critical properties were not used to guess an initial pressure")
             else:
                 logger.info("Pguess: ", Pguess)
                 opts["Pguess"] = Pguess
@@ -154,9 +151,9 @@ def phase_xiT(eos, sys_dict):
 def phase_yiT(eos, sys_dict):
 
     r"""
-    Assess input and system information and calculate phase diagram given vapor mole fractions, yi, and temperature.
+    Calculate phase diagram given vapor mole fractions, yi, and temperature.
 
-    An output file is generated with T, yi, and corresponding P and xi.
+    Input and system information is assessed first. An output file is generated with T, yi, and corresponding P and xi.
     
     Parameters
     ----------
@@ -175,11 +172,11 @@ def phase_yiT(eos, sys_dict):
 
     ## Extract and check input data
     if 'Tlist' in sys_dict:
-        T_list = np.array(sys_dict['Tlist'])
+        T_list = np.array(sys_dict['Tlist'],float)
         logger.info("Using Tlist")
 
     if 'yilist' in sys_dict:
-        yi_list = np.array(sys_dict['yilist'])
+        yi_list = np.array(sys_dict['yilist'],float)
         logger.info("Using yilist")
 
     variables = list(locals().keys())
@@ -208,7 +205,7 @@ def phase_yiT(eos, sys_dict):
                 logger.info("The same pressure, {}, was used for all mole fraction values".format(Pguess))
             else:
                 raise ValueError("The number of provided pressure and mole fraction sets are different")
-        logger.info("Using user defined inital guess has been provided")
+        logger.info("Using user defined initial guess has been provided")
     else:
         if 'CriticalProp' in sys_dict:
             CriticalProp = np.array(sys_dict['CriticalProp'])
@@ -217,7 +214,7 @@ def phase_yiT(eos, sys_dict):
             # Critical properties: [Tc, Pc, omega, rho_0.7, Zc, Vc, M]
             Pguess = calc.calc_CC_Pguess(yi_list, T_list, CriticalProp)
             if np.isnan(Pguess):
-                logger.info("Critical properties were not used to guess an intial pressure")
+                logger.info("Critical properties were not used to guess an initial pressure")
             else:
                 logger.info("Pguess: {}".format(Pguess))
                 opts["Pguess"] = Pguess
@@ -271,15 +268,15 @@ def phase_yiT(eos, sys_dict):
 
 ######################################################################
 #                                                                    #
-#                Saturation calc for 1 Component               #
+#                Saturation calc for 1 Component                     #
 #                                                                    #
 ######################################################################
 def sat_props(eos, sys_dict):
 
     r"""
-    Assess input and system information and computes the saturated pressure, liquid, and gas density a one component phase at a temperature.
+    Computes the saturated pressure, liquid, and gas density a one component phase at a temperature.
 
-    An output file is generated with T, :math:`P^{sat}`, :math:`\rho^{sat}_{l}, :math:`\rho^{sat}_{v}
+    Input and system information is assessed first.  An output file is generated with T, :math:`P^{sat}`, :math:`\rho^{sat}_{l}, :math:`\rho^{sat}_{v}
     
     Parameters
     ----------
@@ -298,12 +295,16 @@ def sat_props(eos, sys_dict):
 
     ## Extract and check input data
     if 'Tlist' in sys_dict:
-        T_list = np.array(sys_dict['Tlist'])
+        T_list = np.array(sys_dict['Tlist'],float)
         logger.info("Using Tlist")
+    else:
+        raise ValueError('Tlist is not specified')
 
     if 'xilist' in sys_dict:
-        xi_list = np.array(sys_dict['xilist'])
+        xi_list = np.array(sys_dict['xilist'],float)
         logger.info("Using xilist")
+    else:
+            xi_list = np.array([[1.0] for x in range(len(T_list))])
 
     variables = list(locals().keys())
     if all([key not in variables for key in ["xi_list", "T_list"]]):
@@ -363,9 +364,9 @@ def sat_props(eos, sys_dict):
 def liquid_properties(eos, sys_dict):
 
     r"""
-    Assess input and system information and computes the liquid density and chemical potential given a temperature, pressure, and liquid mole fractions.
+    Computes the liquid density and chemical potential given a temperature, pressure, and liquid mole fractions.
 
-    An output file is generated with P, T, xi, :math:`\rho_{l}, and :math:`\phi_{l}.
+    Input and system information is assessed first. An output file is generated with P, T, xi, :math:`\rho_{l}, and :math:`\phi_{l}.
     
     Parameters
     ----------
@@ -384,11 +385,11 @@ def liquid_properties(eos, sys_dict):
 
     ## Extract and check input data
     if 'Tlist' in sys_dict:
-        T_list = np.array(sys_dict['Tlist'])
+        T_list = np.array(sys_dict['Tlist'],float)
         logger.info("Using Tlist")
 
     if 'xilist' in sys_dict:
-        xi_list = np.array(sys_dict['xilist'])
+        xi_list = np.array(sys_dict['xilist'],float)
         logger.info("Using xilist")
 
     variables = list(locals().keys())
@@ -402,7 +403,8 @@ def liquid_properties(eos, sys_dict):
         else:
             raise ValueError("The number of provided temperatures and mole fraction sets are different")
 
-    if "Plist" not in sys_dict:
+    if "Plist" in sys_dict:
+        P_list = np.array(sys_dict['Plist'])
         logger.info("Using Plist")
     else:
         P_list = 101325.0 * np.ones_like(T_list)
@@ -416,7 +418,7 @@ def liquid_properties(eos, sys_dict):
         logger.info("Guess in pressure has been provided, but is unused for this function")
 
     if 'CriticalProp' in sys_dict:
-        logger.info("Critial properties have been provided, but are unused for this function")
+        logger.info("Critical properties have been provided, but are unused for this function")
 
     # Extract rho dict
     if "rhodict" in sys_dict:
@@ -436,8 +438,7 @@ def liquid_properties(eos, sys_dict):
             phil[i] = np.nan
         else:
             logger.info("P (Pa), T (K), xi, rhol: {} {} {} {}".format(P_list[i],T_list[i],xi_list[i],rhol[i]))
-            muil_tmp = eos.chemicalpotential(P_list[i], np.array([rhol[i]]), xi_list[i], T_list[i])
-            phil.append(np.exp(muil_tmp))
+            phil.append(eos.fugacity_coefficient(P_list[i], np.array([rhol[i]]), xi_list[i], T_list[i]))
 
     logger.info("--- Calculation liquid_density Complete ---")
 
@@ -451,9 +452,9 @@ def liquid_properties(eos, sys_dict):
 def vapor_properties(eos, sys_dict):
 
     r"""
-    Assess input and system information and computes the vapor density and chemical potential given a temperature, pressure, and vapor mole fractions.
+    Computes the vapor density and chemical potential given a temperature, pressure, and vapor mole fractions.
 
-    An output file is generated with P, T, yi, :math:`\rho_{v}, and :math:`\phi_{v}.
+    Input and system information is assessed first. An output file is generated with P, T, yi, :math:`\rho_{v}, and :math:`\phi_{v}.
     
     Parameters
     ----------
@@ -472,11 +473,11 @@ def vapor_properties(eos, sys_dict):
 
     ## Extract and check input data
     if 'Tlist' in sys_dict:
-        T_list = np.array(sys_dict['Tlist'])
+        T_list = np.array(sys_dict['Tlist'],float)
         logger.info("Using Tlist")
 
     if 'yilist' in sys_dict:
-        yi_list = np.array(sys_dict['yilist'])
+        yi_list = np.array(sys_dict['yilist'],float)
         logger.info("Using yilist")
 
     variables = list(locals().keys())
@@ -490,7 +491,8 @@ def vapor_properties(eos, sys_dict):
         else:
             raise ValueError("The number of provided temperatures and mole fraction sets are different")
 
-    if "Plist" not in sys_dict:
+    if "Plist" in sys_dict:
+        P_list = np.array(sys_dict['Plist'])
         logger.info("Using Plist")
     else:
         P_list = 101325.0 * np.ones_like(T_list)
@@ -504,7 +506,7 @@ def vapor_properties(eos, sys_dict):
         logger.info("Guess in pressure has been provided, but is unused for this function")
 
     if 'CriticalProp' in sys_dict:
-        logger.info("Critial properties have been provided, but are unused for this function")
+        logger.info("Critical properties have been provided, but are unused for this function")
 
     # Extract rho dict
     if "rhodict" in sys_dict:
@@ -523,8 +525,7 @@ def vapor_properties(eos, sys_dict):
             phiv[i] = np.nan
         else:
             logger.info("P (Pa), T (K), yi, rhov: {} {} {} {}".format(P_list[i],T_list[i],yi_list[i],rhov[i]))
-            muiv_tmp = eos.chemicalpotential(P_list[i], np.array([rhov[i]]), yi_list[i], T_list[i])
-            phiv.append(np.exp(muiv_tmp))
+            phiv.append(eos.fugacity_coefficient(P_list[i], np.array([rhov[i]]), yi_list[i], T_list[i]))
 
     logger.info("--- Calculation vapor_density Complete ---")
 

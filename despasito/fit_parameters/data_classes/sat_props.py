@@ -2,9 +2,8 @@ r"""
 Objects for storing and producing objective values for comparing experimental data to EOS predictions.    
 """
 
-import sys
 import numpy as np
-import logging
+#import logging
 
 from despasito.thermodynamics import thermo
 from despasito.fit_parameters import fit_funcs as ff
@@ -108,7 +107,7 @@ class Data(ExpDataTemplate):
             self.xi = data_dict["xi"]
         except:
             if len(eos._nui) > 1:
-                raise ValueError("Ambiguous instructions. Include xi to define intendended component to obtain saturation properties")
+                raise ValueError("Ambiguous instructions. Include xi to define intended component to obtain saturation properties")
             else:
                 self.xi = np.array([[1.0] for x in range(len(self.T))])
  
@@ -142,7 +141,7 @@ class Data(ExpDataTemplate):
 
         ## Reformat array of results
         phase_list, len_list = ff.reformat_ouput(phase_list)
-        phase_list = np.array(phase_list).T
+        phase_list = np.transpose(np.array(phase_list))
 
         # objective function
         obj_value = 0

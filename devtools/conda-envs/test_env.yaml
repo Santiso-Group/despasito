@@ -6,8 +6,6 @@ dependencies:
   - pip
   - numpy
   - scipy
-  - deap
-  - matplotlib
   - numba
 
     # Testing

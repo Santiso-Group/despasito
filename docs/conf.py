@@ -25,7 +25,7 @@ import despasito
 #    def __getattr__(cls, name):
 #        return MagicMock()
 
-#MOCK_MODULES = ['importlib', 'despasito.equations_of_state.saft.solv_assoc', "deap"]
+#MOCK_MODULES = ['importlib', 'despasito.equations_of_state.saft.solv_assoc']
 #sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
 # -- Project information -----------------------------------------------------
@@ -62,12 +62,14 @@ extensions = [
 ]
 
 autosummary_generate = True
+autosummary_imported_members = True
+add_module_names = False
 napoleon_google_docstring = False
 napoleon_use_param = False
 napoleon_use_ivar = True
 todo_include_todos = True
 
-autodoc_mock_imports = ['importlib', 'despasito.equations_of_state.saft.solv_assoc', "deap"]
+autodoc_mock_imports = ['importlib', 'despasito.equations_of_state.saft.solv_assoc']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -91,7 +93,7 @@ language = None
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path .
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = ['_build', '_autosummary', 'Thumbs.db', '.DS_Store']
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'default'

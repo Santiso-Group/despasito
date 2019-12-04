@@ -2,9 +2,8 @@ r"""
 Objects for storing and producing objective values for comparing experimental data to EOS predictions.    
 """
 
-import sys
 import numpy as np
-import logging
+#import logging
 
 from despasito.thermodynamics import thermo
 from despasito.fit_parameters import fit_funcs as ff
@@ -18,7 +17,9 @@ from despasito.fit_parameters.interface import ExpDataTemplate
 class Data(ExpDataTemplate):
 
     r"""
-    Object for Temperature dependent VLE data. This data could be evaluated with phase_xiT or phase_yiT. Most entries in the exp. dictionary are converted to attributes. 
+    Object for Temperature dependent VLE data. 
+
+    This data could be evaluated with phase_xiT or phase_yiT. Most entries in the exp. dictionary are converted to attributes. 
 
     Parameters
     ----------
@@ -139,14 +140,14 @@ class Data(ExpDataTemplate):
         # objective function
         phase_list = self._thermo_wrapper(eos)
         phase_list, len_cluster = ff.reformat_ouput(phase_list)
-        phase_list = np.array(phase_list).T
+        phase_list = np.transpose(np.array(phase_list))
    
         obj_value = np.sum((((phase_list[0] - self.P) / self.P)**2)*self.weights)
         if self.calctype == "phase_xiT":
-            yi = self.yi.T
+            yi = np.transpose(self.yi)
             obj_value += np.sum((((phase_list[1:] - yi)/yi)**2)*self.weights)
         elif self.calctype == "phase_yiT":
-            yi = self.xi.T
+            xi = np.transpose(self.xi)
             obj_value += np.sum((((phase_list[1:] - xi)/xi)**2)*self.weights)
 
         return obj_value

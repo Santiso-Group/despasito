@@ -1,0 +1,12 @@
+{
+    "beadconfig": [[0.2, [["CO2", 1]]], [0.8, [["CH3", 2],["CH2", 18]]]], 
+    "SAFTgroup": "../library/SAFTgroup.json",
+    "SAFTcross": "../library/SAFTcross.json",
+    "output_file": "out_xi.txt",
+    "calculation_type" : "phase_xiT",
+    "pressure options": {"maxiter":15},
+    "mole fraction options": {"maxiter":30},
+    "association_site_names": ["H","e1","a1"],
+    "Tlist" : [373.0],
+    "xilist": [[0.000912357,0.999087643]]
+}

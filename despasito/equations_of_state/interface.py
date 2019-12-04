@@ -1,5 +1,7 @@
 """
-    This file contains the interface needed to create further equation of state (EOS) objects. All folders in this directory refer back to this interface. Using this template all future EOS will be easily exchanged.
+    Interface needed to create further equation of state (EOS) objects. 
+
+    All folders in this directory refer back to this interface. Using this template all future EOS will be easily exchanged.
     
 """
 
@@ -12,47 +14,43 @@ from abc import ABC, abstractmethod
 class EOStemplate(ABC):
 
     """
-    Equation of state (EOS ) interface needed to create additional EOS objects. All classes in this directory refer back to this interface. Using this template all EOS objects are then easily exchanged.
+    Interface used in all EOS object options.
+
+    By using this template, all EOS objects are then easily exchanged.
     """
 
     @abstractmethod
-    def P(self):
+    def P(self, rho, T, xi):
         """
         Output pressure value predicted by EOS.
         """
         pass
 
     @abstractmethod
-    def chemicalpotential(self):
+    def fugacity_coefficient(self, P, rho, xi, T):
         """
         Output chemical potential predicted by EOS.
         """
         pass
 
     @abstractmethod
-    def density_max(self):
+    def density_max(self, xi, T):
         """
         Output maximum packing density predicted by EOS.
         """
         pass
 
     @abstractmethod
-    def param_guess(self):
+    def param_guess(self, fit_params):
         """
         Output a guess for the given parameter type.
         """
         pass
 
     @abstractmethod
-    def update_parameters(self):
+    def update_parameters(self, param_name, bead_names, param_value):
         """
         Update a given parameter in EOS.
         """
         pass
 
-    @abstractmethod
-    def parameter_refresh(self):
-        """
-        Update calculated parameters internal to EOS that depend on those changed in update_parameters
-        """
-        pass

@@ -1,10 +1,10 @@
 """
 
-Routines for passing input files from .json files to dictionaries and extracting relevant information for program use, as well as write properly structures .json files for later calculations.
+Routines for parsing input .json files to dictionaries for program use, and write .json files.
     
 .. todo::
-    * extract_calc_data input_fname: Add link to available thermodynamic calculations
-    * extract_calc_data density_fname: Add link to available density options
+    - extract_calc_data input_fname: Add link to available thermodynamic calculations
+    - extract_calc_data density_fname: Add link to available density options
 """
 
 import logging
@@ -48,7 +48,9 @@ def append_data_file_path(input_dict, path='.'):
 def extract_calc_data(input_fname, path='.', **args):
 
     """
-    Uses dictionary from .json input file to process and divide information into two dictionaries, one for creating the equation of state, and one for the thermodynamic calculations.
+    Parse dictionary from .json input file into a dictionaries.
+
+    Resulting dictionaries are used for creating the equation of state object, and for passing instructions for thermodynamic calculations.
 
     Parameters
     ----------
@@ -82,12 +84,12 @@ def extract_calc_data(input_fname, path='.', **args):
     xi, beads, nui = process_bead_data(input_dict['beadconfig'])
     eos_dict = {'xi':xi,'beads':beads,'nui':nui}
 
-    #read SAFT groups file
+    #read EOS groups file
     with open(input_dict['SAFTgroup'], 'r') as f:
         output = f.read()
     eos_dict['beadlibrary'] = json.loads(output)
 
-    #read SAFT cross file
+    #read EOS cross file
     try:
         with open(input_dict['SAFTcross'], 'r') as f:
             output = f.read()
@@ -102,10 +104,13 @@ def extract_calc_data(input_fname, path='.', **args):
     except:
         logger.info('No association sites specified')
 
+    if "eos" in input_dict:
+        eos_dict['eos'] = input_dict["eos"]
+
     ## Make dictionary of data needed for thermodynamic calculation
     thermo_dict = {}
     # Extract relevant system state inputs
-    EOS_dict_keys = ['beadconfig', 'SAFTgroup', 'SAFTcross','association_site_names',"output_file"]
+    EOS_dict_keys = ['beadconfig', 'SAFTgroup', 'SAFTcross','association_site_names',"output_file","eos"]
     for key, value in input_dict.items():
         if key not in EOS_dict_keys:
             thermo_dict[key] = value
@@ -129,7 +134,9 @@ def extract_calc_data(input_fname, path='.', **args):
 def file2paramdict(filename,delimiter=" "):
 
     """
-    Converted file directly into a dictionary where each line is a key followed by a value.
+    Converted file directly into a dictionary.
+
+    Each line in the input file is a key followed by a value in the resulting dictionary.
 
     Parameters
     ----------
@@ -144,7 +151,7 @@ def file2paramdict(filename,delimiter=" "):
         Resulting dictionary
     """
 
-    logger = logging.getLogger(__name__)
+    #logger = logging.getLogger(__name__)
 
     dictionary = {}
     with  open(filename, "r") as filedata:
@@ -167,10 +174,10 @@ def file2paramdict(filename,delimiter=" "):
 #                  Extract Saft Parameters                           #
 #                                                                    #
 ######################################################################
-def write_SAFTgroup(library, filename):
+def write_EOSparameters(library, filename):
 
     """
-    Sort and export dictionary of input SAFT parameters into .json file.
+    Sort and export dictionary of input parameters into .json file.
 
     Parameters
     ----------
@@ -183,9 +190,9 @@ def write_SAFTgroup(library, filename):
         Filename (with or without path) of .json file of parameters
     """
 
-    logger = logging.getLogger(__name__)
+    #logger = logging.getLogger(__name__)
 
-    #sort and write SAFT dic
+    #sort and write SAFT dict
     for i in library:
         library[i] = collections.OrderedDict(sorted(list(library[i].items()), key=lambda tup: tup[0].lower()))
     f = open(filename, 'w')
@@ -217,7 +224,7 @@ def make_xi_matrix(filename):
         Array of number of components by number of bead types. Defines the number of each type of group in each component.
     """
 
-    logger = logging.getLogger(__name__)
+    #logger = logging.getLogger(__name__)
 
     f = open(filename, 'r').read()
     comp = json.loads(f)
@@ -250,13 +257,18 @@ def process_bead_data(bead_data):
         Array of number of components by number of bead types. Defines the number of each type of group in each component.
     """
 
-    logger = logging.getLogger(__name__)
+    #logger = logging.getLogger(__name__)
 
     #find list of unique beads
-    beads = []
     xi = np.zeros(len(bead_data))
+    beads = []
     for i in range(len(bead_data)):
         xi[i] = bead_data[i][0]
+
+   #     beads_tmp = [bead_data[i][1][j][0] for j in range(len(bead_data[i][1]))]
+   #     beads += beads_tmp
+   # beads = list(set(beads)).sort()
+
         for j in range(len(bead_data[i][1])):
             if bead_data[i][1][j][0] not in beads:
                 beads.append(bead_data[i][1][j][0])
@@ -278,17 +290,36 @@ def process_bead_data(bead_data):
 def process_param_fit_inputs(thermo_dict):
 
     """
-    Process parameter fitting information and data formatting
+    Process parameter fitting information.
 
     Parameters
     ----------
     thermo_dict : dict
         Dictionary of instructions for thermodynamic calculations or parameter fitting. This dictionary is directly from the input file.
 
+        - opt_params (dict) - Parameters used in basin fitting algorithm
+
+            - fit_bead (str) - Name of bead whose parameters are being fit, should be in bead list of beadconfig
+            - fit_params (list[str]) - This list of contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
+            - *_bounds (list[float]), Optional - This list contains the minimum and maximum of the parameter from a parameter listed in fit_params, represented in place of the asterisk. See input file instructions for more information.
+            - *name* (dict) - Dictionary of a data set that the parameters are fit to. Each dictionary is added to the exp_data dictionary before being passed to the fitting algorithm. Each *name* is used as the key in exp_data. *name* is an arbitrary string used to identify the data set and used later in reporting objective function values during the fitting process. See data type objects for more details.
+
+        - datatype (str) - One of the supported data type objects to fit parameters
+
     Returns
     -------
     new_thermo_dict : dict
-        Dictionary of instructions for thermodynamic calculations or parameter fitting. This dictionary is reformatted and includes imported data.
+        Dictionary of instructions for thermodynamic calculations or parameter fitting. This dictionary is reformatted and includes imported data. Dictionary values below are altered before being passed on, all other key and value sets are blindly passed on.
+
+        - opt_params (dict) - Parameters used in basin fitting algorithm
+
+            - fit_bead (str) - Name of bead whose parameters are being fit, should be in bead list of beadconfig
+            - fit_params (list[str]) - This list of contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
+            - bounds (numpy.ndarray) - List of lists of length two, of length equal to fit_params. If no bounds were given then the default parameter boundaries are [0,1e+4], else bounds given as *_bounds in input file are used.
+
+        - exp_data (dict) - This dictionary is made up of a dictionary for each data set that the parameters are fit to. Each key is an arbitrary string used to identify the data set and used later in reporting objective function values during the fitting process. See data type objects for more details.
+
+            - name (str) - One of the supported data type objects to fit parameters
     """
 
     logger = logging.getLogger(__name__)
@@ -323,10 +354,15 @@ def process_param_fit_inputs(thermo_dict):
         elif (type(value) == dict and "datatype" in value):
             new_thermo_dict["exp_data"][key] = process_exp_data(value)
 
-        elif key == "beadparams0":
-            new_thermo_dict[key] = value
         else:
             new_thermo_dict[key] = value
+
+    # Move opt_params values to thermo_dict
+    keys = ["bounds","minimizer_dict"]
+    for key in keys:
+        if key in new_thermo_dict["opt_params"]:
+            new_thermo_dict[key] = new_thermo_dict["opt_params"][key]
+            new_thermo_dict["opt_params"].pop(key,None)
 
     test1 = set(["exp_data","opt_params"]).issubset(list(new_thermo_dict.keys()))
     test2 = set(["fit_bead","fit_params"]).issubset(list(new_thermo_dict["opt_params"].keys()))
@@ -343,20 +379,27 @@ def process_param_fit_inputs(thermo_dict):
 def process_exp_data(exp_data_dict):
 
     """
-    Process raw experimental data dictionary into one that can be used by the parameter fitting module. Note that there should be one dictionary per data set. All data is extracted from data files.
+    Convert experimental data dictionary into form used by parameter fitting module. 
+
+    Note that there should be one dictionary per data set. All data is extracted from data files.
 
     Parameters
     ----------
-    exp_data_dict : dict
-        Raw dictionary of experimental data information, there is one dictionary per set
+    exp_data : dict
+       This dictionary is made up of a dictionary for each data set that the parameters are fit to. Each key is an arbitrary string used to identify the data set and used later in reporting objective function values during the fitting process. See data type objects for more details. Dictionary values below are altered before being passed on, all other key and value sets are blindly passed on.
+
+       - datatype (str) - One of the supported data type objects to fit parameters
+       - file (str) - File name in current working directory, or path to desired experimental data. See experimental data page for examples of acceptable format.
 
     Returns
     -------
     exp_data : dict
-        Reformatted dictionary of experimental data
+        Reformatted dictionary of experimental data. This dictionary is made up of a dictionary for each data set that the parameters are fit to. Each key is an arbitrary string used to identify the data set and used later in reporting objective function values during the fitting process. See data type objects for more details. Dictionary values below are altered from input dictionary, all other key and value sets are blindly passed on, or extracted from data file with process_exp_data_file function.
+
+        - name (str) - One of the supported data type objects to fit parameters
     """
 
-    logger = logging.getLogger(__name__)
+    #logger = logging.getLogger(__name__)
 
     exp_data = {}
     for key, value in exp_data_dict.items():
@@ -378,7 +421,9 @@ def process_exp_data(exp_data_dict):
 def process_exp_data_file(fname):
 
     """
-    Import data file and convert columns into dictionary entries, where the header is the dictionary key. The top line is skipped, and column headers are the second line. Note that column headers should be thermo properties (e.g. T, P, x1, x2, y1, y2) without suffixes. Mole fractions x1, x2, ... should be in the same order as in the beadconfig line of the input file. No mole fractions should be left out.
+    Import data file and convert columns into dictionary entries.
+
+    The headers in the file are the dictionary keys. The top line is skipped, and column headers are the second line. Note that column headers should be thermo properties (e.g. T, P, x1, x2, y1, y2) without suffixes. Mole fractions x1, x2, ... should be in the same order as in the beadconfig line of the input file. No mole fractions should be left out.
 
     Parameters
     ----------
@@ -391,9 +436,9 @@ def process_exp_data_file(fname):
         Dictionary of experimental data from file.
     """
 
-    logger = logging.getLogger(__name__)
+    #logger = logging.getLogger(__name__)
 
-    data = np.genfromtxt(fname, delimiter=',',names=True,skip_header=1).T
+    data = np.transpose(np.genfromtxt(fname, delimiter=',',names=True,skip_header=1))
     file_dict = {name:data[name] for name in data.dtype.names}
     
     # Sort through properties
@@ -417,19 +462,21 @@ def process_exp_data_file(fname):
     for key in key_del:
         file_dict.pop(key,None)
 
-    if xi: file_dict["xi"] = np.array([np.array(x) for x in xi]).T
-    if yi: file_dict["yi"] = np.array([np.array(y) for y in yi]).T
-    if zi: file_dict["zi"] = np.array([np.array(z) for z in zi]).T
+    if xi: file_dict["xi"] = np.transpose(np.array([np.array(x) for x in xi]))
+    if yi: file_dict["yi"] = np.transpose(np.array([np.array(y) for y in yi]))
+    if zi: file_dict["zi"] = np.transpose(np.array([np.array(z) for z in zi]))
 
     return file_dict
 
 ######################################################################
 #                                                                    #
-#                  Write Thermodynamic Ouput                         #
+#                  Write Thermodynamic Output                         #
 #                                                                    #
 ######################################################################
 def writeout_dict(output_dict,calctype,output_file="thermo_output.txt"):
     """
+    Write out result of thermodynamic calculation.
+
     Import dictionary of both input and output data to produce a file. A line in the top clarifies the calculation type done.
 
     Parameters
@@ -454,7 +501,7 @@ def writeout_dict(output_dict,calctype,output_file="thermo_output.txt"):
     keys = []
     matrix = []
     for key, value in output_dict.items():
-        tmp_matrix = np.array(value).T
+        tmp_matrix = np.transpose(np.array(value))
         if len(tmp_matrix.shape)==1:
             keys.append(key)
             matrix.append(np.array(value))
@@ -462,7 +509,7 @@ def writeout_dict(output_dict,calctype,output_file="thermo_output.txt"):
             for i in range(len(tmp_matrix)):
                 keys.append(key+str(i+1))
                 matrix.append(np.array(tmp_matrix[i]))
-    matrix = np.array(matrix).T
+    matrix = np.transpose(np.array(matrix))
 
     # Make header line
     header = "#"

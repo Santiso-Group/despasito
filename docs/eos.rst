@@ -10,7 +10,12 @@ Available EOS
 -------------
 
 .. toctree::
-    autosummary/saft
+   :maxdepth: 1
+
+   saft
+
+.. todo:: Add peng-robinson
+
 
 Adding an EOS
 -------------
@@ -19,8 +24,8 @@ Adding an EOS family is easily implemented by adding a new directory to the ``eq
 
 .. note:: In the future, a USER folder will be included in our program so that users can collect all of their personal additions and modifications to DESPASITO in one location.
 
-.. autoclass:: despasito.equations_of_state.interface.EOStemplate
+.. automodule::
+   despasito.equations_of_state.interface
    :members:
-
 
 
