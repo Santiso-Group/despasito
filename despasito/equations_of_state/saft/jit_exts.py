@@ -1,7 +1,6 @@
 import numpy as np
-import logging
 import os
-from timeit import default_timer as timer
+#from timeit import default_timer as timer
 
 if 'NUMBA_DISABLE_JIT' in os.environ:
     disable_jit = os.environ['NUMBA_DISABLE_JIT']
@@ -12,7 +11,6 @@ else:
 if disable_jit:
     os.environ['NUMBA_DISABLE_JIT'] = '1'
 
-from numba import njit
 import numba
 
 # For Numba, ckl_coef cannot be encapsulated
@@ -30,7 +28,7 @@ def calc_a1s(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
 
     return output
 
-@njit(numba.f8[:,:,:](numba.f8[:], numba.f8, numba.f8[:,:], numba.f8[:], numba.f8[:,:], numba.f8[:,:]))
+@numba.njit(numba.f8[:,:,:](numba.f8[:], numba.f8, numba.f8[:,:], numba.f8[:], numba.f8[:,:], numba.f8[:,:]))
 def calc_a1s_2d(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
     r""" 
     Return a1s,kl(rho*Cmol2seg,l_kl) in K as defined in eq. 25, used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy.
@@ -75,7 +73,7 @@ def calc_a1s_2d(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
     a1s = - (1.0 - (etakl / 2.0)) / ((1.0 - etakl)**3) * 2.0 * np.pi * Cmol2seg * ((epsilonkl * (dkl**3)) / (l_kl - 3.0))
     return np.transpose(np.transpose(a1s) * rho)
 
-@njit(numba.f8[:,:](numba.f8[:], numba.f8, numba.f8[:], numba.f8[:], numba.f8[:], numba.f8[:]))
+@numba.njit(numba.f8[:,:](numba.f8[:], numba.f8, numba.f8[:], numba.f8[:], numba.f8[:], numba.f8[:]))
 def calc_a1s_1d(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
     r""" 
     Return a1s,kl(rho*Cmol2seg,l_kl) in K as defined in eq. 25, used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy.
@@ -129,7 +127,7 @@ def calc_da1sii_drhos(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
 
     return output
 
-@njit(numba.f8[:,:,:](numba.f8[:], numba.f8, numba.f8[:,:], numba.f8[:], numba.f8[:,:], numba.f8[:,:]))
+@numba.njit(numba.f8[:,:,:](numba.f8[:], numba.f8, numba.f8[:,:], numba.f8[:], numba.f8[:,:], numba.f8[:,:]))
 def calc_da1sii_drhos_2d(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
     r""" 
     Return a1s,kl(rho*Cmol2seg,l_kl) in K as defined in eq. 25, used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy.
@@ -180,7 +178,7 @@ def calc_da1sii_drhos_2d(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
 
     return da1s_drhos
 
-@njit(numba.f8[:,:](numba.f8[:], numba.f8, numba.f8[:], numba.f8[:], numba.f8[:], numba.f8[:]))
+@numba.njit(numba.f8[:,:](numba.f8[:], numba.f8, numba.f8[:], numba.f8[:], numba.f8[:], numba.f8[:]))
 def calc_da1sii_drhos_1d(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
     r""" 
     Return a1s,kl(rho*Cmol2seg,l_kl) in K as defined in eq. 25, used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy.
@@ -228,7 +226,7 @@ def calc_da1sii_drhos_1d(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
     #da1s_drhos = - 2.0 * np.pi * ((1.0 - (etakl / 2.0)) / ((1.0 - etakl)**3) + (5.0 - 2.0*etakl)/(2.0*(1.0-etakl)**4)) * rhos_detakl_drhos * ((epsilonkl * (dkl**3)) / (l_kl - 3.0))
     return da1s_drhos
 
-@njit(numba.types.Tuple((numba.f8[:,:,:,:], numba.f8[:]))(numba.i8[:,:], numba.f8[:], numba.f8[:], numba.f8[:,:], numba.f8[:,:], numba.f8[:,:,:,:], numba.f8[:,:,:,:], numba.f8[:,:,:])) # , numba.i8, numba.f8, numba.f8
+@numba.njit(numba.types.Tuple((numba.f8[:,:,:,:], numba.f8[:]))(numba.i8[:,:], numba.f8[:], numba.f8[:], numba.f8[:,:], numba.f8[:,:], numba.f8[:,:,:,:], numba.f8[:,:,:,:], numba.f8[:,:,:])) # , numba.i8, numba.f8, numba.f8
 def calc_Xika(indices, rho, xi, nui, nk, Fklab, Kklab, Iij): # , maxiter=500, tol=1e-12, damp=.1
     r""" 
     Calculate the fraction of molecules of component i that are not bonded at a site of type a on group k in an iterative fashion.
@@ -279,7 +277,6 @@ def calc_Xika(indices, rho, xi, nui, nk, Fklab, Kklab, Iij): # , maxiter=500, to
     # Parallelize here, wrt rho!
     Xika_elements = .5*np.ones(len(indices))
     for r in range(nrho):
-        Xika = np.ones((ncomp, nbeads, nsitesmax))
         for knd in range(maxiter):
 
             Xika_elements_new = np.ones(len(Xika_elements))

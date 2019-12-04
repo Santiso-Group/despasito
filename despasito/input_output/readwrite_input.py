@@ -147,7 +147,7 @@ def file2paramdict(filename,delimiter=" "):
         Resulting dictionary
     """
 
-    logger = logging.getLogger(__name__)
+    #logger = logging.getLogger(__name__)
 
     dictionary = {}
     with  open(filename, "r") as filedata:
@@ -186,7 +186,7 @@ def write_SAFTgroup(library, filename):
         Filename (with or without path) of .json file of parameters
     """
 
-    logger = logging.getLogger(__name__)
+    #logger = logging.getLogger(__name__)
 
     #sort and write SAFT dic
     for i in library:
@@ -220,7 +220,7 @@ def make_xi_matrix(filename):
         Array of number of components by number of bead types. Defines the number of each type of group in each component.
     """
 
-    logger = logging.getLogger(__name__)
+    #logger = logging.getLogger(__name__)
 
     f = open(filename, 'r').read()
     comp = json.loads(f)
@@ -253,13 +253,18 @@ def process_bead_data(bead_data):
         Array of number of components by number of bead types. Defines the number of each type of group in each component.
     """
 
-    logger = logging.getLogger(__name__)
+    #logger = logging.getLogger(__name__)
 
     #find list of unique beads
-    beads = []
     xi = np.zeros(len(bead_data))
+    beads = []
     for i in range(len(bead_data)):
         xi[i] = bead_data[i][0]
+
+   #     beads_tmp = [bead_data[i][1][j][0] for j in range(len(bead_data[i][1]))]
+   #     beads += beads_tmp
+   # beads = list(set(beads)).sort()
+
         for j in range(len(bead_data[i][1])):
             if bead_data[i][1][j][0] not in beads:
                 beads.append(bead_data[i][1][j][0])
@@ -388,7 +393,7 @@ def process_exp_data(exp_data_dict):
         - name (str) - One of the supported data type objects to fit parameters
     """
 
-    logger = logging.getLogger(__name__)
+    #logger = logging.getLogger(__name__)
 
     exp_data = {}
     for key, value in exp_data_dict.items():
@@ -423,9 +428,9 @@ def process_exp_data_file(fname):
         Dictionary of experimental data from file.
     """
 
-    logger = logging.getLogger(__name__)
+    #logger = logging.getLogger(__name__)
 
-    data = np.genfromtxt(fname, delimiter=',',names=True,skip_header=1).T
+    data = np.transpose(np.genfromtxt(fname, delimiter=',',names=True,skip_header=1))
     file_dict = {name:data[name] for name in data.dtype.names}
     
     # Sort through properties
@@ -449,9 +454,9 @@ def process_exp_data_file(fname):
     for key in key_del:
         file_dict.pop(key,None)
 
-    if xi: file_dict["xi"] = np.array([np.array(x) for x in xi]).T
-    if yi: file_dict["yi"] = np.array([np.array(y) for y in yi]).T
-    if zi: file_dict["zi"] = np.array([np.array(z) for z in zi]).T
+    if xi: file_dict["xi"] = np.transpose(np.array([np.array(x) for x in xi]))
+    if yi: file_dict["yi"] = np.transpose(np.array([np.array(y) for y in yi]))
+    if zi: file_dict["zi"] = np.transpose(np.array([np.array(z) for z in zi]))
 
     return file_dict
 
@@ -486,7 +491,7 @@ def writeout_dict(output_dict,calctype,output_file="thermo_output.txt"):
     keys = []
     matrix = []
     for key, value in output_dict.items():
-        tmp_matrix = np.array(value).T
+        tmp_matrix = np.transpose(np.array(value))
         if len(tmp_matrix.shape)==1:
             keys.append(key)
             matrix.append(np.array(value))
@@ -494,7 +499,7 @@ def writeout_dict(output_dict,calctype,output_file="thermo_output.txt"):
             for i in range(len(tmp_matrix)):
                 keys.append(key+str(i+1))
                 matrix.append(np.array(tmp_matrix[i]))
-    matrix = np.array(matrix).T
+    matrix = np.transpose(np.array(matrix))
 
     # Make header line
     header = "#"

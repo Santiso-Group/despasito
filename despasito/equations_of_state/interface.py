@@ -16,35 +16,35 @@ class EOStemplate(ABC):
     """
 
     @abstractmethod
-    def P(self):
+    def P(self, rho, T, xi):
         """
         Output pressure value predicted by EOS.
         """
         pass
 
     @abstractmethod
-    def fugacity_coefficient(self):
+    def fugacity_coefficient(self, P, rho, xi, T):
         """
         Output chemical potential predicted by EOS.
         """
         pass
 
     @abstractmethod
-    def density_max(self):
+    def density_max(self, xi, T):
         """
         Output maximum packing density predicted by EOS.
         """
         pass
 
     @abstractmethod
-    def param_guess(self):
+    def param_guess(self, fit_params):
         """
         Output a guess for the given parameter type.
         """
         pass
 
     @abstractmethod
-    def update_parameters(self):
+    def update_parameters(self, param_name, bead_names, param_value):
         """
         Update a given parameter in EOS.
         """

@@ -21,14 +21,14 @@ def reformat_ouput(cluster):
         
     """
 
-    logger = logging.getLogger(__name__)
+    #logger = logging.getLogger(__name__)
 
     # Arrange data
     type_cluster = [type(x[0]) for x in cluster]
 
     # if input is a list or array
     if len(cluster) == 1:
-        matrix = np.array(cluster[0]).T
+        matrix = np.transpose(np.array(cluster[0]))
         if cluster[0][0] not in [list,np.ndarray,tuple]:
             len_cluster = [1]
         else:
@@ -49,7 +49,7 @@ def reformat_ouput(cluster):
         # Transfer information to final matrix
         ind = 0
         for i, val in enumerate(cluster):
-            matrix = np.array(val).T
+            matrix = np.transpose(np.array(val))
             l = len_cluster[i]
             if l == 1:
                 matrix_tmp[:, ind] = np.array(matrix)
@@ -58,7 +58,7 @@ def reformat_ouput(cluster):
                 for j in range(l):
                     matrix_tmp[:, ind] = matrix[j]
                     ind += 1
-        #matrix = np.array(matrix_tmp).T
+        #matrix = np.transpose(np.array(matrix_tmp))
         matrix = np.array(matrix_tmp)
 
     return matrix, len_cluster
@@ -88,7 +88,7 @@ class BasinStep(object):
             
         """
 
-        logger = logging.getLogger(__name__)
+        #logger = logging.getLogger(__name__)
         
         self._stepsize = stepsize
         self._stepmag = stepmag
@@ -109,7 +109,7 @@ class BasinStep(object):
             
         """
 
-        logger = logging.getLogger(__name__)
+        #logger = logging.getLogger(__name__)
         
         # Save intital guess in array
         xold = np.copy(x)
@@ -205,7 +205,7 @@ def compute_SAFT_obj(beadparams, opt_params, eos, exp_dict, output_file="fit_par
         
     """
 
-    logger = logging.getLogger(__name__)
+    #logger = logging.getLogger(__name__)
 
     # Update beadlibrary with test paramters
     for i, param in enumerate(opt_params['fit_params']):

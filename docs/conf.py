@@ -25,7 +25,7 @@ import despasito
 #    def __getattr__(cls, name):
 #        return MagicMock()
 
-#MOCK_MODULES = ['importlib', 'despasito.equations_of_state.saft.solv_assoc', "deap"]
+#MOCK_MODULES = ['importlib', 'despasito.equations_of_state.saft.solv_assoc']
 #sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
 # -- Project information -----------------------------------------------------

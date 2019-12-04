@@ -16,7 +16,7 @@ class ExpDataTemplate(ABC):
     """
 
     @abstractmethod
-    def objective(self):
+    def objective(self, eos):
         """
         Float representing objective function of from comparing predictions to experimental data.
         """

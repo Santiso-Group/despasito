@@ -7,7 +7,7 @@ This package will take in an equation of state object, and any user defined vari
 
 # Add imports here
 from inspect import getmembers, isfunction
-import logging
+#import logging
 
 from . import calc_types
 
@@ -30,7 +30,7 @@ def thermo(eos, thermo_dict):
             Output of dictionary containing given and calculated values
     """
 
-    logger = logging.getLogger(__name__)
+    #logger = logging.getLogger(__name__)
 
     try:
         calctype = thermo_dict['calculation_type']

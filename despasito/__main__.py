@@ -1,5 +1,4 @@
 from .main import run
-import sys
 import os
 import argparse
 import logging

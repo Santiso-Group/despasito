@@ -6,7 +6,6 @@ In any directory with the appropriate .json input files, run DESPASITO with ``py
 """
 
 import logging
-import os
 
 from .input_output import readwrite_input
 from .equations_of_state import eos as eos_mod
@@ -37,7 +36,8 @@ def run(filename="input.json", path=".", **args):
     # Run either parametrization or thermodynamic calculation
     if "opt_params" in list(thermo_dict.keys()):
         logger.info("Intializing parametrization procedure")
-        output = fit(eos, thermo_dict)
+        fit(eos, thermo_dict)
+        #output = fit(eos, thermo_dict)
         logger.info("Finished parametrization")
         # readwrite_input.writeout_dict(output_dict,**file_dict)
     else:

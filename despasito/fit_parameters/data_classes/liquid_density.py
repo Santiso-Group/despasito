@@ -2,9 +2,8 @@ r"""
 Objects for storing and producing objective values for comparing experimental data to EOS predictions.    
 """
 
-import sys
 import numpy as np
-import logging
+#import logging
 
 from despasito.thermodynamics import thermo
 from despasito.fit_parameters import fit_funcs as ff
@@ -63,11 +62,13 @@ class Data(ExpDataTemplate):
             pass
 
         try:
-            self.P = data_dict["P"]
+            P = data_dict["P"]
             if (type(P) == float or len(P)==1):
-                P = np.ones(self.T)*P
+                self.P = np.ones(self.T)*P
+            else:
+                self.P = P
         except:
-            P = np.ones(self.T)*101325.0
+            self.P = np.ones(self.T)*101325.0
 
         try:
             self.weights = data_dict["weights"]
@@ -123,7 +124,7 @@ class Data(ExpDataTemplate):
 
         # Reformat array of results
         phase_list, len_list = ff.reformat_ouput(phase_list) 
-        phase_list = np.array(phase_list).T
+        phase_list = np.transpose(np.array(phase_list))
 
         # objective function
         obj_value = np.sum((((phase_list[0] - self.rhol) / self.rhol)**2)*self.weights)

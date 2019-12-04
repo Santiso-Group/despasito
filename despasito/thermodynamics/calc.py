@@ -9,14 +9,11 @@ This module contains our thermodynamic calculations. Calculation of pressure, ch
 """
 
 import numpy as np
-import sys
 from scipy import interpolate
 import scipy.optimize as spo
-from scipy.misc import derivative
 from scipy.ndimage.filters import gaussian_filter1d
 import copy
-import time
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import logging
 
 from . import fund_constants as const
@@ -125,7 +122,7 @@ def calc_CC_Pguess(xilist, Tlist, CriticalProp):
             eos = eos("saft.gamma_mie",**eos_dict)
     
             if (Tlist[kk] < Tc_tmp):
-                Psat_tmp, rholsat_tmp, rhogsat_tmp = calc_Psat(Tlist[kk], np.array([1.0]), eos)
+                Psat_tmp, _, _ = calc_Psat(Tlist[kk], np.array([1.0]), eos)
             else:
                 Psat_tmp = np.nan
     
@@ -179,7 +176,8 @@ def PvsRho(T, xi, eos, minrhofrac=(1.0 / 500000.0), rhoinc=5.0, vspacemax=1.0E-4
         Pressure associated with specific volume of system with given temperature and composition [Pa]
     """
 
-    logger = logging.getLogger(__name__)
+    #logger = logging.getLogger(__name__)
+
     if type(xi) == list:
         xi = np.array(xi)
 
@@ -233,7 +231,7 @@ def PvsV_spline(vlist, Plist):
         List of specific volume values corresponding to local minima and maxima.
     """
 
-    logger = logging.getLogger(__name__)
+    #logger = logging.getLogger(__name__)
 
     Psmoothed = gaussian_filter1d(Plist, sigma=.5)
 
@@ -273,7 +271,7 @@ def PvsV_plot(vlist, Plist, Pvspline, markers=[]):
         List of plot markers used in plot
     """
 
-    logger = logging.getLogger(__name__)
+    #logger = logging.getLogger(__name__)
 
     plt.figure(1)
     plt.plot(vlist,Plist,label="Orig.")
@@ -407,7 +405,7 @@ def eq_area(shift, Pv, vlist):
         b = Pvspline.integral(roots[1], vlist[-1]) + (Pv[-1]-shift)*(root2-vlist[-1])/2
     else:
         logger.warning("Pressure curve without cubic properties has wrongly been accepted. Try decreasing minrhofrac")
-        PvsV_plot(vlist, Pv-shift, Pvspline, markers=extrema)
+        #PvsV_plot(vlist, Pv-shift, Pvspline, markers=extrema)
 
     return (a + b)**2
 
@@ -472,7 +470,7 @@ def calc_rhov(P, T, xi, eos, rhodict={}):
         else:
             logger.warning("    Flag 3: The T and yi, {} {}, won't produce a fluid (vapor or liquid) at this pressure".format(T,xi))
             flag = 3
-            PvsV_plot(vlist, Plist, Pvspline, markers=extrema)
+            #PvsV_plot(vlist, Plist, Pvspline, markers=extrema)
             rho_tmp = np.nan
     elif l_roots == 1:
         if not len(extrema):
@@ -587,7 +585,7 @@ def calc_rhol(P, T, xi, eos, rhodict={}):
             flag = 3
             logger.error("    Flag 3: The T and xi, {} {}, won't produce a fluid (vapor or liquid) at this pressure".format(str(T),str(xi)))
             rho_tmp = np.nan
-            PvsV_plot(vlist, Plist+P, Pvspline, markers=extrema)
+            #PvsV_plot(vlist, Plist+P, Pvspline, markers=extrema)
     elif l_roots == 2: # 2 roots
         if (Pvspline(roots[0])+P) < 0.:
             flag = 1
@@ -656,7 +654,7 @@ def Pdiff(rho, Pset, T, xi, eos):
         Difference in set pressure and predicted pressure given system conditions.
     """
 
-    logger = logging.getLogger(__name__)
+    #logger = logging.getLogger(__name__)
 
     Pguess = eos.P(rho, T, xi)
 
@@ -880,7 +878,6 @@ def calc_Prange_xi(T, xi, yi, eos, rhodict={}, Pmin=1000, zi_opts={}):
     ObjArray = [0, 0]
     yi_range = yi
 
-    ind = 0
     maxiter = 200
     for z in range(maxiter):
         # Find Obj Function for Min pressure above
@@ -953,11 +950,11 @@ def calc_Prange_xi(T, xi, yi, eos, rhodict={}, Pmin=1000, zi_opts={}):
 
     if z == maxiter-1:
         logger.error('A change in sign for the objective function could not be found, inspect progress')
-        plt.plot(Parray, ObjArray)
-        plt.plot([Parray[0], Parray[-1]], [0, 0], 'k')
-        plt.ylabel("Obj. Function")
-        plt.xlabel("Pressure / Pa")
-        plt.savefig("CannotFindMax_{}_{}.png".format(T,xi[0]))
+        #plt.plot(Parray, ObjArray)
+        #plt.plot([Parray[0], Parray[-1]], [0, 0], 'k')
+        #plt.ylabel("Obj. Function")
+        #plt.xlabel("Pressure / Pa")
+        #plt.savefig("CannotFindMax_{}_{}.png".format(T,xi[0]))
 
     Prange = Parray[-2:]
     ObjRange = ObjArray[-2:]
@@ -1021,9 +1018,9 @@ def calc_Prange_yi(T, xi, yi, eos, rhodict={}, Pmin=1000, zi_opts={}):
         phiv, rhov, flagv = calc_phiv(p, T, yi, eos, rhodict=rhodict)
         xi, phil, flagl = solve_xi_yiT(xi, yi, phiv, p, T, eos, rhodict=rhodict, **zi_opts)
         obj_list.append(np.sum(yi * phiv / phil) - 1.0)
-    plt.plot(pressures,obj_list,".-")
-    plt.plot([Pmin,Pmax],[0,0],"k")
-    plt.show()
+    #plt.plot(pressures,obj_list,".-")
+    #plt.plot([Pmin,Pmax],[0,0],"k")
+    #plt.show()
 
     #################### Find Pressure range and Objective Function values
 
@@ -1174,7 +1171,7 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxiter=30, tol=1e-6):
     ind_tmp = np.where(yi_tmp == min(yi_tmp[yi_tmp>0]))[0]
     if z == maxiter - 1:
         yi2 = yinew/np.sum(yinew)
-        tmp = (np.abs(yinew[ind_tmp] - yi_tmp[ind_tmp]) / yi_tmp[ind_tmp])
+        tmp = (np.abs(yi2[ind_tmp] - yi_tmp[ind_tmp]) / yi_tmp[ind_tmp])
         logger.warning('    More than {} iterations needed. Error in Smallest Fraction: {} %%'.format(maxiter, tmp*100))
         if tmp > .1: # If difference is greater than 10%
             yinew = find_new_yi(P, T, phil, xi, eos, rhodict=rhodict)
@@ -1332,10 +1329,6 @@ def find_new_yi(P, T, phil, xi, eos, rhodict={}):
 
     yi_ext = np.linspace(0.01,.99,30) # Guess for yi
     obj_ext = []
-    #flag_ext = []
-    yi_total2_ext = []
-    rho_ext = []
-    phi_ext = []
     flag_ext = [[],[]]
 
     for yi in yi_ext:
@@ -1815,7 +1808,7 @@ def calc_yT_phase(yi, T, eos, rhodict={}, zi_opts={}, Pguess=-1, meth="hybr", pr
     for i in range(np.size(yi)):
         yi_tmp = np.zeros_like(yi)
         yi_tmp[i] = 1.0
-        Psat[i], rholsat, rhogsat = calc_Psat(T, yi_tmp, eos, rhodict)
+        Psat[i], _, _ = calc_Psat(T, yi_tmp, eos, rhodict)
         if np.isnan(Psat[i]):
             Psat[i], NaNbead = setPsat(i, eos)
             if np.isnan(Psat[i]):
@@ -1956,7 +1949,7 @@ def calc_xT_phase(xi, T, eos, rhodict={}, zi_opts={}, Pguess=-1, meth="hybr", pr
     for i in range(np.size(xi)):
         xi_tmp = np.zeros_like(xi)
         xi_tmp[i] = 1.0
-        Psat[i], rholsat, rhogsat = calc_Psat(T, xi_tmp, eos, rhodict)
+        Psat[i], _, _ = calc_Psat(T, xi_tmp, eos, rhodict)
         if np.isnan(Psat[i]):
             Psat[i], NaNbead = setPsat(i, eos)
             if np.isnan(Psat[i]):
@@ -2089,23 +2082,25 @@ def calc_PT_phase(xi, T, eos, rhodict={}):
 
     logger = logging.getLogger(__name__)
 
-    Psat = np.zeros_like(xi)
-    for i in range(np.size(xi)):
-        xi_tmp = np.zeros_like(xi)
-        xi_tmp[i] = 1.0
-        Psat[i], rholsat, rhogsat = calc_Psat(T, xi_tmp, eos, rhodict)
-        if np.isnan(Psat[i]):
-            Psat[i], NaNbead = setPsat(i, eos)
-            if np.isnan(Psat[i]):
-                logger.error("Component, {}, is beyond it's critical point. Add an exception to setPsat".format(NaNbead))
+    logger.error("The function, calc_PT_phase, is not yet available.")
 
-    zi = np.array([0.5, 0.5])
+  #  Psat = np.zeros_like(xi)
+  #  for i in range(np.size(xi)):
+  #      xi_tmp = np.zeros_like(xi)
+  #      xi_tmp[i] = 1.0
+  #      Psat[i], rholsat, rhogsat = calc_Psat(T, xi_tmp, eos, rhodict)
+  #      if np.isnan(Psat[i]):
+  #          Psat[i], NaNbead = setPsat(i, eos)
+  #          if np.isnan(Psat[i]):
+  #              logger.error("Component, {}, is beyond it's critical point. Add an exception to setPsat".format(NaNbead))
 
-    #estimate ki
-    ki = Psat / P
+  #  zi = np.array([0.5, 0.5])
 
-    #estimate beta (not thermodynamic) vapor frac
-    beta = (1.0 - np.sum(ki * zi)) / np.prod(ki - 1.0)
+  #  #estimate ki
+  #  ki = Psat / P
+
+  #  #estimate beta (not thermodynamic) vapor frac
+  #  beta = (1.0 - np.sum(ki * zi)) / np.prod(ki - 1.0)
 
 
 ######################################################################
@@ -2136,10 +2131,9 @@ def calc_dadT(rho, T, xi, eos, rhodict={}):
         Array of derivative values of Helmholtz energy with respect to temperature
     """
 
-    logger = logging.getLogger(__name__)
+    #logger = logging.getLogger(__name__)
 
     step = np.sqrt(np.finfo(float).eps) * T * 1000.0
-    nrho = np.size(rho)
 
     #computer rho+step and rho-step for better a bit better performance
     Ap = calchelmholtz.calc_A(np.array([rho]), xi, T + step, eos)

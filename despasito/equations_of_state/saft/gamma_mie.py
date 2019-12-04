@@ -7,10 +7,8 @@ r"""
     
 """
 
-import sys
 import numpy as np
 import logging
-import matplotlib.pyplot as plt
 
 from . import constants
 from . import gamma_mie_funcs as funcs
@@ -350,7 +348,6 @@ class saft_gamma_mie(EOStemplate):
 
         daresdxi = np.zeros_like(xi)
         mui = np.zeros_like(xi)
-        nmol = 1.0
 
         # Set step size in finite difference method
         dnmol = 1.0E-4
@@ -416,7 +413,7 @@ class saft_gamma_mie(EOStemplate):
 
         return maxrho
 
-    def param_guess(self,fit_params):
+    def param_guess(self, fit_params):
         """
         Generate initial guesses for the parameters to be fit.
 
@@ -453,7 +450,7 @@ class saft_gamma_mie(EOStemplate):
             elif param.startswith('Sk'):
                 param_initial_guesses[i] = 0.5
             else:
-                raise ValueError("The parameter name %s does not fall under any of the catagories, epsilon, epsilon (assoc), l_a, l_r, K (assoc), or Sk") 
+                raise ValueError("The parameter name {} does not fall under any of the catagories, epsilon, epsilon (assoc), l_a, l_r, K (assoc), or Sk".format(param)) 
 
         return param_initial_guesses
 
@@ -478,9 +475,9 @@ class saft_gamma_mie(EOStemplate):
         param_types = ["epsilon", "sigma", "l_r", "l_a", "Sk", "K"]
 
         if len(bead_names) > 2:
-            raise ValueError("The bead names %s were given, but only a maximum of 2 are permitted." % (", ".join(bead_names)))
+            raise ValueError("The bead names {} were given, but only a maximum of 2 are permitted.".format(", ".join(bead_names)))
         if not set(bead_names).issubset(self._beads):
-            raise ValueError("The bead names %s were given, but they are not in the allowed list: " % (", ".join(bead_names),", ".join(self._beads)))
+            raise ValueError("The bead names {} were given, but they are not in the allowed list: {}".format(", ".join(bead_names),", ".join(self._beads)))
 
         # Non bonded parameters
         if (param_name in ["epsilon", "sigma", "l_r", "l_a", "Sk"]):
@@ -520,7 +517,7 @@ class saft_gamma_mie(EOStemplate):
                     if flag == 1:
                         break
             if flag == 0:
-                raise ValueError("site_names should be two different sites in the list: %s. You gave: %s" % (tmp_name_full,", ".join(sitenames=self._sitenames)))
+                raise ValueError("site_names should be two different sites in the list: {}. You gave: {}".format(tmp_name_full,", ".join(sitenames=self._sitenames)))
 
             # Self interaction parameter
             if len(bead_names) == 1:
@@ -533,7 +530,7 @@ class saft_gamma_mie(EOStemplate):
                     self._crosslibrary[bead_names[0]][bead_names[1]][param_name+"".join(site_names)] = param_value                        
 
         else:
-            raise ValueError("The parameter name %s is not found in the allowed parameter types: %s" % (param_name,", ".join(param_types)))
+            raise ValueError("The parameter name {} is not found in the allowed parameter types: {}".format(param_name,", ".join(param_types)))
 
     def parameter_refresh(self):
         r""" 
