@@ -1,7 +1,6 @@
 # -- coding: utf8 --
 
-r"""
-    
+"""
     EOS object for Peng-Robinson
     
 """
@@ -17,7 +16,9 @@ from despasito.equations_of_state.interface import EOStemplate
 class cubic_peng_robinson(EOStemplate):
 
     r"""
-    Initialize EOS with system component parameters so that methods may be used by thermodynamic calculations. All input and calculated parameters are defined as hidden attributes.
+    EOS object for Peng-Robinson. 
+
+    All input and calculated parameters are defined as hidden attributes.
     
     Parameters
     ----------
@@ -29,7 +30,7 @@ class cubic_peng_robinson(EOStemplate):
         A dictionary where bead names are the keys to access EOS self interaction parameters:
 
         - T_{C}: Critical temperature [K]
-        - P_{C}: Ctritical pressure [Pa]
+        - P_{C}: Critical pressure [Pa]
 
     crosslibrary : dict, Optional, default: {}
         Optional library of bead cross interaction parameters. As many or as few of the desired parameters may be defined for whichever group combinations are desired.
@@ -101,7 +102,7 @@ class cubic_peng_robinson(EOStemplate):
     def _calc_mixed_parameters(self,xi,T):
 
         """
-        Compute mixing aij and bij given compositon
+        Compute mixing aij and bij given composition
        
         Parameters
         ----------
@@ -113,9 +114,9 @@ class cubic_peng_robinson(EOStemplate):
         Attributes
         ----------
         aij : float
-            Peng-Robnson parameter a [m^6/mol^2]
+            Peng-Robinson parameter a [m^6/mol^2]
         bij : float
-            Peng-Robnson parameter b [m^3/mol]
+            Peng-Robinson parameter b [m^3/mol]
         """
 
         aij = 0
@@ -233,7 +234,7 @@ class cubic_peng_robinson(EOStemplate):
         Parameters
         ----------
         fit_params : list[str]
-        A list of parameters to be fit. See EOS mentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
+        A list of parameters to be fit. See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
 
         Returns
         -------
@@ -255,7 +256,7 @@ class cubic_peng_robinson(EOStemplate):
             elif param == "bi":
                 param_initial_guesses[i] = 1e+11
             else:
-                raise ValueError("The parameter name %s does not fall under any of the catagories, ai or bi") 
+                raise ValueError("The parameter name %s does not fall under any of the categories, ai or bi") 
 
         return param_initial_guesses
 

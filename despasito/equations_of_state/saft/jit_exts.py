@@ -19,7 +19,7 @@ from profilehooks import profile
 
 @profile
 def calc_a1s(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
-    r""" wrapper function for calling 2d/3d versions of calc_a1s ... this is done for stupid Numba 
+    r""" Wrapper function for calling 2d/3d versions of calc_a1s (this is done for Numba)
     """
     if len(l_kl.shape) == 2:
         output = calc_a1s_2d(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl)
@@ -31,7 +31,9 @@ def calc_a1s(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
 @numba.njit(numba.f8[:,:,:](numba.f8[:], numba.f8, numba.f8[:,:], numba.f8[:], numba.f8[:,:], numba.f8[:,:]))
 def calc_a1s_2d(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
     r""" 
-    Return a1s,kl(rho*Cmol2seg,l_kl) in K as defined in eq. 25, used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy.
+    Return a1s,kl(rho*Cmol2seg,l_kl) in K as defined in eq. 25.
+    
+    Used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy.
 
     Parameters
     ----------
@@ -76,7 +78,9 @@ def calc_a1s_2d(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
 @numba.njit(numba.f8[:,:](numba.f8[:], numba.f8, numba.f8[:], numba.f8[:], numba.f8[:], numba.f8[:]))
 def calc_a1s_1d(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
     r""" 
-    Return a1s,kl(rho*Cmol2seg,l_kl) in K as defined in eq. 25, used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy.
+    Return a1s,kl(rho*Cmol2seg,l_kl) in K as defined in eq. 25.
+    
+    Used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy.
 
     Parameters
     ----------
@@ -118,7 +122,7 @@ def calc_a1s_1d(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
 
 @profile
 def calc_da1sii_drhos(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
-    r""" wrapper function for calling 2d/3d versions of calc_a1s ... this is done for stupid Numba 
+    r""" Wrapper function for calling 2d/3d versions of calc_da1sii_drhos (this is done for Numba)
     """
     if len(l_kl.shape) == 2:
         output = calc_da1sii_drhos_2d(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl)
@@ -130,7 +134,9 @@ def calc_da1sii_drhos(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
 @numba.njit(numba.f8[:,:,:](numba.f8[:], numba.f8, numba.f8[:,:], numba.f8[:], numba.f8[:,:], numba.f8[:,:]))
 def calc_da1sii_drhos_2d(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
     r""" 
-    Return a1s,kl(rho*Cmol2seg,l_kl) in K as defined in eq. 25, used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy.
+    Return a1s,kl(rho*Cmol2seg,l_kl) in K as defined in eq. 25.
+    
+    Used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy.
 
     Parameters
     ----------
@@ -181,7 +187,9 @@ def calc_da1sii_drhos_2d(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
 @numba.njit(numba.f8[:,:](numba.f8[:], numba.f8, numba.f8[:], numba.f8[:], numba.f8[:], numba.f8[:]))
 def calc_da1sii_drhos_1d(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
     r""" 
-    Return a1s,kl(rho*Cmol2seg,l_kl) in K as defined in eq. 25, used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy.
+    Return a1s,kl(rho*Cmol2seg,l_kl) in K as defined in eq. 25.
+    
+    Used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy.
 
     Parameters
     ----------
@@ -229,7 +237,7 @@ def calc_da1sii_drhos_1d(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
 @numba.njit(numba.types.Tuple((numba.f8[:,:,:,:], numba.f8[:]))(numba.i8[:,:], numba.f8[:], numba.f8[:], numba.f8[:,:], numba.f8[:,:], numba.f8[:,:,:,:], numba.f8[:,:,:,:], numba.f8[:,:,:])) # , numba.i8, numba.f8, numba.f8
 def calc_Xika(indices, rho, xi, nui, nk, Fklab, Kklab, Iij): # , maxiter=500, tol=1e-12, damp=.1
     r""" 
-    Calculate the fraction of molecules of component i that are not bonded at a site of type a on group k in an iterative fashion.
+    Calculate the fraction of molecules of component i that are not bonded at a site of type a on group k.
 
     Parameters
     ----------

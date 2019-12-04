@@ -17,7 +17,9 @@ from despasito.fit_parameters.interface import ExpDataTemplate
 class Data(ExpDataTemplate):
 
     r"""
-    Object for Temperature dependent VLE data. This data could be evaluated with phase_xiT or phase_yiT. Most entries in the exp. dictionary are converted to attributes. 
+    Object for Temperature dependent VLE data. 
+
+    This data could be evaluated with phase_xiT or phase_yiT. Most entries in the exp. dictionary are converted to attributes. 
 
     Parameters
     ----------

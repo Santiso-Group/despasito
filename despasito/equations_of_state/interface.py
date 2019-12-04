@@ -1,5 +1,7 @@
 """
-    This file contains the interface needed to create further equation of state (EOS) objects. All folders in this directory refer back to this interface. Using this template all future EOS will be easily exchanged.
+    Interface needed to create further equation of state (EOS) objects. 
+
+    All folders in this directory refer back to this interface. Using this template all future EOS will be easily exchanged.
     
 """
 
@@ -12,7 +14,9 @@ from abc import ABC, abstractmethod
 class EOStemplate(ABC):
 
     """
-    All classes in this directory refer back to this interface. Using this template all EOS objects are then easily exchanged.
+    Interface used in all EOS object options.
+
+    By using this template, all EOS objects are then easily exchanged.
     """
 
     @abstractmethod

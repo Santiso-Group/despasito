@@ -1,7 +1,7 @@
 r"""
-    
     Routines for calculating the Helmholtz energy for the SAFT-gamma equation of state.
-    Equations referenced in this code are from V. Papaioannou et al J. Chem. Phys. 140 054107 2014
+    
+    Equations referenced in this code are from V. Papaioannou et al. J. Chem. Phys. 140 054107 2014
     
 """
 
@@ -14,7 +14,9 @@ from . import constants
 #@profile
 def calc_a1s(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
     r""" 
-    Return a1s,kl(rho*Cmol2seg,l_kl) in K as defined in eq. 25, used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy.
+    Return a1s,kl(rho*Cmol2seg,l_kl) in K as defined in eq. 25.
+    
+    Used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy.
 
     Parameters
     ----------
@@ -29,7 +31,7 @@ def calc_a1s(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
     epsilonkl : numpy.ndarray
         Matrix of well depths for groups (k,l)
     dkl : numpy.ndarray
-        Matrix of hardsphere diameters for groups (k,l)
+        Matrix of hard sphere diameters for groups (k,l)
 
     Returns
     -------
@@ -74,7 +76,9 @@ def calc_a1s(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
 #@profile
 def calc_da1sii_drhos(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
     r""" 
-    Return da1s,kl(rho*Cmol2seg,l_kl)/rhos in K, used in the calculation of :math:`A_chain` the first order term of the perturbation expansion corresponding to the mean-attractive energy.
+    Return da1s,kl(rho*Cmol2seg,l_kl)/rhos in K.
+    
+    Used in the calculation of :math:`A_chain` the first order term of the perturbation expansion corresponding to the mean-attractive energy.
 
     Parameters
     ----------
@@ -89,7 +93,7 @@ def calc_da1sii_drhos(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
     epsilonkl : numpy.ndarray
         Matrix of well depths for groups (k,l)
     dkl : numpy.ndarray
-        Matrix of hardsphere diameters for groups (k,l)
+        Matrix of hard sphere diameters for groups (k,l)
 
     Returns
     -------
@@ -138,7 +142,7 @@ def calc_da1sii_drhos(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
 #@profile
 def calc_Xika(indices, rho, xi, nui, nk, Fklab, Kklab, Iij, maxiter=500, tol=1e-12, damp=.1):
     r""" 
-    Calculate the fraction of molecules of component i that are not bonded at a site of type a on group k in an iterative fashion.
+    Calculate the fraction of molecules of component i that are not bonded at a site of type a on group k.
 
     Parameters
     ----------
@@ -177,7 +181,7 @@ def calc_Xika(indices, rho, xi, nui, nk, Fklab, Kklab, Iij, maxiter=500, tol=1e-
     Xika_final = np.ones((nrho,ncomp, nbeads, nsitesmax))
     err_array   = np.zeros(nrho)
 
-    # Parallelize here, wrt rho!
+    # Parallelize here, with respect to rho!
     Xika_elements = .5*np.ones(len(indices))
     for r in range(nrho):
         for knd in range(maxiter):

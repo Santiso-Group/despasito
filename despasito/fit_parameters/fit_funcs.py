@@ -178,7 +178,9 @@ class BasinBounds(object):
 
 def compute_SAFT_obj(beadparams, opt_params, eos, exp_dict, output_file="fit_parameters.txt"):
     r"""
-    Fit defined parameters for equation of state object with given experimental data. Each set of experimental data is converted to an object with the build in ability to evaluate its part of objective function. 
+    Fit defined parameters for equation of state object with given experimental data. 
+
+    Each set of experimental data is converted to an object with the build in ability to evaluate its part of objective function. 
     To add another type of supported experimental data, add a class to the fit_classes.py file.
 
     Parameters
@@ -189,7 +191,7 @@ def compute_SAFT_obj(beadparams, opt_params, eos, exp_dict, output_file="fit_par
         Parameters used in basin fitting algorithm
 
         - fit_bead (str) - Name of bead whose parameters are being fit, should be in bead list of beadconfig
-        - fit_params (list[str]) - This list of contains the name of the parameter being fit (e.g. epsilon). See EOS mentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
+        - fit_params (list[str]) - This list of contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
 
     eos : obj
         Equation of state output that writes pressure, max density, chemical potential, updates parameters, and evaluates objective functions. For parameter fitting algorithm See equation of state documentation for more details.

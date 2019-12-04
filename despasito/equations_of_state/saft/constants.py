@@ -1,10 +1,6 @@
 """
-    despasito
-    DESPASITO: Determining Equilibrium State and Parameters Applied to SAFT, Intended for Thermodynamic Output
-    
-    This file contains constants used in the other files.
-    
-    """
+Contains constants used in the other files.    
+"""
 
 import numpy as np
 #physical constants

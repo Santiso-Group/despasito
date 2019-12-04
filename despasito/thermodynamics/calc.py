@@ -20,12 +20,13 @@ from . import fund_constants as const
 
 ######################################################################
 #                                                                    #
-#                              Calc CC Params                        #
+#                     Calculate Critical Parameters                  #
 #                                                                    #
 ######################################################################
 def calc_CC_Pguess(xilist, Tlist, CriticalProp):
     r"""
     Computes the Mie parameters of a mixture from the mixed critical properties of the pure components. 
+
     From: Mejia, A., C. Herdes, E. Muller. Ind. Eng. Chem. Res. 2014, 53, 4131-4141
     
     Parameters
@@ -149,6 +150,7 @@ def PvsRho(T, xi, eos, minrhofrac=(1.0 / 500000.0), rhoinc=5.0, vspacemax=1.0E-4
 
     r"""
     Computes the Mie parameters of a mixture from the mixed critical properties of the pure components. 
+
     From: Mejia, A., C. Herdes, E. Muller. Ind. Eng. Chem. Res. 2014, 53, 4131-4141
     
     Parameters
@@ -194,7 +196,7 @@ def PvsRho(T, xi, eos, minrhofrac=(1.0 / 500000.0), rhoinc=5.0, vspacemax=1.0E-4
         rholist_2 = 1.0 / np.arange(1.0 / rholist[vspaceswitch + 1], 1.0 / minrho, vspacemax)[::-1]
         rholist = np.append(rholist_2, rholist[vspaceswitch + 2:])
 
-    #compute Pressures (Plist) for rholsit
+    #compute Pressures (Plist) for rholist
     Plist = eos.P(rholist, T, xi)
 
     #Flip Plist and rholist arrays
@@ -291,11 +293,7 @@ def PvsV_plot(vlist, Plist, Pvspline, markers=[]):
 ######################################################################
 def calc_Psat(T, xi, eos, rhodict={}):
     r"""
-    Computes the saturated pressure, gas and liquid densities for a single component system given Temperature and Mie parameters
-    T: Saturated Temperature in Kelvin
-    minrhofrac: Fraction of maximum hard sphere packing fraction for gas density
-    rhoinc: spacing densities for rholist in mol/m^3. Smaller values will generate a more accurate curve at increasing computational cost
-    Returns Saturated Pressure in Pa, liquid denisty, and gas density in mol/m^3
+    Computes the saturated pressure, gas and liquid densities for a single component system.
     
     Parameters
     ----------
@@ -633,7 +631,7 @@ def calc_rhol(P, T, xi, eos, rhodict={}):
 ######################################################################
 def Pdiff(rho, Pset, T, xi, eos):
     """
-    Calculate difference between set point pressure and computed pressure for a given density
+    Calculate difference between set point pressure and computed pressure for a given density.
     
     Parameters
     ----------
@@ -831,7 +829,9 @@ def calc_xi(yi, phiv, phil):
 ######################################################################
 def calc_Prange_xi(T, xi, yi, eos, rhodict={}, Pmin=1000, zi_opts={}):
     r"""
-    Obtain min and max pressure values, where the liquid mole fraction is set and the objective function at each of those values is of opposite sign.
+    Obtain min and max pressure values.
+
+    The liquid mole fraction is set and the objective function at each of those values is of opposite sign.
     
     Parameters
     ----------
@@ -972,7 +972,9 @@ def calc_Prange_xi(T, xi, yi, eos, rhodict={}, Pmin=1000, zi_opts={}):
 ######################################################################
 def calc_Prange_yi(T, xi, yi, eos, rhodict={}, Pmin=1000, zi_opts={}):
     r"""
-    Obtain min and max pressure values, where the vapor mole fraction is set and the objective function at each of those values is of opposite sign.
+    Obtain min and max pressure values.
+
+    The vapor mole fraction is set and the objective function at each of those values is of opposite sign.
     
     Parameters
     ----------
@@ -1005,7 +1007,7 @@ def calc_Prange_yi(T, xi, yi, eos, rhodict={}, Pmin=1000, zi_opts={}):
     vlist, Plist = PvsRho(T, yi, eos, **rhodict)
     Pvspline, roots, extrema = PvsV_spline(vlist, Plist)
 
-    # Calculation the highest pressure possbile
+    # Calculation the highest pressure possible
     Pmax = max(Pvspline(extrema))
     Parray = [Pmin, Pmax]
 
@@ -1072,7 +1074,9 @@ def calc_Prange_yi(T, xi, yi, eos, rhodict={}, Pmin=1000, zi_opts={}):
 ######################################################################
 def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxiter=30, tol=1e-6):
     r"""
-    Find vapor mole fraction given pressure, liquid mole fraction, and temperature. Objective function is the sum of the predicted "mole numbers" predicted by the computed fugacity coefficients. Note that by "mole number" we mean that the prediction will only sum to 1 when the correct pressure is chosen in the outer loop. In this inner loop, we seek to find a mole fraction that is converged to reproduce itself in a prediction. If it hasn't, the new "mole numbers" are normalized into mole fractions and used as the next guess.
+    Find vapor mole fraction given pressure, liquid mole fraction, and temperature.
+
+    Objective function is the sum of the predicted "mole numbers" predicted by the computed fugacity coefficients. Note that by "mole number" we mean that the prediction will only sum to 1 when the correct pressure is chosen in the outer loop. In this inner loop, we seek to find a mole fraction that is converged to reproduce itself in a prediction. If it hasn't, the new "mole numbers" are normalized into mole fractions and used as the next guess.
     In the case that a guess doesn't produce a gas or critical fluid, we use another function to produce a new guess.
     
     Parameters
@@ -1192,7 +1196,9 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxiter=30, tol=1e-6):
 ######################################################################
 def solve_xi_yiT(xi, yi, phiv, P, T, eos, rhodict={}, maxiter=20, tol=1e-6):
     r"""
-    Find liquid mole fraction given pressure, vapor mole fraction, and temperature. Objective function is the sum of the predicted "mole numbers" predicted by the computed fugacity coefficients. Note that by "mole number" we mean that the prediction will only sum to 1 when the correct pressure is chosen in the outer loop. In this inner loop, we seek to find a mole fraction that is converged to reproduce itself in a prediction. If it hasn't, the new "mole numbers" are normalized into mole fractions and used as the next guess.
+    Find liquid mole fraction given pressure, vapor mole fraction, and temperature. 
+
+    Objective function is the sum of the predicted "mole numbers" predicted by the computed fugacity coefficients. Note that by "mole number" we mean that the prediction will only sum to 1 when the correct pressure is chosen in the outer loop. In this inner loop, we seek to find a mole fraction that is converged to reproduce itself in a prediction. If it hasn't, the new "mole numbers" are normalized into mole fractions and used as the next guess.
     In the case that a guess doesn't produce a liquid or critical fluid, we use another function to produce a new guess.
     
     Parameters
@@ -2058,7 +2064,7 @@ def calc_xT_phase(xi, T, eos, rhodict={}, zi_opts={}, Pguess=-1, meth="hybr", pr
 ######################################################################
 def calc_PT_phase(xi, T, eos, rhodict={}):
     r"""
-    **Not Complete**
+    *Not Complete*
     Calculate the PT phase diagram given liquid mole fraction and temperature
     
     Parameters
@@ -2110,7 +2116,7 @@ def calc_PT_phase(xi, T, eos, rhodict={}):
 ######################################################################
 def calc_dadT(rho, T, xi, eos, rhodict={}):
     r"""
-    Calculate the derivative of the Helmholtz energy with respect to temperature, :math:`\frac{dA}{dT}`, give a list of density values and system conditions.
+    Calculate the derivative of the Helmholtz energy with respect to temperature, :math:`\frac{dA}{dT}`.
     
     Parameters
     ----------

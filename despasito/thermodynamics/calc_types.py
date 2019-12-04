@@ -1,5 +1,5 @@
 """
-    This thermo module contains a series of wrappers to handle the inputs and outputs of these functions. The calc module contains the thermodynamic calculations. Calculation of pressure, chemical potential, and max density are handled by an eos object so that these functions can be used with any EOS.
+    This thermo module contains a series of wrappers to handle the inputs and outputs of these functions. The `calc` module contains the thermodynamic calculations. Calculation of pressure, chemical potential, and max density are handled by an eos object so that these functions can be used with any EOS.
     
     None of the functions in this folder need to be handled directly, as a function factory is included in our __init__.py file. Add "from thermodynamics import thermo" and use "thermo("calc_type",eos,input_dict)" to get started.
     
@@ -12,7 +12,7 @@ from . import calc
 
 """
 .. todo::
-    phase_xiT: add like to rhodict options 
+    phase_xiT: add link to rhodict options 
 
 """
 
@@ -24,9 +24,9 @@ from . import calc
 def phase_xiT(eos, sys_dict):
 
     r"""
-    Assess input and system information and calculate phase diagram given liquid mole fractions, xi, and temperature.
+    Calculate phase diagram given liquid mole fractions, xi, and temperature.
 
-    An output file is generated with T, xi, and corresponding P and yi.
+    Input and system information is assessed first. An output file is generated with T, xi, and corresponding P and yi.
     
     Parameters
     ----------
@@ -80,7 +80,7 @@ def phase_xiT(eos, sys_dict):
                 logger.info("The same pressure, {}, was used for all mole fraction values".format(Pguess))
             else:
                 raise ValueError("The number of provided pressure and mole fraction sets are different")
-        logger.info("Using user defined inital guess has been provided")
+        logger.info("Using user defined initial guess has been provided")
     else:
         if 'CriticalProp' in sys_dict:
             CriticalProp = np.array(sys_dict['CriticalProp'])
@@ -89,7 +89,7 @@ def phase_xiT(eos, sys_dict):
             # Critical properties: [Tc, Pc, omega, rho_0.7, Zc, Vc, M]
             Pguess = calc.calc_CC_Pguess(xi_list, T_list, CriticalProp)
             if np.isnan(Pguess):
-                logger.info("Critical properties were not used to guess an intial pressure")
+                logger.info("Critical properties were not used to guess an initial pressure")
             else:
                 logger.info("Pguess: ", Pguess)
                 opts["Pguess"] = Pguess
@@ -151,9 +151,9 @@ def phase_xiT(eos, sys_dict):
 def phase_yiT(eos, sys_dict):
 
     r"""
-    Assess input and system information and calculate phase diagram given vapor mole fractions, yi, and temperature.
+    Calculate phase diagram given vapor mole fractions, yi, and temperature.
 
-    An output file is generated with T, yi, and corresponding P and xi.
+    Input and system information is assessed first. An output file is generated with T, yi, and corresponding P and xi.
     
     Parameters
     ----------
@@ -205,7 +205,7 @@ def phase_yiT(eos, sys_dict):
                 logger.info("The same pressure, {}, was used for all mole fraction values".format(Pguess))
             else:
                 raise ValueError("The number of provided pressure and mole fraction sets are different")
-        logger.info("Using user defined inital guess has been provided")
+        logger.info("Using user defined initial guess has been provided")
     else:
         if 'CriticalProp' in sys_dict:
             CriticalProp = np.array(sys_dict['CriticalProp'])
@@ -214,7 +214,7 @@ def phase_yiT(eos, sys_dict):
             # Critical properties: [Tc, Pc, omega, rho_0.7, Zc, Vc, M]
             Pguess = calc.calc_CC_Pguess(yi_list, T_list, CriticalProp)
             if np.isnan(Pguess):
-                logger.info("Critical properties were not used to guess an intial pressure")
+                logger.info("Critical properties were not used to guess an initial pressure")
             else:
                 logger.info("Pguess: {}".format(Pguess))
                 opts["Pguess"] = Pguess
@@ -274,9 +274,9 @@ def phase_yiT(eos, sys_dict):
 def sat_props(eos, sys_dict):
 
     r"""
-    Assess input and system information and computes the saturated pressure, liquid, and gas density a one component phase at a temperature.
+    Computes the saturated pressure, liquid, and gas density a one component phase at a temperature.
 
-    An output file is generated with T, :math:`P^{sat}`, :math:`\rho^{sat}_{l}, :math:`\rho^{sat}_{v}
+    Input and system information is assessed first.  An output file is generated with T, :math:`P^{sat}`, :math:`\rho^{sat}_{l}, :math:`\rho^{sat}_{v}
     
     Parameters
     ----------
@@ -364,9 +364,9 @@ def sat_props(eos, sys_dict):
 def liquid_properties(eos, sys_dict):
 
     r"""
-    Assess input and system information and computes the liquid density and chemical potential given a temperature, pressure, and liquid mole fractions.
+    Computes the liquid density and chemical potential given a temperature, pressure, and liquid mole fractions.
 
-    An output file is generated with P, T, xi, :math:`\rho_{l}, and :math:`\phi_{l}.
+    Input and system information is assessed first. An output file is generated with P, T, xi, :math:`\rho_{l}, and :math:`\phi_{l}.
     
     Parameters
     ----------
@@ -418,7 +418,7 @@ def liquid_properties(eos, sys_dict):
         logger.info("Guess in pressure has been provided, but is unused for this function")
 
     if 'CriticalProp' in sys_dict:
-        logger.info("Critial properties have been provided, but are unused for this function")
+        logger.info("Critical properties have been provided, but are unused for this function")
 
     # Extract rho dict
     if "rhodict" in sys_dict:
@@ -452,9 +452,9 @@ def liquid_properties(eos, sys_dict):
 def vapor_properties(eos, sys_dict):
 
     r"""
-    Assess input and system information and computes the vapor density and chemical potential given a temperature, pressure, and vapor mole fractions.
+    Computes the vapor density and chemical potential given a temperature, pressure, and vapor mole fractions.
 
-    An output file is generated with P, T, yi, :math:`\rho_{v}, and :math:`\phi_{v}.
+    Input and system information is assessed first. An output file is generated with P, T, yi, :math:`\rho_{v}, and :math:`\phi_{v}.
     
     Parameters
     ----------
@@ -506,7 +506,7 @@ def vapor_properties(eos, sys_dict):
         logger.info("Guess in pressure has been provided, but is unused for this function")
 
     if 'CriticalProp' in sys_dict:
-        logger.info("Critial properties have been provided, but are unused for this function")
+        logger.info("Critical properties have been provided, but are unused for this function")
 
     # Extract rho dict
     if "rhodict" in sys_dict:

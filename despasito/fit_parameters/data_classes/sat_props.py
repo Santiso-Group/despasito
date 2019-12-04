@@ -107,7 +107,7 @@ class Data(ExpDataTemplate):
             self.xi = data_dict["xi"]
         except:
             if len(eos._nui) > 1:
-                raise ValueError("Ambiguous instructions. Include xi to define intendended component to obtain saturation properties")
+                raise ValueError("Ambiguous instructions. Include xi to define intended component to obtain saturation properties")
             else:
                 self.xi = np.array([[1.0] for x in range(len(self.T))])
  

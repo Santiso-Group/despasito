@@ -1,6 +1,6 @@
 """
 
-Routines for parsing input .json files to dictionaries for program use, as well as write properly structures .json files for later calculations.
+Routines for parsing input .json files to dictionaries for program use, and write .json files.
     
 .. todo::
     - extract_calc_data input_fname: Add link to available thermodynamic calculations
@@ -48,7 +48,9 @@ def append_data_file_path(input_dict, path='.'):
 def extract_calc_data(input_fname, path='.', **args):
 
     """
-    Parse dictionary from .json input file into a dictionary for creating the equation of state, and one for the thermodynamic calculations.
+    Parse dictionary from .json input file into a dictionaries.
+
+    Resulting dictionaries are used for creating the equation of state object, and for passing instructions for thermodynamic calculations.
 
     Parameters
     ----------
@@ -132,7 +134,9 @@ def extract_calc_data(input_fname, path='.', **args):
 def file2paramdict(filename,delimiter=" "):
 
     """
-    Converted file directly into a dictionary where each line is a key followed by a value.
+    Converted file directly into a dictionary.
+
+    Each line in the input file is a key followed by a value in the resulting dictionary.
 
     Parameters
     ----------
@@ -170,10 +174,10 @@ def file2paramdict(filename,delimiter=" "):
 #                  Extract Saft Parameters                           #
 #                                                                    #
 ######################################################################
-def write_SAFTgroup(library, filename):
+def write_EOSparameters(library, filename):
 
     """
-    Sort and export dictionary of input SAFT parameters into .json file.
+    Sort and export dictionary of input parameters into .json file.
 
     Parameters
     ----------
@@ -188,7 +192,7 @@ def write_SAFTgroup(library, filename):
 
     #logger = logging.getLogger(__name__)
 
-    #sort and write SAFT dic
+    #sort and write SAFT dict
     for i in library:
         library[i] = collections.OrderedDict(sorted(list(library[i].items()), key=lambda tup: tup[0].lower()))
     f = open(filename, 'w')
@@ -286,7 +290,7 @@ def process_bead_data(bead_data):
 def process_param_fit_inputs(thermo_dict):
 
     """
-    Process parameter fitting information and data formatting according to input file instructions.
+    Process parameter fitting information.
 
     Parameters
     ----------
@@ -296,7 +300,7 @@ def process_param_fit_inputs(thermo_dict):
         - opt_params (dict) - Parameters used in basin fitting algorithm
 
             - fit_bead (str) - Name of bead whose parameters are being fit, should be in bead list of beadconfig
-            - fit_params (list[str]) - This list of contains the name of the parameter being fit (e.g. epsilon). See EOS mentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
+            - fit_params (list[str]) - This list of contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
             - *_bounds (list[float]), Optional - This list contains the minimum and maximum of the parameter from a parameter listed in fit_params, represented in place of the asterisk. See input file instructions for more information.
             - *name* (dict) - Dictionary of a data set that the parameters are fit to. Each dictionary is added to the exp_data dictionary before being passed to the fitting algorithm. Each *name* is used as the key in exp_data. *name* is an arbitrary string used to identify the data set and used later in reporting objective function values during the fitting process. See data type objects for more details.
 
@@ -310,7 +314,7 @@ def process_param_fit_inputs(thermo_dict):
         - opt_params (dict) - Parameters used in basin fitting algorithm
 
             - fit_bead (str) - Name of bead whose parameters are being fit, should be in bead list of beadconfig
-            - fit_params (list[str]) - This list of contains the name of the parameter being fit (e.g. epsilon). See EOS mentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
+            - fit_params (list[str]) - This list of contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
             - bounds (numpy.ndarray) - List of lists of length two, of length equal to fit_params. If no bounds were given then the default parameter boundaries are [0,1e+4], else bounds given as *_bounds in input file are used.
 
         - exp_data (dict) - This dictionary is made up of a dictionary for each data set that the parameters are fit to. Each key is an arbitrary string used to identify the data set and used later in reporting objective function values during the fitting process. See data type objects for more details.
@@ -375,7 +379,9 @@ def process_param_fit_inputs(thermo_dict):
 def process_exp_data(exp_data_dict):
 
     """
-    Process raw experimental data dictionary into one that can be used by the parameter fitting module. Note that there should be one dictionary per data set. All data is extracted from data files.
+    Convert experimental data dictionary into form used by parameter fitting module. 
+
+    Note that there should be one dictionary per data set. All data is extracted from data files.
 
     Parameters
     ----------
@@ -415,7 +421,9 @@ def process_exp_data(exp_data_dict):
 def process_exp_data_file(fname):
 
     """
-    Import data file and convert columns into dictionary entries, where the headers are the dictionary keys. The top line is skipped, and column headers are the second line. Note that column headers should be thermo properties (e.g. T, P, x1, x2, y1, y2) without suffixes. Mole fractions x1, x2, ... should be in the same order as in the beadconfig line of the input file. No mole fractions should be left out.
+    Import data file and convert columns into dictionary entries.
+
+    The headers in the file are the dictionary keys. The top line is skipped, and column headers are the second line. Note that column headers should be thermo properties (e.g. T, P, x1, x2, y1, y2) without suffixes. Mole fractions x1, x2, ... should be in the same order as in the beadconfig line of the input file. No mole fractions should be left out.
 
     Parameters
     ----------
@@ -462,11 +470,13 @@ def process_exp_data_file(fname):
 
 ######################################################################
 #                                                                    #
-#                  Write Thermodynamic Ouput                         #
+#                  Write Thermodynamic Output                         #
 #                                                                    #
 ######################################################################
 def writeout_dict(output_dict,calctype,output_file="thermo_output.txt"):
     """
+    Write out result of thermodynamic calculation.
+
     Import dictionary of both input and output data to produce a file. A line in the top clarifies the calculation type done.
 
     Parameters

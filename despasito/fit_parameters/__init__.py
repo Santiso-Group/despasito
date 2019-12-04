@@ -17,7 +17,9 @@ from . import data_classes
 
 def fit(eos, thermo_dict):
     r"""
-    Fit defined parameters for equation of state object with given experimental data. Each set of experimental data is converted to an object with the built in ability to evaluate its part of objective function.
+    Fit defined parameters for equation of state object with given experimental data. 
+
+    Each set of experimental data is converted to an object with the built in ability to evaluate its part of objective function.
     To add another type of supported experimental data, add a class to the fit_classes.py file.
 
     Parameters
@@ -30,7 +32,7 @@ def fit(eos, thermo_dict):
         - opt_params (dict) - Parameters used in basin fitting algorithm.
 
             - fit_bead (str) - Name of bead whose parameters are being fit, should be in bead list of beadconfig
-            - fit_params (list[str]) - This list of contains the name of the parameter being fit (e.g. epsilon). See EOS mentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
+            - fit_params (list[str]) - This list of contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
 
         - bounds (numpy.ndarray) - List of length equal to fit_params with lists of pairs for minimum and maximum bounds of parameter being fit. Defaults are broad, recommend specification.
         - exp_data (dict) - This dictionary is made up of a dictionary for each data set that the parameters are fit to. Each dictionary is converted into an object and saved back to this structure before parameter fitting begins. Each key is an arbitrary string used to identify the data set and used later in reporting objective function values during the fitting process. See data type objects for more details.
@@ -58,7 +60,7 @@ def fit(eos, thermo_dict):
 
     logger = logging.getLogger(__name__)
 
-    # Extract relevent quantities from thermo_dict
+    # Extract relevant quantities from thermo_dict
     keys_del = []
     for key, value in thermo_dict.items():
         # Extract inputs

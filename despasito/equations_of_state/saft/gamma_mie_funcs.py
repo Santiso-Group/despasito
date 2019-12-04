@@ -41,6 +41,7 @@ else:
 def calc_Aideal(xi, rho, massi, T):
     r""" 
     Return a vector of ideal contribution of Helmholtz energy.
+
     :math:`\frac{A^{ideal}}{N k_{B} T}`
     
     Parameters
@@ -100,7 +101,9 @@ def calc_Aideal(xi, rho, massi, T):
 
 def _dkk_int(r, Ce_kT, sigma, l_r, l_a):
     r""" 
-    Return integrand used to calculate the hard sphere diameter, :math:`d_{k,k}` of a group k. See eq. 10.
+    Return integrand used to calculate the hard sphere diameter. 
+
+    :math:`d_{k,k}` of a group k. See eq. 10.
     
     Parameters
     ----------
@@ -130,7 +133,7 @@ def _dkk_int(r, Ce_kT, sigma, l_r, l_a):
 
 def calc_dkk(epsilon, sigma, T, l_r, l_a=6.0):
     r""" 
-    Calculates hard sphere diameter of a group, :math:`d_{k,k}`. Defined in eq. 10.
+    Calculates hard sphere diameter of a group k, :math:`d_{k,k}`. Defined in eq. 10.
 
     Parameters
     ----------
@@ -160,7 +163,7 @@ def calc_dkk(epsilon, sigma, T, l_r, l_a=6.0):
 #    results = integrate.quad(lambda r: _dkk_int(r, Ce_kT, sigma, l_r, l_a), 0.0, sigma, epsabs=1.0e-16, epsrel=1.0e-16)
 #    results = results[0]
 
-    # Option 2: 10pt Gauss Langedre
+    # Option 2: 10pt Gauss Legendre
     # 5pt
     #x = np.array([0.0, 0.5384693101056831, -0.5384693101056831, 0.906179845938664, -0.906179845938664])
     #w = np.array([0.568889, 0.47862867049936647, 0.47862867049936647, 0.23692688505618908, 0.23692688505618908])
@@ -197,7 +200,7 @@ def C(l_r, l_a):
 
 def calc_interaction_matrices(beads, beadlibrary, crosslibrary={}):
     r"""
-    Computes matrices of cross interaction parameters epsilonkl, sigmakl, l_akl, l_rkl (attractive and repulsive exponents), Ckl
+    Computes matrices of cross interaction parameters epsilonkl, sigmakl, l_akl, l_rkl, and Ckl
 
     Parameters
     ----------
@@ -230,13 +233,13 @@ def calc_interaction_matrices(beads, beadlibrary, crosslibrary={}):
     epsilonkl : numpy.ndarray
         Matrix of well depths for groups (k,l)
     sigmakl : numpy.ndarray
-        Matrix of mie diameter for groups (k,l)
+        Matrix of Mie diameter for groups (k,l)
     l_akl : numpy.ndarray
-        Matrix of mie potential attractive exponents for k,l groups
+        Matrix of Mie potential attractive exponents for k,l groups
     l_rkl : numpy.ndarray
-        Matrix of mie potential attractive exponents for k,l groups
+        Matrix of Mie potential attractive exponents for k,l groups
     Ckl : numpy.ndarray
-        Matrix of mie potential prefactors for k,l groups
+        Matrix of Mie potential prefactors for k,l groups
     """
 
     #logger = logging.getLogger(__name__)
@@ -285,7 +288,9 @@ def calc_interaction_matrices(beads, beadlibrary, crosslibrary={}):
 
 def calc_composition_dependent_variables(xi, nui, beads, beadlibrary):
     r""" 
-    Return conversion factor from molecular number density, :math:`\rho`, to segment (i.e. group) number density, :math:`\rho_S`. Shown in eq. 13
+    Return conversion factor from molecular number density.
+
+    :math:`\rho`, to segment (i.e. group) number density, :math:`\rho_S`. Shown in eq. 13
 
     Parameters
     ----------
@@ -347,8 +352,9 @@ def calc_composition_dependent_variables(xi, nui, beads, beadlibrary):
 
 def calc_hard_sphere_matricies(beads, beadlibrary, sigmakl, T):
     r"""
-    Computes matrix of hard sphere interaction parameters dkk, dkl, and x0kl
-    This does not include function specific or association terms
+    Computes matrix of hard sphere interaction parameters dkk, dkl, and x0kl.
+
+    This does not include function specific or association terms.
 
     Parameters
     ----------
@@ -369,7 +375,7 @@ def calc_hard_sphere_matricies(beads, beadlibrary, sigmakl, T):
         - Nk*: Optional, The number of sites of from list sitenames. Asterisk represents string from sitenames.
 
     sigmakl : numpy.ndarray
-        Matrix of mie diameter for groups (k,l)
+        Matrix of Mie diameter for groups (k,l)
     T : float
         Temperature of the system [K]
     
@@ -380,7 +386,7 @@ def calc_hard_sphere_matricies(beads, beadlibrary, sigmakl, T):
     dkl : numpy.ndarray
         Matrix of hard sphere diameters for groups (k,l)
     x0kl : numpy.ndarray
-        Matrix of sigmakl/dkl, sigmakl is the mie radius for groups (k,l)
+        Matrix of sigmakl/dkl, sigmakl is the Mie radius for groups (k,l)
     """
 
     #logger = logging.getLogger(__name__)
@@ -401,7 +407,9 @@ def calc_hard_sphere_matricies(beads, beadlibrary, sigmakl, T):
 
 def calc_Bkl(rho, l_kl, Cmol2seg, dkl, epsilonkl, x0kl, zetax):
     r""" 
-    Return Bkl(rho*Cmol2seg,l_kl) in K as defined in eq. 20, used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy.
+    Return Bkl(rho*Cmol2seg,l_kl) in K as defined in eq. 20.
+
+    Used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy.
 
     Parameters
     ----------
@@ -412,7 +420,7 @@ def calc_Bkl(rho, l_kl, Cmol2seg, dkl, epsilonkl, x0kl, zetax):
     Cmol2seg : float
         Conversion factor from from molecular number density, :math:`\rho`, to segment (i.e. group) number density, :math:`\rho_S`. Shown in eq. 13
     dkl : numpy.ndarray
-        Matrix of hardsphere diameters for groups (k,l)
+        Matrix of hard sphere diameters for groups (k,l)
     epsilonkl : numpy.ndarray
         Matrix of well depths for groups (k,l)
     x0kl : numpy.ndarray
@@ -445,20 +453,22 @@ def calc_Bkl(rho, l_kl, Cmol2seg, dkl, epsilonkl, x0kl, zetax):
         Bkl = np.einsum("i,j", rhos * (2.0 * np.pi),
                         (dkl**3) * epsilonkl) * (np.einsum("i,j", (1.0 - (zetax / 2.0)) / ((1.0 - zetax)**3), Ikl) - np.einsum("i,j", ((9.0 * zetax * (1.0 + zetax)) / (2.0 * ((1 - zetax)**3))), Jkl))
     else:
-        logger.warning('Error unexpeced l_kl shape in Bkl')
+        logger.warning('Error unexpected l_kl shape in Bkl')
 
     return Bkl
 
 def calc_dBkl_drhos(l_kl, dkl, epsilonkl, x0kl, zetax):
     r""" 
-    Return Bkl(rho*Cmol2seg,l_kl) in K as defined in eq. 20, used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy.
+    Return derivative of Bkl(rho*Cmol2seg,l_kl) with respect to :math:`\rho_S`.
+
+    Used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy.
 
     Parameters
     ----------
     l_kl : numpy.ndarray
         :math:`\lambda_{k,l}` Matrix of Mie potential exponents for k,l groups
     dkl : numpy.ndarray
-        Matrix of hardsphere diameters for groups (k,l)
+        Matrix of hard sphere diameters for groups (k,l)
     epsilonkl : numpy.ndarray
         Matrix of well depths for groups (k,l)
     x0kl : numpy.ndarray
@@ -530,6 +540,8 @@ def calc_fm(alphakl, mlist):
 
 def calc_Amono(rho, xi, nui, Cmol2seg, xsk, xskl, dkk, T, epsilonkl, sigmakl, dkl, l_akl, l_rkl, Ckl, x0kl):
     r""" 
+    Outputs :math:`A^{mono.}` as well and related quantities.
+
     Outputs :math:`A^{HS}, A_1, A_2`, and :math:`A_3` (number of densities) :math:`A^{mono.}` components as well as some related quantities. Note these quantities are normalized by NkbT. Eta is really zeta
 
     Parameters
@@ -553,17 +565,17 @@ def calc_Amono(rho, xi, nui, Cmol2seg, xsk, xskl, dkk, T, epsilonkl, sigmakl, dk
     epsilonkl : numpy.ndarray
         Matrix of well depths for groups (k,l)
     sigmakl : numpy.ndarray
-        Matrix of mie diameter for groups (k,l)
+        Matrix of Mie diameter for groups (k,l)
     dkl : numpy.ndarray
-        Matrix of hardsphere diameters for groups (k,l)
+        Matrix of hard sphere diameters for groups (k,l)
     l_akl : numpy.ndarray
-        Matrix of mie potential attractive exponents for k,l groups
+        Matrix of Mie potential attractive exponents for k,l groups
     l_rkl : numpy.ndarray
-        Matrix of mie potential attractive exponents for k,l groups
+        Matrix of Mie potential attractive exponents for k,l groups
     Ckl : numpy.ndarray
-        Matrix of mie potential prefactors for k,l groups
+        Matrix of Mie potential prefactors for k,l groups
     x0kl : numpy.ndarray
-        Matrix of sigmakl/dkl, sigmakl is the mie radius for groups (k,l)
+        Matrix of sigmakl/dkl, sigmakl is the Mie radius for groups (k,l)
 
     Returns
     -------
@@ -586,7 +598,7 @@ def calc_Amono(rho, xi, nui, Cmol2seg, xsk, xskl, dkk, T, epsilonkl, sigmakl, dk
     logger = logging.getLogger(__name__)
 
     # initialize variables
-    nbeads = list(nui.shape)[1]  # nbeads is the number of unique groups used by any compnent
+    nbeads = list(nui.shape)[1]  # nbeads is the number of unique groups used by any component
     rhos = rho * Cmol2seg
 
     ##### compute AHS (eq. 16) #####
@@ -676,7 +688,9 @@ def calc_Amono(rho, xi, nui, Cmol2seg, xsk, xskl, dkk, T, epsilonkl, sigmakl, dk
 
 def calc_a1ii(rho, Cmol2seg, dii_eff, l_aii_avg, l_rii_avg, x0ii, epsilonii_avg, zetax):
     r""" 
-    Calculate effective first-order perturbation term :math:`\bar{a}_{1,ii}` for the contribution of the monomeric interactions to the free energy per segment.
+    Calculate effective first-order perturbation term :math:`\bar{a}_{1,ii}`.
+
+    Used for the contribution of the monomeric interactions to the free energy per segment.
 
     Parameters
     ----------
@@ -761,7 +775,9 @@ def calc_da1iidrhos(rho, Cmol2seg, dii_eff, l_aii_avg, l_rii_avg, x0ii, epsiloni
 def calc_a2ii_1pchi(rho, Cmol2seg, epsilonii_avg, dii_eff, x0ii, l_rii_avg, l_aii_avg, zetax):
 
     r""" 
-    Calculate the term, :math:`\frac{\bar{a}_{2,ii}}{1+\bar{\chi}_{ii}}`, used in the calculation of the second-order term from the macroscopic compressibility approximation based on the fluctuation term of the Sutherland potential.
+    Calculate the term, :math:`\frac{\bar{a}_{2,ii}}{1+\bar{\chi}_{ii}}`.
+
+    Used in the calculation of the second-order term from the macroscopic compressibility approximation based on the fluctuation term of the Sutherland potential.
 
     Parameters
     ----------
@@ -811,7 +827,7 @@ def calc_a2ii_1pchi(rho, Cmol2seg, epsilonii_avg, dii_eff, x0ii, l_rii_avg, l_ai
 def calc_da2ii_1pchi_drhos(rho, Cmol2seg, epsilonii_avg, dii_eff, x0ii, l_rii_avg, l_aii_avg, zetax):
 
     r""" 
-    Compute derivative of the term, :math:`\frac{\bar{a}_{2,ii}}{1+\bar{\chi}_{ii}}` with respect to :math:`\rho_s`
+    Compute derivative of the term, :math:`\frac{\bar{a}_{2,ii}}{1+\bar{\chi}_{ii}}` with respect to :math:`\rho_s`.
 
     Parameters
     ----------
@@ -834,7 +850,7 @@ def calc_da2ii_1pchi_drhos(rho, Cmol2seg, epsilonii_avg, dii_eff, x0ii, l_rii_av
 
     Returns
     -------
-    da2ii_1pchi_drhos : nump.ndarray
+    da2ii_1pchi_drhos : numpy.ndarray
         Term used in the calculation of the second-order term from the macroscopic compressibility
         
     """
@@ -894,7 +910,7 @@ def calc_Achain(rho, Cmol2seg, xi, T, nui, sigmakl, epsilonkl, dkl, xskl, l_rkl,
         :math:`\nu_{i,k}/k_B`, Array of number of components by number of bead types. Defines the number of each type of group in each component. 
         Defined for eq. 11. Note that indices are flipped from definition in reference.
     sigmakl : numpy.ndarray
-        Matrix of mie diameter for groups (k,l)
+        Matrix of Mie diameter for groups (k,l)
     epsilonkl : numpy.ndarray
         Matrix of well depths for groups (k,l)
     dkl : numpy.ndarray
@@ -902,9 +918,9 @@ def calc_Achain(rho, Cmol2seg, xi, T, nui, sigmakl, epsilonkl, dkl, xskl, l_rkl,
     xskl : numpy.ndarray
         Matrix of mole fractions of bead (i.e. segment or group) k multiplied by bead l
     l_rkl : numpy.ndarray
-        Matrix of mie potential attractive exponents for k,l groups
+        Matrix of Mie potential attractive exponents for k,l groups
     l_akl : numpy.ndarray
-        Matrix of mie potential attractive exponents for k,l groups
+        Matrix of Mie potential attractive exponents for k,l groups
     beads : list[str]
         List of unique bead names used among components
     beadlibrary : dict
@@ -968,7 +984,7 @@ def calc_Achain(rho, Cmol2seg, xi, T, nui, sigmakl, epsilonkl, dkl, xskl, l_rkl,
     # compute average molecular segment size: sigmaii_avg
     # compute effective hard sphere diameter : dii_eff
     # compute average interaction energy epsilonii_avg
-    #compute average repulsive and attractive exponenets l_rkl, l_akl
+    #compute average repulsive and attractive exponents l_rkl, l_akl
     for i in range(ncomp):
         for k in range(ngroups):
             for l in range(ngroups):
@@ -1049,7 +1065,7 @@ def calc_Achain(rho, Cmol2seg, xi, T, nui, sigmakl, epsilonkl, dkl, xskl, l_rkl,
         tmp_A[0] -= tmp[0][:, i]
         tmp_A[1] -= tmp[1][:, i]
 
-    #return Achain,sigmaii_avg,epsilonii_avg,np.array(tmp_A)
+    #return Achain,sigmaii_avg,epsilonii_avg, np.array(tmp_A)
     return Achain, sigmaii_avg, epsilonii_avg
 
 ############################################################
@@ -1061,7 +1077,9 @@ def calc_Achain(rho, Cmol2seg, xi, T, nui, sigmakl, epsilonkl, dkl, xskl, l_rkl,
 def calc_assoc_matrices(beads, beadlibrary, sitenames=["H", "e1", "e2"], crosslibrary={}):
     r"""
 
-    Generate matrices used for association site calculations.  Compute epsilonHB (interaction energy for association term),Kklab (association interaction bonding volume,nk (number of sites )
+    Generate matrices used for association site calculations.
+
+    Compute epsilonHB (interaction energy for association term),Kklab (association interaction bonding volume,nk (number of sites )
 
     Parameters
     ----------
@@ -1215,7 +1233,7 @@ def calc_A_assoc(rho, xi, T, nui, xskl, sigmakl, sigmaii_avg, epsilonii_avg, eps
     xskl : numpy.ndarray
         Matrix of mole fractions of bead (i.e. segment or group) k multiplied by bead l
     sigmakl : numpy.ndarray
-        Matrix of mie diameter for groups (k,l)
+        Matrix of Mie diameter for groups (k,l)
     sigmaii_avg : numpy.ndarray
         Average bead (i.e. group or segment) size in component (i.e. molecule) i.
     epsilonii_avg : numpy.ndarray
@@ -1352,7 +1370,9 @@ def calc_A_assoc(rho, xi, T, nui, xskl, sigmakl, sigmaii_avg, epsilonii_avg, eps
 
 def assoc_site_indices(xi, nui, nk):
     r""" 
-    Make a list of sets of indices that allow quick identification of the relevent association sights. This is needed for solving Xika, the fraction of molecules of component i that are not bonded at a site of type a on group k.
+    Make a list of sets of indices that allow quick identification of the relevant association sights.
+
+    This is needed for solving Xika, the fraction of molecules of component i that are not bonded at a site of type a on group k.
 
     Parameters
     ----------
@@ -1373,7 +1393,7 @@ def assoc_site_indices(xi, nui, nk):
 
     indices = []
 
-    # List of site indicies for each bead type
+    # List of site indices for each bead type
     bead_sites = []
     for bead in nk:
         bead_sites.append([i for i, site in enumerate(bead) if site != 0])
@@ -1445,7 +1465,7 @@ def obj_Xika(Xika_elements, indices, rho, xi, nui, nk, Fklab, Kklab, Iij):
 #    Xika = 1./Xika
 #    Xika_elements_new = [Xika[i][j][k] for i,j,k in indices]
 
-    ## Option 2: Fewer forloops
+    ## Option 2: Fewer for loops
     Xika_elements_new = np.ones(len(Xika_elements))
     Xika_elements = np.array(Xika_elements)
     ind = 0
@@ -1546,17 +1566,17 @@ def calc_A(rho, xi, T, beads, beadlibrary, massi, nui, Cmol2seg, xsk, xskl, dkk,
     epsilonkl : numpy.ndarray
         Matrix of well depths for groups (k,l)
     sigmakl : numpy.ndarray
-        Matrix of mie diameter for groups (k,l)
+        Matrix of Mie diameter for groups (k,l)
     dkl : numpy.ndarray
-        Matrix of hardsphere diameters for groups (k,l)
+        Matrix of hard sphere diameters for groups (k,l)
     l_akl : numpy.ndarray
-        Matrix of mie potential attractive exponents for k,l groups
+        Matrix of Mie potential attractive exponents for k,l groups
     l_rkl : numpy.ndarray
-        Matrix of mie potential attractive exponents for k,l groups
+        Matrix of Mie potential attractive exponents for k,l groups
     Ckl : numpy.ndarray
-        Matrix of mie potential prefactors for k,l groups
+        Matrix of Mie potential prefactors for k,l groups
     x0kl : numpy.ndarray
-        Matrix of sigmakl/dkl, sigmakl is the mie radius for groups (k,l)
+        Matrix of sigmakl/dkl, sigmakl is the Mie radius for groups (k,l)
     epsilonHB : numpy.ndarray
         Interaction energy between each bead and association site.
     Kklab : numpy.ndarray 
@@ -1600,7 +1620,7 @@ def calc_A(rho, xi, T, beads, beadlibrary, massi, nui, Cmol2seg, xsk, xskl, dkk,
 
 def calc_Ares(rho, xi, T, beads, beadlibrary, massi, nui, Cmol2seg, xsk, xskl, dkk, epsilonkl, sigmakl, dkl, l_akl, l_rkl, Ckl, x0kl, epsilonHB, Kklab, nk):
     r"""
-    Calculates residual Helmholtz energy, :math:`\frac{A^{res.}}{N k_{B} T}` that deviates from ideal
+    Calculates residual Helmholtz energy, :math:`\frac{A^{res.}}{N k_{B} T}` that deviates from ideal.
 
     Parameters
     ----------
@@ -1641,17 +1661,17 @@ def calc_Ares(rho, xi, T, beads, beadlibrary, massi, nui, Cmol2seg, xsk, xskl, d
     epsilonkl : numpy.ndarray
         Matrix of well depths for groups (k,l)
     sigmakl : numpy.ndarray
-        Matrix of mie diameter for groups (k,l)
+        Matrix of Mie diameter for groups (k,l)
     dkl : numpy.ndarray
-        Matrix of hardsphere diameters for groups (k,l)
+        Matrix of hard sphere diameters for groups (k,l)
     l_akl : numpy.ndarray
-        Matrix of mie potential attractive exponents for k,l groups
+        Matrix of Mie potential attractive exponents for k,l groups
     l_rkl : numpy.ndarray
-        Matrix of mie potential attractive exponents for k,l groups
+        Matrix of Mie potential attractive exponents for k,l groups
     Ckl : numpy.ndarray
-        Matrix of mie potential prefactors for k,l groups
+        Matrix of Mie potential prefactors for k,l groups
     x0kl : numpy.ndarray
-        Matrix of sigmakl/dkl, sigmakl is the mie radius for groups (k,l)
+        Matrix of sigmakl/dkl, sigmakl is the Mie radius for groups (k,l)
     epsilonHB : numpy.ndarray
         Interaction energy between each bead and association site.
     Kklab : numpy.ndarray 

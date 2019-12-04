@@ -3,6 +3,7 @@
 r"""
     
     EOS object for SAFT-:math:`\gamma`-Mie
+    
     Equations referenced in this code are from V. Papaioannou et al J. Chem. Phys. 140 054107 2014
     
 """
@@ -22,7 +23,9 @@ from despasito.equations_of_state.interface import EOStemplate
 class saft_gamma_mie(EOStemplate):
 
     r"""
-    Initialize EOS with system component parameters so that methods may be used by thermodynamic calculations. All input and calculated parameters are defined as hidden attributes.
+    Initialize EOS object for SAFT-:math:`\gamma`-Mie.
+    
+    All input and calculated parameters are defined as hidden attributes.
     
     Parameters
     ----------
@@ -115,7 +118,7 @@ class saft_gamma_mie(EOStemplate):
     def _temp_dependent_variables(self, T):
 
         """
-        Temperature dependent variables are initialized or updated according to the provided temperature.
+        Temperature dependent variables are initialized or updated.
     
         Parameters
         ----------
@@ -139,7 +142,7 @@ class saft_gamma_mie(EOStemplate):
     def _xi_dependent_variables(self, xi):
 
         """
-        Variables dependent on composition are initialized or updated according to the provided mole fractions.
+        Variables dependent on composition are initialized or updated.
     
         Parameters
         ----------
@@ -157,7 +160,7 @@ class saft_gamma_mie(EOStemplate):
 
     def P(self, rho, T, xi):
         """
-        Compute pressure given system information
+        Compute pressure given system information.
        
         Parameters
         ----------
@@ -203,7 +206,7 @@ class saft_gamma_mie(EOStemplate):
     def fugacity_coefficient(self, P, rho, xi, T, dy=1e-4):
 
         """
-        Compute fugacity coefficient
+        Compute fugacity coefficient.
       
         Parameters
         ----------
@@ -283,7 +286,7 @@ class saft_gamma_mie(EOStemplate):
 
     def calc_dAres_drhoi_wrap(self, T, rhoi):
         """
-        Compute total Helmholtz energy given number of moles of each component
+        Compute derivative of Helmholtz energy wrt to density.
       
         Parameters
         ----------
@@ -317,7 +320,7 @@ class saft_gamma_mie(EOStemplate):
 
     def chemicalpotential_old(self, P, rho, xi, T):
         """
-        Compute pressure given system information
+        Compute chemical potential given system information.
       
         Parameters
         ----------
@@ -456,9 +459,9 @@ class saft_gamma_mie(EOStemplate):
 
     def update_parameters(self, param_name, bead_names, param_value):
         r"""
-        Update a single parameter value to _beadlibrary or _crosslibrary attributes during parameter fitting process. 
+        Update a single parameter value during parameter fitting process.
 
-        To refresh those parameters that are dependent on these libraries, use method "parameter refresh".
+        To refresh those parameters that are dependent on to _beadlibrary or _crosslibrary, use method "parameter refresh".
         
         Parameters
         ----------
@@ -534,7 +537,9 @@ class saft_gamma_mie(EOStemplate):
 
     def parameter_refresh(self):
         r""" 
-        To refresh those parameters that are dependent on _beadlibrary and _crosslibrary attributes. This **must** be run after all parameters from update_parameters method have been changed.
+        To refresh dependent parameters
+        
+        Those parameters that are dependent on _beadlibrary and _crosslibrary attributes **must** be updated by running this function after all parameters from update_parameters method have been changed.
         """
 
         logger = logging.getLogger(__name__)

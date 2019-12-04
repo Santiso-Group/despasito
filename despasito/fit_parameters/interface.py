@@ -1,5 +1,7 @@
 """
-    This file contains the interface needed to create further objects to represent experimental data. Using this template all future data types will be easily exchanged.
+    This file contains the interface needed to create further objects to represent experimental data. 
+
+    Using this template all future data types will be easily exchanged.
     
 """
 
@@ -12,7 +14,9 @@ from abc import ABC, abstractmethod
 class ExpDataTemplate(ABC):
 
     """
-    Interface needed to create further objects to represent experimental data. Using this template all future data types will be easily exchanged.
+    Interface needed to create further objects to represent experimental data.
+
+     Using this template all future data types will be easily exchanged.
     """
 
     @abstractmethod

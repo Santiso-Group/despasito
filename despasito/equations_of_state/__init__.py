@@ -1,6 +1,6 @@
 """
 
-This vision for this library is that this file will define an EOS class, and import sub-libraries of each EOS family
+Create an EOS class from options taken from factory design pattern.
 
 """
 
@@ -13,7 +13,9 @@ class jit_stat:
 
 def eos(**kwargs):
     """
-    This function acts as an interface between the user and our library of equations of state (EOS). Input the name of a desired EOS and a factory design pattern with a dictionary will search available classes to allow easy implementation of new EOS.
+    Interface between the user and our library of equations of state (EOS).
+
+    Input the name of a desired EOS and a factory design pattern with a dictionary will search available classes to allow easy implementation of new EOS.
 
     Parameters
     ----------
