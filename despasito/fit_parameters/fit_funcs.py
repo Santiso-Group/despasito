@@ -1,7 +1,6 @@
 
-import os
 import numpy as np
-#import logging
+import logging
 
 def reformat_ouput(cluster):
     r"""
@@ -176,7 +175,7 @@ class BasinBounds(object):
         return tmax and tmin
 
 
-def compute_SAFT_obj(beadparams, opt_params, eos, exp_dict, output_file="fit_parameters.txt"):
+def compute_SAFT_obj(beadparams, opt_params, eos, exp_dict):
     r"""
     Fit defined parameters for equation of state object with given experimental data. 
 
@@ -197,8 +196,6 @@ def compute_SAFT_obj(beadparams, opt_params, eos, exp_dict, output_file="fit_par
         Equation of state output that writes pressure, max density, chemical potential, updates parameters, and evaluates objective functions. For parameter fitting algorithm See equation of state documentation for more details.
     exp_dict : dict
         Dictionary of experimental data objects.
-    output_file : str
-        Output file name
 
     Returns
     -------
@@ -207,7 +204,7 @@ def compute_SAFT_obj(beadparams, opt_params, eos, exp_dict, output_file="fit_par
         
     """
 
-    #logger = logging.getLogger(__name__)
+    logger = logging.getLogger(__name__)
 
     # Update beadlibrary with test paramters
     for i, param in enumerate(opt_params['fit_params']):
@@ -229,17 +226,7 @@ def compute_SAFT_obj(beadparams, opt_params, eos, exp_dict, output_file="fit_par
             raise ValueError("Failed to evaluate objective function for {} of type {}.".format(key,data_obj.name))
 
     # Write out parameters and objective functions for each dataset
-    if os.path.isfile(output_file):
-        with open(output_file,"a") as f:
-            tmp = [beadparams.tolist() + obj_function + [sum(obj_function)]]
-            tmp = [str(x) for x in tmp]
-            f.write(", ".join(tmp)+"\n")
-    else:
-        with open(output_file,"w") as f:
-            f.write(", ".join(opt_params['fit_params']+list(exp_dict.keys())+["total obj"])+"\n")
-            tmp = [beadparams.tolist() + obj_function + [sum(obj_function)]]
-            tmp = [str(x) for x in tmp]
-            f.write(", ".join(tmp)+"\n")
+    logger.info("\nParameters: {}\nValues: {}\nExp. Data: {}\nObj. Values: {}\nTotal Obj. Value: {}".format(opt_params['fit_params'],beadparams,list(exp_dict.keys()),obj_function,sum(obj_function)))
 
     return sum(obj_function)
 

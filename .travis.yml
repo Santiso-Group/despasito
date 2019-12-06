@@ -51,6 +51,7 @@ install:
     # Build and install package
   - python setup.py develop --no-deps
   - conda install sphinx sphinx_rtd_theme
+  - conda install sphinx-argparse
 
 
 script:
