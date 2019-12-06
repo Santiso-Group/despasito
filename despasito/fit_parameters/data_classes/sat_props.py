@@ -3,7 +3,7 @@ Objects for storing and producing objective values for comparing experimental da
 """
 
 import numpy as np
-#import logging
+import logging
 
 from despasito.thermodynamics import thermo
 from despasito.fit_parameters import fit_funcs as ff
@@ -44,6 +44,8 @@ class Data(ExpDataTemplate):
 
     def __init__(self, data_dict):
 
+        logger = logging.getLogger(__name__)
+
         # Self interaction parameters
         self.name = data_dict["name"]
         try:
@@ -51,30 +53,45 @@ class Data(ExpDataTemplate):
         except:
             self.calctype = "sat_props"
 
-        try:
-            self.T = data_dict["T"]
-        except:
-            raise ImportError("Given saturation property data, values for T should have been provided.")
-
-        try:
-            self.Psat = data_dict["Psat"]
-        except:
-            pass
-
-        try:
+        data_type = []
+        data_type_name = []
+        if "xi" in data_dict:
             self.xi = data_dict["xi"]
-        except:
-            pass
-
-        try:
+            data_type.append(self.xi)
+            data_type_name.append("xi")
+        if "yi" in data_dict:
+            self.xi = data_dict["yi"]
+            data_type.append(self.xi)
+            data_type_name.append("xi")
+            logger.info("Vapor mole fraction recorded as 'xi'")
+        if "T" in data_dict:
+            self.T = data_dict["T"]
+            data_type.append(self.T)
+            data_type_name.append("T")
+        if "rhol" in data_dict:
             self.rhol = data_dict["rhol"]
-        except:
-            pass
-
-        try:
+            data_type.append(self.rhol)
+            data_type_name.append("rhol")
+        if "rhov" in data_dict:
             self.rhov = data_dict["rhov"]
-        except:
-            pass
+            data_type.append(self.rhov)
+            data_type_name.append("rhov")
+        if "P" in data_dict:
+            self.Psat = data_dict["P"]
+            data_type.append(self.Psat)
+            data_type_name.append("Psat")
+        if "Psat" in data_dict:
+            self.Psat = data_dict["Psat"]
+            data_type.append(self.Psat)
+            data_type_name.append("Psat")
+
+        tmp = ["T"]
+        if not all([hasattr(self,x) for x in tmp]):
+            raise ImportError("Given saturation data, value(s) for T should have been provided.")
+
+        tmp = ["Psat","rhol","rhov"]
+        if not any([hasattr(self,x) for x in tmp]):
+            raise ImportError("Given saturation data, values for Psat, rhol, and/or rhov should have been provided.")
 
         try:
             self.weights = data_dict["weights"]
@@ -85,6 +102,8 @@ class Data(ExpDataTemplate):
             self._rhodict = data_dict["rhodict"]
         except:
             self._rhodict = {"minrhofrac":(1.0 / 80000.0), "rhoinc":10.0, "vspacemax":1.0E-4}
+
+        logger.info("Data type 'sat_props' initiated with calctype, {}, and data types: {}".format(self.calctype,", ".join(data_type_name)))
 
     def _thermo_wrapper(self, eos):
 

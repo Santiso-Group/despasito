@@ -30,7 +30,7 @@ exp_data = {'Wiley': {'name': 'sat_props', 'calctype': 'sat_props', 'T': np.arra
 ## Optimization options
 opt_params = {"fit_bead" : "CH3OH", "fit_params": ["epsilon"], "epsilon_bounds" : [150.0, 400.0]}
 
-thermo_dict = {"opt_params": opt_params, "exp_data": exp_data, "basin_dict": {"niter": 1, "niter_success": 1}, "beadparams0": [381.0], "minimizer_dict": {"tol": 1e-1, "maxiter": 25}}
+thermo_dict = {"opt_params": opt_params, "exp_data": exp_data, "basin_dict": {"niter": 1, "niter_success": 1}, "beadparams0": [384.0], "minimizer_dict": {"tol": 1e-1, "maxiter": 25}}
 
 
 def test_fit_import():
