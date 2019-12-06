@@ -1,0 +1,4 @@
+# Heat Transfer Handbook © 2003 John Wiley & Sons, Table: Table 2.7aa Thermophysical Properties of Methanol along the Saturation Line
+#T, Psat, rhol, rhov
+200, 61, 27474.40699, 0.003121099
+500, 6525000, 14092.69663, 3429.463171

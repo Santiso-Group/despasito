@@ -7,6 +7,7 @@ This package uses functions from input_output, equations_of_state, and thermodyn
 """
 
 import os
+import sys
 import numpy as np
 from importlib import import_module
 import scipy.optimize as spo
@@ -33,13 +34,13 @@ def fit(eos, thermo_dict):
 
             - fit_bead (str) - Name of bead whose parameters are being fit, should be in bead list of beadconfig
             - fit_params (list[str]) - This list of contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
+            - beadparams0 (list[float]), Optional - Initial guess in parameter. If one is not provided, a guess is made based on the type of parameter from eos object.
 
         - bounds (numpy.ndarray) - List of length equal to fit_params with lists of pairs for minimum and maximum bounds of parameter being fit. Defaults are broad, recommend specification.
         - exp_data (dict) - This dictionary is made up of a dictionary for each data set that the parameters are fit to. Each dictionary is converted into an object and saved back to this structure before parameter fitting begins. Each key is an arbitrary string used to identify the data set and used later in reporting objective function values during the fitting process. See data type objects for more details.
 
             - name (str) - One of the supported data type objects to fit parameters
 
-        - beadparams0 (list[float]), Optional - Initial guess in parameter. If one is not provided, a guess is made based on the type of parameter from eos object.
         - output_file (str), Optional - Output file name
         - basin_dict (dict), Optional - kwargs used in scipy.optimize.basinhopping
 
@@ -65,16 +66,18 @@ def fit(eos, thermo_dict):
     for key, value in thermo_dict.items():
         # Extract inputs
         if key == "opt_params":
-            opt_params  = thermo_dict["opt_params"]
+            opt_params  = value
         elif key == "exp_data":
-            exp_data = thermo_dict["exp_data"]
+            exp_data = value
         # Optional inputs
-        elif key == "beadparams0":
-            beadparams0 = thermo_dict["beadparams0"]
         elif key == "output_file":
-            output_file = thermo_dict["output_file"]
+            output_file = value
         elif key == "bounds":
-            bounds = thermo_dict["bounds"]
+            bounds = value
+        elif key == "minimizer_dict":
+            minimizer_dict = value
+        elif key == "basin_dict":
+            basin_dict = value
         else:
             continue
         keys_del.append(key)
@@ -83,7 +86,7 @@ def fit(eos, thermo_dict):
         thermo_dict.pop(key,None)
 
     if list(thermo_dict.keys()):
-        print("Note: thermo_dict keys: {}, were not used.".format(", ".join(list(thermo_dict.keys()))))    
+        logger.info("Note: thermo_dict keys: {}, were not used.".format(", ".join(list(thermo_dict.keys()))))    
 
     # Reformat exp. data into formatted dictionary
     exp_dict = {}
@@ -109,24 +112,29 @@ def fit(eos, thermo_dict):
             raise AttributeError("Data set, {}, did not properly initiate object".format(key))
 
     # Generate initial guess for parameters if none was given
-    if "beadparams0" not in thermo_dict:
+    if "beadparams0" in opt_params:
+        beadparams0 = opt_params["beadparams0"]
+        logger.info("Initial guess is parameters provided: {}".format(beadparams0))
+    else:
         beadparams0 = eos.param_guess(opt_params["fit_params"])
 
     # Options for basin hopping
-    basin_dict = {"niter": 10, "T": 0.5, "niter_success": 3}
+    new_basin_dict = {"niter": 10, "T": 0.5, "niter_success": 3}
     if "basin_dict" in thermo_dict:
-        for key, value in thermo_dict["basin_dict"].items():
-            basin_dict[key] = value
+        for key, value in basin_dict.items():
+            new_basin_dict[key] = value
+    basin_dict = new_basin_dict
 
     # Set up options for minimizer in basin hopping
-    minimizer_dict = {"method": 'nelder-mead', "options": {'maxiter': 50}}
+    new_minimizer_dict = {"method": 'nelder-mead', "options": {'maxiter': 50}}
     if "minimizer_dict" in thermo_dict:
-        for key, value in thermo_dict["minimizer_dict"].items():
+        for key, value in minimizer_dict.items():
             if key == "method":
-                minimizer_dict[key] = value
+                new_minimizer_dict[key] = value
             elif key == "options":
                 for key2, value2 in value.items():
-                    minimizer_dict[key][key2] = value2
+                    new_minimizer_dict[key][key2] = value2
+    minimizer_dict = new_minimizer_dict
   
     # NoteHere: how is this array generated? stepmag = np.array([550.0, 26.0, 4.0e-10, 0.45, 500.0, 150.0e-30, 550.0])
     try:
@@ -146,7 +154,6 @@ def fit(eos, thermo_dict):
                        minimizer_kwargs={"args": (opt_params, eos, exp_dict),**minimizer_dict})
 
         logger.info("Fitting terminated:\n{}".format(result.message))
-        logger.info("{}".format(result.message))
         logger.info("Best Fit Parameters")
         logger.info("    Obj. Value: {}".format(result.fun))
         for i in range(len(opt_params["fit_params"])):
@@ -154,4 +161,6 @@ def fit(eos, thermo_dict):
 
     except:
         raise TypeError("The parameter fitting failed")
+
+    return {"fit_bead": opt_params["fit_bead"], "fit_parameters":opt_params["fit_params"], "final_parameters": result.x, "objective_value": result.fun} 
 
