@@ -234,7 +234,6 @@ class saft_gamma_mie(EOStemplate):
 
         Z = P / (rho * T * constants.Nav * constants.kb)
         phi_tmp = np.zeros(len(xi))
-        rhoi = rho*np.array(xi,float)
 
 #        #### Traditional Central Difference Method
 #        # Set step size in finite difference method
@@ -244,6 +243,7 @@ class saft_gamma_mie(EOStemplate):
 #
 #        # compute phi
 #        Ares = funcs.calc_Ares(rho *  constants.Nav, xi, T, self._beads, self._beadlibrary, self._massi, self._nui, self._Cmol2seg, self._xsk, self._xskl, self._dkk, self._epsilonkl, self._sigmakl, self._dkl, self._l_akl, self._l_rkl, self._Ckl,self._x0kl, self._epsilonHB, self._Kklab, self._nk)
+#        rhoi = rho*np.array(xi,float)
 #        for i in range(np.size(phi_tmp)):
 #            dAres = np.zeros(2)
 #            for j, delta in enumerate((drho, -drho)):

@@ -7,7 +7,6 @@ This package uses functions from input_output, equations_of_state, and thermodyn
 """
 
 import os
-import sys
 import numpy as np
 from importlib import import_module
 import scipy.optimize as spo
@@ -108,13 +107,14 @@ def fit(eos, thermo_dict):
         try:
             instance = data_class(data_dict)
             exp_dict[key] = instance
+            logger.info("Initiated exp. data object: {}".format(instance.name))
         except:
             raise AttributeError("Data set, {}, did not properly initiate object".format(key))
 
     # Generate initial guess for parameters if none was given
     if "beadparams0" in opt_params:
         beadparams0 = opt_params["beadparams0"]
-        logger.info("Initial guess is parameters provided: {}".format(beadparams0))
+        logger.info("Initial guess in parameters provided: {}".format(beadparams0))
     else:
         beadparams0 = eos.param_guess(opt_params["fit_params"])
 

@@ -598,7 +598,6 @@ def calc_Amono(rho, xi, nui, Cmol2seg, xsk, xskl, dkk, T, epsilonkl, sigmakl, dk
     logger = logging.getLogger(__name__)
 
     # initialize variables
-    nbeads = list(nui.shape)[1]  # nbeads is the number of unique groups used by any component
     rhos = rho * Cmol2seg
 
     ##### compute AHS (eq. 16) #####

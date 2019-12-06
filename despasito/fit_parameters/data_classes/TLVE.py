@@ -3,7 +3,7 @@ Objects for storing and producing objective values for comparing experimental da
 """
 
 import numpy as np
-#import logging
+import logging
 
 from despasito.thermodynamics import thermo
 from despasito.fit_parameters import fit_funcs as ff
@@ -49,13 +49,29 @@ class Data(ExpDataTemplate):
 
     def __init__(self, data_dict):
 
+        logger = logging.getLogger(__name__)
+
         # Self interaction parameters
         self.name = data_dict["name"]
 
-        if "xi" in data_dict: self.xi = data_dict["xi"]
-        if "T" in data_dict: self.T = data_dict["T"]
-        if "yi" in data_dict: self.yi = data_dict["yi"]
-        if "P" in data_dict: self.P = data_dict["P"]
+        data_type = []
+        data_type_name = []
+        if "xi" in data_dict: 
+            self.xi = data_dict["xi"]
+            data_type.append(self.xi)
+            data_type_name.append("xi")
+        if "T" in data_dict:
+            self.T = data_dict["T"]
+            data_type.append(self.T)
+            data_type_name.append("T")
+        if "yi" in data_dict:
+            self.yi = data_dict["yi"]
+            data_type.append(self.yi)
+            data_type_name.append("yi")
+        if "P" in data_dict: 
+            self.P = data_dict["P"]
+            data_type.append(self.P)
+            data_type_name.append("P")
 
         if (not hasattr(self,"P") or not hasattr(self,"T")):
             raise ImportError("Given TLVE data, values for P and T should have been provided.")
@@ -64,19 +80,19 @@ class Data(ExpDataTemplate):
             raise ImportError("Given TLVE data, mole fractions should have been provided.")
 
         if "calctype" not in data_dict:
-            print("No calculation type has been provided.")
+            logger.warning("No calculation type has been provided.")
             if self.xi:
                 self.calctype = "phase_xiT"
-                print("Assume a calculation type of phase_xiT")
+                logger.warning("Assume a calculation type of phase_xiT")
             elif self.yi:
                 self.calctype = "phase_yiT"
-                print("Assume a calculation type of phase_yiT")
+                logger.warning("Assume a calculation type of phase_yiT")
             else:
                 raise ValueError("Unknown calculation instructions")
         else:
             self.calctype = data_dict["calctype"]
 
-        if any(np.array([len(x) for x in [self.xi, self.yi, self.T, self.P]]) == len(self.xi)) == False:
+        if any(np.array([len(x) for x in data_type]) == len(self.xi)) == False:
             raise ValueError("T, P, yi, and xi are not all the same length.")
 
         try:
@@ -88,6 +104,8 @@ class Data(ExpDataTemplate):
             self._rhodict = data_dict["rhodict"]
         except:
             self._rhodict = {"minrhofrac":(1.0 / 300000.0), "rhoinc":10.0, "vspacemax":1.0E-4}
+
+        logger.info("Data type 'TLVE' initiated with calctype, {}, and data types: {}".format(self.calctype,", ".join(data_type_name)))
 
     def _thermo_wrapper(self, eos):
 

@@ -108,7 +108,7 @@ class BasinStep(object):
             
         """
 
-        #logger = logging.getLogger(__name__)
+        logger = logging.getLogger(__name__)
         
         # Save intital guess in array
         xold = np.copy(x)
@@ -126,7 +126,7 @@ class BasinStep(object):
                 if x[i] < 0.0:
                     breakloop = False
             if breakloop: break
-            print(x, j)
+            logger.info("Basin Step after {} iterations:\n    {}".format(j,x))
         return x
 
 class BasinBounds(object):
