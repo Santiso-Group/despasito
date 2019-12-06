@@ -616,7 +616,7 @@ def calc_Amono(rho, xi, nui, Cmol2seg, xsk, xskl, dkk, T, epsilonkl, sigmakl, dk
     tmp1 = np.log(1.0 - eta[:, 3]) * (((eta[:, 2]**3) / (eta[:, 3]**2)) - eta[:, 0])
     tmp2 = (3.0 * eta[:, 1] * eta[:, 2] / (1 - eta[:, 3]))
     tmp3 = ((eta[:, 2]**3) / (eta[:, 3] * ((1.0 - eta[:, 3])**2)))
-    AHS = (6.0 / (np.pi * rho)) * (np.log(1.0 - eta[:, 3]) * (((eta[:, 2]**3) / (eta[:, 3]**2)) - eta[:, 0]) + (3.0 * eta[:, 1] * eta[:, 2] / (1 - eta[:, 3])) + ((eta[:, 2]**3) / (eta[:, 3] * ((1.0 - eta[:, 3])**2))))
+    AHS = (6.0 / (np.pi * rho)) * (tmp1 + tmp2 + tmp3)
 
     ##### compute a1kl, eq. 19 #####
 
@@ -968,8 +968,6 @@ def calc_Achain(rho, Cmol2seg, xi, T, nui, sigmakl, epsilonkl, dkl, xskl, l_rkl,
 
     kT = T * constants.kb
     rhos = rho * Cmol2seg
-
-    stepmult = 100
 
     #compute zki
     for i in range(ncomp):

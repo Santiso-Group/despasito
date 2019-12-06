@@ -70,13 +70,13 @@ def phase_xiT(eos, sys_dict):
 
     # Process initial guess in pressure
     if 'Pguess' in sys_dict:
-        Pguess = float(sys_dict['Pguess'])
+        Pguess = np.array(sys_dict['Pguess'],float)
         if np.size(T_list) != np.size(Pguess):
             if type(Pguess) not in [list, numpy.ndarray]:
                 opts["Pguess"] = np.ones(len(T_list))*Pguess
                 logger.info("The same pressure, {}, was used for all mole fraction values".format(Pguess))
             elif len(T_list) == 1:
-                opts["Pguess"] = np.ones(len(T_list))*Pguess[0]
+                opts["Pguess"] = np.ones(len(T_list))*float(Pguess[0])
                 logger.info("The same pressure, {}, was used for all mole fraction values".format(Pguess))
             else:
                 raise ValueError("The number of provided pressure and mole fraction sets are different")
@@ -195,13 +195,13 @@ def phase_yiT(eos, sys_dict):
 
     # Process initial guess in pressure
     if 'Pguess' in sys_dict:
-        Pguess = sys_dict['Pguess']
+        Pguess = np.array(sys_dict['Pguess'],float)
         if np.size(T_list) != np.size(Pguess):
             if type(Pguess) not in [list, numpy.ndarray]:
                 opts["Pguess"] = np.ones(len(T_list))*Pguess
                 logger.info("The same pressure, {}, was used for all mole fraction values".format(Pguess))
             elif len(T_list) == 1:
-                opts["Pguess"] = np.ones(len(T_list))*Pguess[0]
+                opts["Pguess"] = np.ones(len(T_list))*float(Pguess[0])
                 logger.info("The same pressure, {}, was used for all mole fraction values".format(Pguess))
             else:
                 raise ValueError("The number of provided pressure and mole fraction sets are different")
@@ -437,8 +437,9 @@ def liquid_properties(eos, sys_dict):
             logger.warning('Failed to calculate rhol at {}'.format(T_list[i]))
             phil[i] = np.nan
         else:
-            logger.info("P (Pa), T (K), xi, rhol: {} {} {} {}".format(P_list[i],T_list[i],xi_list[i],rhol[i]))
-            phil.append(eos.fugacity_coefficient(P_list[i], np.array([rhol[i]]), xi_list[i], T_list[i]))
+            phil_tmp = eos.fugacity_coefficient(P_list[i], np.array([rhol[i]]), xi_list[i], T_list[i])
+            phil.append(phil_tmp)
+            logger.info("P {} Pa, T {} K, xi {}, rhol {}, phil {}".format(P_list[i],T_list[i],xi_list[i],rhol[i],phil_tmp))
 
     logger.info("--- Calculation liquid_density Complete ---")
 
@@ -524,8 +525,9 @@ def vapor_properties(eos, sys_dict):
             logger.warning('Failed to calculate rhov at {}'.format(T_list[i]))
             phiv[i] = np.nan
         else:
-            logger.info("P (Pa), T (K), yi, rhov: {} {} {} {}".format(P_list[i],T_list[i],yi_list[i],rhov[i]))
-            phiv.append(eos.fugacity_coefficient(P_list[i], np.array([rhov[i]]), yi_list[i], T_list[i]))
+            phiv_tmp = eos.fugacity_coefficient(P_list[i], np.array([rhov[i]]), yi_list[i], T_list[i])
+            phiv.append(phiv_tmp)
+            logger.info("P {} Pa, T {} K, yi {}, rhov {}, phiv {}".format(P_list[i],T_list[i],yi_list[i],rhov[i],phiv_tmp))
 
     logger.info("--- Calculation vapor_density Complete ---")
 

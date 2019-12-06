@@ -16,8 +16,6 @@ import copy
 #import matplotlib.pyplot as plt
 import logging
 
-from . import fund_constants as const
-
 ######################################################################
 #                                                                    #
 #                     Calculate Critical Parameters                  #
@@ -146,7 +144,7 @@ def calc_CC_Pguess(xilist, Tlist, CriticalProp):
 #                      Pressure-Density Curve                        #
 #                                                                    #
 ######################################################################
-def PvsRho(T, xi, eos, minrhofrac=(1.0 / 500000.0), rhoinc=5.0, vspacemax=1.0E-4, maxpack=0.65):
+def PvsRho(T, xi, eos, minrhofrac=(1.0 / 500000.0), rhoinc=5.0, vspacemax=1.0E-4, **kwargs):
 
     r"""
     Computes the Mie parameters of a mixture from the mixed critical properties of the pure components. 
@@ -167,7 +165,7 @@ def PvsRho(T, xi, eos, minrhofrac=(1.0 / 500000.0), rhoinc=5.0, vspacemax=1.0E-4
         The increment between density values in the density array. Passed from inputs to through the dictionary rhodict.
     vspacemax : float, Optional, default: 1.0E-4
         Maximum increment between specific volume array values. After conversion from density to specific volume, the increment values are compared to this value. Passed from inputs to through the dictionary rhodict.
-    maxpack : float, Optional, default: 0.65
+    maxpack : float, Optional, default: *see EOS method*
         Maximum packing fraction. Passed from inputs to through the dictionary rhodict.
 
     Returns
@@ -184,7 +182,8 @@ def PvsRho(T, xi, eos, minrhofrac=(1.0 / 500000.0), rhoinc=5.0, vspacemax=1.0E-4
         xi = np.array(xi)
 
     #estimate the maximum density based on the hard sphere packing fraction, part of EOS
-    maxrho = eos.density_max(xi, T, maxpack=maxpack)
+    maxrho = eos.density_max(xi, T, **kwargs)
+
     #min rho is a fraction of max rho, such that minrho << rhogassat
     minrho = maxrho * minrhofrac
     #list of densities for P,rho and P,v
@@ -509,7 +508,7 @@ def calc_rhov(P, T, xi, eos, rhodict={}):
                 rho_tmp = spo.root(Pdiff, rho_tmp, args=(P, T, xi, eos), method="hybr", tol=0.0000001)
                 rho_tmp = rho_tmp.x[0]
 
-    logger.info("    Vapor Density: {} mol/m^3, flag".format(rho_tmp,flag))
+    logger.info("    Vapor Density: {} mol/m^3, flag {}".format(rho_tmp,flag))
 
     # Flag: 0 is vapor, 1 is liquid, 2 mean a critical fluid, 3 means that neither is true, 4 means we should assume ideal gas
     return rho_tmp, flag
@@ -619,7 +618,7 @@ def calc_rhol(P, T, xi, eos, rhodict={}):
             elif not flag_NoOpt:
                 rho_tmp = spo.root(Pdiff, rho_tmp, args=(P, T, xi, eos), method="hybr", tol=1e-7)
                 rho_tmp = rho_tmp.x[0]
-    logger.info("    Liquid Density: {} mol/m^3, flag".format(rho_tmp,flag))
+    logger.info("    Liquid Density: {} mol/m^3, flag {}".format(rho_tmp,flag))
 
     # Flag: 0 is vapor, 1 is liquid, 2 mean a critical fluid, 3 means that neither is true
     return rho_tmp, flag
@@ -702,7 +701,7 @@ def calc_phiv(P, T, yi, eos, rhodict={}):
     else:
         phiv = eos.fugacity_coefficient(P, np.array([rhov]), yi, T)
 
-        #muiv = eos.chemicalpotential_old(P, np.array([rhov]), yi, T)
+        #muiv = eos._chemicalpotential_old(P, np.array([rhov]), yi, T)
         #phiv = np.exp(muiv)
 
     #logger.debug("    Vapor Fugacity Coefficients {}".format(phiv))
@@ -753,7 +752,7 @@ def calc_phil(P, T, xi, eos, rhodict={}):
     else:
         phil = eos.fugacity_coefficient(P, np.array([rhol]), xi, T)
 
-        #muil = eos.chemicalpotential(P, np.array([rhol]), xi, T)
+        #muil = eos._chemicalpotential(P, np.array([rhol]), xi, T)
         #phil = np.exp(muil)
 
     #logger.debug("    Liquid Fugacity Coefficients {}".format(phil))
@@ -889,6 +888,7 @@ def calc_Prange_xi(T, xi, yi, eos, rhodict={}, Pmin=1000, zi_opts={}):
             continue
         yi_range, phiv, flagv = solve_yi_xiT(yi_range, xi, phil, p, T, eos, rhodict=rhodict, **zi_opts)
         ObjArray[0] = (np.sum(xi * phil / phiv) - 1.0)
+        logger.debug("Liquid / Vapor Phi: {} /  {}".format(phil,phiv))
         logger.info("Estimated Minimum Pressure: {},  Obj. Func: {}".format(Parray[0],ObjArray[0]))
         if ObjArray[0] > 0:
             break
@@ -1238,7 +1238,6 @@ def solve_xi_yiT(xi, yi, phiv, P, T, eos, rhodict={}, maxiter=20, tol=1e-6):
 
     xi /= np.sum(xi)
     xi_total = [np.sum(xi)]
-    flag_check_liquid = True # Make sure we only search for vapor compositions once
     logger.info("    Solve xi: P {}, T {}, yi {}, phiv {}".format(P, T, yi, phiv))
     for z in range(maxiter):
 
@@ -1248,7 +1247,6 @@ def solve_xi_yiT(xi, yi, phiv, P, T, eos, rhodict={}, maxiter=20, tol=1e-6):
         phil, rhol, flagl = calc_phil(P, T, xi_tmp, eos, rhodict=rhodict)
 
         if (any(np.isnan(phil)) or flagl==0): # If liquid density doesn't exist
-            flag_check_liquid = False
             logger.info("    Composition doesn't produce a liquid, let's find one!")
             if all(xi != 0.):
                 xinew = find_new_xi(P, T, phiv, yi, eos, rhodict=rhodict)
@@ -1285,7 +1283,7 @@ def solve_xi_yiT(xi, yi, phiv, P, T, eos, rhodict={}, maxiter=20, tol=1e-6):
     ind_tmp = np.where(xi == min(xi[xi>0]))[0]
     if z == maxiter - 1:
         xi2 = xinew/np.sum(xinew)
-        tmp = (np.abs(xinew[ind_tmp] - xi_tmp[ind_tmp]) / xi_tmp[ind_tmp])
+        tmp = (np.abs(xi2[ind_tmp] - xi_tmp[ind_tmp]) / xi_tmp[ind_tmp])
         logger.warning('    More than {} iterations needed. Error in Smallest Fraction: {} %%'.format(maxiter, tmp*100))
         if tmp > .1: # If difference is greater than 10%
             xinew = find_new_xi(P, T, phiv, yi, eos, rhodict=rhodict)
@@ -1492,10 +1490,6 @@ def find_new_xi(P, T, phiv, yi, eos, rhodict={}):
     
     xi_ext = np.linspace(0.01,.99,30) # Guess for yi
     obj_ext = []
-    #flag_ext = []
-    xi_total2_ext = []
-    rho_ext = []
-    phi_ext = []
     flag_ext = [[],[]]
     
     for xi in xi_ext:

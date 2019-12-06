@@ -1,5 +1,5 @@
 {
-    "beadconfig": [[0.2, [["CO2", 1]]], [0.8, [["CH3", 2],["CH2", 18]]]],
+    "beadconfig": [[["CO2", 1]], [["CH3", 2],["CH2", 18]]],
     "SAFTgroup": "../library/SAFTgroup.json",
     "SAFTcross": "../library/SAFTcross.json",
     "output_file": "out_yi.txt",

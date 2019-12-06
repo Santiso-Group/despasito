@@ -1,13 +1,9 @@
-import sys
 import re
 import os
-import os.path           as op
 import matplotlib.pyplot as plt
-import matplotlib        as mpl
 from scipy import interpolate
-import numpy             as np
-from scipy.ndimage.filters import gaussian_filter1d
-import csv
+import numpy as np
+#from scipy.ndimage.filters import gaussian_filter1d
 
 def plotPxy(system, T, specs, title, sim_types, basepath="", debug_plots=False, plot_show=False):
 

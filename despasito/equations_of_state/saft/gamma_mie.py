@@ -29,8 +29,6 @@ class saft_gamma_mie(EOStemplate):
     
     Parameters
     ----------
-    xi : list[float]
-        Mole fraction of component, only relevant for parameter fitting
     beads : list[str]
         List of unique bead names used among components
     nui : numpy.ndarray
@@ -69,18 +67,15 @@ class saft_gamma_mie(EOStemplate):
 
     def __init__(self, kwargs):
 
-        logger = logging.getLogger(__name__)
+        #logger = logging.getLogger(__name__)
 
         # Self interaction parameters
         self._nui = kwargs['nui']
         self._beads = kwargs['beads']
         self._beadlibrary = kwargs['beadlibrary']
 
-        if "xi" in list(kwargs.keys()):
-            xi = kwargs['xi']
-
-        massi = np.zeros_like(xi)
-        for i in range(np.size(xi)):
+        massi = np.zeros(len(self._nui))
+        for i in range(len(self._nui)):
             for k in range(np.size(self._beads)):
                 massi[i] += self._nui[i, k] * self._beadlibrary[self._beads[k]]["mass"]
         self._massi = massi
@@ -131,7 +126,7 @@ class saft_gamma_mie(EOStemplate):
             Temperature of the system
         """
 
-        logger = logging.getLogger(__name__)
+        #logger = logging.getLogger(__name__)
 
         dkk, dkl, x0kl = funcs.calc_hard_sphere_matricies(self._beads, self._beadlibrary, self._sigmakl, T)
         self.T = T
@@ -151,7 +146,7 @@ class saft_gamma_mie(EOStemplate):
 
         """
 
-        logger = logging.getLogger(__name__)
+        #logger = logging.getLogger(__name__)
 
         Cmol2seg, xsk, xskl = funcs.calc_composition_dependent_variables(xi, self._nui, self._beads, self._beadlibrary)
         self._Cmol2seg = Cmol2seg
@@ -177,7 +172,7 @@ class saft_gamma_mie(EOStemplate):
             Array of pressure values [Pa] associated with each density and so equal in length
         """
 
-        logger = logging.getLogger(__name__)
+        #logger = logging.getLogger(__name__)
 
         if len(xi) != len(self._nui):
             raise ValueError("Number of components in mole fraction list doesn't match components in nui. Check bead_config.")
@@ -187,7 +182,9 @@ class saft_gamma_mie(EOStemplate):
 
         self._xi_dependent_variables(xi)
         
-        if type(rho) != np.ndarray:
+        if np.isscalar(rho):
+            rho = np.array([rho])
+        elif type(rho) != np.ndarray:
             rho = np.array(rho)
 
         rho = rho*constants.Nav
@@ -225,7 +222,7 @@ class saft_gamma_mie(EOStemplate):
             Array of chemical potential values for each component
         """
 
-        logger = logging.getLogger(__name__)
+        #logger = logging.getLogger(__name__)
 
         if len(xi) != len(self._nui):
             raise ValueError("Number of components in mole fraction list doesn't match components in nui. Check bead_config.")
@@ -253,7 +250,7 @@ class saft_gamma_mie(EOStemplate):
 #                rhoi_temp = np.copy(rhoi)
 #                if rhoi_temp[i] != 0.:
 #                    rhoi_temp[i] += delta
-#                dAres[j] = self.calc_dAres_drhoi_wrap(T, rhoi_temp)
+#                dAres[j] = self._calc_dAres_drhoi_wrap(T, rhoi_temp)
 #            phi_tmp[i] = Ares + rho*(dAres[0] - dAres[1]) / (2.0 * drho) - np.log(Z) 
 #            #with open("OldPhi.csv","a") as f:
 #            #    f.write("{}, {}, {}, {}, {}, {}, {}\n".format(i,xi[i],phi_tmp[i], Ares, rho, dAres, drho))
@@ -271,7 +268,7 @@ class saft_gamma_mie(EOStemplate):
                 for j, delta in enumerate((dy, -dy)):
                     y_temp = np.copy(y)
                     y_temp[i] += delta
-                    dAres[j] = self.calc_dAres_drhoi_wrap(T, np.exp(y_temp))
+                    dAres[j] = self._calc_dAres_drhoi_wrap(T, np.exp(y_temp))
                 phi_tmp[i] = Ares + rho/np.exp(y[i])*(dAres[0] - dAres[1]) / (2.0 * dy) - np.log(Z)
             else:
                 phi_tmp[i] = 0.0 # This should be zero, but to prevent the thermo calculation from complaining about diving by zero we give it a value, the mole fraction is zero though, so it'll go away.
@@ -284,7 +281,7 @@ class saft_gamma_mie(EOStemplate):
 
         return phi
 
-    def calc_dAres_drhoi_wrap(self, T, rhoi):
+    def _calc_dAres_drhoi_wrap(self, T, rhoi):
         """
         Compute derivative of Helmholtz energy wrt to density.
       
@@ -301,7 +298,7 @@ class saft_gamma_mie(EOStemplate):
             Helmholtz energy give number of moles, length of array rho
         """
 
-        logger = logging.getLogger(__name__)
+        #logger = logging.getLogger(__name__)
 
         if T != self.T:
             self._temp_dependent_variables(T)
@@ -318,7 +315,7 @@ class saft_gamma_mie(EOStemplate):
 
         return Ares
 
-    def chemicalpotential_old(self, P, rho, xi, T):
+    def _chemicalpotential_old(self, P, rho, xi, T):
         """
         Compute chemical potential given system information.
       
@@ -403,7 +400,7 @@ class saft_gamma_mie(EOStemplate):
             Maximum molar density [mol/m^3]
         """
 
-        logger = logging.getLogger(__name__)
+        #logger = logging.getLogger(__name__)
 
         if T != self.T:
             self._temp_dependent_variables(T)
@@ -431,7 +428,7 @@ class saft_gamma_mie(EOStemplate):
             An array of initial guesses for parameters, these will be optimized throughout the process.
     """
 
-        logger = logging.getLogger(__name__)
+        #logger = logging.getLogger(__name__)
 
         l_fitparams = len(fit_params)
         if l_fitparams == 1:
@@ -473,7 +470,7 @@ class saft_gamma_mie(EOStemplate):
             Value of parameter
         """
 
-        logger = logging.getLogger(__name__)
+        #logger = logging.getLogger(__name__)
 
         param_types = ["epsilon", "sigma", "l_r", "l_a", "Sk", "K"]
 
@@ -542,7 +539,7 @@ class saft_gamma_mie(EOStemplate):
         Those parameters that are dependent on _beadlibrary and _crosslibrary attributes **must** be updated by running this function after all parameters from update_parameters method have been changed.
         """
 
-        logger = logging.getLogger(__name__)
+        #logger = logging.getLogger(__name__)
 
         # Update Non bonded matrices
         self._epsilonkl, self._sigmakl, self._l_akl, self._l_rkl, self._Ckl = funcs.calc_interaction_matrices(self._beads, self._beadlibrary, crosslibrary=self._crosslibrary)

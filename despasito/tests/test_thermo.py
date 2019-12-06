@@ -34,7 +34,7 @@ epsilonHB_co2_h2o = np.array([[[[   0.,     0.,     0. ], \
                       [[   0.,  1985.4,    0. ], \
                        [1985.4,    0.,     0. ], \
                        [   0.,     0.,     0. ]]]])
-eos_co2_h2o = despasito.equations_of_state.eos(eos="saft.gamma_mie",xi=np.array(xilist[0]),beads=beads_co2_h2o,nui=nui_co2_h2o,beadlibrary=beadlibrary_co2_h2o,crosslibrary=crosslibrary_co2_h2o,sitenames=sitenames_co2_h2o)
+eos_co2_h2o = despasito.equations_of_state.eos(eos="saft.gamma_mie",beads=beads_co2_h2o,nui=nui_co2_h2o,beadlibrary=beadlibrary_co2_h2o,crosslibrary=crosslibrary_co2_h2o,sitenames=sitenames_co2_h2o)
 
 def test_thermo_import():
 #    """Sample test, will always pass so long as import statement worked"""

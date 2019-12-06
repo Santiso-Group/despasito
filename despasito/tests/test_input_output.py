@@ -17,16 +17,14 @@ import pytest
 import numpy as np
 
 # Not Used because we shouldn't reference an external file
-@pytest.mark.parametrize('data', [([[0.8, [['CH4_2', 1]]], [0.2, [['eCH3', 2]]]])])
+@pytest.mark.parametrize('data', [([[['CH4_2', 1]], [['eCH3', 2]]])])
 def test_process_bead_data(data):
     """Test extraction of system component information"""
 
-    xi, beads, nui = d_io.process_bead_data(data)
+    beads, nui = d_io.process_bead_data(data)
 
     errors = []
-    if not all(xi == np.array([0.8,0.2])):
-        errors.append("xi: %s is not %s" % (str(xi),str(np.array([0.8,0.2]))))
-    elif not set(beads) == set(['CH4_2', 'eCH3']):
+    if not set(beads) == set(['CH4_2', 'eCH3']):
         errors.append("beads: %s is not %s" % (str(beads),str(['CH4_2', 'eCH3'])))
     elif not np.array_equal(nui,np.array([[1.,0.],[0.,2.]])):
         errors.append("nui: %s is not %s" % (str(nui),str(np.array([[1.,0.],[0.,2.]]))))

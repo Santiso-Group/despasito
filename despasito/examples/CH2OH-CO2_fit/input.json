@@ -1,5 +1,5 @@
 {
-    "beadconfig": [[0.5, [["CO2", 1]]],[0.5, [["CH3", 1], ["CH2OH", 1]]]],
+    "beadconfig": [[["CO2", 1]],[["CH3", 1], ["CH2OH", 1]]],
     "SAFTgroup": "SAFTgroup.json",
     "SAFTcross": "SAFTcross.json",
     "association_site_names": ["H","e1","a1"],

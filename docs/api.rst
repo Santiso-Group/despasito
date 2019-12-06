@@ -1,3 +1,4 @@
+
 API Documentation
 =================
 
@@ -7,7 +8,9 @@ See examples directory or Input/Output documentation for input file structures.
 
 Command Line
 ------------
-In any directory with the appropriate .json input files, run DESPASITO with ``python -m despasito input.json``
+.. argparse::
+   :ref: despasito.main.commandline_parser
+   :prog: python -m despasito
 
 Imported Package
 ----------------
