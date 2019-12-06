@@ -108,13 +108,14 @@ def fit(eos, thermo_dict):
         try:
             instance = data_class(data_dict)
             exp_dict[key] = instance
+            logger.info("Initiated exp. data object: {}".format(instance.name))
         except:
             raise AttributeError("Data set, {}, did not properly initiate object".format(key))
 
     # Generate initial guess for parameters if none was given
     if "beadparams0" in opt_params:
         beadparams0 = opt_params["beadparams0"]
-        logger.info("Initial guess is parameters provided: {}".format(beadparams0))
+        logger.info("Initial guess in parameters provided: {}".format(beadparams0))
     else:
         beadparams0 = eos.param_guess(opt_params["fit_params"])
 
@@ -137,6 +138,7 @@ def fit(eos, thermo_dict):
     minimizer_dict = new_minimizer_dict
   
     # NoteHere: how is this array generated? stepmag = np.array([550.0, 26.0, 4.0e-10, 0.45, 500.0, 150.0e-30, 550.0])
+    sys.exit("stop")
     try:
         if "stepsize" in basin_dict:
         	stepsize = basin_dict["stepsize"]

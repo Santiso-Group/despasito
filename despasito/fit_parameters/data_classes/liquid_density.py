@@ -3,7 +3,7 @@ Objects for storing and producing objective values for comparing experimental da
 """
 
 import numpy as np
-#import logging
+import logging
 
 from despasito.thermodynamics import thermo
 from despasito.fit_parameters import fit_funcs as ff
@@ -44,6 +44,8 @@ class Data(ExpDataTemplate):
 
     def __init__(self, data_dict):
 
+        logger = logging.getLogger(__name__)
+
         # Self interaction parameters
         self.name = data_dict["name"]
         try:
@@ -51,24 +53,34 @@ class Data(ExpDataTemplate):
         except:
             self.calctype = "liquid_properties"
 
-        try:
+        data_type = []
+        data_type_name = []
+        if "xi" in data_dict:
             self.xi = data_dict["xi"]
+            data_type.append(self.xi)
+            data_type_name.append("xi")
+        if "T" in data_dict:
             self.T = data_dict["T"]
-        except:
-            raise ImportError("Given liquid property data, values for T and xi should have been provided.")
-        try:
+            data_type.append(self.T)
+            data_type_name.append("T")
+        if "rhol" in data_dict:
             self.rhol = data_dict["rhol"]
-        except:
-            pass
-
-        try:
-            P = data_dict["P"]
+            data_type.append(self.rhol)
+            data_type_name.append("rhol")
+        if "P" in data_dict:
             if (type(P) == float or len(P)==1):
                 self.P = np.ones(self.T)*P
             else:
                 self.P = P
-        except:
+        else:
             self.P = np.ones(self.T)*101325.0
+            logger.info("Assume atmospheric pressure")
+        data_type.append(self.P)
+        data_type_name.append("P")
+
+        tmp = ["xi","T","rhol"]
+        if not all([hasattr(self,x) for x in tmp]):
+            raise ImportError("Given liquid property data, values for T, xi, and rhol should have been provided.")
 
         try:
             self.weights = data_dict["weights"]
@@ -79,6 +91,8 @@ class Data(ExpDataTemplate):
             self._rhodict = data_dict["rhodict"]
         except:
             self._rhodict = {"minrhofrac":(1.0 / 300000.0), "rhoinc":10.0, "vspacemax":1.0E-4}
+
+        logger.info("Data type 'liquid_properties' initiated with calctype, {}, and data types: {}".format(self.calctype,", ".join(data_type_name)))
 
     def _thermo_wrapper(self, eos):
 
