@@ -81,8 +81,8 @@ def extract_calc_data(input_fname, path='.', **args):
 
     ## Make bead data dictionary for EOS
     #process input file
-    xi, beads, nui = process_bead_data(input_dict['beadconfig'])
-    eos_dict = {'xi':xi,'beads':beads,'nui':nui}
+    beads, nui = process_bead_data(input_dict['beadconfig'])
+    eos_dict = {'beads':beads,'nui':nui}
 
     #read EOS groups file
     with open(input_dict['SAFTgroup'], 'r') as f:
@@ -249,8 +249,6 @@ def process_bead_data(bead_data):
 
     Returns
     -------
-    xi : list[float]
-        Mole fraction of component, only relevant for parameter fitting
     beads : list[str]
         List of unique bead names used among components
     nui : numpy.ndarray
@@ -260,27 +258,20 @@ def process_bead_data(bead_data):
     #logger = logging.getLogger(__name__)
 
     #find list of unique beads
-    xi = np.zeros(len(bead_data))
     beads = []
     for i in range(len(bead_data)):
-        xi[i] = bead_data[i][0]
-
-   #     beads_tmp = [bead_data[i][1][j][0] for j in range(len(bead_data[i][1]))]
-   #     beads += beads_tmp
-   # beads = list(set(beads)).sort()
-
-        for j in range(len(bead_data[i][1])):
-            if bead_data[i][1][j][0] not in beads:
-                beads.append(bead_data[i][1][j][0])
+        for j in range(len(bead_data[i])):
+            if bead_data[i][j][0] not in beads:
+                beads.append(bead_data[i][j][0])
     beads.sort()
 
-    nui = np.zeros((np.size(xi), len(beads)))
+    nui = np.zeros((len(bead_data), len(beads)))
     for i in range(len(bead_data)):
-        for j in range(len(bead_data[i][1])):
+        for j in range(len(bead_data[i])):
             for k in range(np.size(beads)):
-                if bead_data[i][1][j][0] == beads[k]:
-                    nui[i, k] = bead_data[i][1][j][1]
-    return xi, beads, nui
+                if bead_data[i][j][0] == beads[k]:
+                    nui[i, k] = bead_data[i][j][1]
+    return beads, nui
 
 ######################################################################
 #                                                                    #

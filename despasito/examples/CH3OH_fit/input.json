@@ -1,5 +1,5 @@
 {
-    "beadconfig": [[1.0, [["CH3OH", 1]]]],
+    "beadconfig": [[["CH3OH", 1]]],
     "SAFTgroup": "SAFTgroup.json",
     "opt_params": {
         "fit_bead" : "CH3OH",

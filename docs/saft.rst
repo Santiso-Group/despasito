@@ -12,6 +12,7 @@ Papaioannou, V. et. al, J. Chem. Phys. 140, 054107 (2014); https://doi.org/10.10
 
 .. autoclass::
    despasito.equations_of_state.saft.gamma_mie.saft_gamma_mie
+   :members:
 
 Supporting Functions
 ####################

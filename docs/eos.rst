@@ -13,8 +13,7 @@ Available EOS
    :maxdepth: 1
 
    saft
-
-.. todo:: Add peng-robinson
+   peng-robinson
 
 
 Adding an EOS

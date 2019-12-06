@@ -1,5 +1,5 @@
 {
-    "beadconfig": [[0.2, [["cCH2", 6]]],[0.2, [["CH3", 2],["CH2" , 2],["COO", 1]]]],
+    "beadconfig": [[["cCH2", 6]],[["CH3", 2],["CH2" , 2],["COO", 1]]],
     "SAFTgroup": "SAFTgroup.json",
     "SAFTcross": "SAFTcross_paper.json",
     "output_file": "out_propylacetate_cyclohexane_335_paper.txt",

@@ -1,5 +1,5 @@
 {
-    "beadconfig": [[0.5, [["CH3", 2]]]],
+    "beadconfig": [[["CH3", 2]]],
     "SAFTgroup": "SAFTgroup.json",
     "opt_params": {
         "fit_bead" : "CH3",

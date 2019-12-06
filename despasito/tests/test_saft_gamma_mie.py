@@ -35,7 +35,7 @@ epsilonHB_co2_h2o = np.array([[[[   0.,     0.,     0. ], \
                       [[   0.,  1985.4,    0. ], \
                        [1985.4,    0.,     0. ], \
                        [   0.,     0.,     0. ]]]])
-eos_co2_h2o = despasito.equations_of_state.eos(eos="saft.gamma_mie",xi=xi_co2_h2o,beads=beads_co2_h2o,nui=nui_co2_h2o,beadlibrary=beadlibrary_co2_h2o,crosslibrary=crosslibrary_co2_h2o,sitenames=sitenames_co2_h2o)
+eos_co2_h2o = despasito.equations_of_state.eos(eos="saft.gamma_mie",beads=beads_co2_h2o,nui=nui_co2_h2o,beadlibrary=beadlibrary_co2_h2o,crosslibrary=crosslibrary_co2_h2o,sitenames=sitenames_co2_h2o)
 T = 323.2 
 rho_co2_h2o = np.array([21146.16997993]) 
 P = np.array([1713500.67089664])
@@ -44,17 +44,17 @@ def test_saft_gamma_mie_imported():
 #    """Sample test, will always pass so long as import statement worked"""
     assert "despasito.equations_of_state.saft.gamma_mie" in sys.modules
 
-def test_saft_gamma_mie_class_noassoc(xi=xi_co2_ben,beads=beads_co2_ben,nui=nui_co2_ben,beadlibrary=beadlibrary_co2_ben):    
+def test_saft_gamma_mie_class_noassoc(beads=beads_co2_ben,nui=nui_co2_ben,beadlibrary=beadlibrary_co2_ben):    
 #   """Test ability to create EOS object without association sites"""
-    eos_class = despasito.equations_of_state.eos(eos="saft.gamma_mie",xi=xi,beads=beads,nui=nui,beadlibrary=beadlibrary)
+    eos_class = despasito.equations_of_state.eos(eos="saft.gamma_mie",beads=beads,nui=nui,beadlibrary=beadlibrary)
     assert (eos_class._massi==np.array([0.04401, 0.07811])).all()
 
-def test_saft_gamma_mie_class_assoc(xi=xi_co2_h2o,beads=beads_co2_h2o,nui=nui_co2_h2o,beadlibrary=beadlibrary_co2_h2o,crosslibrary=crosslibrary_co2_h2o,sitenames=sitenames_co2_h2o,epsilonHB=epsilonHB_co2_h2o):
+def test_saft_gamma_mie_class_assoc(beads=beads_co2_h2o,nui=nui_co2_h2o,beadlibrary=beadlibrary_co2_h2o,crosslibrary=crosslibrary_co2_h2o,sitenames=sitenames_co2_h2o,epsilonHB=epsilonHB_co2_h2o):
 #   """Test ability to create EOS object with association sites"""
-    eos_class = despasito.equations_of_state.eos(eos="saft.gamma_mie",xi=xi,beads=beads,nui=nui,beadlibrary=beadlibrary,crosslibrary=crosslibrary,sitenames=sitenames)
+    eos_class = despasito.equations_of_state.eos(eos="saft.gamma_mie",beads=beads,nui=nui,beadlibrary=beadlibrary,crosslibrary=crosslibrary,sitenames=sitenames)
     assert (eos_class._epsilonHB==epsilonHB).all()
 
-def test_saft_gamma_mie_class_assoc_P(xi=xi_co2_h2o,T=T,eos=eos_co2_h2o,rho=rho_co2_h2o):
+def test_saft_gamma_mie_class_assoc_P(T=T,xi=xi_co2_h2o,eos=eos_co2_h2o,rho=rho_co2_h2o):
 #   """Test ability to predict P with association sites"""
     P = eos.P(rho,T,xi)[0]
     assert P == pytest.approx(14807941.78,abs=1e-1)

@@ -5,7 +5,6 @@
     
 """
 
-import sys
 import numpy as np
 import logging
 
@@ -15,8 +14,8 @@ from despasito.equations_of_state.interface import EOStemplate
 
 class cubic_peng_robinson(EOStemplate):
 
-    r"""
-    EOS object for Peng-Robinson. 
+    """
+    EOS object for the Peng-Robinson EOS. 
 
     All input and calculated parameters are defined as hidden attributes.
     
@@ -29,13 +28,14 @@ class cubic_peng_robinson(EOStemplate):
     beadlibrary : dict
         A dictionary where bead names are the keys to access EOS self interaction parameters:
 
-        - T_{C}: Critical temperature [K]
-        - P_{C}: Critical pressure [Pa]
+        - Tc: :math:`T_{C}`, Critical temperature [K]
+        - Pc: :math:`P_{C}`, Critical pressure [Pa]
+        - omega: :math:`\omega`, Acentric factor 
 
     crosslibrary : dict, Optional, default: {}
         Optional library of bead cross interaction parameters. As many or as few of the desired parameters may be defined for whichever group combinations are desired.
 
-        - kij: binary interaction parameter
+        - kij: :math:`k_{ij}`, binary interaction parameter
         
     Attributes
     ----------
@@ -51,13 +51,15 @@ class cubic_peng_robinson(EOStemplate):
         # Self interaction parameters
         self._beads = kwargs['beads']
         self._beadlibrary = kwargs['beadlibrary']
+        self._nui = np.identity(len(self._beads))
 
         self._Tc = np.zeros(len(self._beads))
         self._Pc = np.zeros(len(self._beads))
         self._omega = np.zeros(len(self._beads))
-        self._m = np.zeros(len(self._beads))
-        self._ai = np.zeros(len(self._beads))
-        self._bi = np.zeros(len(self._beads))
+        self._kappa = np.zeros(len(self._beads))
+        self.alpha = np.empty(len(self._beads))
+        self.ai = np.zeros(len(self._beads))
+        self.bi = np.zeros(len(self._beads))
 
         self._R = 8.31446261815324 # [J/mol*K]
 
@@ -69,10 +71,10 @@ class cubic_peng_robinson(EOStemplate):
                     self._Pc[ind] = self._beadlibrary[bead]["Pc"]
                     if "omega" in self._beadlibrary[bead]:
                         self._omega[ind] = self._beadlibrary[bead]["omega"]     
-                        self._m[ind] = 0.37464 + 1.54226*self._omega[ind] - 0.26992*self._omega[ind]**2
+                        self._kappa[ind] = 0.37464 + 1.54226*self._omega[ind] - 0.26992*self._omega[ind]**2
 
-                    self._ai[ind] = 0.45723553*(self._R*self._Tc[ind])**2/self._Pc[ind]
-                    self._bi[ind] = 0.07779607*(self._R*self._Tc[ind]/self._Pc[ind])
+                    self.ai[ind] = 0.45723553*(self._R*self._Tc[ind])**2/self._Pc[ind]
+                    self.bi[ind] = 0.07779607*(self._R*self._Tc[ind]/self._Pc[ind])
 
                 except:
                     raise ValueError("Either 'Tc' or 'Pc' was not provided for component: {}".format(bead))
@@ -99,6 +101,30 @@ class cubic_peng_robinson(EOStemplate):
         self.aij = np.nan
         self.bij = np.nan
 
+    def _calc_temp_dependent_parameters(self,T):
+        """
+        Compute ai and alpha given temperature
+       
+        Parameters
+        ----------
+        T : float
+            Temperature of the system [K]
+
+        Attributes
+        ----------
+        ai : numpy.ndarray
+            Peng-Robinson parameter a [m^6/mol^2]
+        alpha : numpy.ndarray
+            Peng-Robinson parameter b [m^3/mol]
+        """
+        for bead in self._beads: 
+            if bead in self._beadlibrary:
+                ind = self._beads.index(bead)
+                if self._kappa[ind]:
+                    self.alpha[ind] = (1+self._kappa[ind]*(1-np.sqrt(T/self._Tc[ind])))**2
+                else:
+                    self.alpha[ind] = 1.0
+
     def _calc_mixed_parameters(self,xi,T):
 
         """
@@ -119,19 +145,18 @@ class cubic_peng_robinson(EOStemplate):
             Peng-Robinson parameter b [m^3/mol]
         """
 
+        if T != self.T:
+            self.T = T
+            self._calc_temp_dependent_parameters(T)
+
         aij = 0
         index = range(len(xi))
         for i in index:
             for j in index:
-                aii = self._ai[i]*np.sqrt(1+self._m[i]*(1-np.sqrt(T/self._Tc[i])))
-                ajj = self._ai[j]*np.sqrt(1+self._m[j]*(1-np.sqrt(T/self._Tc[j])))
-                aij += xi[i]*xi[j]*np.sqrt(aii*ajj)*(1.-self._kij[i][j])
+                aij += xi[i]*xi[j]*np.sqrt(self.ai[i]*self.alpha[i]*self.ai[j]*self.alpha[j])*(1.-self._kij[i][j])
 
         self.aij = aij
-        self.bij = np.sum(xi*self._bi)
-
-        print("aij",self.aij)
-
+        self.bij = np.sum(xi*self.bi)
 
     def P(self, rho, T, xi):
         """
@@ -152,14 +177,17 @@ class cubic_peng_robinson(EOStemplate):
             Array of pressure values [Pa] associated with each density and so equal in length
         """
 
-        logger = logging.getLogger(__name__)
+        #logger = logging.getLogger(__name__)
 
         if T != self.T:
             self.T = T
+            self._calc_temp_dependent_parameters(T)
 
         self._calc_mixed_parameters(xi,T)
         
-        if type(rho) != np.ndarray:
+        if np.isscalar(rho):
+            rho = np.array([rho])
+        elif type(rho) != np.ndarray:
             rho = np.array(rho)
 
         P = self._R*self.T * rho / (1-self.bij*rho) - rho**2*self.aij/((1+self.bij*rho)+rho*self.bij*(1-self.bij*rho))
@@ -185,21 +213,39 @@ class cubic_peng_robinson(EOStemplate):
         Returns
         -------
         mui : numpy.ndarray
-            Array of chemical potential values for each component
+            :math:`\mu_i`, Array of chemical potential values for each component
         """
 
-        logger = logging.getLogger(__name__)
+        #logger = logging.getLogger(__name__)
 
         if T != self.T:
             self.T = T
+            self._calc_temp_dependent_parameters(T)
 
         self._calc_mixed_parameters(xi,T)
 
-        phi = np.exp( -np.log(1-self.bij*rho) - self.aij/(self.bij*self._R*T*np.sqrt(8))*np.log((1+(1+np.sqrt(2))*self.bij*rho)/(1+(1-np.sqrt(2))*self.bij*rho)))
+        Z = P/(T*self._R*rho)
+        Ai = self.ai*self.alpha*P/(self._R*T)**2
+        Bi = self.bi*P/(self._R*T)
+        B = self.bij*P/(self._R*T)
+        A = self.aij*P/(self._R*T)**2
+
+        sqrt2 = np.sqrt(2.0)
+        tmp1 = A/(2.0*sqrt2*B)*np.log((Z+(1+sqrt2)*B)/(Z+(1-sqrt2)*B))
+        tmp3 = Bi*(Z-1)/B-np.log(Z-B)
+        tmp2 = np.zeros(len(xi))
+
+        index = range(len(xi))
+        for i in index:
+            Aij = np.zeros(len(xi))
+            for j in index:
+                Aij[j] = np.sqrt(Ai[i]*Ai[j])*(1.-self._kij[i][j])
+            tmp2[i] = Bi[i]/B - 2*np.sum(xi*Aij)/A
+        phi = np.exp(tmp1*tmp2+tmp3)
 
         return phi
 
-    def density_max(self, xi, T, maxpack=0.65):
+    def density_max(self, xi, T, maxpack=0.9):
 
         """
         Estimate the maximum density based on the hard sphere packing fraction.
@@ -219,7 +265,11 @@ class cubic_peng_robinson(EOStemplate):
             Maximum molar density [mol/m^3]
         """
 
-        logger = logging.getLogger(__name__)
+        #logger = logging.getLogger(__name__)
+
+        if T != self.T:
+            self.T = T
+            self._calc_temp_dependent_parameters(T)
 
         self._calc_mixed_parameters(xi,T)
 
@@ -234,7 +284,7 @@ class cubic_peng_robinson(EOStemplate):
         Parameters
         ----------
         fit_params : list[str]
-        A list of parameters to be fit. See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
+            A list of parameters to be fit. See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
 
         Returns
         -------
@@ -242,7 +292,7 @@ class cubic_peng_robinson(EOStemplate):
             An array of initial guesses for parameters, these will be optimized throughout the process.
     """
 
-        logger = logging.getLogger(__name__)
+        #logger = logging.getLogger(__name__)
 
         l_fitparams = len(fit_params)
         if l_fitparams == 1:
@@ -276,14 +326,14 @@ class cubic_peng_robinson(EOStemplate):
             Value of parameter
         """
 
-        logger = logging.getLogger(__name__)
+        #logger = logging.getLogger(__name__)
 
         param_types = ["ai", "bi", "kij"]
 
         if len(bead_names) > 2:
-            raise ValueError("The bead names %s were given, but only a maximum of 2 are permitted." % (", ".join(bead_names)))
+            raise ValueError("The bead names {} were given, but only a maximum of 2 are permitted.".format(", ".join(bead_names)))
         if not set(bead_names).issubset(self._beads):
-            raise ValueError("The bead names %s were given, but they are not in the allowed list: " % (", ".join(bead_names),", ".join(self._beads)))
+            raise ValueError("The bead names {} were given, but they are not in the allowed list: {}".format(", ".join(bead_names),", ".join(self._beads)))
 
         # Non bonded parameters
         if (param_name in param_types):
@@ -298,11 +348,11 @@ class cubic_peng_robinson(EOStemplate):
             elif "ai" == param_name:
                 if bead_names[0] in self._beads:
                     ind = self._beads.index(bead_names[0])
-                    self._ai[ind] = param_value
+                    self.ai[ind] = param_value
             elif "bi" == param_name:
                 if bead_names[0] in self._beads:
                     ind = self._beads.index(bead_names[0])
-                    self._bi[ind] = param_value
+                    self.bi[ind] = param_value
 
         else:
             raise ValueError("The parameter name %s is not found in the allowed parameter types: %s" % (param_name,", ".join(param_types)))

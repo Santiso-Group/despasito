@@ -1,5 +1,5 @@
 {
-    "beadconfig": [[0.2, [["CO2", 1]]], [0.8, [["H2O", 1]]]], 
+    "beadconfig": [[["CO2", 1]], [["H2O", 1]]],
     "SAFTgroup": "../library/SAFTgroup.json",
     "SAFTcross": "../library/SAFTcross.json",
     "output_file": "out_xi.txt",
