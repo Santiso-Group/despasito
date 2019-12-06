@@ -40,7 +40,6 @@ def fit(eos, thermo_dict):
 
             - name (str) - One of the supported data type objects to fit parameters
 
-        - output_file (str), Optional - Output file name
         - basin_dict (dict), Optional - kwargs used in scipy.optimize.basinhopping
 
             - niter (int) - Number of basin hopping iterations
@@ -69,8 +68,6 @@ def fit(eos, thermo_dict):
         elif key == "exp_data":
             exp_data = value
         # Optional inputs
-        elif key == "output_file":
-            output_file = value
         elif key == "bounds":
             bounds = value
         elif key == "minimizer_dict":

@@ -468,7 +468,7 @@ def process_exp_data_file(fname):
 #                  Write Thermodynamic Output                         #
 #                                                                    #
 ######################################################################
-def writeout_dict(output_dict,calctype,output_file="thermo_output.txt"):
+def writeout_thermodict(output_dict,calctype,output_file="thermo_output.txt"):
     """
     Write out result of thermodynamic calculation.
 
@@ -522,6 +522,40 @@ def writeout_dict(output_dict,calctype,output_file="thermo_output.txt"):
         for row in matrix:
             f.write((' {},' * len(row)).format(*row)+"\n")
             
+######################################################################
+#                                                                    #
+#                  Write Parameter Fitting Output                    #
+#                                                                    #
+######################################################################
+def writeout_fitdict(output_dict,eos,output_file="fit_output.txt"):
+    """
+    Write out result of fitting calculation.
+
+    Import fitting results dictionary to write out fitting results. In the future, the EOS dictionary will be used to generate new parameter .json files.
+
+    Parameters
+    ----------
+    output_dict : dict
+        Dictionary of given and calculated information from thermodynamic module.
+    eos : obj
+        Equation of state output that writes pressure, max density, chemical potential, updates parameters, and evaluates objective functions. For parameter fitting algorithm See equation of state documentation for more details.
+    output_file : str, Optional, default: thermo_output.txt
+        Name of output file
+
+    Returns
+    -------
+    File of data saved to current directory
+    """
+
+    header = "DESPASITO was used to fit parameters for the bead {} Obj. Value: {}\n".format(output_dict["fit_bead"],output_dict["objective_value"]) + "Parameter, Value\n"
+    with open(output_file,"w") as f:
+        f.write(header)
+        for i in range(len(output_dict["fit_parameters"])):
+            f.write("{}, {}".format(output_dict["fit_parameters"][i],output_dict["final_parameters"][i]))
+
+    # Add function to sort through and write out values
+    # step 1, Update parameters for EOS object
+    # step 2, write out libraries
 
 
 

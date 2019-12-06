@@ -51,13 +51,13 @@ def run(filename="input.json", path=".", **args):
     # Run either parametrization or thermodynamic calculation
     if "opt_params" in list(thermo_dict.keys()):
         logger.info("Initializing parametrization procedure")
-        fit(eos, thermo_dict)
+        output_dict = fit(eos, thermo_dict)
         #output = fit(eos, thermo_dict)
         logger.info("Finished parametrization")
-        # readwrite_input.writeout_dict(output_dict,**file_dict)
+        readwrite_input.writeout_fitdict(output_dict,eos,**file_dict)
     else:
         logger.info("Initializing thermodynamic calculation")
         output_dict = thermo(eos, thermo_dict)
         logger.info("Finished thermodynamic calculation")
-        readwrite_input.writeout_dict(output_dict,thermo_dict["calculation_type"],**file_dict)
+        readwrite_input.writeout_thermodict(output_dict,thermo_dict["calculation_type"],**file_dict)
     

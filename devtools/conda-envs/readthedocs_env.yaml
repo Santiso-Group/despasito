@@ -7,4 +7,6 @@ dependencies:
   - numpy
   - scipy
   - matplotlib
+  - sphinx-argparse
+
 
