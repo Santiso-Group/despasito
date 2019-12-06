@@ -7,7 +7,6 @@ This package uses functions from input_output, equations_of_state, and thermodyn
 """
 
 import os
-import sys
 import numpy as np
 from importlib import import_module
 import scipy.optimize as spo
@@ -138,7 +137,6 @@ def fit(eos, thermo_dict):
     minimizer_dict = new_minimizer_dict
   
     # NoteHere: how is this array generated? stepmag = np.array([550.0, 26.0, 4.0e-10, 0.45, 500.0, 150.0e-30, 550.0])
-    sys.exit("stop")
     try:
         if "stepsize" in basin_dict:
         	stepsize = basin_dict["stepsize"]
