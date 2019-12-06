@@ -228,7 +228,7 @@ def make_xi_matrix(filename):
 
     f = open(filename, 'r').read()
     comp = json.loads(f)
-    xi, beads, nui = process_bead_data(comp)
+    beads, nui = process_bead_data(comp)
     return xi, beads, nui
 
 
