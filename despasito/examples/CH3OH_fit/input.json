@@ -1,6 +1,6 @@
 {
     "beadconfig": [[["CH3OH", 1]]],
-    "SAFTgroup": "SAFTgroup.json",
+    "EOSgroup": "SAFTgroup.json",
     "opt_params": {
         "fit_bead" : "CH3OH",
         "fit_params": ["epsilon"],

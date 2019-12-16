@@ -10,12 +10,6 @@ import logging
 
 from . import calc
 
-"""
-.. todo::
-    phase_xiT: add link to rhodict options 
-
-"""
-
 ######################################################################
 #                                                                    #
 #                Phase Equilibrium given xi and T                    #
@@ -33,7 +27,7 @@ def phase_xiT(eos, sys_dict):
     eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
     sys_dict: dict
-        A dictionary of all information given in the input .json file that wasn't used to create the EOS object.
+        A dictionary of all information given in the input .json file that wasn't used to create the EOS object (e.g. options for density array :func:`~despasito.thermodynamics.calc.PvsRho`).
 
     Returns
     -------
@@ -160,7 +154,7 @@ def phase_yiT(eos, sys_dict):
     eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
     sys_dict: dict
-        A dictionary of all information given in the input .json file that wasn't used to create the EOS object.
+        A dictionary of all information given in the input .json file that wasn't used to create the EOS object (e.g. options for density array :func:`~despasito.thermodynamics.calc.PvsRho`).
 
     Returns
     -------
@@ -283,7 +277,7 @@ def sat_props(eos, sys_dict):
     eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
     sys_dict: dict
-        A dictionary of all information given in the input .json file that wasn't used to create the EOS object.
+        A dictionary of all information given in the input .json file that wasn't used to create the EOS object (e.g. options for density array :func:`~despasito.thermodynamics.calc.PvsRho`).
 
     Returns
     -------
@@ -373,7 +367,7 @@ def liquid_properties(eos, sys_dict):
     eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
     sys_dict: dict
-        A dictionary of all information given in the input .json file that wasn't used to create the EOS object.
+        A dictionary of all information given in the input .json file that wasn't used to create the EOS object (e.g. options for density array :func:`~despasito.thermodynamics.calc.PvsRho`).
 
     Returns
     -------
@@ -462,7 +456,7 @@ def vapor_properties(eos, sys_dict):
     eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
     sys_dict: dict
-        A dictionary of all information given in the input .json file that wasn't used to create the EOS object.
+        A dictionary of all information given in the input .json file that wasn't used to create the EOS object (e.g. options for density array :func:`~despasito.thermodynamics.calc.PvsRho`).
 
     Returns
     -------

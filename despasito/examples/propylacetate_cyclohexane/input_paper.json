@@ -1,7 +1,7 @@
 {
     "beadconfig": [[["cCH2", 6]],[["CH3", 2],["CH2" , 2],["COO", 1]]],
-    "SAFTgroup": "SAFTgroup.json",
-    "SAFTcross": "SAFTcross_paper.json",
+    "EOSgroup": "SAFTgroup.json",
+    "EOScross": "SAFTcross_paper.json",
     "output_file": "out_propylacetate_cyclohexane_335_paper.txt",
     "calculation_type" : "phase_xiT",
     "method": "hybr",

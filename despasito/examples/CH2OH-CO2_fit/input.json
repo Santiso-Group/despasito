@@ -1,7 +1,7 @@
 {
     "beadconfig": [[["CO2", 1]],[["CH3", 1], ["CH2OH", 1]]],
-    "SAFTgroup": "SAFTgroup.json",
-    "SAFTcross": "SAFTcross.json",
+    "EOSgroup": "SAFTgroup.json",
+    "EOScross": "SAFTcross.json",
     "association_site_names": ["H","e1","a1"],
     "opt_params": {
         "fit_bead" : "CH2OH",

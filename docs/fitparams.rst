@@ -11,28 +11,29 @@ Parameters can be fit for one component at a time, and as many parameters as des
    :members:
 
 Available Data Types
-####################
+------------------------
 
-.. currentmodule:: despasito
+.. currentmodule:: despasito.fit_parameters.data_classes
 .. autosummary::
-
    :toctree: _autosummary
 
-   fit_parameters.data_classes
+   TLVE.Data
+   sat_props.Data
+   liquid_density.Data
 
 Supporting Thermodynamic Functions
-##################################
+------------------------------------------------
 
+.. currentmodule:: despasito.fit_parameters
 .. autosummary::
-
    :toctree: _autosummary
 
-   fit_parameters.fit_funcs
+   fit_funcs
 
 Estimate with Electronic Structure Methods
 ------------------------------------------
 In SAFT, self-interaction parameters are often fit to experimental data, and in most cases so are the cross-interaction parameters (between segments of different types). In a work nearing publication, we derived combining rules extended to utilize multipole moments of molecular fragments from density functional theory (DFT) methods using R.E.D. server [1].
-Estimation with electronic structure methods involves using the extra functions in our `scripts` directory.
+Estimation with electronic structure methods involves using the extra functions in our `scripts` directory once this work is published.
 
 [1] Vanquelef, E.; Simon, S.; Marquant, G.; Garcia, E.; Klimerak, G.; Delepine, J. C.; Cieplak, P.; Dupradeau, F.-Y. R.E.D. Server: A Web Service for Deriving RESP and ESP Charges and Building Force Field Libraries for New Molecules and Molecular Fragments. Nucleic Acids Res. 2011, 39 (suppl_2), W511–W517. https://doi.org/10.1093/nar/gkr288
 

@@ -1,8 +1,6 @@
 Getting Started
 ===============
 
-.. warning:: This package is not ready for distribution.
-
 Install Package
 ---------------
 .. note:: DESPASITO is not yet available on pip or conda-forge, but it is a package that can be installed in your python environment.

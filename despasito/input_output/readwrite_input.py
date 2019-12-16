@@ -1,10 +1,7 @@
 """
 
 Routines for parsing input .json files to dictionaries for program use, and write .json files.
-    
-.. todo::
-    - extract_calc_data input_fname: Add link to available thermodynamic calculations
-    - extract_calc_data density_fname: Add link to available density options
+
 """
 
 import logging
@@ -30,11 +27,11 @@ def append_data_file_path(input_dict, path='.'):
    path: str
        relative path to append to existing data files 
    """
-   if 'SAFTgroup' in input_dict:
-      input_dict['SAFTgroup'] = os.path.join(path, input_dict['SAFTgroup'])
+   if 'EOSgroup' in input_dict:
+      input_dict['EOSgroup'] = os.path.join(path, input_dict['EOSgroup'])
 
-   if 'SAFTcross' in input_dict:
-      input_dict['SAFTcross'] = os.path.join(path, input_dict['SAFTcross'])
+   if 'EOScross' in input_dict:
+      input_dict['EOScross'] = os.path.join(path, input_dict['EOScross'])
 
    for key, val in input_dict.items():
       if 'file' in val:
@@ -55,14 +52,14 @@ def extract_calc_data(input_fname, path='.', **args):
     Parameters
     ----------
     input_fname : str
-        The file name of a .json file in the current directory containing (1) the paths to equation of state parameters, (2) calculation type and inputs for thermodynamic calculations.
+        The file name of a .json file in the current directory containing (1) the paths to equation of state parameters, (2) :mod:`~despasito.thermodynamics.calc_types` and inputs for thermodynamic calculations (e.g. density options for :func:`~despasito.thermodynamics.calc.PvsRho`).
 
     Returns
     -------
     eos_dict : dict
-        Dictionary of bead definitions and parameters used to later initialize eos object
+        Dictionary of bead definitions and parameters used to later initialize eos object. :func:`despasito.equations_of_state.eos`
     thermo_dict : dict
-        Dictionary of instructions for thermodynamic calculations or parameter fitting
+        Dictionary of instructions for thermodynamic calculations or parameter fitting. :func:`despasito.thermodynamics.thermo`
     """
 
     logger = logging.getLogger(__name__)
@@ -85,18 +82,18 @@ def extract_calc_data(input_fname, path='.', **args):
     eos_dict = {'beads':beads,'nui':nui}
 
     #read EOS groups file
-    with open(input_dict['SAFTgroup'], 'r') as f:
+    with open(input_dict['EOSgroup'], 'r') as f:
         output = f.read()
     eos_dict['beadlibrary'] = json.loads(output)
 
     #read EOS cross file
     try:
-        with open(input_dict['SAFTcross'], 'r') as f:
+        with open(input_dict['EOScross'], 'r') as f:
             output = f.read()
         eos_dict['crosslibrary'] = json.loads(output)
         logger.info("Cross interaction parameters have been accepted")
     except:
-        logger.info("No SAFTcross file specified")
+        logger.info("No EOScross file specified")
 
     try:
         eos_dict['sitenames'] = input_dict['association_site_names']
@@ -110,7 +107,7 @@ def extract_calc_data(input_fname, path='.', **args):
     ## Make dictionary of data needed for thermodynamic calculation
     thermo_dict = {}
     # Extract relevant system state inputs
-    EOS_dict_keys = ['beadconfig', 'SAFTgroup', 'SAFTcross','association_site_names',"output_file","eos"]
+    EOS_dict_keys = ['beadconfig', 'EOSgroup', 'EOScross','association_site_names',"output_file","eos"]
     for key, value in input_dict.items():
         if key not in EOS_dict_keys:
             thermo_dict[key] = value
