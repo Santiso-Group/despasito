@@ -55,7 +55,7 @@ class saft_gamma_mie(EOStemplate):
         - epsilon*: Optional, Interaction energy between each bead and association site. Asterisk represents string from sitenames.
         - K**: Optional, Bonding volume between each association site. Asterisk represents two strings from sitenames.
 
-    sitenames : list[str], Optional, default: []
+    sitenames : list[str], Optional, default: ["H", "e1", "e2"]
         List of unique association sites used among components
         
     Attributes
@@ -99,7 +99,7 @@ class saft_gamma_mie(EOStemplate):
         if 'sitenames' in list(kwargs.keys()):
             self._sitenames = kwargs['sitenames']
         else:
-            self._sitenames = []
+            self._sitenames = ["H", "e1", "e2"]
 
         epsilonHB, Kklab, nk = funcs.calc_assoc_matrices(self._beads, self._beadlibrary, sitenames=self._sitenames, crosslibrary=self._crosslibrary)
 

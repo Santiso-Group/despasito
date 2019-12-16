@@ -1,10 +1,5 @@
 """
 This module contains our thermodynamic calculations. Calculation of pressure, chemical potential, and max density are handled by an eos object so that these functions can be used with any EOS. The thermo module contains a series of wrapper to handle the inputs and outputs of these functions.
-
-.. todo:: 
-    Add types of scipy solving methods and the types available
-    
-    Update if statement to generalize as a factory
     
 """
 
@@ -147,9 +142,7 @@ def calc_CC_Pguess(xilist, Tlist, CriticalProp):
 def PvsRho(T, xi, eos, minrhofrac=(1.0 / 500000.0), rhoinc=5.0, vspacemax=1.0E-4, **kwargs):
 
     r"""
-    Computes the Mie parameters of a mixture from the mixed critical properties of the pure components. 
-
-    From: Mejia, A., C. Herdes, E. Muller. Ind. Eng. Chem. Res. 2014, 53, 4131-4141
+    Give an array of density values, calculates the associated pressure given an eos.
     
     Parameters
     ----------

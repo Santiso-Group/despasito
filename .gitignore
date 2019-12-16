@@ -57,6 +57,7 @@ coverage.xml
 *.pot
 
 # Django stuff:
+log.*
 *.log
 local_settings.py
 
@@ -110,5 +111,4 @@ ENV/
 # text files
 *.txt
 
-*log*
 *.swp

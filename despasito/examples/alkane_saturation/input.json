@@ -1,6 +1,6 @@
 {
     "beadconfig": [[["CH3", 2]]],
-    "SAFTgroup": "SAFTgroup.json",
+    "EOSgroup": "SAFTgroup.json",
     "opt_params": {
         "fit_bead" : "CH3",
         "fit_params": ["epsilon"]

@@ -19,12 +19,12 @@ Supporting Functions
 
 **Calculation of Parameters Within Object**
 
-.. currentmodule:: despasito
+.. currentmodule:: despasito.equations_of_state
 
 .. autosummary::
    :toctree: _autosummary
 
-   equations_of_state.saft.gamma_mie_funcs
-   equations_of_state.saft.nojit_exts
-   equations_of_state.saft.jit_exts
+   saft.gamma_mie_funcs
+   saft.nojit_exts
+   saft.jit_exts
 
