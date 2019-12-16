@@ -23,6 +23,7 @@ class Data(ExpDataTemplate):
     ----------
     data_dict : dict
         Dictionary of exp data of saturation properties.
+
         * name : str, data type, in this case SatProps
         * calctype : str, Optional, default: 'sat_props
         * T : list, List of temperature values for calculation

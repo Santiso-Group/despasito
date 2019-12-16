@@ -1,6 +1,6 @@
 {
     "beadconfig": [[["CH3OH", 1]]],
-    "SAFTgroup": "SAFTgroup.json",
+    "EOSgroup": "SAFTgroup.json",
     "basin_dict": {"niter": 1, "niter_success": 1},
     "minimizer_dict": {"tol": 1e-1, "maxiter": 10},
     "opt_params": {

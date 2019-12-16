@@ -23,6 +23,7 @@ class Data(ExpDataTemplate):
     ----------
     data_dict : dict
         Dictionary of exp data of type rhol.
+
         * name : str, data type, in this case RhoL
         * calctype : str, Optional, default: 'liquid_properties'
         * T : list, List of temperature values for calculation

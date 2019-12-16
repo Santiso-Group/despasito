@@ -1,7 +1,7 @@
 {
     "beadconfig": [[["CH_hex", 1]], [["CH_hep", 1]]], 
-    "SAFTgroup": "SAFTgroup_vr_mie.json",
-    "SAFTcross": "SAFTcross_vr_mie.json",
+    "EOSgroup": "SAFTgroup_vr_mie.json",
+    "EOScross": "SAFTcross_vr_mie.json",
     "output_file": "out_xi_vr.txt",
     "calculation_type" : "liquid_properties",
     "pressure options": {"maxiter":15},

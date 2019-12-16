@@ -1,7 +1,7 @@
 {
     "beadconfig": [[["CO2", 1]], [["H2O", 1]]], 
-    "SAFTgroup": "../library/SAFTgroup.json",
-    "SAFTcross": "../library/SAFTcross.json",
+    "EOSgroup": "../library/SAFTgroup.json",
+    "EOScross": "../library/SAFTcross.json",
     "output_file": "out_vapor.txt",
     "calculation_type" : "vapor_properties",
     "association_site_names": ["H","e1","a1"],

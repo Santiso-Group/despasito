@@ -17,7 +17,6 @@ except:
 
 short_description = __doc__.split("\n")
 fpath = os.path.join("despasito","equations_of_state","saft")
-print("Generated short description.")
 
 # from https://github.com/pytest-dev/pytest-runner#conditional-requirement
 needs_pytest = {'pytest', 'test', 'ptr'}.intersection(sys.argv)
@@ -26,15 +25,12 @@ pytest_runner = ['pytest-runner'] if needs_pytest else []
 try:
     with open("README.md", "r") as handle:
         long_description = handle.read()
-    print("Generated long description")
 except:
     long_description = "\n".join(short_description[2:])
 
 try:
-    print("Begin generating fortran extension")
     ext1 = Extension(name="solv_assoc",sources=[os.path.join(fpath,"solv_assoc.f90")],include_dirs=[fpath])
     extensions = [ext1]
-    print("Generated fortran extension: {}".format(ext1))
 except:
     raise OSError("Fortran compiler is not found")
 # try Extension and compile

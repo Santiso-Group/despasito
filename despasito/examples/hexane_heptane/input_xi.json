@@ -1,7 +1,7 @@
 {
     "beadconfig": [[["CH3", 2],["CH2",4]], [["CH3", 2],["CH2",5]]], 
-    "SAFTgroup": "../library/SAFTgroup.json",
-    "SAFTcross": "../library/SAFTcross.json",
+    "EOSgroup": "../library/SAFTgroup.json",
+    "EOScross": "../library/SAFTcross.json",
     "output_file": "out_xi.txt",
     "calculation_type" : "liquid_properties",
     "pressure options": {"maxiter":15},

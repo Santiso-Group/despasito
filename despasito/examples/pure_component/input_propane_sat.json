@@ -1,6 +1,6 @@
 {
     "beadconfig": [[["CH3", 2],["CH2" , 1]]],
-    "SAFTgroup": "../library/SAFTgroup.json",
+    "EOSgroup": "../library/SAFTgroup.json",
     "output_file": "out_propane_saturation.txt",
     "calculation_type" : "sat_props",
     "method" : "hybr",

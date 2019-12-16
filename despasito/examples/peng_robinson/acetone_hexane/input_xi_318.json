@@ -1,8 +1,8 @@
 {
     "beadconfig": [[["acetone", 1]], [["hexane", 1]]], 
     "eos": "cubic.peng_robinson",
-    "SAFTgroup": "../../library/PRgroup.json",
-    "SAFTcross": "PRcross_315.json",
+    "EOSgroup": "../../library/PRgroup.json",
+    "EOScross": "PRcross_315.json",
     "output_file": "out_xi_315.txt",
     "calculation_type" : "phase_xiT",
     "pressure options": {"maxiter":15},
