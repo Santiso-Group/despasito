@@ -6,6 +6,9 @@ Here we list list the available equations of state and the function used to acce
 
 .. autofunction:: despasito.equations_of_state.eos
 
+
+.. _eos-types:
+
 Available EOS
 -------------
 
