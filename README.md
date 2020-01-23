@@ -20,7 +20,7 @@ The second facet is parameterization, not only of the equation of state (EOS) bu
 
 Installation
 ------------
-**NOTE:** DESPASITO is not yet available on pip or conda-forge, but it is a package that can be installed in your python environment.
+**NOTE:** DESPASITO is not yet available conda-forge, but it is available with pip.
 
 **Prerequisites**:
   * [NumPy](https://numpy.org): needed for running setup (distutils). Follow instructions outlined [here](https://docs.scipy.org/doc/numpy/user/install.html) for installation.
@@ -28,9 +28,9 @@ Installation
 
 **Step 1:** Install the prerequisites listed above.
 
-**Step 2:** Download the master branch from our github page as a zip file, or clone it with git via ``git clone https://github.com/jaclark5/despasito`` in your working directory.
+**Step 2:** Install using pip with ``pip install -i https://test.pypi.org/simple/ despasito``
 
-**Step 3:** Install DESPASITO locally from the working directory with ``pip install . --user`` or if pip is unavailable with ``python setup.py install --user``.
+**NOTE** If [pip](https://pip.pypa.io/en/stable/) is unavailable, follow the instructions outlined [here](https://pip.pypa.io/en/stable/installing/) for installation. Alternatively, download the master branch from our github page as a zip file, or clone it with git via ``git clone https://github.com/jaclark5/despasito`` in your working directory. Install DESPASITO locally from the working directory with ``python setup.py install --user``.
 
 Command Line Use
 ----------------

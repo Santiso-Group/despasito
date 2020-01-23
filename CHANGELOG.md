@@ -16,4 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+## [0.0.2] - 2020-01-23
+### Changed
+ - README.md updated with pip install instructions
+ - docs updated with pip install instructions
 
