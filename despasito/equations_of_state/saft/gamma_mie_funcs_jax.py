@@ -1276,7 +1276,8 @@ def calc_assoc_matrices(beads, beadlibrary, sitenames=["H", "e1", "e2"], crossli
 
     return epsilonHB, Kklab, nk
 
-@jit(static_argnums=(0,2,3,4,5,6))
+#@jit(static_argnums=(0,2,3,4,5,6))
+#@jit
 def calc_Xika(indices, rho, xi, nui, nk, Fklab, Kklab, Iij):
     r""" 
     Calculate the fraction of molecules of component i that are not bonded at a site of type a on group k in an iterative fashion.
@@ -1449,6 +1450,7 @@ def calc_A_assoc(rho, xi, T, nui, xskl, sigmakl, sigmaii_avg, epsilonii_avg, eps
         indices = assoc_site_indices(xi, nui, nk)
         for tmp in [indices,rho, xi, nui, nk, Fklab, Kklab, Iij]:
             print(tmp.shape)
+        calc_Xika_jit = jit(calc_Xika,static_argnums=(0,2,3,4,5,6))
         Xika, err_array = calc_Xika_jit(indices,rho, xi, nui, nk, Fklab, Kklab, Iij)
 
     # Compute A_assoc
