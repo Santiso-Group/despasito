@@ -1322,8 +1322,6 @@ def calc_A_assoc(rho, xi, T, nui, xskl, sigmakl, sigmaii_avg, epsilonii_avg, eps
     else:
         # Compute Xika: with python with numba  {BottleNeck}
         indices = assoc_site_indices(xi, nui, nk)
-        for tmp in [indices,rho, xi, nui, nk, Fklab, Kklab, Iij]:
-            print(tmp.shape)
         Xika, err_array = calc_Xika(indices,rho, xi, nui, nk, Fklab, Kklab, Iij)
 
     # Compute Xika: with python  {BottleNeck}
