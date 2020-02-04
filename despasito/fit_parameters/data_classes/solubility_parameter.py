@@ -11,36 +11,39 @@ from despasito.fit_parameters.interface import ExpDataTemplate
 
 ##################################################################
 #                                                                #
-#                       Liquid Density                           #
+#                       Saturation Props                         #
 #                                                                #
 ##################################################################
 class Data(ExpDataTemplate):
 
     r"""
-    Object for liquid density data. This data is evaluated with "liquid_properties". 
+    Object for hildebrand solubility parameters. This data is evaluated with "solubility_parameter". 
 
     Parameters
     ----------
     data_dict : dict
-        Dictionary of exp data of type rhol.
+        Dictionary of exp data of saturation properties.
 
-        * name : str, data type, in this case RhoL
-        * calctype : str, Optional, default: 'liquid_properties'
+        * name : str, data type, in this case SatProps
+        * calctype : str, Optional, default: 'sat_props
         * T : list, List of temperature values for calculation
-        * xi : list, List of liquid mole fractions used in liquid_properties calculations
+        * P : list, List of pressure values used in calculations
+        * xi : list, List of liquid mole fractions used in calculations.
         * weights : list/float, Either a list as long as the number of data points to multiply by the objective value associated with each point, or a float to multiply the objective value of this data set.
         * rhodict : dict, Optional, default: {"minrhofrac":(1.0 / 60000.0), "rhoinc":10.0, "vspacemax":1.0E-4}, Dictionary of options used in calculating pressure vs. mole fraction curves.
 
     Attributes
     ----------
     name : str
-        Data type, in this case rhol
-    calctype : str, Optional, default: 'liquid_properties'
+        Data type, in this case SolubilityParam
+    calctype : str, Optional, default: 'solubility_parameter'
         Thermodynamic calculation type
     T : list
         List of temperature values for calculation
     xi : list
-        List of liquid mole fractions, sum(xi) should equal 1
+        List of liquid mole fractions, only one should be equal to 1.
+    P  : list
+        List of pressure.
     """
 
     def __init__(self, data_dict):
@@ -54,40 +57,36 @@ class Data(ExpDataTemplate):
             self._thermodict["calculation_type"] = data_dict["calctype"]
             self.calctype = data_dict["calctype"]
         else:
-            self.calctype = "liquid_properties"
-            self._thermodict["calculation_type"] = "liquid_properties"
+            self.calctype = "solubility_parameter"
+            self._thermodict["calculation_type"] = "solubility_parameter"
 
         if "xi" in data_dict:
             self._thermodict["xilist"] = data_dict["xi"]
+        if "yi" in data_dict:
+            self._thermodict["xilist"] = data_dict["yi"]
+            logger.info("Vapor mole fraction recorded as 'xi'")
         if "T" in data_dict:
             self._thermodict["Tlist"] = data_dict["T"]
         if "rhol" in data_dict:
             self._thermodict["rhol"] = data_dict["rhol"]
-
-        tmp = ["Tlist","rhol"]
-        if not all([x in self._thermodict.keys() for x in tmp]):
-            raise ImportError("Given liquid property data, values for T, xi, and rhol should have been provided.")
-
         if "P" in data_dict:
-            if (type(data_dict["P"]) == float or len(data_dict["P"])==1):
-                self._thermodict["Plist"] = np.ones(len(self._thermodict["Tlist"]))*data_dict["P"]
-            else:
-                self._thermodict["Plist"] = data_dict["P"]
-        else:
-            self._thermodict["Plist"] = np.ones(len(self._thermodict["Tlist"]))*101325.0
-            logger.info("Assume atmospheric pressure")
+            self._thermodict["Plist"] = data_dict["P"]
+        if "delta" in data_dict:
+            self._thermodict["delta"] = data_dict["delta"]
+
+        tmp = ["Tlist", "delta"]
+        if not all([x in self._thermodict.keys() for x in tmp]):
+            raise ImportError("Given solubility data, value(s) for T and delta should have been provided.")
 
         try:
             self.weights = data_dict["weights"]
         except:
             self.weights = 1.0
 
+        logger.info("Data type 'SolubilityParam' initiated with calctype, {}, and data types: {}".format(self.calctype,", ".join(self._thermodict.keys())))
+
         if 'rhodict' in data_dict:
             self._thermodict["rhodict"] = data_dict["rhodict"]
-        else:
-            self._thermodict["rhodict"] = {"minrhofrac":(1.0 / 300000.0), "rhoinc":10.0, "vspacemax":1.0E-4}
-
-        logger.info("Data type 'liquid_properties' initiated with calctype, {}, and data types: {}".format(self.calctype,", ".join(self._thermodict.keys())))
 
     def _thermo_wrapper(self, eos):
 
@@ -110,13 +109,15 @@ class Data(ExpDataTemplate):
             if len(eos._nui) > 1:
                 raise ValueError("Ambiguous instructions. Include xi to define intended component to obtain saturation properties")
             else:
-                self._thermodict['xilist'] = np.array([[1.0] for x in range(len(self._thermodict['Tlist']))])
+                self._thermodict['xilist'] = np.array([[1.0] for x in range(len(self.self._thermodict['Tlist']))])
 
+        # Run thermo calculations
         try:
             output_dict = thermo(eos, self._thermodict)
-            output = [output_dict["rhol"]]
+            output = [output_dict["delta"],output_dict["rhol"]]
         except:
-            raise ValueError("Calculation of calc_rhol failed")
+            raise ValueError("Calculation of solubility_parameter failed")
+
         return output
 
 
@@ -138,16 +139,21 @@ class Data(ExpDataTemplate):
 
         phase_list = self._thermo_wrapper(eos)
 
-        # Reformat array of results
-        phase_list, len_list = ff.reformat_ouput(phase_list) 
+        ## Reformat array of results
+        phase_list, len_list = ff.reformat_ouput(phase_list)
         phase_list = np.transpose(np.array(phase_list))
 
         # objective function
-        obj_value = np.sum((((phase_list[0] - self._thermodict["rhol"]) / self._thermodict["rhol"])**2)*self.weights)
+        obj_value = 0
+        if "delta" in self._thermodict:
+            obj_value = np.sum((((phase_list[0] - self._thermodict["delta"]) / self._thermodict["delta"])**2)*self.weights)
+        if "rhol" in self._thermodict:
+            obj_value = np.sum((((phase_list[1] - self._thermodict["rhol"]) / self._thermodict["rhol"])**2)*self.weights)
 
         return obj_value
 
     def __str__(self):
 
-        string = "Data Set Object\nname: %s\ncalctype:%s\nNdatapts:%g" % {self.name, self.calctype, len(self._thermodict["Tlist"])}
+        string = "Data Set Object\nname: %s\ncalctype:%s\nNdatapts:%g" % {self.name, self.calctype, len(self._thermodict['T'])}
         return string
+        

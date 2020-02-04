@@ -434,13 +434,15 @@ class saft_gamma_mie(EOStemplate):
         if l_fitparams == 1:
             param_initial_guesses = np.array([l_fitparams])
         else:
-            param_initial_guesses = np.zeros(1,l_fitparams)
+            param_initial_guesses = np.zeros(l_fitparams)
 
         for i,param in enumerate(fit_params):
             if (param == "epsilon" or param.startswith('epsilon_')):
                 param_initial_guesses[i] = 200.0
             elif param.startswith('epsilon'):
                 param_initial_guesses[i] = 1000.0
+            elif param.startswith('sigma'):
+                param_initial_guesses[i] =  3.0e-10
             elif param.startswith('l_a'):
                 param_initial_guesses[i] = 6.0
             elif param.startswith('l_r'):

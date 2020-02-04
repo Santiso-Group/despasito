@@ -289,11 +289,14 @@ def process_param_fit_inputs(thermo_dict):
 
             - fit_bead (str) - Name of bead whose parameters are being fit, should be in bead list of beadconfig
             - fit_params (list[str]) - This list of contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
-            - *name* (dict) - Dictionary of a data set that the parameters are fit to. Each dictionary is added to the exp_data dictionary before being passed to the fitting algorithm. Each *name* is used as the key in exp_data. *name* is an arbitrary string used to identify the data set and used later in reporting objective function values during the fitting process. See data type objects for more details.
             - *_bounds (list[float]), Optional - This list contains the minimum and maximum of the parameter from a parameter listed in fit_params, represented in place of the asterisk. See input file instructions for more information.
             - beadparams0 (list[float]), Optional - Initial guess in parameters being fit. Should be the same length at fit_params and contain a reasonable guess for each parameter. If this is not provided, a guess is made based on the type of parameter from eos object.
 
-        - datatype (str) - One of the supported data type objects to fit parameters
+        - *name* (dict) - Dictionary of a data set that the parameters are fit to. Each dictionary is added to the exp_data dictionary before being passed to the fitting algorithm. Each *name* is used as the key in exp_data. *name* is an arbitrary string used to identify the data set and used later in reporting objective function values during the fitting process. See data type objects for more details.
+
+            - file (str) - 
+            - datatype (str) - One of the supported data type objects to fit parameters
+            - calctype (str) - One of the supported thermo calculation types that would be associated with the chosen datatype
 
     Returns
     -------
@@ -309,7 +312,7 @@ def process_param_fit_inputs(thermo_dict):
 
         - exp_data (dict) - This dictionary is made up of a dictionary for each data set that the parameters are fit to. Each key is an arbitrary string used to identify the data set and used later in reporting objective function values during the fitting process. See data type objects for more details.
 
-            - name (str) - One of the supported data type objects to fit parameters
+            - name (obj) - One of the supported data type objects to fit parameters
     """
 
     logger = logging.getLogger(__name__)
@@ -331,8 +334,11 @@ def process_param_fit_inputs(thermo_dict):
                     new_opt_params["beadparams0"] = value["beadparams0"]
                 elif "bounds" in key2:
                     tmp  = key2.replace("_bounds","")
-                    ind = value["fit_params"].index(tmp)
-                    new_opt_params["bounds"][ind] = value2
+                    if tmp in value["fit_params"]:
+                        ind = value["fit_params"].index(tmp)
+                        new_opt_params["bounds"][ind] = value2
+                    else:
+                        logger.warning("Bounds for parameter type '{}' were given, but this parameter is not defined to be fit.".format(tmp))
                 else:
                     continue
                 keys_del.append(key2)
@@ -430,7 +436,10 @@ def process_exp_data_file(fname):
 
     #logger = logging.getLogger(__name__)
 
-    data = np.transpose(np.genfromtxt(fname, delimiter=',',names=True,skip_header=1))
+    try:
+        data = np.transpose(np.genfromtxt(fname, delimiter=',',names=True,skip_header=1))
+    except:
+        raise ValueError("Cannot import '{}', Check data file formatting.".format(fname))
     file_dict = {name:data[name] for name in data.dtype.names}
     
     # Sort through properties
@@ -484,7 +493,7 @@ def writeout_thermodict(output_dict,calctype,output_file="thermo_output.txt"):
     """
 
     # Define units
-    units = {"T":"K","P":"Pa","Psat":"Pa","rhol":"mol/m^3","rhov":"mol/m^3"}
+    units = {"T":"K","P":"Pa","Psat":"Pa","rhol":"mol/m^3","rhov":"mol/m^3","delta":"Pa^(1/2)"}
 
     # Make comment line
     comment = "# This data was generated in DESPASITO using the thermodynamic calculation: "+calctype

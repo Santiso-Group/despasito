@@ -1,0 +1,14 @@
+{
+    "beadconfig": [[["CH3", 2],["CH2", 2]]],
+    "EOSgroup": "../library/SAFTgroup.json",
+    "opt_params": {
+        "fit_bead" : "CH3",
+        "fit_params": ["epsilon_CH2","sigma"],
+        "epsilon_bounds" : [150.0, 400.0]
+    },
+    "Knovel": {
+        "datatype": "liquid_density",
+        "calctype": "liquid_properties",
+        "file": "butane_solubility.csv"
+    }
+}

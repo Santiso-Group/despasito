@@ -54,59 +54,54 @@ class Data(ExpDataTemplate):
 
         # Self interaction parameters
         self.name = data_dict["name"]
+        self._thermodict = {}
 
-        data_type = []
-        data_type_name = []
         if "xi" in data_dict: 
-            self.xi = data_dict["xi"]
-            data_type.append(self.xi)
-            data_type_name.append("xi")
+            self._thermodict["xilist"] = data_dict["xi"]
         if "T" in data_dict:
-            self.T = data_dict["T"]
-            data_type.append(self.T)
-            data_type_name.append("T")
+            self._thermodict["Tlist"] = data_dict["T"]
         if "yi" in data_dict:
-            self.yi = data_dict["yi"]
-            data_type.append(self.yi)
-            data_type_name.append("yi")
+            self._thermodict["yilist"] = data_dict["yi"]
         if "P" in data_dict: 
-            self.P = data_dict["P"]
-            data_type.append(self.P)
-            data_type_name.append("P")
+            self._thermodict["Plist"] = data_dict["P"]
+            self._thermodict["Pguess"] = data_dict["P"]
 
-        if (not hasattr(self,"P") or not hasattr(self,"T")):
+        if not any([x in self._thermodict.keys() for x in ['Plist', 'Tlist']]):
             raise ImportError("Given TLVE data, values for P and T should have been provided.")
 
-        if (not hasattr(self,"xi") and not hasattr(self,"yi")):
+        if not all([x in self._thermodict.keys() for x in ['xilist', 'yilist']]):
             raise ImportError("Given TLVE data, mole fractions should have been provided.")
 
-        if "calctype" not in data_dict:
+        if not any(np.array([len(x) for key,x in self._thermodict.items()]) == len(self._thermodict['xilist'])):
+            raise ValueError("T, P, yi, and xi are not all the same length.")
+
+        if "calctype" in data_dict:
+            self._thermodict["calculation_type"] = data_dict["calctype"]
+            self.calctype = data_dict["calctype"]
+        else:
             logger.warning("No calculation type has been provided.")
             if self.xi:
                 self.calctype = "phase_xiT"
+                self._thermodict["calculation_type"] = "phasexiT"
                 logger.warning("Assume a calculation type of phase_xiT")
             elif self.yi:
                 self.calctype = "phase_yiT"
+                self._thermodict["calculation_type"] = "phaseyiT"
                 logger.warning("Assume a calculation type of phase_yiT")
             else:
                 raise ValueError("Unknown calculation instructions")
-        else:
-            self.calctype = data_dict["calctype"]
-
-        if any(np.array([len(x) for x in data_type]) == len(self.xi)) == False:
-            raise ValueError("T, P, yi, and xi are not all the same length.")
 
         try:
             self.weights = data_dict["weights"]
         except:
             self.weights = 1.0
 
-        try:
-            self._rhodict = data_dict["rhodict"]
-        except:
-            self._rhodict = {"minrhofrac":(1.0 / 300000.0), "rhoinc":10.0, "vspacemax":1.0E-4}
+        logger.info("Data type 'TLVE' initiated with calctype, {}, and data types: {}".format(self.calctype,", ".join(self._thermodict.keys())))
 
-        logger.info("Data type 'TLVE' initiated with calctype, {}, and data types: {}".format(self.calctype,", ".join(data_type_name)))
+        if 'rhodict' in data_dict:
+            self._thermodict["rhodict"] = data_dict["rhodict"]
+        else:
+            self._thermodict["rhodict"] = {"minrhofrac":(1.0 / 300000.0), "rhoinc":10.0, "vspacemax":1.0E-4}
 
     def _thermo_wrapper(self, eos):
 
@@ -126,14 +121,14 @@ class Data(ExpDataTemplate):
 
         if self.calctype == "phase_xiT":
             try:
-                output_dict = thermo(eos, {"calculation_type":self.calctype,"Tlist":self.T,"xilist":self.xi,"Pguess":self.P,"rhodict":self._rhodict})
+                output_dict = thermo(eos, self._thermodict)
                 output = [output_dict['P'],output_dict["yi"]]
             except:
                 raise ValueError("Calculation of calc_xT_phase failed")
 
         elif self.calctype == "phase_yiT":
             try:
-                output_dict = thermo(eos, {"calculation_type":self.calctype,"Tlist":self.T,"yilist":self.yi,"Pguess":self.P,"rhodict":self._rhodict})
+                output_dict = thermo(eos, self._thermodict)
                 output = [output_dict['P'],output_dict["xi"]]
             except:
                 raise ValueError("Calculation of calc_yT_phase failed")
@@ -161,18 +156,18 @@ class Data(ExpDataTemplate):
         phase_list, len_cluster = ff.reformat_ouput(phase_list)
         phase_list = np.transpose(np.array(phase_list))
    
-        obj_value = np.sum((((phase_list[0] - self.P) / self.P)**2)*self.weights)
+        obj_value = np.sum((((phase_list[0] - self._thermodict["Plist"]) / self._thermodict["Plist"])**2)*self.weights)
         if self.calctype == "phase_xiT":
-            yi = np.transpose(self.yi)
+            yi = np.transpose(self._thermodict["yilist"])
             obj_value += np.sum((((phase_list[1:] - yi)/yi)**2)*self.weights)
         elif self.calctype == "phase_yiT":
-            xi = np.transpose(self.xi)
+            xi = np.transpose(self._thermodict["xilist"])
             obj_value += np.sum((((phase_list[1:] - xi)/xi)**2)*self.weights)
 
         return obj_value
 
     def __str__(self):
 
-        string = "Data Set Object\nname: %s\ncalctype:%s\nNdatapts:%g" % {self.name, self.calctype, len(self.T)}
+        string = "Data Set Object\nname: %s\ncalctype:%s\nNdatapts:%g" % {self.name, self.calctype, len(self._thermodict["Tlist"])}
         return string
         

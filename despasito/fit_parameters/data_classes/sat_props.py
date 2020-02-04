@@ -49,49 +49,36 @@ class Data(ExpDataTemplate):
 
         # Self interaction parameters
         self.name = data_dict["name"]
-        try:
+        self._thermodict = {}
+        if "calctype" in data_dict:
+            self._thermodict["calculation_type"] = data_dict["calctype"]
             self.calctype = data_dict["calctype"]
-        except:
+        else:
             self.calctype = "sat_props"
+            self._thermodict["calculation_type"] = "sat_props"
 
-        data_type = []
-        data_type_name = []
         if "xi" in data_dict:
-            self.xi = data_dict["xi"]
-            data_type.append(self.xi)
-            data_type_name.append("xi")
+            self._thermodict["xilist"] = data_dict["xi"]
         if "yi" in data_dict:
-            self.xi = data_dict["yi"]
-            data_type.append(self.xi)
-            data_type_name.append("xi")
+            self._thermodict["xilist"] = data_dict["yi"]
             logger.info("Vapor mole fraction recorded as 'xi'")
         if "T" in data_dict:
-            self.T = data_dict["T"]
-            data_type.append(self.T)
-            data_type_name.append("T")
+            self._thermodict["Tlist"] = data_dict["T"]
         if "rhol" in data_dict:
-            self.rhol = data_dict["rhol"]
-            data_type.append(self.rhol)
-            data_type_name.append("rhol")
+            self._thermodict["rhol"] = data_dict["rhol"]
         if "rhov" in data_dict:
-            self.rhov = data_dict["rhov"]
-            data_type.append(self.rhov)
-            data_type_name.append("rhov")
+            self._thermodict["rhov"] = data_dict["rhov"]
         if "P" in data_dict:
-            self.Psat = data_dict["P"]
-            data_type.append(self.Psat)
-            data_type_name.append("Psat")
+            self._thermodict["Psat"] = data_dict["P"]
         if "Psat" in data_dict:
-            self.Psat = data_dict["Psat"]
-            data_type.append(self.Psat)
-            data_type_name.append("Psat")
+            self._thermodict["Psat"] = data_dict["Psat"]
 
-        tmp = ["T"]
-        if not all([hasattr(self,x) for x in tmp]):
+        tmp = ["Tlist"]
+        if not all([x in self._thermodict.keys() for x in tmp]):
             raise ImportError("Given saturation data, value(s) for T should have been provided.")
 
         tmp = ["Psat","rhol","rhov"]
-        if not any([hasattr(self,x) for x in tmp]):
+        if not any([x in self._thermodict.keys() for x in tmp]):
             raise ImportError("Given saturation data, values for Psat, rhol, and/or rhov should have been provided.")
 
         try:
@@ -99,12 +86,12 @@ class Data(ExpDataTemplate):
         except:
             self.weights = 1.0
 
-        try:
-            self._rhodict = data_dict["rhodict"]
-        except:
-            self._rhodict = {"minrhofrac":(1.0 / 80000.0), "rhoinc":10.0, "vspacemax":1.0E-4}
+        logger.info("Data type 'sat_props' initiated with calctype, {}, and data types: {}".format(self.calctype,", ".join(self._thermodict.keys())))
 
-        logger.info("Data type 'sat_props' initiated with calctype, {}, and data types: {}".format(self.calctype,", ".join(data_type_name)))
+        if 'rhodict' in data_dict:
+            self._thermodict["rhodict"] = data_dict["rhodict"]
+        else:
+            self._thermodict["rhodict"] = {"minrhofrac":(1.0 / 80000.0), "rhoinc":10.0, "vspacemax":1.0E-4}
 
     def _thermo_wrapper(self, eos):
 
@@ -123,17 +110,15 @@ class Data(ExpDataTemplate):
         """
 
         # Check bead type
-        try:
-            self.xi = data_dict["xi"]
-        except:
+        if 'xilist' not in self._thermodict:
             if len(eos._nui) > 1:
                 raise ValueError("Ambiguous instructions. Include xi to define intended component to obtain saturation properties")
             else:
-                self.xi = np.array([[1.0] for x in range(len(self.T))])
+                self._thermodict['xilist'] = np.array([[1.0] for x in range(len(self._thermodict['Tlist']))])
  
         # Run thermo calculations
         try:
-            output_dict = thermo(eos, {"calculation_type":self.calctype,"Tlist":self.T,"xilist":self.xi,"rhodict":self._rhodict})
+            output_dict = thermo(eos, self._thermodict)
             output = [output_dict["Psat"],output_dict["rhol"],output_dict["rhov"]]
         except:
             raise ValueError("Calculation of calc_Psat failed")
@@ -165,17 +150,17 @@ class Data(ExpDataTemplate):
 
         # objective function
         obj_value = 0
-        if hasattr(self,"Psat"):
-            obj_value = np.sum((((phase_list[0] - self.Psat) / self.Psat)**2)*self.weights)
-        if hasattr(self,"rhol"):
-            obj_value = np.sum((((phase_list[1] - self.rhol) / self.rhol)**2)*self.weights)
-        if hasattr(self,"rhov"):
-            obj_value = np.sum((((phase_list[2] - self.rhov) / self.rhov)**2)*self.weights)
+        if "Psat" in self._thermodict:
+            obj_value = np.sum((((phase_list[0] - self._thermodict['Psat']) / self._thermodict['Psat'])**2)*self.weights)
+        if "rhol" in self._thermodict:
+            obj_value = np.sum((((phase_list[1] - self._thermodict['rhol']) / self._thermodict['rhol'])**2)*self.weights)
+        if "rhov" in self._thermodict:
+            obj_value = np.sum((((phase_list[2] - self._thermodict['rhov']) / self._thermodict['rhov'])**2)*self.weights)
 
         return obj_value
 
     def __str__(self):
 
-        string = "Data Set Object\nname: %s\ncalctype:%s\nNdatapts:%g" % {self.name, self.calctype, len(self.T)}
+        string = "Data Set Object\nname: %s\ncalctype:%s\nNdatapts:%g" % {self.name, self.calctype, len(self._thermodict['T'])}
         return string
         

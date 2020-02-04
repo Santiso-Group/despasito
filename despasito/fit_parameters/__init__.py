@@ -4,6 +4,8 @@ Fit Parameters
 
 This package uses functions from input_output, equations_of_state, and thermodynamics to fit parameters to experimental data.
 
+Input.json files have a different dictionary structure that is processed by :func:`~despasito.input_output.readwrite_input.process_param_fit_inputs`
+
 """
 
 import os
@@ -42,10 +44,10 @@ def fit(eos, thermo_dict):
 
         - basin_dict (dict), Optional - kwargs used in scipy.optimize.basinhopping
 
-            - niter (int) - Number of basin hopping iterations
-            - T (float) - Temperature parameter, should be comparable to separation between local minima (i.e. the “height” of the walls separating values).
-            - take_step (obj) - Callable object that includes custom routine that produces attribute stepsize
-            - niter_success (int) - Stop run if minimum stays the same for this many iterations
+            - niter (int) - default: 10, Number of basin hopping iterations
+            - T (float) - default: 0.5, Temperature parameter, should be comparable to separation between local minima (i.e. the “height” of the walls separating values).
+            - niter_success (int) - default: 3, Stop run if minimum stays the same for this many iterations
+            - stepsize (float) - default: 0.1, Maximum step size for use in the random displacement. We use this value to define an object for the `take_step` option that includes a custom routine that produces attribute stepsizes for each parameter.
 
         - minimizer_dict (dict), Optional - Dictionary used to define minimization type and the associated options.
 

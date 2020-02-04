@@ -10,6 +10,8 @@ Parameters can be fit for one component at a time, and as many parameters as des
 .. automodule:: despasito.fit_parameters
    :members:
 
+.. _data-types:
+
 Available Data Types
 ------------------------
 
@@ -20,6 +22,7 @@ Available Data Types
    TLVE.Data
    sat_props.Data
    liquid_density.Data
+   solubility_parameter.Data
 
 Supporting Thermodynamic Functions
 ------------------------------------------------

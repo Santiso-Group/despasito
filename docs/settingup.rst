@@ -1,5 +1,5 @@
 
-Setting Up a Thermodynamic Calculation
+Setting-up a Thermodynamic Calculation
 ======================================
 
 .. contents:: :local:
