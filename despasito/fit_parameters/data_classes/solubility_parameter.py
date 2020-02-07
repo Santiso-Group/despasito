@@ -109,7 +109,7 @@ class Data(ExpDataTemplate):
             if len(eos._nui) > 1:
                 raise ValueError("Ambiguous instructions. Include xi to define intended component to obtain saturation properties")
             else:
-                self._thermodict['xilist'] = np.array([[1.0] for x in range(len(self.self._thermodict['Tlist']))])
+                self._thermodict['xilist'] = np.array([[1.0] for x in range(len(self._thermodict['Tlist']))])
 
         # Run thermo calculations
         try:
