@@ -277,38 +277,105 @@ class cubic_peng_robinson(EOStemplate):
 
         return maxrho
 
-    def param_guess(self,fit_params):
-        """
-        Generate initial guesses for the parameters to be fit.
-
+    def param_guess(self, param_name, bead_names):
+        r"""
+        Update a single parameter value to _beadlibrary or _crosslibrary attributes during parameter fitting process.
+            
+        To refresh those parameters that are dependent on these libraries, use method "parameter refresh".
+            
         Parameters
         ----------
-        fit_params : list[str]
-            A list of parameters to be fit. See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
-
+        param_name : str
+            name of parameters being updated
+        bead_names : list
+            List of bead names to be changed. For a self interaction parameter, the length will be 1, for a cross interaction parameter, the length will be two.
+            
         Returns
         -------
-        param_initial_guesses : numpy.ndarray, 
-            An array of initial guesses for parameters, these will be optimized throughout the process.
-    """
-
+        param_initial_guess : numpy.ndarray,
+            An initial guess for parameter, it will be optimized throughout the process.
+        """
+        
         #logger = logging.getLogger(__name__)
-
-        l_fitparams = len(fit_params)
-        if l_fitparams == 1:
-            param_initial_guesses = np.array([l_fitparams])
+        
+        param_types = ["ai", "bi", "kij"]
+        
+        if len(bead_names) > 2:
+            raise ValueError("The bead names {} were given, but only a maximum of 2 are permitted.".format(", ".join(bead_names)))
+        if not set(bead_names).issubset(self._beads):
+            raise ValueError("The bead names {} were given, but they are not in the allowed list: {}".format(", ".join(bead_names),", ".join(self._beads)))
+        
+        # Non bonded parameters
+        if (param_name in param_types):
+            # Parameter kij
+            if "kij" == param_name:
+                if bead_names[0] in self._beads:
+                    ind = self._beads.index(bead_names[0])
+                    if bead_names[1] in self._beads:
+                        jnd = self._beads.index(bead_names[1])
+                        param_value = self._kij[ind,jnd]
+            elif "ai" == param_name:
+                if bead_names[0] in self._beads:
+                    ind = self._beads.index(bead_names[0])
+                    param_value = self.ai[ind]
+            elif "bi" == param_name:
+                if bead_names[0] in self._beads:
+                    ind = self._beads.index(bead_names[0])
+                    param_value = self.bi[ind]
+    
         else:
-            param_initial_guesses = np.zeros(1,l_fitparams)
-
-        for i,param in enumerate(fit_params):
-            if param == "ai":
-                param_initial_guesses[i] = 1e+7
-            elif param == "bi":
-                param_initial_guesses[i] = 1e+11
+            raise ValueError("The parameter name %s is not found in the allowed parameter types: %s" % (param_name,", ".join(param_types)))
+                
+        return param_value
+            
+    def check_bounds(self, param_name, bead_names, bounds):
+        """
+        Generate initial guesses for the parameters to be fit.
+        
+        Parameters
+        ----------
+        param_name : str
+            Parameter to be fit. See EOS mentation for supported parameter names.
+        bead_names : list
+            Bead names to be changed. For a self interaction parameter, the length will be 1, for a cross interaction parameter, the length will be two.
+        bounds : list
+            A low and a high value for the parameter, param_name
+        
+        Returns
+        -------
+        param_initial_guess : numpy.ndarray,
+            An initial guess for parameter, it will be optimized throughout the process.
+        bounds : list
+            A screened and possibly corrected low and a high value for the parameter, param_name
+        """
+        
+        #logger = logging.getLogger(__name__)
+        
+        param_types = {"ai":[0., 50.], "bi":[0., 1e-3], "kij":[-1.,1.]}
+        
+        if len(bead_names) > 2:
+            raise ValueError("The bead names {} were given, but only a maximum of 2 are permitted.".format(", ".join(bead_names)))
+        if not set(bead_names).issubset(self._beads):
+            raise ValueError("The bead names {} were given, but they are not in the allowed list: {}".format(", ".join(bead_names),", ".join(self._beads)))
+        
+        # Non bonded parameters
+        if (param_name in param_types):
+            if bounds[0] < param_bound_extreme[param_name][0]:
+                logger.debug("Given {} lower boundary, {}, is less than what is recommended by eos object. Using value of {}.".format(param_name,bounds[0],param_bound_extreme[param_name][0]))
+                bounds_new[0] = param_bound_extreme[param_name][0]
             else:
-                raise ValueError("The parameter name %s does not fall under any of the categories, ai or bi") 
+                bounds_new[0] = bounds[0]
+            
+            if bounds[1] > param_bound_extreme[param_name][1]:
+                logger.debug("Given {} upper boundary, {}, is greater than what is recommended by eos object. Using value of {}.".format(param_name,bounds[1],param_bound_extreme[param_name][1]))
+                bounds_new[1] = param_bound_extreme[param_name][1]
+            else:
+                bounds_new[1] = bounds[1]
 
-        return param_initial_guesses
+        else:
+            raise ValueError("The parameter name %s is not found in the allowed parameter types: %s" % (param_name,", ".join(param_types)))
+        
+        return bounds_new
 
     def update_parameters(self, param_name, bead_names, param_value):
         r"""

@@ -265,20 +265,20 @@ def calc_interaction_matrices(beads, beadlibrary, crosslibrary={}):
         crosslist = []
 
         for (i, beadname) in enumerate(beads):
-            if beadname in list(crosslibrary.keys()):
+            if beadname in crosslibrary:
                 for (j, beadname2) in enumerate(beads):
-                    if beadname2 in list(crosslibrary[beadname].keys()):
+                    if beadname2 in crosslibrary[beadname]:
                         crosslist.append([i, j])
 
         for i in range(np.size(crosslist, axis=0)):
             a = crosslist[i][0]
             b = crosslist[i][1]
-            if beads[a] in list(crosslibrary.keys()):
-                if beads[b] in list(crosslibrary[beads[a]].keys()):
-                    if "epsilon" in list(crosslibrary[beads[a]][beads[b]].keys()):
+            if beads[a] in crosslibrary:
+                if beads[b] in crosslibrary[beads[a]]:
+                    if "epsilon" in crosslibrary[beads[a]][beads[b]]:
                         epsilonkl[a, b] = crosslibrary[beads[a]][beads[b]]["epsilon"]
                         epsilonkl[b, a] = epsilonkl[a, b]
-                    if "l_r" in list(crosslibrary[beads[a]][beads[b]].keys()):
+                    if "l_r" in crosslibrary[beads[a]][beads[b]]:
                         l_rkl[a, b] = crosslibrary[beads[a]][beads[b]]["l_r"]
                         l_rkl[b, a] = l_rkl[a, b]
 
@@ -446,7 +446,6 @@ def calc_Bkl(rho, l_kl, Cmol2seg, dkl, epsilonkl, x0kl, zetax):
 
     if np.size(np.shape(l_kl)) == 2:
         # Bkl=np.zeros((np.size(rho),np.size(l_kl,axis=0),np.size(l_kl,axis=0)))
-
         Bkl = np.einsum("i,jk", rhos * (2.0 * np.pi),
                         (dkl**3) * epsilonkl) * (np.einsum("i,jk", (1.0 - (zetax / 2.0)) / ((1.0 - zetax)**3), Ikl) - np.einsum("i,jk", ((9.0 * zetax * (1.0 + zetax)) / (2.0 * ((1 - zetax)**3))), Jkl))
     elif np.size(np.shape(l_kl)) == 1:
@@ -675,7 +674,6 @@ def calc_Amono(rho, xi, nui, Cmol2seg, xsk, xskl, dkk, T, epsilonkl, sigmakl, dk
     A1 = (Cmol2seg / T) * a1
     A2 = (Cmol2seg / (T**2)) * a2
     A3 = (Cmol2seg / (T**3)) * a3
-
 
     return AHS, A1, A2, A3, zetax, zetaxstar, KHS
 

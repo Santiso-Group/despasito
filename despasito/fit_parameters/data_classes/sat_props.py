@@ -150,12 +150,17 @@ class Data(ExpDataTemplate):
 
         # objective function
         obj_value = 0
+        tmp = []
         if "Psat" in self._thermodict:
-            obj_value = np.sum((((phase_list[0] - self._thermodict['Psat']) / self._thermodict['Psat'])**2)*self.weights)
+            obj_value += np.sum((((phase_list[0] - self._thermodict['Psat']) / self._thermodict['Psat'])**2)*self.weights)
+            tmp.append(np.sum((((phase_list[0] - self._thermodict['Psat']) / self._thermodict['Psat'])**2)*self.weights))
         if "rhol" in self._thermodict:
-            obj_value = np.sum((((phase_list[1] - self._thermodict['rhol']) / self._thermodict['rhol'])**2)*self.weights)
+            obj_value += np.sum((((phase_list[1] - self._thermodict['rhol']) / self._thermodict['rhol'])**2)*self.weights)
+            tmp.append(np.sum((((phase_list[1] - self._thermodict['rhol']) / self._thermodict['rhol'])**2)*self.weights))
         if "rhov" in self._thermodict:
-            obj_value = np.sum((((phase_list[2] - self._thermodict['rhov']) / self._thermodict['rhov'])**2)*self.weights)
+            obj_value += np.sum((((phase_list[2] - self._thermodict['rhov']) / self._thermodict['rhov'])**2)*self.weights)
+            tmp.append(np.sum((((phase_list[2] - self._thermodict['rhov']) / self._thermodict['rhov'])**2)*self.weights))
+        print("obj, Psat, rhol, rhov",tmp)
 
         return obj_value
 

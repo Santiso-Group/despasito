@@ -109,7 +109,7 @@ class Data(ExpDataTemplate):
             if len(eos._nui) > 1:
                 raise ValueError("Ambiguous instructions. Include xi to define intended component to obtain saturation properties")
             else:
-                self._thermodict['xilist'] = np.array([[1.0] for x in range(len(self.self._thermodict['Tlist']))])
+                self._thermodict['xilist'] = np.array([[1.0] for x in range(len(self._thermodict['Tlist']))])
 
         # Run thermo calculations
         try:
@@ -146,9 +146,9 @@ class Data(ExpDataTemplate):
         # objective function
         obj_value = 0
         if "delta" in self._thermodict:
-            obj_value = np.sum((((phase_list[0] - self._thermodict["delta"]) / self._thermodict["delta"])**2)*self.weights)
+            obj_value += np.sum((((phase_list[0] - self._thermodict["delta"]) / self._thermodict["delta"])**2)*self.weights)
         if "rhol" in self._thermodict:
-            obj_value = np.sum((((phase_list[1] - self._thermodict["rhol"]) / self._thermodict["rhol"])**2)*self.weights)
+            obj_value += np.sum((((phase_list[1] - self._thermodict["rhol"]) / self._thermodict["rhol"])**2)*self.weights)
 
         return obj_value
 

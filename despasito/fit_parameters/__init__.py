@@ -84,7 +84,11 @@ def fit(eos, thermo_dict):
         thermo_dict.pop(key,None)
 
     if list(thermo_dict.keys()):
-        logger.info("Note: thermo_dict keys: {}, were not used.".format(", ".join(list(thermo_dict.keys()))))    
+        logger.info("Note: thermo_dict keys: {}, were not used.".format(", ".join(list(thermo_dict.keys()))))
+
+    if "bounds" not in thermo_dict:
+        bounds = np.empty((len(opt_params["fit_params"]),2))
+    bounds = ff.check_parameter_bounds(opt_params, eos, bounds)
 
     # Reformat exp. data into formatted dictionary
     exp_dict = {}
@@ -115,7 +119,7 @@ def fit(eos, thermo_dict):
         beadparams0 = opt_params["beadparams0"]
         logger.info("Initial guess in parameters provided: {}".format(beadparams0))
     else:
-        beadparams0 = eos.param_guess(opt_params["fit_params"])
+        beadparams0 = ff.initial_guess(opt_params, eos)
 
     # Options for basin hopping
     new_basin_dict = {"niter": 10, "T": 0.5, "niter_success": 3}
@@ -152,6 +156,7 @@ def fit(eos, thermo_dict):
         result = spo.basinhopping(ff.compute_SAFT_obj, beadparams0, **basin_dict, accept_test=custombounds, disp=True,
                        minimizer_kwargs={"args": (opt_params, eos, exp_dict),**minimizer_dict})
 
+        print(result)
         logger.info("Fitting terminated:\n{}".format(result.message))
         logger.info("Best Fit Parameters")
         logger.info("    Obj. Value: {}".format(result.fun))

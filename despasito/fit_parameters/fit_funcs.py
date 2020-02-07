@@ -2,6 +2,77 @@
 import numpy as np
 import logging
 
+
+def initial_guess(opt_params, eos):
+    r"""
+    Extract initial guess in fit parameters from EOS object. These values were taken from the EOSgroup file.
+
+    Parameters
+    ----------
+    opt_params : dict
+        Parameters used in basin fitting algorithm
+
+        - fit_bead (str) - Name of bead whose parameters are being fit, should be in bead list of beadconfig
+        - fit_params (list[str]) - This list of contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
+
+    eos : obj
+        Equation of state output that writes pressure, max density, chemical potential, updates parameters, and evaluates objective functions. For parameter fitting algorithm See equation of state documentation for more details.
+
+    Returns
+    -------
+    beadparams0 : numpy.ndarray, 
+        An array of initial guesses for parameters, these will be optimized throughout the process.
+        
+    """
+
+    # Update beadlibrary with test paramters
+
+    beadparams0 = np.ones(len(opt_params['fit_params']))
+    for i, param in enumerate(opt_params['fit_params']):
+        fit_params_list = param.split("_")
+        if len(fit_params_list) == 1:
+            beadparams0[i] = eos.param_guess(fit_params_list[0], [opt_params['fit_bead']])
+        elif len(fit_params_list) == 2:
+            beadparams0[i] = eos.param_guess(fit_params_list[0], [opt_params['fit_bead'], fit_params_list[1]])
+        else:
+            raise ValueError("Parameters for only one bead are allowed to be fit at one time. Please only list one bead type in your fit parameter name.")
+
+    return beadparams0
+
+def check_parameter_bounds(opt_params, eos, bounds):
+    r"""
+    Extract initial guess in fit parameters from EOS object. These values were taken from the EOSgroup file.
+    
+    Parameters
+    ----------
+    opt_params : dict
+        Parameters used in basin fitting algorithm
+    
+        - fit_bead (str) - Name of bead whose parameters are being fit, should be in bead list of beadconfig
+        - fit_params (list[str]) - This list of contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
+    
+    eos : obj
+        Equation of state output that writes pressure, max density, chemical potential, updates parameters, and evaluates objective functions. For parameter fitting algorithm See equation of state documentation for more details.
+    
+    Returns
+    -------
+    beadparams0 : numpy.ndarray,
+        An array of initial guesses for parameters, these will be optimized throughout the process.
+    
+    """
+    
+    # Check boundary parameters to be sure they're in a reasonable range
+    for i, param in enumerate(opt_params['fit_params']):
+        fit_params_list = param.split("_")
+        if len(fit_params_list) == 1:
+            bounds[i] = eos.check_bounds(fit_params_list[0], [opt_params['fit_bead']], bounds[i])
+        elif len(fit_params_list) == 2:
+            bounds[i] = eos.check_bounds(fit_params_list[0], [opt_params['fit_bead'], fit_params_list[1]], bounds[i])
+        else:
+            raise ValueError("Parameters for only one bead are allowed to be fit at one time. Please only list one bead type in your fit parameter name.")
+
+    return bounds
+
 def reformat_ouput(cluster):
     r"""
     Takes a list of lists that combine lists and floats and reformats it into a 2D numpy array.

@@ -184,6 +184,9 @@ def PvsRho(T, xi, eos, minrhofrac=(1.0 / 500000.0), rhoinc=5.0, vspacemax=1.0E-4
     #min rho is a fraction of max rho, such that minrho << rhogassat
     minrho = maxrho * minrhofrac
     #list of densities for P,rho and P,v
+    if (maxrho-minrho) < rhoinc:
+        raise ValueError("Density range, {}, is less than incement, {}. Check parameters used in eos.density_max().".format((maxrho-minrho),rhoinc))
+
     rholist = np.arange(minrho, maxrho, rhoinc)
     #check rholist to see when the spacing
     vspace = (1.0 / rholist[:-1]) - (1.0 / rholist[1:])
@@ -247,6 +250,66 @@ def PvsV_spline(vlist, Plist):
     #PvsV_plot(vlist, Plist, Pvspline, markers=extrema)
 
     return Pvspline, roots, extrema
+
+######################################################################
+#                                                                    #
+#                      Pressure-Volume Spline                        #
+#                                                                    #
+######################################################################
+def interp_vroot(v0, vlist, Plist):
+    r"""
+    Take estimate of the specific volume root in P vs. specific volume curve, and find the closest root in the array to interpolate the value. If the root already lies between the closest points, then the same value is reported. This helps improve accuracy of liquid roots where the spline may not correctly represent the near vertical trend because we used a cublic spline to allow use of the derivative method.
+    
+    Parameters
+    ----------
+    v0 : float
+        This guess in the specific volume roots is tested
+    vlist : numpy.ndarray
+        Specific volume array. Length depends on values in rhodict [:math:`m^3`/mol]
+    Plist : numpy.ndarray
+        Pressure associated with specific volume of system with given temperature and composition [Pa]
+    
+    Returns
+    -------
+    v0_new : float
+        This is either the same value as given, or a new estimate interpolated from the closest points that change sign.
+    """
+
+    logger = logging.getLogger(__name__)
+
+    # Find roots through change in sign
+    ind_array = np.zeros(4,int)
+    for i in range(3):
+        if ind_array[i]+1 < len(Plist):
+            tmp = np.where(Plist[ind_array[i]:]*(-1)**(i) < 0)[0]
+            if any(tmp):
+                ind_array[i+1] = tmp[0]+ind_array[i]
+            else:
+                break
+    ind_array = ind_array[ind_array>0]
+
+    # Find which root is closest to the estimate given
+    Nind = len(ind_array)
+    if Nind == 0:
+        logger.warning("No roots found in given Plist. Return given v_root")
+        v0_new = v0
+    elif Nind == 1:
+        ind = ind_array[0]
+    else:
+         tmp = np.abs(vlist[ind_array]-v0)
+         ind_tmp = np.where(tmp==np.min(tmp))[0][0]
+         ind = ind_array[ind_tmp]
+
+    # Assess and possibly reestimate v_root
+    if (v0 < vlist[ind-1] or v0 > vlist[ind]):
+        m = (Plist[ind]-Plist[ind-1])/(vlist[ind]-vlist[ind-1])
+        v0_new = -m/(Plist[ind]-m*vlist[ind]) 
+        logger.debug("Reestimate root: v0={}, v0_new={}".format(v0,v0_new))
+    else:
+        logger.debug("v_root is within bounds, ({},{}). Return given v_root, {}.".format(vlist[ind-1],vlist[ind],v0))
+        v0_new = v0
+
+    return v0_new
 
 ######################################################################
 #                                                                    #
@@ -579,7 +642,7 @@ def calc_rhol(P, T, xi, eos, rhodict={}):
             flag = 3
             logger.error("    Flag 3: The T and xi, {} {}, won't produce a fluid (vapor or liquid) at this pressure".format(str(T),str(xi)))
             rho_tmp = np.nan
-            #PvsV_plot(vlist, Plist+P, Pvspline, markers=extrema)
+            #PvsV_plot(vlist, Plist, Pvspline, markers=extrema)
     elif l_roots == 2: # 2 roots
         if (Pvspline(roots[0])+P) < 0.:
             flag = 1
@@ -591,7 +654,7 @@ def calc_rhol(P, T, xi, eos, rhodict={}):
     elif l_roots == 1: # 1 root
         if not len(extrema):
             flag = 2
-            rho_tmp = 1.0 / roots[0]
+            rho_tmp = 1.0 / interp_vroot(roots[0], vlist, Plist)
             logger.debug("    Flag 2: The T and xi, {} {}, combination produces a critical fluid at this pressure".format(T,xi))
         elif (Pvspline(roots[0])+P) > (Pvspline(max(extrema))+P):
             flag = 1
@@ -607,6 +670,7 @@ def calc_rhol(P, T, xi, eos, rhodict={}):
 
     if flag in [1,2]: # liquid or critical fluid
         tmp = [rho_tmp*.99, rho_tmp*1.01]
+        print("rho_tmp",tmp)
         if (Pdiff(tmp[0],P, T, xi, eos)*Pdiff(tmp[1],P, T, xi, eos))<0:
             rho_tmp = spo.brentq(Pdiff, tmp[0], tmp[1], args=(P, T, xi, eos), rtol=0.0000001)
         else:
@@ -616,6 +680,9 @@ def calc_rhol(P, T, xi, eos, rhodict={}):
                 rho_tmp = spo.root(Pdiff, rho_tmp, args=(P, T, xi, eos), method="hybr", tol=1e-7)
                 rho_tmp = rho_tmp.x[0]
     logger.info("    Liquid Density: {} mol/m^3, flag {}".format(rho_tmp,flag))
+
+    print(rho_tmp, flag)
+    PvsV_plot(vlist, Plist, Pvspline, markers=extrema)
 
     # Flag: 0 is vapor, 1 is liquid, 2 mean a critical fluid, 3 means that neither is true
     return rho_tmp, flag
