@@ -517,14 +517,14 @@ class saft_gamma_mie(EOStemplate):
         """
         
         logger = logging.getLogger(__name__)
-        param_bound_extreme = {"epsilon":[0.,1000.], "sigma":[0.,9e-9], "l_r":[0.,100.], "l_a":[0.,100.], "Sk":[0.,1.], "epsilon_a":[0.,1000.], "K":[0.,10000.]}
+        param_bound_extreme = {"epsilon":[0.,1000.], "sigma":[0.,9e-9], "l_r":[0.,100.], "l_a":[0.,100.], "Sk":[0.,1.], "epsilon_a":[0.,5000.], "K":[0.,10000.]}
         
         if len(bead_names) > 2:
             raise ValueError("The bead names {} were given, but only a maximum of 2 are permitted.".format(", ".join(bead_names)))
         if not set(bead_names).issubset(self._beads):
             raise ValueError("The bead names {} were given, but they are not in the allowed list: {}".format(", ".join(bead_names),", ".join(self._beads)))
         
-        bounds_new = np.empty(2)
+        bounds_new = np.zeros(2)
         # Non bonded parameters
         if (param_name in param_bound_extreme):
             # Self interaction parameter
@@ -535,7 +535,7 @@ class saft_gamma_mie(EOStemplate):
                 else:
                     bounds_new[0] = bounds[0]
         
-                if bounds[1] > param_bound_extreme[param_name][1]:
+                if (bounds[1] > param_bound_extreme[param_name][1] or bounds[1] < 1e-32):
                     logger.debug("Given {} upper boundary, {}, is greater than what is recommended by eos object. Using value of {}.".format(param_name,bounds[1],param_bound_extreme[param_name][1]))
                     bounds_new[1] = param_bound_extreme[param_name][1]
                 else:
@@ -549,7 +549,7 @@ class saft_gamma_mie(EOStemplate):
                 else:
                     bounds_new[0] = bounds[0]
 
-                if bounds[1] > param_bound_extreme[param_name][1]:
+                if (bounds[1] > param_bound_extreme[param_name][1] or bounds[1] < 1e-32):
                     logger.debug("Given {}_{} upper boundary, {}, is greater than what is recommended by eos object. Using value of {}.".format(param_name,bead_names[1],bounds[1],param_bound_extreme[param_name][1]))
                     bounds_new[1] = param_bound_extreme[param_name][1]
                 else:
@@ -570,7 +570,7 @@ class saft_gamma_mie(EOStemplate):
             else:
                 bounds_new[0] = bounds[0]
 
-            if bounds[1] > param_bound_extreme[param_name_tmp][1]:
+            if (bounds[1] > param_bound_extreme[param_name_tmp][1] or bounds[1] < 1e-32):
                 logger.debug("Given {} upper boundary, {}, is greater than what is recommended by eos object. Using value of {}.".format(param_name,bounds[1],param_bound_extreme[param_name_tmp][1]))
                 bounds_new[1] = param_bound_extreme[param_name][1]
             else:

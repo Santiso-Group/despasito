@@ -670,7 +670,6 @@ def calc_rhol(P, T, xi, eos, rhodict={}):
 
     if flag in [1,2]: # liquid or critical fluid
         tmp = [rho_tmp*.99, rho_tmp*1.01]
-        print("rho_tmp",tmp)
         if (Pdiff(tmp[0],P, T, xi, eos)*Pdiff(tmp[1],P, T, xi, eos))<0:
             rho_tmp = spo.brentq(Pdiff, tmp[0], tmp[1], args=(P, T, xi, eos), rtol=0.0000001)
         else:
@@ -680,9 +679,6 @@ def calc_rhol(P, T, xi, eos, rhodict={}):
                 rho_tmp = spo.root(Pdiff, rho_tmp, args=(P, T, xi, eos), method="hybr", tol=1e-7)
                 rho_tmp = rho_tmp.x[0]
     logger.info("    Liquid Density: {} mol/m^3, flag {}".format(rho_tmp,flag))
-
-    print(rho_tmp, flag)
-    PvsV_plot(vlist, Plist, Pvspline, markers=extrema)
 
     # Flag: 0 is vapor, 1 is liquid, 2 mean a critical fluid, 3 means that neither is true
     return rho_tmp, flag

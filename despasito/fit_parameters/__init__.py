@@ -8,6 +8,7 @@ Input.json files have a different dictionary structure that is processed by :fun
 
 """
 
+import sys
 import os
 import numpy as np
 from importlib import import_module
@@ -153,10 +154,9 @@ def fit(eos, thermo_dict):
 
     # Run Parameter Fitting
     try:
-        result = spo.basinhopping(ff.compute_SAFT_obj, beadparams0, **basin_dict, accept_test=custombounds, disp=True,
+        result = spo.basinhopping(ff.compute_obj, beadparams0, **basin_dict, accept_test=custombounds, disp=True,
                        minimizer_kwargs={"args": (opt_params, eos, exp_dict),**minimizer_dict})
 
-        print(result)
         logger.info("Fitting terminated:\n{}".format(result.message))
         logger.info("Best Fit Parameters")
         logger.info("    Obj. Value: {}".format(result.fun))

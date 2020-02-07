@@ -366,7 +366,7 @@ class cubic_peng_robinson(EOStemplate):
             else:
                 bounds_new[0] = bounds[0]
             
-            if bounds[1] > param_bound_extreme[param_name][1]:
+            if (bounds[1] > param_bound_extreme[param_name][1] or bounds[1] < 1e-32):
                 logger.debug("Given {} upper boundary, {}, is greater than what is recommended by eos object. Using value of {}.".format(param_name,bounds[1],param_bound_extreme[param_name][1]))
                 bounds_new[1] = param_bound_extreme[param_name][1]
             else:

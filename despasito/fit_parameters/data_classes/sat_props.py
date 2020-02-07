@@ -160,7 +160,6 @@ class Data(ExpDataTemplate):
         if "rhov" in self._thermodict:
             obj_value += np.sum((((phase_list[2] - self._thermodict['rhov']) / self._thermodict['rhov'])**2)*self.weights)
             tmp.append(np.sum((((phase_list[2] - self._thermodict['rhov']) / self._thermodict['rhov'])**2)*self.weights))
-        print("obj, Psat, rhol, rhov",tmp)
 
         return obj_value
 

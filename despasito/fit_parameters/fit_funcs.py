@@ -246,7 +246,7 @@ class BasinBounds(object):
         return tmax and tmin
 
 
-def compute_SAFT_obj(beadparams, opt_params, eos, exp_dict):
+def compute_obj(beadparams, opt_params, eos, exp_dict):
     r"""
     Fit defined parameters for equation of state object with given experimental data. 
 
