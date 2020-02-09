@@ -12,7 +12,7 @@ The following functions are tested:
 """
 
 # Import package, test suite, and other packages as needed
-import despasito.input_output.readwrite_input as d_io
+import despasito.input_output.read_input as ri
 import pytest
 import numpy as np
 
@@ -21,7 +21,7 @@ import numpy as np
 def test_process_bead_data(data):
     """Test extraction of system component information"""
 
-    beads, nui = d_io.process_bead_data(data)
+    beads, nui = ri.process_bead_data(data)
 
     errors = []
     if not set(beads) == set(['CH4_2', 'eCH3']):
@@ -35,6 +35,6 @@ def test_process_bead_data(data):
 #@pytest.mark.parametrize('key, answer', [("rhoinc",2.0),("minrhofrac",2.5e-06)])
 #def test_file2paramdict(key,answer):
 #    """Test conversion of txt file to dictionary"""
-#    rho_dict = d_io.file2paramdict("example/dens_params.txt")
+#    rho_dict = ri.file2paramdict("example/dens_params.txt")
 #    print(rho_dict)
 #    assert rho_dict[key] == pytest.approx(answer,abs=1e-7)

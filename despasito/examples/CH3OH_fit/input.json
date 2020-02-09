@@ -15,5 +15,8 @@
         "datatype": "sat_props",
         "calctype": "sat_props",
         "file": "methanol_Psat_1.csv"
+    },
+    "basin_dict": {
+        "stepsize": 10.0
     }
 }

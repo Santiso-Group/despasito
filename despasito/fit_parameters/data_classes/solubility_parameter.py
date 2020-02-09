@@ -29,7 +29,7 @@ class Data(ExpDataTemplate):
         * T : list, List of temperature values for calculation
         * P : list, List of pressure values used in calculations
         * xi : list, List of liquid mole fractions used in calculations.
-        * weights : list/float, Either a list as long as the number of data points to multiply by the objective value associated with each point, or a float to multiply the objective value of this data set.
+        * weights : dict, A dictionary where each key is the header used in the exp. data file. The value associated with a header can be a list as long as the number of data points to multiply by the objective value associated with each point, or a float to multiply the objective value of this data set.
         * rhodict : dict, Optional, default: {"minrhofrac":(1.0 / 60000.0), "rhoinc":10.0, "vspacemax":1.0E-4}, Dictionary of options used in calculating pressure vs. mole fraction curves.
 
     Attributes
@@ -60,6 +60,11 @@ class Data(ExpDataTemplate):
             self.calctype = "solubility_parameter"
             self._thermodict["calculation_type"] = "solubility_parameter"
 
+        try:
+            self.weights = data_dict["weights"]
+        except:
+            self.weights = {}
+
         if "xi" in data_dict:
             self._thermodict["xilist"] = data_dict["xi"]
         if "yi" in data_dict:
@@ -68,22 +73,32 @@ class Data(ExpDataTemplate):
         if "T" in data_dict:
             self._thermodict["Tlist"] = data_dict["T"]
         if "rhol" in data_dict:
+            key = 'rhol'
             self._thermodict["rhol"] = data_dict["rhol"]
+            if key in self.weights:
+                if type(self.weights[key]) != float and len(self.weights[key]) != len(self._thermodict[key]):
+                    raise ValueError("Array of weights for '{}' values not equal to number of experimental values given.".format(key))
         if "P" in data_dict:
             self._thermodict["Plist"] = data_dict["P"]
+            if 'P' in self.weights:
+                self.weights['Plist'] = self.weights.pop('P')
         if "delta" in data_dict:
+            key = 'delta'
             self._thermodict["delta"] = data_dict["delta"]
+            if key in self.weights:
+                if type(self.weights[key]) != float and len(self.weights[key]) != len(self._thermodict[key]):
+                    raise ValueError("Array of weights for '{}' values not equal to number of experimental values given.".format(key))
 
         tmp = ["Tlist", "delta"]
         if not all([x in self._thermodict.keys() for x in tmp]):
             raise ImportError("Given solubility data, value(s) for T and delta should have been provided.")
 
-        try:
-            self.weights = data_dict["weights"]
-        except:
-            self.weights = 1.0
+        for key in self._thermodict.keys():
+            if key not in self.weights:
+                if key != 'calculation_type':
+                    self.weights[key] = 1.0
 
-        logger.info("Data type 'SolubilityParam' initiated with calctype, {}, and data types: {}".format(self.calctype,", ".join(self._thermodict.keys())))
+        logger.info("Data type 'solubility parameter' initiated with calctype, {}, and data types: {}.\nWeight data by: {}".format(self.calctype,", ".join(self._thermodict.keys()),self.weights))
 
         if 'rhodict' in data_dict:
             self._thermodict["rhodict"] = data_dict["rhodict"]
@@ -137,6 +152,8 @@ class Data(ExpDataTemplate):
             A value for the objective function
         """
 
+        logger = logging.getLogger(__name__)
+
         phase_list = self._thermo_wrapper(eos)
 
         ## Reformat array of results
@@ -144,13 +161,20 @@ class Data(ExpDataTemplate):
         phase_list = np.transpose(np.array(phase_list))
 
         # objective function
-        obj_value = 0
+        obj_value = np.zeros(2)
         if "delta" in self._thermodict:
-            obj_value += np.sum((((phase_list[0] - self._thermodict["delta"]) / self._thermodict["delta"])**2)*self.weights)
+            obj_value[0] = np.sum((((phase_list[0] - self._thermodict["delta"]) / self._thermodict["delta"])**2)*self.weights['delta'])
         if "rhol" in self._thermodict:
-            obj_value += np.sum((((phase_list[1] - self._thermodict["rhol"]) / self._thermodict["rhol"])**2)*self.weights)
+            obj_value[1] = np.sum((((phase_list[1] - self._thermodict["rhol"]) / self._thermodict["rhol"])**2)*self.weights['rhol'])
 
-        return obj_value
+        logger.debug("Obj. breakdown for {}: delta {}, rhol {}".format(self.name,obj_value[0],obj_value[1]))
+
+        if all(np.isnan(obj_value)):
+            obj_total = np.nan
+        else:
+            obj_total = np.nansum(obj_value)
+
+        return obj_total
 
     def __str__(self):
 

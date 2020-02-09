@@ -3,7 +3,7 @@ Unit and regression test for the despasito package.
 """
 
 # Import package, test suite, and other packages as needed
-import despasito.input_output.readwrite_input as rw
+import despasito.input_output.read_input as ri
 import despasito.fit_parameters as fit
 import despasito.fit_parameters.fit_funcs as funcs
 import despasito.equations_of_state
@@ -39,7 +39,7 @@ def test_fit_import():
 
 def test_fit_1comp(eos=eos,thermo_dict=thermo_dict):
 
-    thermo_dict = rw.process_param_fit_inputs(thermo_dict)
+    thermo_dict = ri.process_param_fit_inputs(thermo_dict)
     output = fit.fit(eos,thermo_dict)
         
     assert output["final_parameters"][0]==pytest.approx(384.93,abs=1e-1) and output["objective_value"]<1.0

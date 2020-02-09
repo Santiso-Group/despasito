@@ -8,7 +8,8 @@ In any directory with the appropriate .json input files, run DESPASITO with ``py
 import logging
 import argparse
 
-from .input_output import readwrite_input
+from .input_output import read_input
+from .input_output import write_output
 from .equations_of_state import eos as eos_mod
 from .thermodynamics import thermo
 from .fit_parameters import fit
@@ -34,7 +35,7 @@ def run(filename="input.json", path=".", **args):
     
     #read input file (need to add command line specification)
     logger.info("Begin processing input file: %s" % filename)
-    eos_dict, thermo_dict, output_file = readwrite_input.extract_calc_data(filename, path, **args)
+    eos_dict, thermo_dict, output_file = read_input.extract_calc_data(filename, path, **args)
     eos_dict['jit'] = args['jit']
 
     if output_file:
@@ -54,10 +55,10 @@ def run(filename="input.json", path=".", **args):
         output_dict = fit(eos, thermo_dict)
         #output = fit(eos, thermo_dict)
         logger.info("Finished parametrization")
-        readwrite_input.writeout_fitdict(output_dict,eos,**file_dict)
+        write_output.writeout_fitdict(output_dict,eos,**file_dict)
     else:
         logger.info("Initializing thermodynamic calculation")
         output_dict = thermo(eos, thermo_dict)
         logger.info("Finished thermodynamic calculation")
-        readwrite_input.writeout_thermodict(output_dict,thermo_dict["calculation_type"],**file_dict)
+        write_output.writeout_thermodict(output_dict,thermo_dict["calculation_type"],**file_dict)
     

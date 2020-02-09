@@ -296,8 +296,12 @@ def compute_obj(beadparams, opt_params, eos, exp_dict):
         except:
             raise ValueError("Failed to evaluate objective function for {} of type {}.".format(key,data_obj.name))
 
-    # Write out parameters and objective functions for each dataset
-    logger.info("\nParameters: {}\nValues: {}\nExp. Data: {}\nObj. Values: {}\nTotal Obj. Value: {}".format(opt_params['fit_params'],beadparams,list(exp_dict.keys()),obj_function,sum(obj_function)))
+    obj_total = np.nansum(obj_function)
+    if obj_total == 0. and np.isnan(np.sum(obj_function)):
+        obj_total = np.inf
 
-    return sum(obj_function)
+    # Write out parameters and objective functions for each dataset
+    logger.info("\nParameters: {}\nValues: {}\nExp. Data: {}\nObj. Values: {}\nTotal Obj. Value: {}".format(opt_params['fit_params'],beadparams,list(exp_dict.keys()),obj_function,obj_total))
+
+    return obj_total
 

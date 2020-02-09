@@ -4,7 +4,7 @@ Fit Parameters
 
 This package uses functions from input_output, equations_of_state, and thermodynamics to fit parameters to experimental data.
 
-Input.json files have a different dictionary structure that is processed by :func:`~despasito.input_output.readwrite_input.process_param_fit_inputs`
+Input.json files have a different dictionary structure that is processed by :func:`~despasito.input_output.read_input.process_param_fit_inputs`
 
 """
 
@@ -157,6 +157,7 @@ def fit(eos, thermo_dict):
         result = spo.basinhopping(ff.compute_obj, beadparams0, **basin_dict, accept_test=custombounds, disp=True,
                        minimizer_kwargs={"args": (opt_params, eos, exp_dict),**minimizer_dict})
 
+        print(result.keys())
         logger.info("Fitting terminated:\n{}".format(result.message))
         logger.info("Best Fit Parameters")
         logger.info("    Obj. Value: {}".format(result.fun))
