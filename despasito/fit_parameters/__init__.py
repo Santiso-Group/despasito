@@ -4,14 +4,14 @@ Fit Parameters
 
 This package uses functions from input_output, equations_of_state, and thermodynamics to fit parameters to experimental data.
 
-Input.json files have a different dictionary structure that is processed by :func:`~despasito.input_output.readwrite_input.process_param_fit_inputs`
+Input.json files have a different dictionary structure that is processed by :func:`~despasito.input_output.read_input.process_param_fit_inputs`
 
 """
 
+import sys
 import os
 import numpy as np
 from importlib import import_module
-import scipy.optimize as spo
 import logging
 
 from . import fit_funcs as ff
@@ -31,18 +31,19 @@ def fit(eos, thermo_dict):
     thermo_dict : dict
         Dictionary of instructions for thermodynamic calculations and parameter fitting.
 
-        - opt_params (dict) - Parameters used in basin fitting algorithm.
+        - opt_params (dict) - Parameters used in global fitting algorithm.
 
             - fit_bead (str) - Name of bead whose parameters are being fit, should be in bead list of beadconfig
             - fit_params (list[str]) - This list of contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
             - beadparams0 (list[float]), Optional - Initial guess in parameter. If one is not provided, a guess is made based on the type of parameter from eos object.
+            - global_method (str), Optional - default: 'basinhopping', Global optimization method used to fit parameters. See :func:`~despasito.fit_parameters.fit_funcs.global_minimization`.
 
         - bounds (numpy.ndarray) - List of length equal to fit_params with lists of pairs for minimum and maximum bounds of parameter being fit. Defaults are broad, recommend specification.
         - exp_data (dict) - This dictionary is made up of a dictionary for each data set that the parameters are fit to. Each dictionary is converted into an object and saved back to this structure before parameter fitting begins. Each key is an arbitrary string used to identify the data set and used later in reporting objective function values during the fitting process. See data type objects for more details.
 
             - name (str) - One of the supported data type objects to fit parameters
 
-        - basin_dict (dict), Optional - kwargs used in scipy.optimize.basinhopping
+        - global_dict (dict), Optional - kwargs used in global optimization method. See :func:`~despasito.fit_parameters.fit_funcs.global_minimization`.
 
             - niter (int) - default: 10, Number of basin hopping iterations
             - T (float) - default: 0.5, Temperature parameter, should be comparable to separation between local minima (i.e. the “height” of the walls separating values).
@@ -62,6 +63,8 @@ def fit(eos, thermo_dict):
     logger = logging.getLogger(__name__)
 
     # Extract relevant quantities from thermo_dict
+    dicts = {}
+
     keys_del = []
     for key, value in thermo_dict.items():
         # Extract inputs
@@ -73,9 +76,9 @@ def fit(eos, thermo_dict):
         elif key == "bounds":
             bounds = value
         elif key == "minimizer_dict":
-            minimizer_dict = value
-        elif key == "basin_dict":
-            basin_dict = value
+            dicts['minimizer_dict'] = value
+        elif key == "global_dict":
+            dicts['global_dict'] = value
         else:
             continue
         keys_del.append(key)
@@ -84,7 +87,11 @@ def fit(eos, thermo_dict):
         thermo_dict.pop(key,None)
 
     if list(thermo_dict.keys()):
-        logger.info("Note: thermo_dict keys: {}, were not used.".format(", ".join(list(thermo_dict.keys()))))    
+        logger.info("Note: thermo_dict keys: {}, were not used.".format(", ".join(list(thermo_dict.keys()))))
+
+    if "bounds" not in thermo_dict:
+        bounds = np.empty((len(opt_params["fit_params"]),2))
+    bounds = ff.check_parameter_bounds(opt_params, eos, bounds)
 
     # Reformat exp. data into formatted dictionary
     exp_dict = {}
@@ -113,45 +120,21 @@ def fit(eos, thermo_dict):
     # Generate initial guess for parameters if none was given
     if "beadparams0" in opt_params:
         beadparams0 = opt_params["beadparams0"]
-        logger.info("Initial guess in parameters provided: {}".format(beadparams0))
     else:
-        beadparams0 = eos.param_guess(opt_params["fit_params"])
+        beadparams0 = ff.initial_guess(opt_params, eos)
+    logger.info("Initial guess in parameters: {}".format(beadparams0))
 
-    # Options for basin hopping
-    new_basin_dict = {"niter": 10, "T": 0.5, "niter_success": 3}
-    if "basin_dict" in thermo_dict:
-        for key, value in basin_dict.items():
-            new_basin_dict[key] = value
-    basin_dict = new_basin_dict
-
-    # Set up options for minimizer in basin hopping
-    new_minimizer_dict = {"method": 'nelder-mead', "options": {'maxiter': 50}}
-    if "minimizer_dict" in thermo_dict:
-        for key, value in minimizer_dict.items():
-            if key == "method":
-                new_minimizer_dict[key] = value
-            elif key == "options":
-                for key2, value2 in value.items():
-                    new_minimizer_dict[key][key2] = value2
-    minimizer_dict = new_minimizer_dict
-  
-    # NoteHere: how is this array generated? stepmag = np.array([550.0, 26.0, 4.0e-10, 0.45, 500.0, 150.0e-30, 550.0])
-    try:
-        if "stepsize" in basin_dict:
-        	stepsize = basin_dict["stepsize"]
-        else:
-        	stepsize = 0.1
-        stepmag = np.transpose(np.array(bounds))[1]
-        basin_dict["take_step"] = ff.BasinStep(stepmag, stepsize=stepsize)
-        custombounds = ff.BasinBounds(bounds)
-    except:
-    	raise TypeError("Could not initialize BasinStep and/or BasinBounds")
+    # Check global optimization method
+    if "global_method" in opt_params:
+        global_method = opt_params["global_method"]
+    else:
+        global_method = "basinhopping"
 
     # Run Parameter Fitting
     try:
-        result = spo.basinhopping(ff.compute_SAFT_obj, beadparams0, **basin_dict, accept_test=custombounds, disp=True,
-                       minimizer_kwargs={"args": (opt_params, eos, exp_dict),**minimizer_dict})
+        result = ff.global_minimization(global_method, beadparams0, bounds, opt_params["fit_bead"], opt_params["fit_params"], eos, exp_dict, **dicts)
 
+        print(result.keys())
         logger.info("Fitting terminated:\n{}".format(result.message))
         logger.info("Best Fit Parameters")
         logger.info("    Obj. Value: {}".format(result.fun))

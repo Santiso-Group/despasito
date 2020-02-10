@@ -4,7 +4,8 @@
     "opt_params": {
         "fit_bead" : "CH3",
         "fit_params": ["epsilon_CH2","sigma"],
-        "epsilon_bounds" : [150.0, 400.0]
+        "epsilon_bounds" : [150.0, 400.0],
+        "beadparams0" : [300.0, 3.4e-10]
     },
     "Knovel": {
         "datatype": "liquid_density",

@@ -4,11 +4,14 @@
     "opt_params": {
         "fit_bead" : "CH3",
         "fit_params": ["epsilon_CH2"],
+        "global_method": "differential_evolution",
         "epsilon_bounds" : [150.0, 400.0]
     },
     "Knovel": {
         "datatype": "solubility_parameter",
         "calctype": "solubility_parameter",
-        "file": "butane_solubility.csv"
+        "file": "butane_solubility.csv",
+        "weights": { "delta" : [0.75, 0.75, 0.75], "rhol" : 0.25 
+        }
     }
 }
