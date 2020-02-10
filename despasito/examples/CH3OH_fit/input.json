@@ -9,7 +9,9 @@
     "Wiley": {
         "datatype": "sat_props",
         "calctype": "sat_props",
-        "file": "methanol_saturation.csv"
+        "file": "methanol_saturation.csv",
+        "weights" : {"rhov": 0.0
+        }
     },
     "Gibbard": {
         "datatype": "sat_props",

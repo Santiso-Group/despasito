@@ -336,9 +336,8 @@ def sat_props(eos, sys_dict):
     for i in range(l_x):
 
         logger.info("T (K), xi: {} {}, Let's Begin!".format(str(T_list[i]), str(xi_list[i])))
-        try:
-            Psat[i], rholsat[i], rhovsat[i] = calc.calc_Psat(T_list[i], xi_list[i], eos, **opts)
-        except:
+        Psat[i], rholsat[i], rhovsat[i] = calc.calc_Psat(T_list[i], xi_list[i], eos, **opts)
+        if np.isnan(Psat[i]):
             logger.warning("T (K), xi: {} {}, calculation did not produce a valid result.".format(str(T_list[i]), str(xi_list[i])))
             logger.debug("Calculation Failed:", exc_info=True)
             Psat[i], rholsat[i], rhovsat[i] = [np.nan, np.nan, np.nan]

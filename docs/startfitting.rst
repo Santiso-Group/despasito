@@ -38,7 +38,7 @@ Parameters can be fit for one component at a time, and for as many parameters as
         }
     }
 
-Note that the name of this file doesn't really matter, but we use the standard prefix *input* to denote where these instructions are. This file is processed by the :func:`~despasito.input_output.readwrite_input.process_param_fit_inputs` function.
+Note that the name of this file doesn't really matter, but we use the standard prefix *input* to denote where these instructions are. This file is processed by the :func:`~despasito.input_output.read_input.process_param_fit_inputs` function.
 
 The order of these items does not matter, but the first three items must be included, plus one of the follow dictionaries discussed below. The `beadconfig` and `EOSgroup` are described in our basic thermodynamic calculation tutorial. Our new entry, `opt_params` defines this as a parameter fitting job and outlines the basic instructions.
 
@@ -64,9 +64,11 @@ It's that easy!
 How to Tune the Fitting Algorithm
 ##################################
 
-DESPASITO uses the `scipy.optimize.basinhopping <https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.basinhopping.html#scipy.optimize.basinhopping>`_ algorithm for parameter fitting. Two optional dictionaries may then be included, `basin_dict` for options specific to the basinhopping function, and `minimizer_dict` to define the minimizing function and the associated options. These options can be found in the scipy documentation, but we will reiterate them here with our custom default values.
+DESPASITO uses global optimization methods from `scipy.optimize <https://docs.scipy.org/doc/scipy/reference/optimize.html>`_ for parameter fitting. The optional dictionary, ``global_dict`` may then be included for options specific to the function. Currently, brute, differential_evolution, and basinhopping are available. Our preference is to use the basinhopping method so we will elaborate here.
 
-* basin_dict (dict), Optional - kwargs used in scipy.optimize.basinhopping
+The basinhopping method options can be found in the scipy documentation, but we will reiterate them here with our custom default values. Unlike the other methods, this algoirthm also allows us to provide a `minimizer_dict` to define the minimizing function and the associated options.
+
+* global_dict (dict), Optional - kwargs used in scipy.optimize.basinhopping
 
     - niter (int) - default: 10, Number of basin hopping iterations
     - T (float) - default: 0.5, Temperature parameter, should be comparable to separation between local minima (i.e. the “height” of the walls separating values).

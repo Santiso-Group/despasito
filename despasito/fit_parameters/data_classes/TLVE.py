@@ -67,8 +67,8 @@ class Data(ExpDataTemplate):
                 self.weights['xilist'] = self.weights.pop('xi')
                 key = 'xilist'
                 if key in self.weights:
-                if type(self.weights[key]) != float and len(self.weights[key]) != len(self._thermodict[key]):
-                    raise ValueError("Array of weights for '{}' values not equal to number of experimental values given.".format(key))
+                    if type(self.weights[key]) != float and len(self.weights[key]) != len(self._thermodict[key]):
+                        raise ValueError("Array of weights for '{}' values not equal to number of experimental values given.".format(key))
         if "T" in data_dict:
             self._thermodict["Tlist"] = data_dict["T"]
             if 'T' in self.weights:
@@ -79,8 +79,8 @@ class Data(ExpDataTemplate):
                 self.weights['yilist'] = self.weights.pop('yi')
                 key = 'yilist'
                 if key in self.weights:
-                if type(self.weights[key]) != float and len(self.weights[key]) != len(self._thermodict[key]):
-                    raise ValueError("Array of weights for '{}' values not equal to number of experimental values given.".format(key))
+                    if type(self.weights[key]) != float and len(self.weights[key]) != len(self._thermodict[key]):
+                        raise ValueError("Array of weights for '{}' values not equal to number of experimental values given.".format(key))
         if "P" in data_dict: 
             self._thermodict["Plist"] = data_dict["P"]
             self._thermodict["Pguess"] = data_dict["P"]
@@ -88,8 +88,8 @@ class Data(ExpDataTemplate):
                 self.weights['Plist'] = self.weights.pop('P')
                 key = 'Plist'
                 if key in self.weights:
-                if type(self.weights[key]) != float and len(self.weights[key]) != len(self._thermodict[key]):
-                    raise ValueError("Array of weights for '{}' values not equal to number of experimental values given.".format(key))
+                    if type(self.weights[key]) != float and len(self.weights[key]) != len(self._thermodict[key]):
+                        raise ValueError("Array of weights for '{}' values not equal to number of experimental values given.".format(key))
 
         if not any([x in self._thermodict.keys() for x in ['Plist', 'Tlist']]):
             raise ImportError("Given TLVE data, values for P and T should have been provided.")

@@ -44,7 +44,7 @@ def write_EOSparameters(library, filename):
 #                  Write Thermodynamic Output                         #
 #                                                                    #
 ######################################################################
-def writeout_thermodict(output_dict,calctype,output_file="thermo_output.txt"):
+def writeout_thermo_dict(output_dict,calctype,output_file="thermo_output.txt"):
     """
     Write out result of thermodynamic calculation.
 

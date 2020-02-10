@@ -55,10 +55,10 @@ def run(filename="input.json", path=".", **args):
         output_dict = fit(eos, thermo_dict)
         #output = fit(eos, thermo_dict)
         logger.info("Finished parametrization")
-        write_output.writeout_fitdict(output_dict,eos,**file_dict)
+        write_output.writeout_fit_dict(output_dict,eos,**file_dict)
     else:
         logger.info("Initializing thermodynamic calculation")
         output_dict = thermo(eos, thermo_dict)
         logger.info("Finished thermodynamic calculation")
-        write_output.writeout_thermodict(output_dict,thermo_dict["calculation_type"],**file_dict)
+        write_output.writeout_thermo_dict(output_dict,thermo_dict["calculation_type"],**file_dict)
     
