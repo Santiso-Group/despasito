@@ -6,7 +6,6 @@ Routines for parsing input .json files to dictionaries for program use.
 
 import logging
 import json
-import collections
 import numpy as np
 import os
 

@@ -3,13 +3,12 @@ This module contains our thermodynamic calculations. Calculation of pressure, ch
     
 """
 
-import sys
 import numpy as np
 from scipy import interpolate
 import scipy.optimize as spo
 from scipy.ndimage.filters import gaussian_filter1d
 import copy
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import logging
 from . import fund_constants as constants
 
@@ -293,7 +292,6 @@ def interp_vroot(v0, vlist, Plist):
     Nind = len(ind_array)
     if Nind == 0:
         logger.warning("No roots found in given Plist. Return given v_root")
-        v0_new = v0
     elif Nind == 1:
         ind = ind_array[0]
     else:

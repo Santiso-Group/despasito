@@ -204,7 +204,7 @@ class Data(ExpDataTemplate):
         else:
             obj_total = np.nansum(obj_value)
 
-        return obj_value
+        return obj_total
 
     def __str__(self):
 
