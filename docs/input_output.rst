@@ -10,7 +10,8 @@ Inputs are .json files containing instructions for thermodynamic calculations an
 .. autosummary::
    :toctree: _autosummary
 
-   readwrite_input
+   read_input
+   write_output
 
 Package Outputs
 ---------------

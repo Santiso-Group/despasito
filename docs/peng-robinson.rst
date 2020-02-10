@@ -2,6 +2,8 @@
 Peng-Robinson
 =======================
 
+EOS type: cubic.peng-robinson
+
 Since its publication in 1976, the Peng & Robinson equation of state (PR EOS) has become one of the most useful and successfully applied models for thermodynamic and volumetric calculations in both industrial and academic fields. Although several variations exist, the traditional form in terms of density is:
 
 :math:`P=\frac{R T \rho}{1-b_{ij} \rho}-\frac{a_{ij} \rho^2}{(1+b_{ij} \rho)+\rho b_{ij} (1-b_{ij} \rho)}`

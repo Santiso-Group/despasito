@@ -2,6 +2,8 @@
 SAFT-:math:`\gamma`-Mie
 =======================
 
+EOS type: saft.gamma_mie
+
 The Statistical Associating Fluid Theory (SAFT) equation of state (EOS) is based on first order perturbation of the residual Helmholtz energy. The total Helmholtz energy is then defined as the sum of ideal gas, monomer (i.e. segment or group), chain (i.e. component), and association terms.
 
 :math:`\frac{A}{N k_{B} T}=\frac{A^{ideal}}{N k_{B} T}+\frac{A^{mono.}}{N k_{B} T}+\frac{A^{chain}}{N k_{B} T}+\frac{A^{assoc.}}{N k_{B} T}`

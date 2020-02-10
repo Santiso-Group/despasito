@@ -336,9 +336,8 @@ def sat_props(eos, sys_dict):
     for i in range(l_x):
 
         logger.info("T (K), xi: {} {}, Let's Begin!".format(str(T_list[i]), str(xi_list[i])))
-        try:
-            Psat[i], rholsat[i], rhovsat[i] = calc.calc_Psat(T_list[i], xi_list[i], eos, **opts)
-        except:
+        Psat[i], rholsat[i], rhovsat[i] = calc.calc_Psat(T_list[i], xi_list[i], eos, **opts)
+        if np.isnan(Psat[i]):
             logger.warning("T (K), xi: {} {}, calculation did not produce a valid result.".format(str(T_list[i]), str(xi_list[i])))
             logger.debug("Calculation Failed:", exc_info=True)
             Psat[i], rholsat[i], rhovsat[i] = [np.nan, np.nan, np.nan]
@@ -435,7 +434,7 @@ def liquid_properties(eos, sys_dict):
             phil.append(phil_tmp)
             logger.info("P {} Pa, T {} K, xi {}, rhol {}, phil {}".format(P_list[i],T_list[i],xi_list[i],rhol[i],phil_tmp))
 
-    logger.info("--- Calculation liquid_density Complete ---")
+    logger.info("--- Calculation liquid_properties Complete ---")
 
     return {"P":P_list,"T":T_list,"xi":xi_list,"rhol":rhol,"phil":phil}
 
@@ -482,7 +481,7 @@ def vapor_properties(eos, sys_dict):
     if np.size(T_list) != np.size(yi_list, axis=0):
         if len(T_list) == 1:
             T_list = np.ones(len(yi_list))*T_list[0]
-            logger.info("The same temperature, {}, was used for all mole fraction values".join(T_list[0]))
+            logger.info("The same temperature, {}, was used for all mole fraction values".format(T_list[0]))
         else:
             raise ValueError("The number of provided temperatures and mole fraction sets are different")
 
@@ -523,7 +522,120 @@ def vapor_properties(eos, sys_dict):
             phiv.append(phiv_tmp)
             logger.info("P {} Pa, T {} K, yi {}, rhov {}, phiv {}".format(P_list[i],T_list[i],yi_list[i],rhov[i],phiv_tmp))
 
-    logger.info("--- Calculation vapor_density Complete ---")
+    logger.info("--- Calculation vapor_properties Complete ---")
 
     return {"P":P_list,"T":T_list,"yi":yi_list,"rhov":rhov,"phiv":phiv}
+
+######################################################################
+#                                                                    #
+#               Solubility Parameter given xi and T                  #
+#                                                                    #
+######################################################################
+
+def solubility_parameter(eos, sys_dict):
+
+    r"""
+    Calculate the Hildebrand solubility parameter based on temperature and composition. This function is based on the method used in Zeng, Z., Y. Xi, and Y. Li "Calculation of Solubility Parameter Using Perturbed-Chain SAFT and Cubic-Plus-Association Equations of State" Ind. Eng. Chem. Res. 2008, 47, 9663–9669.
+
+    Input and system information is assessed first. An output file is generated with T, xi, :math:`\rho_{l}, and :math:`\detla.
+    
+    Parameters
+    ----------
+    eos : obj
+        An instance of the defined EOS class to be used in thermodynamic computations.
+    sys_dict: dict
+        A dictionary of all information given in the input .json file that wasn't used to create the EOS object (e.g. options for density array :func:`~despasito.thermodynamics.calc.PvsRho`).
+
+    Returns
+    -------
+    output_dict : dict
+        Output of dictionary containing given and calculated values
+    """
+
+    logger = logging.getLogger(__name__)
+
+    ## Extract and check input data
+    if 'Tlist' in sys_dict:
+        T_list = np.array(sys_dict['Tlist'],float)
+        logger.info("Using Tlist")
+        del sys_dict['Tlist']
+
+    variables = list(locals().keys())
+    if all([key not in variables for key in ["T_list"]]):
+        raise ValueError('Tlist are not specified')
+
+    if "Plist" in sys_dict:
+        P_list = np.array(sys_dict['Plist'])
+        logger.info("Using Plist")
+        del sys_dict['Plist']
+    else:
+        P_list = 101325.0 * np.ones_like(T_list)
+        logger.info("Assuming atmospheric pressure.")
+
+    if "xilist" in sys_dict:
+        xi_list = np.array(sys_dict['xilist'])
+        logger.info("Using xilist")
+        del sys_dict['xilist']
+    else:
+        xi_list = np.array([[1.0] for x in range(len(T_list))])
+        logger.info("Single mole fraction of one.")
+
+    if np.size(T_list) != np.size(xi_list, axis=0):
+        if len(T_list) == 1:
+            T_list = np.ones(len(xi_list))*T_list[0]
+            logger.info("The same temperature, {}, was used for all mole fraction values".format(T_list[0]))
+        if len(xi_list) == 1:
+            xi_list = np.array([xi_list[0] for x in range(len(T_list))])
+            logger.info("The same mole fraction values, {}, were used for all temperature values".format(xi_list[0]))
+        else:
+            raise ValueError("The number of provided temperatures and mole fraction sets are different")
+
+    if np.size(T_list) != np.size(P_list, axis=0):
+        if len(P_list) == 1:
+            P_list = np.ones(len(T_list))*P_list[0]
+            logger.info("The same pressure, {}, was used for all temperature values".format(P_list[0]))
+        else:
+            raise ValueError("The number of provided temperatures and pressure sets are different")
+
+    # Extract rho dict
+    if "rhodict" in sys_dict:
+        logger.info("Accepted options for P vs. density curve")
+        rhodict = sys_dict["rhodict"]
+        del sys_dict['rhodict']
+    else:
+        rhodict = {}
+
+    ## Optional values
+    opts = {}
+    for key, val in sys_dict.items():
+        if key in ['dT', 'tol']:
+            opts[key] = val
+            del sys_dict[key]
+
+    logger.info("The sys_dict keys: {}, were not used.".format(", ".join(list(sys_dict.keys()))))
+
+    ## Calculate vapor density
+    l_x = len(T_list)
+    rhol = np.zeros(l_x)
+    delta = np.zeros(l_x)
+    for i in range(l_x):
+        # Find rhol
+        if (i==0 or ([P_list[i], T_list[i]] != [P_list[i-1], T_list[i-1]])):
+            rhol[i], flag = calc.calc_rhol(P_list[i], T_list[i], xi_list[i], eos, rhodict=rhodict)
+        else:
+            rhol[i] = rhol[i-1]
+
+        if flag not in [1,2]:
+            logger.error('Failed to calculate rhov at {}, flag {}'.format(T_list[i],flag))
+            delta[i] = np.nan
+        else:
+            delta[i] = calc.hildebrand_solubility(rhol[i], xi_list[i], T_list[i], eos, **opts)
+            logger.info("P {} Pa, T {} K, xi {}, rhol {}, delta {}".format(P_list[i],T_list[i],xi_list[i],rhol[i],delta[i]))
+
+    logger.info("--- Calculation solubility_parameter Complete ---")
+
+    return {"P":P_list,"T":T_list,"xi":xi_list,"rhol":rhol,"delta":delta}
+
+
+
 

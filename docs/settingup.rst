@@ -1,5 +1,5 @@
 
-Setting Up a Thermodynamic Calculation
+Setting-up a Thermodynamic Calculation
 ======================================
 
 .. contents:: :local:
@@ -25,7 +25,7 @@ For this example we focus on carbon dioxide and water modeled with the SAFT-:mat
         "Plist": [4492927.45]
     }
 
-Notice that the name of this file doesn't really matter, but we use the prefix *input* to denote where these instructions are. This file is processed by the :func:`~despasito.input_output.readwrite_input.extract_calc_data` function.
+Notice that the name of this file doesn't really matter, but we use the prefix *input* to denote where these instructions are. This file is processed by the :func:`~despasito.input_output.read_input.extract_calc_data` function.
 
 The first three lines are used in producing our EOS object. The `bead_config` line is an list of system components. Each components is defined as a list of group (i.e. segment or bead) types. Each of those groups is then a list of the bead name followed by the number of beads in the components. Notice that connectivity isn't captured by SAFT in this way. The next file, `EOSgroup.json`, contains the self-interaction parameters of a certain group. The optional file, `EOScross.json`, then contains any cross interaction parameters. If it isn't provided, then the EOS object will estimate these interactions with the defined mixing rules. The default EOS is SAFT-:math:`\gamma`-Mie, but any other EOS can be added to DESPASITO using our class interface. Specifying another EOS is explained in, :func:`~despasito.equations_of_state.eos`. That being said, because this package is based on SAFT, the `association_site_names` can also be defined as a line here.
 

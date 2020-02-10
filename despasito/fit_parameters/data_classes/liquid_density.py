@@ -28,7 +28,7 @@ class Data(ExpDataTemplate):
         * calctype : str, Optional, default: 'liquid_properties'
         * T : list, List of temperature values for calculation
         * xi : list, List of liquid mole fractions used in liquid_properties calculations
-        * weights : list/float, Either a list as long as the number of data points to multiply by the objective value associated with each point, or a float to multiply the objective value of this data set.
+        * weights : dict, A dictionary where each key is the header used in the exp. data file. The value associated with a header can be a list as long as the number of data points to multiply by the objective value associated with each point, or a float to multiply the objective value of this data set.
         * rhodict : dict, Optional, default: {"minrhofrac":(1.0 / 60000.0), "rhoinc":10.0, "vspacemax":1.0E-4}, Dictionary of options used in calculating pressure vs. mole fraction curves.
 
     Attributes
@@ -49,51 +49,54 @@ class Data(ExpDataTemplate):
 
         # Self interaction parameters
         self.name = data_dict["name"]
-        try:
+        self._thermodict = {}
+        if "calctype" in data_dict:
+            self._thermodict["calculation_type"] = data_dict["calctype"]
             self.calctype = data_dict["calctype"]
-        except:
-            self.calctype = "liquid_properties"
-
-        data_type = []
-        data_type_name = []
-        if "xi" in data_dict:
-            self.xi = data_dict["xi"]
-            data_type.append(self.xi)
-            data_type_name.append("xi")
-        if "T" in data_dict:
-            self.T = data_dict["T"]
-            data_type.append(self.T)
-            data_type_name.append("T")
-        if "rhol" in data_dict:
-            self.rhol = data_dict["rhol"]
-            data_type.append(self.rhol)
-            data_type_name.append("rhol")
-        if "P" in data_dict:
-            if (type(P) == float or len(P)==1):
-                self.P = np.ones(self.T)*P
-            else:
-                self.P = P
         else:
-            self.P = np.ones(self.T)*101325.0
-            logger.info("Assume atmospheric pressure")
-        data_type.append(self.P)
-        data_type_name.append("P")
-
-        tmp = ["xi","T","rhol"]
-        if not all([hasattr(self,x) for x in tmp]):
-            raise ImportError("Given liquid property data, values for T, xi, and rhol should have been provided.")
+            self.calctype = "liquid_properties"
+            self._thermodict["calculation_type"] = "liquid_properties"
 
         try:
             self.weights = data_dict["weights"]
         except:
-            self.weights = 1.0
+            self.weights = {}
 
-        try:
-            self._rhodict = data_dict["rhodict"]
-        except:
-            self._rhodict = {"minrhofrac":(1.0 / 300000.0), "rhoinc":10.0, "vspacemax":1.0E-4}
+        if "xi" in data_dict:
+            self._thermodict["xilist"] = data_dict["xi"]
+        if "T" in data_dict:
+            self._thermodict["Tlist"] = data_dict["T"]
+        if "rhol" in data_dict:
+            key = "rhol"
+            self._thermodict["rhol"] = data_dict["rhol"]
+            if key in self.weights:
+                if type(self.weights[key]) != float and len(self.weights[key]) != len(self._thermodict[key]):
+                    raise ValueError("Array of weights for '{}' values not equal to number of experimental values given.".format(key))
 
-        logger.info("Data type 'liquid_properties' initiated with calctype, {}, and data types: {}".format(self.calctype,", ".join(data_type_name)))
+        tmp = ["Tlist","rhol"]
+        if not all([x in self._thermodict.keys() for x in tmp]):
+            raise ImportError("Given liquid property data, values for T, xi, and rhol should have been provided.")
+
+        if "P" in data_dict:
+            if (type(data_dict["P"]) == float or len(data_dict["P"])==1):
+                self._thermodict["Plist"] = np.ones(len(self._thermodict["Tlist"]))*data_dict["P"]
+            else:
+                self._thermodict["Plist"] = data_dict["P"]
+        else:
+            self._thermodict["Plist"] = np.ones(len(self._thermodict["Tlist"]))*101325.0
+            logger.info("Assume atmospheric pressure")
+
+        for key in self._thermodict.keys():
+            if key not in self.weights:
+                if key != 'calculation_type':
+                    self.weights[key] = 1.0
+
+        logger.info("Data type 'liquid_properties' initiated with calctype, {}, and data types: {}.\nWeight data by: {}".format(self.calctype,", ".join(self._thermodict.keys()),self.weights))
+
+        if 'rhodict' in data_dict:
+            self._thermodict["rhodict"] = data_dict["rhodict"]
+        else:
+            self._thermodict["rhodict"] = {"minrhofrac":(1.0 / 300000.0), "rhoinc":10.0, "vspacemax":1.0E-4}
 
     def _thermo_wrapper(self, eos):
 
@@ -111,9 +114,16 @@ class Data(ExpDataTemplate):
             A list of the predicted thermodynamic values estimated from thermo calculation. This list can be composed of lists or floats
         """
 
+        # Check bead type
+        if 'xilist' not in self._thermodict:
+            if len(eos._nui) > 1:
+                raise ValueError("Ambiguous instructions. Include xi to define intended component to obtain saturation properties")
+            else:
+                self._thermodict['xilist'] = np.array([[1.0] for x in range(len(self._thermodict['Tlist']))])
+
         try:
-            output_dict = thermo(eos,{"calculation_type":self.calctype,"Tlist":self.T,"xilist":self.xi,"Plist":self.P,"rhodict":self._rhodict})
-            output = output_dict["rhol"]
+            output_dict = thermo(eos, self._thermodict)
+            output = [output_dict["rhol"]]
         except:
             raise ValueError("Calculation of calc_rhol failed")
         return output
@@ -142,11 +152,11 @@ class Data(ExpDataTemplate):
         phase_list = np.transpose(np.array(phase_list))
 
         # objective function
-        obj_value = np.sum((((phase_list[0] - self.rhol) / self.rhol)**2)*self.weights)
+        obj_value = np.sum((((phase_list[0] - self._thermodict["rhol"]) / self._thermodict["rhol"])**2)*self.weights['rhol'])
 
         return obj_value
 
     def __str__(self):
 
-        string = "Data Set Object\nname: %s\ncalctype:%s\nNdatapts:%g" % {self.name, self.calctype, len(self.T)}
+        string = "Data Set Object\nname: %s\ncalctype:%s\nNdatapts:%g" % {self.name, self.calctype, len(self._thermodict["Tlist"])}
         return string

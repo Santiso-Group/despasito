@@ -1,12 +1,11 @@
 """
 
-Routines for parsing input .json files to dictionaries for program use, and write .json files.
+Routines for parsing input .json files to dictionaries for program use.
 
 """
 
 import logging
 import json
-import collections
 import numpy as np
 import os
 
@@ -168,36 +167,6 @@ def file2paramdict(filename,delimiter=" "):
 
 ######################################################################
 #                                                                    #
-#                  Extract Saft Parameters                           #
-#                                                                    #
-######################################################################
-def write_EOSparameters(library, filename):
-
-    """
-    Sort and export dictionary of input parameters into .json file.
-
-    Parameters
-    ----------
-    library : dict
-        Dictionary of parameters to be sorted and exported 
-
-    Returns
-    -------
-    filename : str
-        Filename (with or without path) of .json file of parameters
-    """
-
-    #logger = logging.getLogger(__name__)
-
-    #sort and write SAFT dict
-    for i in library:
-        library[i] = collections.OrderedDict(sorted(list(library[i].items()), key=lambda tup: tup[0].lower()))
-    f = open(filename, 'w')
-    json.dump(library, f, indent=4)
-
-
-######################################################################
-#                                                                    #
 #                  Make Mole Frac. Matrix                            #
 #                                                                    #
 ######################################################################
@@ -289,11 +258,14 @@ def process_param_fit_inputs(thermo_dict):
 
             - fit_bead (str) - Name of bead whose parameters are being fit, should be in bead list of beadconfig
             - fit_params (list[str]) - This list of contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
-            - *name* (dict) - Dictionary of a data set that the parameters are fit to. Each dictionary is added to the exp_data dictionary before being passed to the fitting algorithm. Each *name* is used as the key in exp_data. *name* is an arbitrary string used to identify the data set and used later in reporting objective function values during the fitting process. See data type objects for more details.
             - *_bounds (list[float]), Optional - This list contains the minimum and maximum of the parameter from a parameter listed in fit_params, represented in place of the asterisk. See input file instructions for more information.
             - beadparams0 (list[float]), Optional - Initial guess in parameters being fit. Should be the same length at fit_params and contain a reasonable guess for each parameter. If this is not provided, a guess is made based on the type of parameter from eos object.
 
-        - datatype (str) - One of the supported data type objects to fit parameters
+        - *name* (dict) - Dictionary of a data set that the parameters are fit to. Each dictionary is added to the exp_data dictionary before being passed to the fitting algorithm. Each *name* is used as the key in exp_data. *name* is an arbitrary string used to identify the data set and used later in reporting objective function values during the fitting process. See data type objects for more details.
+
+            - file (str) - 
+            - datatype (str) - One of the supported data type objects to fit parameters
+            - calctype (str) - One of the supported thermo calculation types that would be associated with the chosen datatype
 
     Returns
     -------
@@ -309,7 +281,7 @@ def process_param_fit_inputs(thermo_dict):
 
         - exp_data (dict) - This dictionary is made up of a dictionary for each data set that the parameters are fit to. Each key is an arbitrary string used to identify the data set and used later in reporting objective function values during the fitting process. See data type objects for more details.
 
-            - name (str) - One of the supported data type objects to fit parameters
+            - name (obj) - One of the supported data type objects to fit parameters
     """
 
     logger = logging.getLogger(__name__)
@@ -331,8 +303,11 @@ def process_param_fit_inputs(thermo_dict):
                     new_opt_params["beadparams0"] = value["beadparams0"]
                 elif "bounds" in key2:
                     tmp  = key2.replace("_bounds","")
-                    ind = value["fit_params"].index(tmp)
-                    new_opt_params["bounds"][ind] = value2
+                    if tmp in value["fit_params"]:
+                        ind = value["fit_params"].index(tmp)
+                        new_opt_params["bounds"][ind] = value2
+                    else:
+                        logger.warning("Bounds for parameter type '{}' were given, but this parameter is not defined to be fit.".format(tmp))
                 else:
                     continue
                 keys_del.append(key2)
@@ -430,7 +405,10 @@ def process_exp_data_file(fname):
 
     #logger = logging.getLogger(__name__)
 
-    data = np.transpose(np.genfromtxt(fname, delimiter=',',names=True,skip_header=1))
+    try:
+        data = np.transpose(np.genfromtxt(fname, delimiter=',',names=True,skip_header=1))
+    except:
+        raise ValueError("Cannot import '{}', Check data file formatting.".format(fname))
     file_dict = {name:data[name] for name in data.dtype.names}
     
     # Sort through properties
@@ -459,100 +437,6 @@ def process_exp_data_file(fname):
     if zi: file_dict["zi"] = np.transpose(np.array([np.array(z) for z in zi]))
 
     return file_dict
-
-######################################################################
-#                                                                    #
-#                  Write Thermodynamic Output                         #
-#                                                                    #
-######################################################################
-def writeout_thermodict(output_dict,calctype,output_file="thermo_output.txt"):
-    """
-    Write out result of thermodynamic calculation.
-
-    Import dictionary of both input and output data to produce a file. A line in the top clarifies the calculation type done.
-
-    Parameters
-    ----------
-    output_dict : dict
-        Dictionary of given and calculated information from thermodynamic module
-    output_file : str, Optional, default: thermo_output.txt
-        Name of output file
-
-    Returns
-    -------
-    File of data saved to current directory
-    """
-
-    # Define units
-    units = {"T":"K","P":"Pa","Psat":"Pa","rhol":"mol/m^3","rhov":"mol/m^3"}
-
-    # Make comment line
-    comment = "# This data was generated in DESPASITO using the thermodynamic calculation: "+calctype
-    
-    # Make results matrix
-    keys = []
-    matrix = []
-    for key, value in output_dict.items():
-        tmp_matrix = np.transpose(np.array(value))
-        if len(tmp_matrix.shape)==1:
-            keys.append(key)
-            matrix.append(np.array(value))
-        else:
-            for i in range(len(tmp_matrix)):
-                keys.append(key+str(i+1))
-                matrix.append(np.array(tmp_matrix[i]))
-    matrix = np.transpose(np.array(matrix))
-
-    # Make header line
-    header = "#"
-    for key in keys:
-        if key in units:
-            unit = " [{}]".format(units[key])
-        else:
-            unit = ""
-        header += " {}{},".format(key,unit)
-
-    # Write to file
-    with open(output_file,"w") as f:
-        f.write(comment+"\n")
-        f.write(header+"\n")
-        for row in matrix:
-            f.write((' {},' * len(row)).format(*row)+"\n")
-            
-######################################################################
-#                                                                    #
-#                  Write Parameter Fitting Output                    #
-#                                                                    #
-######################################################################
-def writeout_fitdict(output_dict,eos,output_file="fit_output.txt"):
-    """
-    Write out result of fitting calculation.
-
-    Import fitting results dictionary to write out fitting results. In the future, the EOS dictionary will be used to generate new parameter .json files.
-
-    Parameters
-    ----------
-    output_dict : dict
-        Dictionary of given and calculated information from thermodynamic module.
-    eos : obj
-        Equation of state output that writes pressure, max density, chemical potential, updates parameters, and evaluates objective functions. For parameter fitting algorithm See equation of state documentation for more details.
-    output_file : str, Optional, default: thermo_output.txt
-        Name of output file
-
-    Returns
-    -------
-    File of data saved to current directory
-    """
-
-    header = "DESPASITO was used to fit parameters for the bead {} Obj. Value: {}\n".format(output_dict["fit_bead"],output_dict["objective_value"]) + "Parameter, Value\n"
-    with open(output_file,"w") as f:
-        f.write(header)
-        for i in range(len(output_dict["fit_parameters"])):
-            f.write("{}, {}".format(output_dict["fit_parameters"][i],output_dict["final_parameters"][i]))
-
-    # Add function to sort through and write out values
-    # step 1, Update parameters for EOS object
-    # step 2, write out libraries
 
 
 

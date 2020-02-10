@@ -41,9 +41,16 @@ class EOStemplate(ABC):
         pass
 
     @abstractmethod
-    def param_guess(self, fit_params):
+    def param_guess(self, param_name, bead_names):
         """
         Output a guess for the given parameter type.
+        """
+        pass
+    
+    @abstractmethod
+    def check_bounds(self, param_name, bead_names, bounds):
+        """
+        Check given boundaries and possibly correct for the given parameter type.
         """
         pass
 

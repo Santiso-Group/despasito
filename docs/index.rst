@@ -35,6 +35,7 @@ The second facet is parameterization, not only of the equation of state (EOS) bu
    :caption: Examples:
 
    settingup
+   startfitting
 
 Indices and tables
 ==================

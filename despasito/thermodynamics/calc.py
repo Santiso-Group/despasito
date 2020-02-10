@@ -10,6 +10,7 @@ from scipy.ndimage.filters import gaussian_filter1d
 import copy
 #import matplotlib.pyplot as plt
 import logging
+from . import fund_constants as constants
 
 ######################################################################
 #                                                                    #
@@ -139,7 +140,7 @@ def calc_CC_Pguess(xilist, Tlist, CriticalProp):
 #                      Pressure-Density Curve                        #
 #                                                                    #
 ######################################################################
-def PvsRho(T, xi, eos, minrhofrac=(1.0 / 500000.0), rhoinc=5.0, vspacemax=1.0E-4, **kwargs):
+def PvsRho(T, xi, eos, minrhofrac=(1.0 / 500000.0), rhoinc=5.0, vspacemax=1.0E-4, maxrho = None, **kwargs):
 
     r"""
     Give an array of density values, calculates the associated pressure given an eos.
@@ -158,8 +159,8 @@ def PvsRho(T, xi, eos, minrhofrac=(1.0 / 500000.0), rhoinc=5.0, vspacemax=1.0E-4
         The increment between density values in the density array. Passed from inputs to through the dictionary rhodict.
     vspacemax : float, Optional, default: 1.0E-4
         Maximum increment between specific volume array values. After conversion from density to specific volume, the increment values are compared to this value. Passed from inputs to through the dictionary rhodict.
-    maxpack : float, Optional, default: *see EOS method*
-        Maximum packing fraction. Passed from inputs to through the dictionary rhodict.
+    maxrho : float, Optional, default: None
+        [mol/m^3] Maximum molar density defined, if default of None is used then the eos object method, density_max is used.
 
     Returns
     -------
@@ -175,11 +176,17 @@ def PvsRho(T, xi, eos, minrhofrac=(1.0 / 500000.0), rhoinc=5.0, vspacemax=1.0E-4
         xi = np.array(xi)
 
     #estimate the maximum density based on the hard sphere packing fraction, part of EOS
-    maxrho = eos.density_max(xi, T, **kwargs)
+    if not maxrho:
+        maxrho = eos.density_max(xi, T, **kwargs)
+    elif type(maxrho) in [list, np.ndarray]:
+        logger.error("Maxrho should be type float. Given value: {}".format(maxrho))
 
     #min rho is a fraction of max rho, such that minrho << rhogassat
     minrho = maxrho * minrhofrac
     #list of densities for P,rho and P,v
+    if (maxrho-minrho) < rhoinc:
+        raise ValueError("Density range, {}, is less than incement, {}. Check parameters used in eos.density_max().".format((maxrho-minrho),rhoinc))
+
     rholist = np.arange(minrho, maxrho, rhoinc)
     #check rholist to see when the spacing
     vspace = (1.0 / rholist[:-1]) - (1.0 / rholist[1:])
@@ -236,13 +243,72 @@ def PvsV_spline(vlist, Plist):
     if extrema: 
         if len(extrema) > 2: extrema = extrema[0:2]
 
-    if len(roots) ==2:
-        slope, root2 = np.polyfit(vlist[-4:], Plist[-4:], 1)
-        roots = np.append(roots,[root2])
+  #  if len(roots) ==2:
+  #      slope, yroot = np.polyfit(vlist[-4:], Plist[-4:], 1)
+  #      roots = np.append(roots,[-yroot/slope])
 
     #PvsV_plot(vlist, Plist, Pvspline, markers=extrema)
 
     return Pvspline, roots, extrema
+
+######################################################################
+#                                                                    #
+#                      Pressure-Volume Spline                        #
+#                                                                    #
+######################################################################
+def interp_vroot(v0, vlist, Plist):
+    r"""
+    Take estimate of the specific volume root in P vs. specific volume curve, and find the closest root in the array to interpolate the value. If the root already lies between the closest points, then the same value is reported. This helps improve accuracy of liquid roots where the spline may not correctly represent the near vertical trend because we used a cublic spline to allow use of the derivative method.
+    
+    Parameters
+    ----------
+    v0 : float
+        This guess in the specific volume roots is tested
+    vlist : numpy.ndarray
+        Specific volume array. Length depends on values in rhodict [:math:`m^3`/mol]
+    Plist : numpy.ndarray
+        Pressure associated with specific volume of system with given temperature and composition [Pa]
+    
+    Returns
+    -------
+    v0_new : float
+        This is either the same value as given, or a new estimate interpolated from the closest points that change sign.
+    """
+
+    logger = logging.getLogger(__name__)
+
+    # Find roots through change in sign
+    ind_array = np.zeros(4,int)
+    for i in range(3):
+        if ind_array[i]+1 < len(Plist):
+            tmp = np.where(Plist[ind_array[i]:]*(-1)**(i) < 0)[0]
+            if any(tmp):
+                ind_array[i+1] = tmp[0]+ind_array[i]
+            else:
+                break
+    ind_array = ind_array[ind_array>0]
+
+    # Find which root is closest to the estimate given
+    Nind = len(ind_array)
+    if Nind == 0:
+        logger.warning("No roots found in given Plist. Return given v_root")
+    elif Nind == 1:
+        ind = ind_array[0]
+    else:
+         tmp = np.abs(vlist[ind_array]-v0)
+         ind_tmp = np.where(tmp==np.min(tmp))[0][0]
+         ind = ind_array[ind_tmp]
+
+    # Assess and possibly reestimate v_root
+    if (v0 < vlist[ind-1] or v0 > vlist[ind]):
+        m = (Plist[ind]-Plist[ind-1])/(vlist[ind]-vlist[ind-1])
+        v0_new = -m/(Plist[ind]-m*vlist[ind]) 
+        logger.debug("Reestimate root: v0={}, v0_new={}".format(v0,v0_new))
+    else:
+        logger.debug("v_root is within bounds, ({},{}). Return given v_root, {}.".format(vlist[ind-1],vlist[ind],v0))
+        v0_new = v0
+
+    return v0_new
 
 ######################################################################
 #                                                                    #
@@ -348,8 +414,10 @@ def calc_Psat(T, xi, eos, rhodict={}):
         Pvspline, roots, extrema = PvsV_spline(vlist, Plist-Psat)
 
         if len(roots) ==2:
-            slope, root2 = np.polyfit(vlist[-4:], Plist[-4:]-Psat, 1)
-            roots = np.append(roots,[root2])
+            slope, yroot = np.polyfit(vlist[-4:], Plist[-4:]-Psat, 1)
+            vroot = -yroot/slope
+            rho_tmp = spo.minimize(Pdiff, 1.0/vroot, args=(Psat, T, xi, eos), bounds=[(1.0/(vroot*1e+2), 1.0/(1.1*roots[-1]))])
+            roots = np.append(roots,[1.0/rho_tmp.x])
 
     #Psat,rholsat,rhogsat
     return Psat, 1.0 / roots[0], 1.0 / roots[2]
@@ -391,8 +459,8 @@ def eq_area(shift, Pv, vlist):
     elif len(roots) == 2:
         a = Pvspline.integral(roots[0], roots[1])
         # If the curve hasn't decayed to 0 yet, estimate the remaining area as a triangle. This isn't super accurate but we are just using the saturation pressure to get started.
-        slope, root2 = np.polyfit(vlist[-4:], Pv[-4:]-shift, 1)
-        b = Pvspline.integral(roots[1], vlist[-1]) + (Pv[-1]-shift)*(root2-vlist[-1])/2
+        slope, yroot = np.polyfit(vlist[-4:], Pv[-4:]-shift, 1)
+        b = Pvspline.integral(roots[1], vlist[-1]) + (Pv[-1]-shift)*(-yroot/slope-vlist[-1])/2
     else:
         logger.warning("Pressure curve without cubic properties has wrongly been accepted. Try decreasing minrhofrac")
         #PvsV_plot(vlist, Pv-shift, Pvspline, markers=extrema)
@@ -575,7 +643,7 @@ def calc_rhol(P, T, xi, eos, rhodict={}):
             flag = 3
             logger.error("    Flag 3: The T and xi, {} {}, won't produce a fluid (vapor or liquid) at this pressure".format(str(T),str(xi)))
             rho_tmp = np.nan
-            #PvsV_plot(vlist, Plist+P, Pvspline, markers=extrema)
+            #PvsV_plot(vlist, Plist, Pvspline, markers=extrema)
     elif l_roots == 2: # 2 roots
         if (Pvspline(roots[0])+P) < 0.:
             flag = 1
@@ -587,7 +655,7 @@ def calc_rhol(P, T, xi, eos, rhodict={}):
     elif l_roots == 1: # 1 root
         if not len(extrema):
             flag = 2
-            rho_tmp = 1.0 / roots[0]
+            rho_tmp = 1.0 / interp_vroot(roots[0], vlist, Plist)
             logger.debug("    Flag 2: The T and xi, {} {}, combination produces a critical fluid at this pressure".format(T,xi))
         elif (Pvspline(roots[0])+P) > (Pvspline(max(extrema))+P):
             flag = 1
@@ -2038,11 +2106,80 @@ def calc_xT_phase(xi, T, eos, rhodict={}, zi_opts={}, Pguess=-1, meth="hybr", pr
 
     obj = solve_P_xiT(P, xi, T, eos, rhodict=rhodict, zi_opts=zi_opts)
 
-    # NoteHere
-
     logger.info("Final Output: Obj {}, P {} Pa, flagv {}, yi {}".format(obj,P,flagv,yi_global))
 
     return P, yi_global, flagv, flagl, obj
+
+######################################################################
+#                                                                    #
+#                              Calc xT phase                         #
+#                                                                    #
+######################################################################
+def hildebrand_solubility(rhol, xi, T, eos, dT=.1, tol=1e-4, rhodict={}):
+    r"""
+    Calculate the solubility parameter based on temperature and composition. This function is based on the method used in Zeng, Z., Y. Xi, and Y. Li "Calculation of Solubility Parameter Using Perturbed-Chain SAFT and Cubic-Plus-Association Equations of State" Ind. Eng. Chem. Res. 2008, 47, 9663–9669.
+    
+    Parameters
+    ----------
+    rhol : float
+        Liquid molar density [mol/m^3]
+    xi : numpy.ndarray
+        Liquid mole fraction of each component, sum(xi) should equal 1.0
+    T : float
+        Temperature of the system [K]
+    eos : obj
+        An instance of the defined EOS class to be used in thermodynamic computations.
+    dT : float
+        Change in temperature used in calculating the derivative with central difference method 
+    tol : float
+        This cutoff value evaluates the extent to which the integrand of the calculation has decayed. If the last value if the array is greater than tol, then the remaining area is estimated as a triangle, where the intercept is estimated from an interpolation of the previous four points.
+    rhodict : dict, Optional, default: {}
+        Dictionary of options used in calculating pressure vs. mole
+
+    Returns
+    -------
+    delta : float
+        Solubility parameter [Pa^(1/2)], ratio of cohesive energy and molar volume
+    """
+
+    logger = logging.getLogger(__name__)
+
+    R = constants.Nav * constants.kb
+    RT = T * R
+
+    if type(rhol) in [np.ndarray,list]:
+        logger.info("rhol should be a float, not {}".format(rhol))
+
+    # Find dZdT
+    vlist, Plist1 = PvsRho(T-dT, xi, eos, **rhodict, maxrho=rhol)
+    vlist2, Plist2 = PvsRho(T+dT, xi, eos, **rhodict, maxrho=rhol)
+    vlist, Plist = PvsRho(T, xi, eos, **rhodict, maxrho=rhol)
+    if any(vlist != vlist2):
+        logger.error("Dependant variable vectors must be identical.")
+
+#    dZdT = (Plist2-Plist1)/(2*dT)*vlist/RT - Plist*vlist/(RT*T)
+#    integrand_list = gaussian_filter1d(T*dZdT/vlist, sigma=.5)
+
+    int_tmp = (Plist2-Plist1)/(2*dT)/R - Plist/(RT)
+    integrand_list = gaussian_filter1d(int_tmp, sigma=.5)
+
+    # Calculat U_res
+    integrand_spline = interpolate.InterpolatedUnivariateSpline(vlist, integrand_list,ext=1)
+    U_res = -RT*integrand_spline.integral(1/rhol,vlist[-1])
+
+    # Check if function converged before taking integral, if not, correct area
+    if integrand_list[-1] > tol:
+        slope, yroot = np.polyfit(vlist[-4:], integrand_list[-4:], 1)
+        xroot = -yroot/slope
+        U_res += -RT*integrand_list[-1]*(xroot-vlist[-1])/2
+
+    if (U_res) > 0.:
+        logger.error("The solubility parameter can not be imaginary")
+    else:
+        delta = np.sqrt(-(U_res)*rhol)
+        logger.info("When T={}, xi={}, delta={}".format(T,xi,delta))
+
+    return delta
 
 ######################################################################
 #                                                                    #
