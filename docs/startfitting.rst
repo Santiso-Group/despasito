@@ -30,11 +30,15 @@ Parameters can be fit for one component at a time, and for as many parameters as
         },
         "Gibbard": {
             "datatype": "sat_props",
-            "file": "methanol_psat.csv"
+            "file": "methanol_psat.csv",
+            "weights" : {
+                "Psat" : 0.3,
+                "rhov" : [0.2, 0.2, 0.2, 0.2, 0.5, 0.5, 0.7, 0.7, 0.7, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.5, 0.5]
+            }
         }
     }
 
-Note that the name of this file doesn't really matter, but we use the standard prefix *input* to denote where these instructions are. This file is processed by the :func:`~despasito.input_output.readwrite_input.process_param_fit_inputs` function.
+Note that the name of this file doesn't really matter, but we use the standard prefix *input* to denote where these instructions are. This file is processed by the :func:`~despasito.input_output.read_input.process_param_fit_inputs` function.
 
 The order of these items does not matter, but the first three items must be included, plus one of the follow dictionaries discussed below. The `beadconfig` and `EOSgroup` are described in our basic thermodynamic calculation tutorial. Our new entry, `opt_params` defines this as a parameter fitting job and outlines the basic instructions.
 
@@ -49,6 +53,7 @@ Experimental data is the last mandatory entry in the input file. In our example 
 * `calctype`: Optional...ish. This defines the thermodynamic calculation used by the datatype chosen, see the datatype for the allowed options. In many cases there is only one option and you don't need to include it, however, the TLVE datatype can fit parameters to Tx data or Ty data. We added a feature where the object will try to guess which of these matches the provided data.
 * `file`: The file name may be included if the data is in the same directory, or the path can be included with it. This file is expected to contain comma separated values, although it doesn't matter whether a .txt or .csv extension is used. The top line is skipped to allow inclusion of references. Column headers are the second line. Note that column headers should be thermo properties (e.g. T, P, x1, x2, y1, y2) without suffixes. Mole fractions x1, x2, ... should be in the same order as in the beadconfig line of the input file. No mole fractions should be left out. The column headers in the file are dictionary keys used to initiate the datatype object.
 * `rhodict`: Optional, include options for calculating the density vector that is the foundation of all the thermodynamic calculcations. See :func:`~despasito.thermodynamics.calc.PvsRho` for details.
+* `weights`: This dictionary allows the user to manually weight the influence of experimental data by some factor. This may be accomplished with a single factor multiplied by the entire array, or a vector of the same length as the experimental data given. The default is that all data has a weight of 1, but in the example above, the data from "Gibbard" is weighted individually in the case of vapor density for the purposes of this tutorial. Maybe we know that the instrument used for collecting this data is not as accurate with low values, now we can account for that.
 
 After this input file, copy the SAFTgroup.json file from the example `despasito/examples/CH3OH_fit` and go ahead and run the calculation with:
 ``python -m despasito -i input_fit.json -vv``, 
@@ -59,9 +64,11 @@ It's that easy!
 How to Tune the Fitting Algorithm
 ##################################
 
-DESPASITO uses the `scipy.optimize.basinhopping <https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.basinhopping.html#scipy.optimize.basinhopping>`_ algorithm for parameter fitting. Two optional dictionaries may then be included, `basin_dict` for options specific to the basinhopping function, and `minimizer_dict` to define the minimizing function and the associated options. These options can be found in the scipy documentation, but we will reiterate them here with our custom default values.
+DESPASITO uses global optimization methods from `scipy.optimize <https://docs.scipy.org/doc/scipy/reference/optimize.html>`_ for parameter fitting. The optional dictionary, ``global_dict`` may then be included for options specific to the function. Currently, brute, differential_evolution, and basinhopping are available. Our preference is to use the basinhopping method so we will elaborate here.
 
-* basin_dict (dict), Optional - kwargs used in scipy.optimize.basinhopping
+The basinhopping method options can be found in the scipy documentation, but we will reiterate them here with our custom default values. Unlike the other methods, this algoirthm also allows us to provide a `minimizer_dict` to define the minimizing function and the associated options.
+
+* global_dict (dict), Optional - kwargs used in scipy.optimize.basinhopping
 
     - niter (int) - default: 10, Number of basin hopping iterations
     - T (float) - default: 0.5, Temperature parameter, should be comparable to separation between local minima (i.e. the “height” of the walls separating values).
@@ -71,6 +78,6 @@ DESPASITO uses the `scipy.optimize.basinhopping <https://docs.scipy.org/doc/scip
 * minimizer_dict (dict), Optional - Dictionary used to define minimization type and the associated options.
 
     - method (str) - default: 'nelder-mead', Method available to scipy.optimize.minimize
-    - options (dict) - This dictionary contains the kwargs available to the chosen method
+    - options (dict) - This dictionary contains the kwargs available to the chosen `minimize function <https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html#scipy.optimize.minimize>`_ method 
 
 

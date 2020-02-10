@@ -14,9 +14,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - SAFT-gamma-mie and peng-robinson equations of state
  - Support for fitting with: TVLE, saturation, and liquid property data to binary systems
 
-### Removed
+## [0.1.1] - 2020-01-23
+### Added
+ - docs updated with parameter fitting tutorial
+ - thermodynamic modules now supports calculation of hildebrand solubility parameters
+ - fitting module now supports fitting to solubility parameters
 
-## [0.0.2] - 2020-01-23
 ### Changed
  - README.md updated with pip install instructions
  - docs updated with pip install instructions

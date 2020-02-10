@@ -8,6 +8,11 @@ from setuptools import find_packages
 import versioneer
 from numpy.distutils.core import Extension, setup
 
+if sys.version_info.major < 3:
+    raise ValueError("Due to abstract classes used. DESPASITO must be run using python 3.")
+if sys.version_info.minor > 7:
+    raise ValueError("DESPASITO cannot run on python versions greater than 3.7 due to incompadibilities between python 3.8 and numpy.")
+
 try:
     from Cython.Build import cythonize
     cy_exts = cythonize(os.path.join('despasito','equations_of_state','saft','c_exts.pyx'))

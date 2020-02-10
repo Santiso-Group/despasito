@@ -4,7 +4,8 @@
     "opt_params": {
         "fit_bead" : "CH3OH",
         "fit_params": ["epsilon"],
-        "epsilon_bounds" : [150.0, 400.0]
+        "epsilon_bounds" : [150.0, 400.0],
+        "beadparams0" : [375.0]
     },
     "Wiley": {
         "datatype": "sat_props",
@@ -15,5 +16,8 @@
         "datatype": "sat_props",
         "calctype": "sat_props",
         "file": "methanol_Psat_1.csv"
+    },
+    "basin_dict": {
+        "stepsize": 10.0
     }
 }
