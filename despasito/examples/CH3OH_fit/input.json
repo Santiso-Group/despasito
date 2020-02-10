@@ -4,14 +4,13 @@
     "opt_params": {
         "fit_bead" : "CH3OH",
         "fit_params": ["epsilon"],
-        "epsilon_bounds" : [150.0, 400.0]
+        "epsilon_bounds" : [150.0, 400.0],
+        "beadparams0" : [375.0]
     },
     "Wiley": {
         "datatype": "sat_props",
         "calctype": "sat_props",
-        "file": "methanol_saturation.csv",
-        "weights" : {"rhov": 0.0
-        }
+        "file": "methanol_saturation.csv"
     },
     "Gibbard": {
         "datatype": "sat_props",

@@ -3,6 +3,7 @@ This module contains our thermodynamic calculations. Calculation of pressure, ch
     
 """
 
+import sys
 import numpy as np
 from scipy import interpolate
 import scipy.optimize as spo
@@ -243,9 +244,9 @@ def PvsV_spline(vlist, Plist):
     if extrema: 
         if len(extrema) > 2: extrema = extrema[0:2]
 
-    if len(roots) ==2:
-        slope, yroot = np.polyfit(vlist[-4:], Plist[-4:], 1)
-        roots = np.append(roots,[-yroot/slope])
+  #  if len(roots) ==2:
+  #      slope, yroot = np.polyfit(vlist[-4:], Plist[-4:], 1)
+  #      roots = np.append(roots,[-yroot/slope])
 
     #PvsV_plot(vlist, Plist, Pvspline, markers=extrema)
 
@@ -416,7 +417,9 @@ def calc_Psat(T, xi, eos, rhodict={}):
 
         if len(roots) ==2:
             slope, yroot = np.polyfit(vlist[-4:], Plist[-4:]-Psat, 1)
-            roots = np.append(roots,[-yroot/slope])
+            vroot = -yroot/slope
+            rho_tmp = spo.minimize(Pdiff, 1.0/vroot, args=(Psat, T, xi, eos), bounds=[(1.0/(vroot*1e+2), 1.0/(1.1*roots[-1]))])
+            roots = np.append(roots,[1.0/rho_tmp.x])
 
     #Psat,rholsat,rhogsat
     return Psat, 1.0 / roots[0], 1.0 / roots[2]
@@ -2104,8 +2107,6 @@ def calc_xT_phase(xi, T, eos, rhodict={}, zi_opts={}, Pguess=-1, meth="hybr", pr
             zi_opts["tol"] = 1e-10
 
     obj = solve_P_xiT(P, xi, T, eos, rhodict=rhodict, zi_opts=zi_opts)
-
-    # NoteHere
 
     logger.info("Final Output: Obj {}, P {} Pa, flagv {}, yi {}".format(obj,P,flagv,yi_global))
 

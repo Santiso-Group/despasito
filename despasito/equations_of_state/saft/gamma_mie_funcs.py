@@ -67,6 +67,8 @@ def calc_Aideal(xi, rho, massi, T):
         raise ValueError("NaN was given as a value of density, rho") 
     elif rho.size == 0:
         raise ValueError("No value of density, rho, was given")
+    elif any(rho < 0.):
+        raise ValueError("Density values cannot be negative.")
 
     # Check for mole fractions of zero and remove those components
     ind = np.where(np.array(xi)<1e-32)[0]
