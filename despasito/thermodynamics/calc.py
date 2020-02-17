@@ -515,15 +515,29 @@ def calc_rhov(P, T, xi, eos, rhodict={}):
             else:
                 flag = 1
                 logger.debug("    Flag 1: The T and yi, {} {}, combination produces a liquid at this pressure".format(T,xi))
-            rho_tmp = 1/vlist[0]
+            try:
+                rho_tmp = spo.minimize(Pdiff, 1/vlist[0], args=(P, T, xi, eos), bounds=[(1e-24, 1/vlist[0]*1.1)])
+                rho_tmp = rho_tmp.x
+            except:
+                rho_tmp = 1/vlist[0]
             flag_NoOpt = True
         elif min(Plist)+P > 0:
-            rho_tmp = np.nan
-            if not len(extrema):
+            slope, yroot = np.polyfit(vlist[-4:], Plist[-4:], 1)
+            vroot = -yroot/slope
+            try:
+                rho_tmp = spo.minimize(Pdiff, 1.0/vroot, args=(P, T, xi, eos), bounds=[(1.0/(vroot*1e+2), 1.0/(1.1*roots[-1]))])
+                rho_tmp = rho_tmp.x
+            except:
+                rho_tmp = np.nan
+
+            if np.isnan(rho_tmp):
                 flag = 4
+            else:
+                flag = 0
+
+            if not len(extrema):
                 logger.debug("    Flag 2: The T and yi, {} {}, combination produces a critical fluid at this pressure".format(T,xi))
             else:
-                flag = 4
                 logger.debug("    Flag 0: This T and xi, {} {}, combination produces a vapor at this pressure. Warning! approaching critical fluid".format(T,xi))
         else:
             logger.warning("    Flag 3: The T and yi, {} {}, won't produce a fluid (vapor or liquid) at this pressure".format(T,xi))
@@ -551,9 +565,12 @@ def calc_rhov(P, T, xi, eos, rhodict={}):
             rho_tmp = 1.0 / roots[0]
             logger.debug("    Flag 1: This T and xi, {} {}, combination produces a liquid under tension at this pressure".format(T,xi))
         else:
-            flag = 4
-            rho_tmp = np.nan
-            logger.debug("    Flag 4: There should be a third root! Assume ideal gas P: {}".format(P))
+            flag = 0
+            slope, yroot = np.polyfit(vlist[-4:], Plist[-4:], 1)
+            vroot = -yroot/slope
+            rho_tmp = spo.minimize(Pdiff, 1.0/vroot, args=(P, T, xi, eos), bounds=[(1.0/(vroot*1e+2), 1.0/(1.1*roots[-1]))])
+            rho_tmp = rho_tmp.x
+            logger.debug("    Flag 0: This T and yi, {} {}, combination produces a vapor at this pressure. Warning! approaching critical fluid".format(T,xi))
     else: # 3 roots
         rho_tmp = 1.0 / roots[2]
         flag = 0
@@ -566,8 +583,8 @@ def calc_rhov(P, T, xi, eos, rhodict={}):
             if Plist[0] < 0:
                 logger.warning("Density value could not be bounded with (rhomin,rhomax), {}. Using approximate density value".format(tmp))
             elif not flag_NoOpt:
-                rho_tmp = spo.root(Pdiff, rho_tmp, args=(P, T, xi, eos), method="hybr", tol=0.0000001)
-                rho_tmp = rho_tmp.x[0]
+                rho_tmp = spo.minimize(Pdiff, rho_tmp, args=(P, T, xi, eos), bounds=[(1e-24, rho_tmp*1e+2)])
+                rho_tmp = rho_tmp.x
 
     logger.info("    Vapor Density: {} mol/m^3, flag {}".format(rho_tmp,flag))
 
@@ -629,15 +646,31 @@ def calc_rhol(P, T, xi, eos, rhodict={}):
             else:
                 flag = 1
                 logger.debug("    Flag 1: The T and yi, {} {}, combination produces a liquid at this pressure".format(T,xi))
-            rho_tmp = 1/vlist[1]
+
+            try:
+                rho_tmp = spo.minimize(Pdiff, 1/vlist[0], args=(P, T, xi, eos), bounds=[(1e-24, 1/vlist[0]*1.1)])
+                rho_tmp = rho_tmp.x
+            except:
+                rho_tmp = 1/vlist[0]
+            #rho_tmp = 1/vlist[1]
             flag_NoOpt = True
         elif min(Plist)+P > 0:
-            rho_tmp = np.nan
-            if not len(extrema):
+            slope, yroot = np.polyfit(vlist[-4:], Plist[-4:], 1)
+            vroot = -yroot/slope
+            try:
+                rho_tmp = spo.minimize(Pdiff, 1.0/vroot, args=(P, T, xi, eos), bounds=[(1.0/(vroot*1e+2), 1.0/(1.1*roots[-1]))])
+                rho_tmp = rho_tmp.x
+            except:
+                rho_tmp = np.nan
+
+            if np.isnan(rho_tmp):
                 flag = 4
+            else:
+                flag = 0
+
+            if not len(extrema):
                 logger.debug("    Flag 2: The T and yi, {} {}, combination produces a critical fluid at this pressure".format(T,xi))
             else:
-                flag = 4
                 logger.debug("    Flag 0: This T and xi, {} {}, combination produces a vapor at this pressure. Warning! approaching critical fluid".format(T,xi))
         else:
             flag = 3
@@ -677,7 +710,7 @@ def calc_rhol(P, T, xi, eos, rhodict={}):
             if Plist[0] < 0:
                 logger.warning("Density value could not be bounded with (rhomin,rhomax), {}. Using approximate density value".format(tmp))
             elif not flag_NoOpt:
-                rho_tmp = spo.root(Pdiff, rho_tmp, args=(P, T, xi, eos), method="hybr", tol=1e-7)
+                rho_tmp = spo.minimize(Pdiff, [rho_tmp], args=(P, T, xi, eos), bounds=[(1e-24, rho_tmp*1e+2)])
                 rho_tmp = rho_tmp.x[0]
     logger.info("    Liquid Density: {} mol/m^3, flag {}".format(rho_tmp,flag))
 
@@ -804,11 +837,7 @@ def calc_phil(P, T, xi, eos, rhodict={}):
     logger = logging.getLogger(__name__)
 
     rhol, flagl = calc_rhol(P, T, xi, eos, rhodict)
-    if flagl == 4:
-        phil = np.ones(len(xi))
-        rhol = 0.
-        logger.info("    rhol set to 0.")
-    elif flagl == 3:
+    if flagl == 3:
         phil = np.array([np.nan,np.nan])
     else:
         phil = eos.fugacity_coefficient(P, np.array([rhol]), xi, T)
@@ -884,6 +913,37 @@ def calc_xi(yi, phiv, phil):
 
 ######################################################################
 #                                                                    #
+#                   Clean Plot Data                                  #
+#                                                                    #
+######################################################################
+def _clean_plot_data(x_old, y_old):
+    r"""
+    Reorder array and remove duplicates, then repeat process for the corresponding array.
+
+    Parameters
+    ----------
+    x_old : numpy.ndarray
+        Original independent variable
+    y_old : numpy.ndarray
+        Original dependent variable
+
+    Returns
+    -------
+    x_new : numpy.ndarray
+        New independent variable
+    y_new : numpy.ndarray
+        New dependent variable
+    """
+
+    x_new = list(set(np.sort(x_old)))
+    seen = set()
+    y_new = [y_old[np.where(x_old==x)[0][0]] for x in x_new]
+    print(len(y_old),len(x_old),len(y_new),len(x_new))
+
+    return x_new, y_new
+
+######################################################################
+#                                                                    #
 #                              Calc P range                          #
 #                                                                    #
 ######################################################################
@@ -947,14 +1007,22 @@ def calc_Prange_xi(T, xi, yi, eos, rhodict={}, Pmin=1000, zi_opts={}):
             logger.error("Estimated minimum pressure is too low.")
             Parray[0] += Pmin
             continue
-        yi_range, phiv, flagv = solve_yi_xiT(yi_range, xi, phil, p, T, eos, rhodict=rhodict, **zi_opts)
-        ObjArray[0] = (np.sum(xi * phil / phiv) - 1.0)
-        logger.debug("Liquid / Vapor Phi: {} /  {}".format(phil,phiv))
-        logger.info("Estimated Minimum Pressure: {},  Obj. Func: {}".format(Parray[0],ObjArray[0]))
-        if ObjArray[0] > 0:
-            break
+        if flagl in [1,2]:
+            yi_range, phiv_min, flagv_min = solve_yi_xiT(yi_range, xi, phil, p, T, eos, rhodict=rhodict, **zi_opts)
+            ObjArray[0] = (np.nansum(xi * phil / phiv_min) - 1.0)
+            logger.debug("Liquid / Vapor Phi: {} /  {}".format(phil,phiv_min))
+            logger.info("Estimated Minimum Pressure: {},  Obj. Func: {}".format(Parray[0],ObjArray[0]))
+            if ObjArray[0] > 0:
+                break
+            elif ObjArray[0] < 0:
+                ObjArray[1] = ObjArray[0]
+                Parray[1] = Parray[0]
+                phiv_max, flagv_max = phiv_min, flagv_min
+                Parray[0] /= 10
+            else:
+                Parray[0] /= 10
         else:
-            Parray[0] /= 2
+            Parray[0] = 2*Parray[0]
 
     if z == maxiter-1:
         logger.error("Proper minimum pressure for liquid density could not be found")
@@ -962,14 +1030,18 @@ def calc_Prange_xi(T, xi, yi, eos, rhodict={}, Pmin=1000, zi_opts={}):
 
     flag = 0
     for z in range(maxiter):
-        if z == 0:
+        if Parray[-1] < Parray[0]:
+            Parray[-1] = Parray[0]*1.1
+            if z ==0:
+                ObjArray[1] == 0.
+        if (z == 0 and ObjArray[1] == 0.):
             # Find Obj function for Max Pressure above
             p = Parray[1]
             phil, rhol, flagl = calc_phil(p, T, xi, eos, rhodict=rhodict)
             if any(np.isnan(phil)):
                 raise ValueError("Fugacity Coefficient should not be NaN")
-            yi_range, phiv, flagv = solve_yi_xiT(yi_range, xi, phil, p, T, eos, rhodict=rhodict, **zi_opts)
-            ObjArray[1] = (np.sum(xi * phil / phiv) - 1.0)
+            yi_range, phiv_max, flagv_max = solve_yi_xiT(yi_range, xi, phil, p, T, eos, rhodict=rhodict, **zi_opts)
+            ObjArray[1] = (np.nansum(xi * phil / phiv_max) - 1.0)
             logger.info("Estimate Maximum Pressure: {},  Obj. Func: {}".format(Parray[1],ObjArray[1]))
         else:
             tmp_sum = np.abs(ObjArray[-2] + ObjArray[-1])
@@ -977,12 +1049,11 @@ def calc_Prange_xi(T, xi, yi, eos, rhodict={}, Pmin=1000, zi_opts={}):
             if Parray[-1] == Parray[-2]:
                 if flag == 0:
                     p = 2*p
-                    flag = 1
                 else:
                     raise ValueError("Maximum pressure value could not be found to bound search.")
             elif tmp_dif > tmp_sum:
-                if flagv not in [0,2,4]:
-                    logger.info("Estimated pressure {}  doesn't produce a vapor, flag={}, Obj Func: {}".format(Parray[-1],flagv,ObjArray[-1]))
+                if flagv_max not in [0,2,4]:
+                    logger.info("Estimated pressure {}  doesn't produce a vapor, flag={}, Obj Func: {}".format(Parray[-1],flagv_max,ObjArray[-1]))
                     p = 0.9*Parray[-1]
                 else:
                     logger.info("Got the pressure range!")
@@ -991,31 +1062,40 @@ def calc_Prange_xi(T, xi, yi, eos, rhodict={}, Pmin=1000, zi_opts={}):
                     Pguess = -intercept / slope
                     break
             else:
-                if len(ObjArray) < 2:
+                if len(ObjArray) < 3:
                     p = 2 * Parray[-1]
                 else:
-                    slope = (ObjArray[-1] - ObjArray[-2]) / (Parray[-1] - Parray[-2])
-                    intercept = ObjArray[-1] - slope * Parray[-1]
-                    p = (-intercept / slope)*1.2 # Add additional 20% to ensure negative value
-                    if p < 0.0:
+                    slope, intercept = np.polyfit(ObjArray[-2:], Parray[-2:], 1)
+                    p = (-intercept / slope)*1.25 # Add additional 25% to ensure negative value
+                    if p < Parray[0]:
                         ind = ObjArray.index(min(ObjArray))
                         p = Parray[ind]*1.1
+
+            if p < max(Parray):
+                if any(ObjArray[0] < ObjArray[1:]): 
+                    ObjNew, Pnew = _clean_plot_data(ObjArray, Parray)
+                    func = np.poly1d(np.polyfit(ObjNew, Pnew, 3))
+                    p = func(0.)
+                    print("New guess",p)
+                else:
+                    p = max(Parray)*1.25
             
             phil, rhol, flagl = calc_phil(p, T, xi, eos, rhodict=rhodict)
             if any(np.isnan(phil)):
                 raise ValueError("Fugacity coefficient should not be NaN")
             yi_range, phiv, flagv = solve_yi_xiT(yi_range, xi, phil, p, T, eos, rhodict=rhodict, **zi_opts)
+            obj = np.nansum(xi * phil / phiv) - 1.0
             Parray.append(p)
-            ObjArray.append(np.sum(xi * phil / phiv) - 1.0)
+            ObjArray.append(obj)
             logger.info("New Estimate for Maximum Pressure: {},  Obj. Func: {}".format(Parray[-1],ObjArray[-1]))
 
     if z == maxiter-1:
-        logger.error('A change in sign for the objective function could not be found, inspect progress')
-        #plt.plot(Parray, ObjArray)
-        #plt.plot([Parray[0], Parray[-1]], [0, 0], 'k')
-        #plt.ylabel("Obj. Function")
-        #plt.xlabel("Pressure / Pa")
-        #plt.savefig("CannotFindMax_{}_{}.png".format(T,xi[0]))
+        raise ValueError('A change in sign for the objective function could not be found, inspect progress')
+       # plt.plot(Parray, ObjArray)
+       # plt.plot([Parray[0], Parray[-1]], [0, 0], 'k')
+       # plt.ylabel("Obj. Function")
+       # plt.xlabel("Pressure / Pa")
+       # plt.savefig("CannotFindMax_{}_{}.png".format(T,xi[0]))
 
     Prange = Parray[-2:]
     ObjRange = ObjArray[-2:]
@@ -1080,7 +1160,7 @@ def calc_Prange_yi(T, xi, yi, eos, rhodict={}, Pmin=1000, zi_opts={}):
     for p in pressures:
         phiv, rhov, flagv = calc_phiv(p, T, yi, eos, rhodict=rhodict)
         xi, phil, flagl = solve_xi_yiT(xi, yi, phiv, p, T, eos, rhodict=rhodict, **zi_opts)
-        obj_list.append(np.sum(yi * phiv / phil) - 1.0)
+        obj_list.append(np.nansum(yi * phiv / phil) - 1.0)
     #plt.plot(pressures,obj_list,".-")
     #plt.plot([Pmin,Pmax],[0,0],"k")
     #plt.show()
@@ -1094,7 +1174,7 @@ def calc_Prange_yi(T, xi, yi, eos, rhodict={}, Pmin=1000, zi_opts={}):
         p = Parray[i]
         phiv, rhov, flagv = calc_phiv(p, T, yi, eos, rhodict=rhodict)
         xi_range, phil, flagl = solve_xi_yiT(xi_range, yi, phiv, p, T, eos, rhodict=rhodict, **zi_opts)
-        ObjArray[i] = (np.sum(yi * phiv / phil) - 1.0)
+        ObjArray[i] = (np.nansum(yi * phiv / phil) - 1.0)
         if i == 0:
             logger.info("Estimate Minimum pressure: {},  Obj. Func: {}".format(p,ObjArray[i]))
         elif i == 1:
@@ -1107,8 +1187,7 @@ def calc_Prange_yi(T, xi, yi, eos, rhodict={}, Pmin=1000, zi_opts={}):
             tmp_dif = np.abs(ObjArray[0] - ObjArray[1])
             if tmp_dif >= tmp_sum:
                 logger.info("Got the pressure range!")
-                slope = (ObjArray[1] - ObjArray[-2]) / (Parray[1] - Parray[0])
-                intercept = ObjArray[1] - slope * Parray[1]
+                slope, intercept = np.polyfit(ObjArray[-3:], Parray[-3:], 1)
                 Pguess = -intercept / slope
                 break
             else:
@@ -1201,6 +1280,7 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxiter=30, tol=1e-6):
                 logger.error("Fugacity coefficient of vapor should not be NaN")
         else:
             yinew = xi * phil / phiv
+        yinew[np.isnan(yinew)] = 0.
 
         ## Check for bouncing between values
         #if len(yi_total) > 3:
@@ -1233,7 +1313,7 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxiter=30, tol=1e-6):
     yi_tmp = yi/np.sum(yi)
     yinew /= np.sum(yinew)
 
-    ind_tmp = np.where(yi_tmp == min(yi_tmp[yi_tmp>0]))[0]
+    ind_tmp = np.where(yi_tmp == min(yi_tmp[yi_tmp>0.]))[0]
     if z == maxiter - 1:
         yi2 = yinew/np.sum(yinew)
         tmp = (np.abs(yi2[ind_tmp] - yi_tmp[ind_tmp]) / yi_tmp[ind_tmp])
@@ -1321,6 +1401,7 @@ def solve_xi_yiT(xi, yi, phiv, P, T, eos, rhodict={}, maxiter=20, tol=1e-6):
                 logger.error("Fugacity coefficient of liquid should not be NaN")
         else:
             xinew = yi * phiv / phil
+        xinew[np.isnan(xinew)] = 0.
 
         logger.info("    xi guess {}, xi calc {}, phil {}".format(xi_tmp,xinew,phil))
         logger.info("    Old xi_total: {}, New xi_total: {}, Change: {}".format(xi_total[-1],np.sum(xinew),np.sum(xinew)-xi_total[-1]))
@@ -1716,7 +1797,7 @@ def solve_P_xiT(P, xi, T, eos, rhodict, zi_opts={}):
     phiv, rhov, flagv = calc_phiv(P, T, yi_global, eos, rhodict={})
 
     Pv_test = eos.P(rhov, T, yi_global)
-    obj_value = float((np.sum(xi * phil / phiv) - 1.0))
+    obj_value = float((np.nansum(xi * phil / phiv) - 1.0))
     logger.info('Obj Func: {}, Pset: {}, Pcalc: {}'.format(obj_value, P, Pv_test[0]))
 
     return obj_value
@@ -1768,7 +1849,7 @@ def solve_P_yiT(P, yi, T, eos, rhodict, zi_opts={}):
     phil, rhol, flagl = calc_phil(P, T, xi_global, eos, rhodict={})
 
     Pv_test = eos.P(rhov, T, xi_global)
-    obj_value = (np.sum(xi_global * phil / phiv) - 1.0)
+    obj_value = (np.nansum(xi_global * phil / phiv) - 1.0)
     logger.info('Obj Func: {}, Pset: {}, Pcalc: {}'.format(obj_value, P, Pv_test[0]))
 
     return obj_value
@@ -2022,9 +2103,10 @@ def calc_xT_phase(xi, T, eos, rhodict={}, zi_opts={}, Pguess=-1, meth="hybr", pr
     else:
         P = Pguess
 
+
     if ("yi_global" not in globals() or any(np.isnan(yi_global))):
         yi_global = xi * Psat / P
-        yi_global /= np.sum(yi_global)
+        yi_global /= np.nansum(yi_global)
         yi_global = copy.deepcopy(yi_global)
         logger.info("Guess yi in calc_xT_phase with Psat: {}".format(yi_global))
     yi = yi_global

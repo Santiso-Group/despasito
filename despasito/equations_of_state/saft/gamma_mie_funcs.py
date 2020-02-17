@@ -611,7 +611,7 @@ def calc_Amono(rho, xi, nui, Cmol2seg, xsk, xskl, dkk, T, epsilonkl, sigmakl, dk
         eta[:, m] = rhos * (np.sum(xsk * (dkk**m)) * (np.pi / 6.0))
 
     if rho.any() == 0.0:
-        logger.warning("rho:",rho)
+        logger.warning("rho: {}".format(rho))
     # compute AHS, eq. 16
     tmp1 = np.log(1.0 - eta[:, 3]) * (((eta[:, 2]**3) / (eta[:, 3]**2)) - eta[:, 0])
     tmp2 = (3.0 * eta[:, 1] * eta[:, 2] / (1 - eta[:, 3]))

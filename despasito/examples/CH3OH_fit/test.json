@@ -5,8 +5,8 @@
     "minimizer_dict": {"tol": 1e-1, "maxiter": 10},
     "opt_params": {
         "fit_bead" : "CH3OH",
-        "fit_params": ["epsilon"],
-        "beadparams0": [380.0],
+        "fit_params": ["epsilon","l_a"],
+        "beadparams0": [380.0, 6.0],
         "epsilon_bounds" : [150.0, 400.0]
     },
     "Wiley": {

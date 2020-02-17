@@ -227,6 +227,9 @@ class saft_gamma_mie(EOStemplate):
         if len(xi) != len(self._nui):
             raise ValueError("Number of components in mole fraction list doesn't match components in nui. Check bead_config.")
 
+        if len(rho.shape) > 1:
+            rho = rho[0]
+
         if T != self.T:
             self._temp_dependent_variables(T)
 
@@ -269,17 +272,15 @@ class saft_gamma_mie(EOStemplate):
                     y_temp = np.copy(y)
                     y_temp[i] += delta
                     dAres[j] = self._calc_dAres_drhoi_wrap(T, np.exp(y_temp))
-                phi_tmp[i] = Ares + rho/np.exp(y[i])*(dAres[0] - dAres[1]) / (2.0 * dy) - np.log(Z)
+                phi_tmp[i] = np.exp(Ares + rho/np.exp(y[i])*(dAres[0] - dAres[1]) / (2.0 * dy) - np.log(Z))
             else:
                 phi_tmp[i] = 0.0 # This should be zero, but to prevent the thermo calculation from complaining about diving by zero we give it a value, the mole fraction is zero though, so it'll go away.
         ##########################################
 
-        phi = np.exp(phi_tmp)
-
         # Reset composition dependent variables
         self._xi_dependent_variables(xi)
 
-        return phi
+        return phi_tmp
 
     def _calc_dAres_drhoi_wrap(self, T, rhoi):
         """
@@ -495,29 +496,40 @@ class saft_gamma_mie(EOStemplate):
 
         return param_value
 
-    def check_bounds(self, param_name, bead_names, bounds):
+    def check_bounds(self, fit_bead, param_name, bounds):
         """
         Generate initial guesses for the parameters to be fit.
         
         Parameters
         ----------
+        fit_bead : str
+            Name of bead being fit
         param_name : str
-            Parameter to be fit. See EOS mentation for supported parameter names.
-        bead_names : list
-            Bead names to be changed. For a self interaction parameter, the length will be 1, for a cross interaction parameter, the length will be two.
-        bounds : list
-            A low and a high value for the parameter, param_name
+            Parameter to be fit. See EOS mentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
+        param_value : float
+            Value of parameter
         
         Returns
         -------
-        param_initial_guess : numpy.ndarray,
-            An initial guess for parameter, it will be optimized throughout the process.
         bounds : list
             A screened and possibly corrected low and a high value for the parameter, param_name
         """
         
         logger = logging.getLogger(__name__)
-        param_bound_extreme = {"epsilon":[0.,1000.], "sigma":[0.,9e-9], "l_r":[0.,100.], "l_a":[0.,100.], "Sk":[0.,1.], "epsilon_a":[0.,5000.], "K":[0.,10000.]}
+        param_bound_extreme = {"epsilon":[0.,1000.], "sigma":[0.,9e-9], "l_r":[0.,100.], "l_a":[0.,100.], "Sk":[0.,1.], "epsilon-a":[0.,5000.], "K":[0.,10000.]}
+
+        bead_names = [fit_bead]
+
+        fit_params_list = param_name.split("_")
+        param_name = fit_params_list[0]
+        if len(fit_params_list) > 1:
+            if fit_params_list[0] == "l":
+                if fit_params_list[1] in ["r","a"]:
+                    param_name = "_".join([fit_params_list[0],fit_params_list[1]])
+                    fit_params_list.remove(fit_params_list[1])
+
+            if len(fit_params_list) > 1:
+                bead_names.append(fit_params_list[1])
         
         if len(bead_names) > 2:
             raise ValueError("The bead names {} were given, but only a maximum of 2 are permitted.".format(", ".join(bead_names)))
@@ -560,7 +572,7 @@ class saft_gamma_mie(EOStemplate):
             tmp = [param_name.startswith('epsilon'), param_name.startswith('K')]
             # Ensure sitenames are valid and on list
             if tmp[0] == True:
-                param_name_tmp = "epsilon_a"
+                param_name_tmp = "epsilon-a"
             elif tmp[1] == True:
                 param_name_tmp = "K"
 
@@ -581,7 +593,7 @@ class saft_gamma_mie(EOStemplate):
         
         return bounds_new
     
-    def update_parameters(self, param_name, bead_names, param_value):
+    def update_parameters(self, fit_bead, param_name, param_value):
         r"""
         Update a single parameter value during parameter fitting process.
 
@@ -589,10 +601,10 @@ class saft_gamma_mie(EOStemplate):
         
         Parameters
         ----------
+        fit_bead : str
+            Name of bead being fit
         param_name : str
             Parameter to be fit. See EOS mentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
-        bead_names : list
-            Bead names to be changed. For a self interaction parameter, the length will be 1, for a cross interaction parameter, the length will be two.
         param_value : float
             Value of parameter
         """
@@ -600,6 +612,19 @@ class saft_gamma_mie(EOStemplate):
         #logger = logging.getLogger(__name__)
 
         param_types = ["epsilon", "sigma", "l_r", "l_a", "Sk", "K"]
+
+        bead_names = [fit_bead]
+
+        fit_params_list = param_name.split("_")
+        param_name = fit_params_list[0]
+        if len(fit_params_list) > 1:
+            if fit_params_list[0] == "l":
+                if fit_params_list[1] in ["r","a"]:
+                    param_name = "_".join([fit_params_list[0],fit_params_list[1]])
+                    fit_params_list.remove(fit_params_list[1])
+
+            if len(fit_params_list) > 1:
+                bead_names.append(fit_params_list[1])
 
         if len(bead_names) > 2:
             raise ValueError("The bead names {} were given, but only a maximum of 2 are permitted.".format(", ".join(bead_names)))

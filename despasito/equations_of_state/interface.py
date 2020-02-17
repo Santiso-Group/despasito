@@ -48,14 +48,14 @@ class EOStemplate(ABC):
         pass
     
     @abstractmethod
-    def check_bounds(self, param_name, bead_names, bounds):
+    def check_bounds(self, fit_bead, param_name, bounds):
         """
         Check given boundaries and possibly correct for the given parameter type.
         """
         pass
 
     @abstractmethod
-    def update_parameters(self, param_name, bead_names, param_value):
+    def update_parameters(self, fit_bead, param_name, param_value):
         """
         Update a given parameter in EOS.
         """

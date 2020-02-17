@@ -123,7 +123,15 @@ def phase_xiT(eos, sys_dict):
 
         logger.info("T (K), xi: {} {}, Let's Begin!".format(str(T_list[i]), str(xi_list[i])))
         try:
-            P_list[i], yi_list[i], flagv_list[i], flagl_list[i], obj_list[i] = calc.calc_xT_phase(xi_list[i], T_list[i], eos, **optsi)
+            if len(xi_list[i][xi_list[i]!=0.])==1:
+                if "rhodict" in optsi:
+                    opt_tmp = {"rhodict": optsi["rhodict"]}
+                else:
+                    opt_tmp = {}
+                P_list[i], _, _ = calc.calc_Psat(T_list[i], xi_list[i], eos, **opt_tmp)
+                yi_list[i], flagv_list[i], flagl_list[i], obj_list[i] = xi_list[i], 0, 1, 0.0 
+            else:
+                P_list[i], yi_list[i], flagv_list[i], flagl_list[i], obj_list[i] = calc.calc_xT_phase(xi_list[i], T_list[i], eos, **optsi)
         except:
             logger.warning("T (K), xi: {} {}, calculation did not produce a valid result.".format(T_list[i], xi_list[i]))
             logger.debug("Calculation Failed:", exc_info=True)
@@ -247,7 +255,15 @@ def phase_yiT(eos, sys_dict):
             optsi["Pguess"] = optsi["Pguess"][i]
         logger.info("T (K), yi: {} {}, Let's Begin!".format(str(T_list[i]), str(yi_list[i])))
         try:
-            P_list[i], xi_list[i], flagl_list[i], flagv_list[i], obj_list[i]  = calc.calc_yT_phase(yi_list[i], T_list[i], eos, **optsi)
+            if len(yi_list[i][yi_list[i]!=0.])==1:
+                if "rhodict" in optsi:
+                    opt_tmp = {"rhodict": optsi["rhodict"]}
+                else:
+                    opt_tmp = {}
+                P_list[i], _, _ = calc.calc_Psat(T_list[i], yi_list[i], eos, **opt_tmp)
+                xi_list[i], flagv_list[i], flagl_list[i], obj_list[i] = yi_list[i], 0, 1, 0.0
+            else:
+                P_list[i], xi_list[i], flagl_list[i], flagv_list[i], obj_list[i]  = calc.calc_yT_phase(yi_list[i], T_list[i], eos, **optsi)
         except:
             logger.warning("T (K), yi: {} {}, calculation did not produce a valid result.".format(str(T_list[i]), str(yi_list[i])))
             logger.debug("Calculation Failed:", exc_info=True)
