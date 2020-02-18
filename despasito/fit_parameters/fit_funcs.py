@@ -31,6 +31,9 @@ def initial_guess(opt_params, eos):
     beadparams0 = np.ones(len(opt_params['fit_params']))
     for i, param in enumerate(opt_params['fit_params']):
         fit_params_list = param.split("_")
+        if (fit_params_list[0] == "l" and fit_params_list[1] in ["a","r"]):
+            fit_params_list[0] = "{}_{}".format(fit_params_list[0],fit_params_list[1])
+            fit_params_list.remove(fit_params_list[1])
         if len(fit_params_list) == 1:
             beadparams0[i] = eos.param_guess(fit_params_list[0], [opt_params['fit_bead']])
         elif len(fit_params_list) == 2:
@@ -67,13 +70,7 @@ def check_parameter_bounds(opt_params, eos, bounds):
     new_bounds = [(0,0) for x in range(len(opt_params['fit_params']))]
     # Check boundary parameters to be sure they're in a reasonable range
     for i, param in enumerate(opt_params['fit_params']):
-        fit_params_list = param.split("_")
-        if len(fit_params_list) == 1:
-            new_bounds[i] = tuple(eos.check_bounds(fit_params_list[0], [opt_params['fit_bead']], bounds[i]))
-        elif len(fit_params_list) == 2:
-            new_bounds[i] = tuple(eos.check_bounds(fit_params_list[0], [opt_params['fit_bead'], fit_params_list[1]], bounds[i]))
-        else:
-            raise ValueError("Parameters for only one bead are allowed to be fit at one time. Please only list one bead type in your fit parameter name.")
+        new_bounds[i] = tuple(eos.check_bounds(opt_params['fit_bead'], param, bounds[i]))
 
     return new_bounds
 
@@ -390,14 +387,12 @@ def compute_obj(beadparams, fit_bead, fit_params, eos, exp_dict):
     logger = logging.getLogger(__name__)
 
     # Update beadlibrary with test paramters
+
+    if len(beadparams) != len(fit_params):
+        raise ValueError("The length of initial guess vector should be the same number of parameters to be fit.")    
+
     for i, param in enumerate(fit_params):
-        fit_params_list = param.split("_")
-        if len(fit_params_list) == 1:
-            eos.update_parameters(fit_params_list[0], [fit_bead], beadparams[i])
-        elif len(fit_params_list) == 2:
-            eos.update_parameters(fit_params_list[0], [fit_bead, fit_params_list[1]], beadparams[i])
-        else:
-            raise ValueError("Parameters for only one bead are allowed to be fit at one time. Please only list one bead type in your fit parameter name.")
+        eos.update_parameters(fit_bead, param, beadparams[i])
     eos.parameter_refresh()
 
     # Compute obj_function
