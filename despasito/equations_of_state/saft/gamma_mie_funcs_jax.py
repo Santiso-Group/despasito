@@ -7,10 +7,11 @@ r"""
     
 """
 
-import logging # NoteHere
+import logging
 import jax.numpy as np
 from jax import jit
 from jax.ops import index, index_add, index_update, index_min, index_max
+from jax import lax
 # jax.experimental? 
 from scipy import integrate # approximate with taylor series?
 
@@ -1320,7 +1321,8 @@ def calc_Xika(indices, rho, xi, nui, nk, Fklab, Kklab, Iij, tol=1e-12, damp=.1):
     for r in range(nrho):
         for what in [Xika_elements,indices, rho[r], xi, nui, nk, Fklab, Kklab, Iij[r],tol,damp]:
             print(type(what),np.array(what).shape)
-        obj, Xika_elements = calc_Xika_inner(Xika_elements,indices, rho[r], xi, nui, nk, Fklab, Kklab, Iij[r],tol,damp)
+        # NoteHere add lax.while_loop 
+#        obj, Xika_elements = calc_Xika_inner_old(Xika_elements,indices, rho[r], xi, nui, nk, Fklab, Kklab, Iij[r],tol,damp)
 
         err_array = index_update(err_array,index[r],obj)
 
@@ -1333,6 +1335,69 @@ def calc_Xika(indices, rho, xi, nui, nk, Fklab, Kklab, Iij, tol=1e-12, damp=.1):
 
 @jit
 def calc_Xika_inner(Xika_elements0,indices, rho, xi, nui, nk, Fklab, Kklab, Iij, tol, damp):
+    r"""
+    Calculate the fraction of molecules of component i that are not bonded at a site of type a on group k in an iterative fashion. Inner loop for use with jit
+
+    Parameters
+    ----------
+    Xika_elements0 : [numpy.ndarray]
+        Initial guess in Xika values for each index in indicies
+    indices : list[list]
+        A list of sets of (component, bead, site) to identify the values of the Xika matrix that are being fit
+    rho : float
+        Number density of system [molecules/m^3]
+    xi : numpy.ndarray
+        Mole fraction of each component, sum(xi) should equal 1.0
+    nui : numpy.array
+        :math:`\nu_{i,k}/k_B`, Array of number of components by number of bead types. Defines the number of each type of group in each component. 
+    nk : numpy.ndarray
+        For each bead the number of each type of site
+    delta : numpy.ndarray
+        The association strength between a site of type a on a group of type k of component i and a site of type b on a group of type l of component j. eq. 66
+    tol : float, Optional, default: 1e-12
+        Once matrix converges.
+    damp : float, Optional, default: 0.1
+        Only add a fraction of the new matrix values to update the guess
+
+    Returns
+    -------
+    Xika : numpy.ndarray
+        NoteHere
+    """
+
+    maxiter=500
+
+    l_ind = len(indices)
+
+    for knd in np.arange(maxiter):
+
+        Xika_elements_new = np.ones(len(Xika_elements0))
+        ind = 0
+        for iind in range(l_ind):
+            i, k, a = indices[iind]
+            jnd = 0
+            for jjnd in range(l_ind):
+                j, l, b = indices[jjnd]
+                delta = Fklab[k, l, a, b] * Kklab[k, l, a, b] * Iij[i, j]
+                tmp = Xika_elements_new[ind] + rho * xi[j] * nui[j,l] * nk[l,b] *    Xika_elements0[jnd] * delta
+                Xika_elements_new = index_update(Xika_elements_new,index[ind],tmp)
+                jnd = jnd + 1
+            ind = ind + 1
+        Xika_elements_new = 1./Xika_elements_new
+        obj = np.sum(np.abs(Xika_elements_new - Xika_elements0))
+
+        if obj < tol:
+            break
+        else:
+            if obj/max(Xika_elements0) > 1e+3:
+                Xika_elements0 = Xika_elements0 + damp*(Xika_elements_new - Xika_elements0)
+            else:
+                Xika_elements0 = Xika_elements_new
+
+    return obj, Xika_elements0
+
+#@jit
+def calc_Xika_inner_old(Xika_elements0,indices, rho, xi, nui, nk, Fklab, Kklab, Iij, tol, damp):
     r""" 
     Calculate the fraction of molecules of component i that are not bonded at a site of type a on group k in an iterative fashion. Inner loop for use with jit
 
