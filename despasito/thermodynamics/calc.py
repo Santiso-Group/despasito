@@ -834,7 +834,7 @@ def calc_phil(P, T, xi, eos, rhodict={}):
         Flag identifying the fluid type. A value of 0 is vapor, 1 is liquid, 2 mean a critical fluid, 3 means that neither is true.
     """
 
-    logger = logging.getLogger(__name__)
+    #logger = logging.getLogger(__name__)
 
     rhol, flagl = calc_rhol(P, T, xi, eos, rhodict)
     if flagl == 3:
