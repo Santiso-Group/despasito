@@ -783,7 +783,7 @@ def calc_phiv(P, T, yi, eos, rhodict={}):
         Flag identifying the fluid type. A value of 0 is vapor, 1 is liquid, 2 mean a critical fluid, 3 means that neither is true, 4 means ideal gas is assumed
     """
 
-    logger = logging.getLogger(__name__)
+    #logger = logging.getLogger(__name__)
 
     rhov, flagv = calc_rhov(P, T, yi, eos, rhodict)
     if flagv == 4:
@@ -936,7 +936,6 @@ def _clean_plot_data(x_old, y_old):
     """
 
     x_new = list(set(np.sort(x_old)))
-    seen = set()
     y_new = [y_old[np.where(x_old==x)[0][0]] for x in x_new]
     print(len(y_old),len(x_old),len(y_new),len(x_new))
 
@@ -1027,14 +1026,21 @@ def calc_Prange_xi(T, xi, yi, eos, rhodict={}, Pmin=1000, zi_opts={}):
     if z == maxiter-1:
         logger.error("Proper minimum pressure for liquid density could not be found")
             
+    # A flag value of 0 is vapor, 1 is liquid, 2 mean a critical fluid, 3 means that neither is true, 4 means we should assume ideal gas
 
     flag = 0
     for z in range(maxiter):
+
+        # Be sure guess in pressure is larger than lower bound
         if Parray[-1] < Parray[0]:
+            print("Maybe First Try")
             Parray[-1] = Parray[0]*1.1
             if z ==0:
                 ObjArray[1] == 0.
-        if (z == 0 and ObjArray[1] == 0.):
+
+        
+        if (z == 0 and ObjArray[1] == 0.): # First calculation of max pressure
+            print("Definately First Try")
             # Find Obj function for Max Pressure above
             p = Parray[1]
             phil, rhol, flagl = calc_phil(p, T, xi, eos, rhodict=rhodict)
@@ -1043,17 +1049,19 @@ def calc_Prange_xi(T, xi, yi, eos, rhodict={}, Pmin=1000, zi_opts={}):
             yi_range, phiv_max, flagv_max = solve_yi_xiT(yi_range, xi, phil, p, T, eos, rhodict=rhodict, **zi_opts)
             ObjArray[1] = (np.nansum(xi * phil / phiv_max) - 1.0)
             logger.info("Estimate Maximum Pressure: {},  Obj. Func: {}".format(Parray[1],ObjArray[1]))
-        else:
+        else: # New guess and evaluation of pressure
+            # Update pressure
             tmp_sum = np.abs(ObjArray[-2] + ObjArray[-1])
             tmp_dif = np.abs(ObjArray[-2] - ObjArray[-1])
-            if Parray[-1] == Parray[-2]:
+            if Parray[-1] == Parray[-2]: # If guess in pressure repeats, get us out of the cycle
+                print("stuck in a rut")
                 if flag == 0:
                     p = 2*p
                 else:
                     raise ValueError("Maximum pressure value could not be found to bound search.")
-            elif tmp_dif > tmp_sum:
+            elif tmp_dif > tmp_sum: # Found a negative value!
+                print("We got a neg baby!")
                 if flagv_max not in [0,2,4]:
-                    logger.info("Estimated pressure {}  doesn't produce a vapor, flag={}, Obj Func: {}".format(Parray[-1],flagv_max,ObjArray[-1]))
                     p = 0.9*Parray[-1]
                 else:
                     logger.info("Got the pressure range!")
@@ -1062,32 +1070,36 @@ def calc_Prange_xi(T, xi, yi, eos, rhodict={}, Pmin=1000, zi_opts={}):
                     Pguess = -intercept / slope
                     break
             else:
-                if len(ObjArray) < 3:
+                if flagv_max not in [0,2,4]:
+                    print("Too high")
+                    p = 0.9*Parray[-1]
+                elif len(ObjArray) < 3:
+                    print("Too low")
                     p = 2 * Parray[-1]
+                elif any(ObjArray[0] < ObjArray[1:]):
+                    print("We have a well!")
+                    ObjNew, Pnew = _clean_plot_data(ObjArray, Parray)
+                    func = np.poly1d(np.polyfit(ObjNew, Pnew, 3))
+                    p = func(0.)
                 else:
+                    print("Just keep swimming")
                     slope, intercept = np.polyfit(ObjArray[-2:], Parray[-2:], 1)
                     p = (-intercept / slope)*1.25 # Add additional 25% to ensure negative value
                     if p < Parray[0]:
                         ind = ObjArray.index(min(ObjArray))
                         p = Parray[ind]*1.1
 
-            if p < max(Parray):
-                if any(ObjArray[0] < ObjArray[1:]): 
-                    ObjNew, Pnew = _clean_plot_data(ObjArray, Parray)
-                    func = np.poly1d(np.polyfit(ObjNew, Pnew, 3))
-                    p = func(0.)
-                    print("New guess",p)
-                else:
-                    p = max(Parray)*1.25
-            
             phil, rhol, flagl = calc_phil(p, T, xi, eos, rhodict=rhodict)
             if any(np.isnan(phil)):
                 raise ValueError("Fugacity coefficient should not be NaN")
-            yi_range, phiv, flagv = solve_yi_xiT(yi_range, xi, phil, p, T, eos, rhodict=rhodict, **zi_opts)
+            yi_range, phiv, flagv_max = solve_yi_xiT(yi_range, xi, phil, p, T, eos, rhodict=rhodict, **zi_opts)
             obj = np.nansum(xi * phil / phiv) - 1.0
             Parray.append(p)
             ObjArray.append(obj)
-            logger.info("New Estimate for Maximum Pressure: {},  Obj. Func: {}".format(Parray[-1],ObjArray[-1]))
+            if flagv_max not in [0,2,4]:
+                logger.info("New Estimated pressure {} doesn't produce a vapor, flag={}, Obj Func: {}".format(Parray[-1],flagv_max,ObjArray[-1]))
+            else:
+                logger.info("New Estimate for Maximum Pressure: {},  Obj. Func: {}".format(Parray[-1],ObjArray[-1]))
 
     if z == maxiter-1:
         raise ValueError('A change in sign for the objective function could not be found, inspect progress')
