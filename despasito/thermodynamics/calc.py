@@ -1280,12 +1280,13 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxiter=30, tol=1e-6):
         if ((any(np.isnan(phiv)) or flagv==1) and flag_check_vapor): # If vapor density doesn't exist
             flag_check_vapor = False
             logger.info("    Composition doesn't produce a vapor, let's find one!")
-            if all(yi != 0.):
+            if (all(yi != 0.) and len(yi)==2):
                 yinew = find_new_yi(P, T, phil, xi, eos, rhodict=rhodict)
                 phiv, rhov, flagv = calc_phiv(P, T, yinew, eos, rhodict=rhodict)
                 yinew = xi * phil / phiv
             else:
                 yinew = yi
+                phiv, rhov, flagv = calc_phiv(P, T, yi, eos, rhodict=rhodict)
 
             if any(np.isnan(phiv)):
                 phiv = np.nan
@@ -1305,7 +1306,7 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxiter=30, tol=1e-6):
         #            yinew = yi
         #            phiv, rhov, flagv = calc_phiv(P, T, yi_tmp, eos, rhodict=rhodict)
 
-        logger.info("    yi guess {}, yi calc {}, phiv {}".format(yi_tmp,yinew,phiv))
+        logger.info("    yi guess {}, yi calc {}, phiv {}, flag {}".format(yi_tmp,yinew,phiv,flagv))
         logger.info("    Old yi_total: {}, New yi_total: {}, Change: {}".format(yi_total[-1],np.sum(yinew),np.sum(yinew)-yi_total[-1])) 
 
         # Check convergence
@@ -1335,6 +1336,7 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxiter=30, tol=1e-6):
         yinew = spo.least_squares(obj_yi, yinew[0], bounds=(0.,1.), args=(P, T, phil, xi, eos, rhodict))
         yi = yinew.x[0]
         yi = np.array([yi,1-yi])
+        phiv, rhov, flagv = calc_phiv(P, T, yi, eos, rhodict=rhodict)
         obj = obj_yi(yi, P, T, phil, xi, eos, rhodict=rhodict)
         logger.warning('    Find yi with root algorithm, yi {}, obj {}'.format(yi,obj))
     else:
