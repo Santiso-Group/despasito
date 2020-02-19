@@ -636,8 +636,7 @@ def calc_Amono(rho, xi, nui, Cmol2seg, xsk, xskl, dkk, T, epsilonkl, sigmakl, dk
     # compute f1, f2, and f3 for eq. 32
     fmlist123 = calc_fm(alphakl, np.array([1, 2, 3]))
 
-    chikl = np.einsum("i,jk", zetaxstar, fmlist123[0]) + np.einsum("i,jk", zetaxstar**5, fmlist123[1]) + np.einsum(
-        "i,jk", zetaxstar**8, fmlist123[2])
+    chikl = np.einsum("i,jk", zetaxstar, fmlist123[0]) + np.einsum("i,jk", zetaxstar**5, fmlist123[1]) + np.einsum("i,jk", zetaxstar**8, fmlist123[2])
 
     a1s_2la = calc_a1s(rho, Cmol2seg, 2.0 * l_akl, zetax, epsilonkl, dkl)
     a1s_2lr = calc_a1s(rho, Cmol2seg, 2.0 * l_rkl, zetax, epsilonkl, dkl)
