@@ -302,6 +302,7 @@ def calc_Xika(indices, rho, xi, nui, nk, Fklab, Kklab, Iij): # , maxiter=500, to
                 for jjnd in range(l_ind):
                     j, l, b = indices[jjnd]
                     delta = Fklab[k, l, a, b] * Kklab[k, l, a, b] * Iij[r,i, j]
+                    tmp = Xika_elements_new[ind] + rho[r] * xi[j] * nui[j,l] * nk[l,b] * Xika_elements[jnd] * delta
                     Xika_elements_new[ind] += rho[r] * xi[j] * nui[j,l] * nk[l,b] * Xika_elements[jnd] * delta
                     jnd += 1
                 ind += 1

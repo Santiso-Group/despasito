@@ -1357,6 +1357,8 @@ def calc_A_assoc(rho, xi, T, nui, xskl, sigmakl, sigmaii_avg, epsilonii_avg, eps
    # plt.plot(rho[:nrho],Aassoc[:nrho]-Aassoc[nrho:])
    # plt.show()
 
+    print(Aassoc)
+
     return Aassoc
 
 def assoc_site_indices(xi, nui, nk):
