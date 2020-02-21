@@ -11,8 +11,7 @@ import logging
 from jax.config import config
 config.update("jax_enable_x64", True)
 import jax.numpy as np
-from jax import jit
-from jax import disable_jit
+from jax import jit, vmap
 from jax.ops import index, index_add, index_update, index_min, index_max
 from jax import lax
 # jax.experimental? 
@@ -1279,6 +1278,7 @@ def calc_assoc_matrices(beads, beadlibrary, sitenames=["H", "e1", "e2"], crossli
 
     return epsilonHB, Kklab, nk
 
+#@jit
 def calc_Xika(indices, rho, xi, nui, nk, Fklab, Kklab, Iij, tol=1e-12, damp=.1):
     r""" 
     Calculate the fraction of molecules of component i that are not bonded at a site of type a on group k in an iterative fashion.
@@ -1311,15 +1311,15 @@ def calc_Xika(indices, rho, xi, nui, nk, Fklab, Kklab, Iij, tol=1e-12, damp=.1):
     nbeads    = nui.shape[1]
     ncomp     = np.size(xi)
     nsitesmax = np.size(nk, axis=1)
-    nrho      = len(rho)
+    nrho      = rho.shape[0]
+    l_ind     = indices.shape[0]
 
-#    Xika_final = np.ones((nrho,ncomp, nbeads, nsitesmax))
-    Xika_final = np.ones((nrho,ncomp, nbeads, nsitesmax))
-    Xika_elements = np.ones((2,len(indices)))
-    Xika_elements = index_update(Xika_elements,index[0,:],0.5)
+    Xika_final0 = np.ones((nrho,ncomp, nbeads, nsitesmax))
+    Xika_elements = np.ones((2,l_ind))*0.5
 
     # New Method #############
-    inputs = lax.fori_loop(0, nrho, _calc_Xika_outer, (Xika_final, Xika_elements, indices, rho, xi, nui, nk, Fklab, Kklab, Iij, damp, tol))
+    inputs = _calc_Xika_fori_debug(0, nrho, _calc_Xika_outer, (Xika_final0, Xika_elements, indices, rho, xi, nui, nk, Fklab, Kklab, Iij, damp, tol))
+    #inputs = lax.fori_loop(0, nrho, _calc_Xika_outer, (Xika_final0, Xika_elements, indices, rho, xi, nui, nk, Fklab, Kklab, Iij, damp, tol))
     Xika_final, _, _, _, _, _, _, _, _, _, _, _ = inputs
     # Old Method #############
     #l_ind = np.array(indices).shape[0]
@@ -1338,8 +1338,16 @@ def calc_Xika(indices, rho, xi, nui, nk, Fklab, Kklab, Iij, tol=1e-12, damp=.1):
 
     return Xika_final
 
+def _calc_Xika_fori_debug(start,stop,body_fun,init_val):
+
+    val = init_val
+    for i in np.arange(start,stop):
+        val = body_fun(i, val)
+
+    return val
+
 #@jit
-def _calc_Xika_outer(r,inputs):
+def _calc_Xika_outer(r, inputs):
     r"""
     Calculate the fraction of molecules of component i that are not bonded at a site of type a on group k in an iterative fashion. Inner loop for use with jit
 
@@ -1356,35 +1364,47 @@ def _calc_Xika_outer(r,inputs):
         Xika_elements, indices, rho[r], xi, nui, nk, Fklab, Kklab, Iij[r], damp, tol
     """
 
-    Xika_final, Xika_elements, indices, rho, xi, nui, nk, Fklab, Kklab, Iij, damp, tol = inputs
+    Xika_final0, Xika_elements0, indices, rho, xi, nui, nk, Fklab, Kklab, Iij, damp, tol = inputs
+    Xika_elements0 = index_update(Xika_elements0,index[1,:],1.0)
 
-    l_ind = np.array(indices).shape[0]
+    Xika_elements, _, _, _, _, _, _, _, _, _, _ = _calc_Xika_while_debug(_calc_Xika_cond, _calc_Xika_inner, (Xika_elements0, indices, rho[r], xi, nui, nk, Fklab, Kklab, Iij[r], damp, tol))
+    #Xika_elements, _, _, _, _, _, _, _, _, _, _ = lax.while_loop(_calc_Xika_cond, _calc_Xika_inner, (Xika_elements0, indices, rho[r], xi, nui, nk, Fklab, Kklab, Iij[r], damp, tol))
 
-    print("yup 1")
+    #print(r, rho[r], Xika_elements[0])
 
-    #inputs = _calc_Xika_debug(_calc_Xika_cond, _calc_Xika_inner, (Xika_elements, indices, rho[r], xi, nui, nk, Fklab, Kklab, Iij[r], damp, tol))
-    inputs = lax.while_loop(_calc_Xika_cond, _calc_Xika_inner, (Xika_elements, indices, rho[r], xi, nui, nk, Fklab, Kklab, Iij[r], damp, tol))
+    # New Way ################
+    _, _, _, Xika_final = lax.fori_loop(0,indices.shape[0],_Xika_update_1,(r, indices, Xika_elements[0], Xika_final0))
+    # Old Way ################
+    #for jjnd in range(np.array(indices).shape[0]):
+    #    i,k,a = indices[jjnd]
+    #    Xika_final = index_update(Xika_final,index[r,i,k,a],Xika_elements[0][jjnd])
+    ##########################
 
-    Xika_elements, _, _, _, _, _, _, _, _, _, _ = inputs
-
-    for jjnd in range(l_ind):
-        i,k,a = indices[jjnd]
-        Xika_final = index_update(Xika_final,index[r,i,k,a],Xika_elements[0][jjnd])
-
-    inputs = (Xika_final, Xika_elements, indices, rho[r], xi, nui, nk, Fklab, Kklab, Iij[r], damp, tol)
-    print("yup 2")
+    inputs = (Xika_final, Xika_elements, indices, rho, xi, nui, nk, Fklab, Kklab, Iij, damp, tol)
 
     return inputs
 
-def _calc_Xika_debug(cond_fun,body_fun,init_val):
+#@jit
+def _Xika_update_1(ii, inputs):
+
+    r, indices, Xika_elements0, Xika_final = inputs
+    
+    i,k,a = indices[ii]
+    Xika_final = index_update(Xika_final,index[r,i,k,a],Xika_elements0[ii])
+    input_out = (r, indices, Xika_elements0, Xika_final)
+    return input_out
+
+#@jit
+def _calc_Xika_while_debug(cond_fun,body_fun,init_val):
 
     val = init_val
     while cond_fun(val):
         val = body_fun(val)
+        print(val[0][0],val[0][1],cond_fun(val))
     return val
 
 #@jit
-def _calc_Xika_inner(inputs):
+def _calc_Xika_inner(inputs0):
     r"""
     Calculate the fraction of molecules of component i that are not bonded at a site of type a on group k in an iterative fashion. Inner loop for use with jit
 
@@ -1399,34 +1419,67 @@ def _calc_Xika_inner(inputs):
         Xika_elements, indices, rho[r], xi, nui, nk, Fklab, Kklab, Iij[r], damp, tol
     """
 
-    Xika_elements, indices, rho, xi, nui, nk, Fklab, Kklab, Iij, damp, tol = inputs
+    Xika_elements0, indices, rho, xi, nui, nk, Fklab, Kklab, Iij, damp, tol = inputs0
 
     l_ind = indices.shape[0]
 
-    Xika_elements = index_update(Xika_elements,index[1],Xika_elements[0])
-    Xika_elements = index_update(Xika_elements,index[0,:],1.0)
+    Xika_elements0 = index_update(Xika_elements0,index[1],Xika_elements0[0])
+    Xika_elements0 = index_update(Xika_elements0,index[0,:],1.0)
 
-    ind = 0
-    for iind in range(l_ind):
-        i, k, a = indices[iind]
-        jnd = 0
-        for jjnd in range(l_ind):
-            j, l, b = indices[jjnd]
-            delta = Fklab[k, l, a, b] * Kklab[k, l, a, b] * Iij[i, j]
-            tmp = Xika_elements[0][ind] + rho * xi[j] * nui[j,l] * nk[l,b] * Xika_elements[1][jnd] * delta
-            Xika_elements = index_update(Xika_elements,index[0,ind],tmp)
-            jnd = jnd + 1
-        ind = ind + 1
-    Xika_elements = index_update(Xika_elements,index[0], 1./Xika_elements[0])
+    # New Way #################
+    inputs = lax.fori_loop(0,l_ind,_Xika_update_2a,(Xika_elements0, indices, rho, xi, nui, nk, Fklab, Kklab, Iij, damp, tol))
+    Xika_elements, _, _, _, _, _, _, _, _, _, _ = inputs
+    # Old Way #################
+    #for ind in range(l_ind):
+    #    i, k, a = indices[ind]
+    #    for jnd in range(l_ind):
+    #        j, l, b = indices[jnd]
+    #        delta = Fklab[k, l, a, b] * Kklab[k, l, a, b] * Iij[i, j]
+    #        tmp = Xika_elements[0][ind] + rho * xi[j] * nui[j,l] * nk[l,b] * Xika_elements[1][jnd] * delta
+    #        Xika_elements = index_update(Xika_elements,index[0,ind],tmp)
+    ###########################
 
-    obj = np.sum(np.abs(Xika_elements[0] - Xika_elements[1]))
-    pred = obj/np.amax(Xika_elements[1])
-    tmp = Xika_elements[1] + damp*(Xika_elements[0] - Xika_elements[1])
+    Xika_elements = index_update(Xika_elements,index[0], np.reciprocal(Xika_elements[0]))
+
+    Xika_diff = np.subtract(Xika_elements[0], Xika_elements[1])
+    obj = np.sum(np.abs(Xika_diff))
+    pred = np.divide(obj,np.amax(Xika_elements[1]))
+    tmp = np.add(Xika_elements[1],np.multiply(damp,Xika_diff))
     Xika_elements = lax.cond(pred > 1e+3,Xika_elements,lambda x: index_update(x,index[0],tmp),Xika_elements,lambda x: x)
 
     inputs = (Xika_elements, indices, rho, xi, nui, nk, Fklab, Kklab, Iij, damp, tol)
 
     return inputs
+
+#@jit
+def _Xika_update_2a(ii,inputs0):
+
+    Xika_elements0, indices, rho, xi, nui, nk, Fklab, Kklab, Iij, damp, tol = inputs0
+
+    inputs = lax.fori_loop(0,indices.shape[0],_Xika_update_2b,(ii,Xika_elements0, indices, rho, xi, nui, nk, Fklab, Kklab, Iij, damp, tol))
+    _, Xika_elements, _, _, _, _, _, _, _, _, _, _ = inputs
+
+    input_out = (Xika_elements, indices, rho, xi, nui, nk, Fklab, Kklab, Iij, damp, tol)
+
+    return input_out
+
+#@jit
+def _Xika_update_2b( jj, inputs0):
+
+    ii, Xika_elements, indices, rho, xi, nui, nk, Fklab, Kklab, Iij, damp, tol = inputs0
+
+    i, k, a = indices[ii]
+    j, l, b = indices[jj]
+
+    delta = np.multiply(Fklab[k, l, a, b], np.multiply(Kklab[k, l, a, b],Iij[i, j]))
+    tmp0 = np.multiply(rho, np.multiply( xi[j], np.multiply( nui[j,l], np.multiply(nk[l,b],Xika_elements[1][jj]))))
+    tmp = np.add(Xika_elements[0][ii], np.multiply(tmp0, delta))
+    Xika_elements = index_update(Xika_elements,index[0,ii],tmp)
+
+    input_out = ii, Xika_elements, indices, rho, xi, nui, nk, Fklab, Kklab, Iij, damp, tol
+
+    return input_out
+
 
 #@jit
 def _calc_Xika_cond(inputs):
@@ -1444,8 +1497,8 @@ def _calc_Xika_cond(inputs):
         Whether array met criteria
     """
 
-    Xika_elements, indices, rho, xi, nui, nk, Fklab, Kklab, Iij, damp, tol = inputs
-    obj = np.sum(np.abs(Xika_elements[0] - Xika_elements[1])) > tol
+    Xika_elements, _, _, _, _, _, _, _, _, _, tol = inputs
+    obj = np.greater(np.sum(np.abs(np.subtract(Xika_elements[0], Xika_elements[1]))),tol)
 
     return obj
 
@@ -1601,8 +1654,6 @@ def assoc_site_indices(xi, nui, nk):
             indices = index_update(indices,index[j],np.array([ii,jj,kk],int))
             j += 1
 
-    #print("indices",indices)
-
     return indices
 
 def obj_Xika(Xika_elements, indices, rho, xi, nui, nk, Fklab, Kklab, Iij):
@@ -1673,9 +1724,6 @@ def obj_Xika(Xika_elements, indices, rho, xi, nui, nk, Fklab, Kklab, Iij):
     Xika_elements_new = 1./Xika_elements_new
 
     obj = (Xika_elements_new - Xika_elements)/Xika_elements
-
-    
-    #print("Xika guess and obj ",Xika_elements,Xika_elements_new,obj)
 
     #logger.debug("    Xika: {}, Error: {}".format(Xika_elements_new,obj))
 
