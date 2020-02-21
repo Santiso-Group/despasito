@@ -291,21 +291,17 @@ def calc_Xika(indices, rho, xi, nui, nk, Fklab, Kklab, Iij): # , maxiter=500, to
     # Parallelize here, wrt rho!
     Xika_elements = .5*np.ones(len(indices))
     for r in range(nrho):
-        Xika = np.ones((ncomp, nbeads, nsitesmax))
         for knd in range(maxiter):
 
             Xika_elements_new = np.ones(len(Xika_elements))
-            ind = 0
             for iind in range(l_ind):
                 i, k, a = indices[iind]
-                jnd = 0
                 for jjnd in range(l_ind):
                     j, l, b = indices[jjnd]
                     delta = Fklab[k, l, a, b] * Kklab[k, l, a, b] * Iij[r,i, j]
-                    tmp = Xika_elements_new[ind] + rho[r] * xi[j] * nui[j,l] * nk[l,b] * Xika_elements[jnd] * delta
-                    Xika_elements_new[ind] += rho[r] * xi[j] * nui[j,l] * nk[l,b] * Xika_elements[jnd] * delta
-                    jnd += 1
-                ind += 1
+                    tmp = Xika_elements_new[iind] + rho[r] * xi[j] * nui[j,l] * nk[l,b] * Xika_elements[jjnd] * delta
+                    Xika_elements_new[iind] += rho[r] * xi[j] * nui[j,l] * nk[l,b] * Xika_elements[jjnd] * delta
+
             Xika_elements_new = 1./Xika_elements_new
             obj = np.sum(np.abs(Xika_elements_new - Xika_elements))
 
