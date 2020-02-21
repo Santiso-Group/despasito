@@ -8,6 +8,10 @@ from setuptools import find_packages
 import versioneer
 from numpy.distutils.core import Extension, setup
 
+short_description = __doc__.split("\n")
+fpath = os.path.join("despasito","equations_of_state","saft")
+extensions = []
+
 if sys.version_info.major < 3:
     raise ValueError("Due to abstract classes used. DESPASITO must be run using python 3.")
 if sys.version_info.minor > 7:
@@ -15,13 +19,11 @@ if sys.version_info.minor > 7:
 
 try:
     from Cython.Build import cythonize
-    cy_exts = cythonize(os.path.join('despasito','equations_of_state','saft','c_exts.pyx'))
+#    cy_exts = cythonize(os.path.join('despasito','equations_of_state','saft','c_exts.pyx'))
+    cy_ext_1 = Extension(name="c_exts",sources=[os.path.join(fpath,'c_exts.pyx')],include_dirs=[fpath])
+    extensions.extend(cythonize([cy_ext_1]))
 except:
     print('Cython not available on your system. Proceeding without C-extentions.')
-    cy_exts = []
-
-short_description = __doc__.split("\n")
-fpath = os.path.join("despasito","equations_of_state","saft")
 
 # from https://github.com/pytest-dev/pytest-runner#conditional-requirement
 needs_pytest = {'pytest', 'test', 'ptr'}.intersection(sys.argv)
@@ -35,7 +37,7 @@ except:
 
 try:
     ext1 = Extension(name="solv_assoc",sources=[os.path.join(fpath,"solv_assoc.f90")],include_dirs=[fpath])
-    extensions = [ext1]
+    extensions.append(ext1)
 except:
     raise OSError("Fortran compiler is not found")
 # try Extension and compile

@@ -43,6 +43,7 @@ if quiet == False:
 
 logging.info("Input args: {}".format(args))
 logging.info("JIT compilation: {}".format(args.jit))
+logging.info("Use Cython: {}".format(args.cython))
 
 # Threads
 # if args.threads != None:
@@ -59,5 +60,6 @@ else:
 kwargs["threads"] = args.threads
 kwargs["path"] = args.path
 kwargs["jit" ] = args.jit
+kwargs["cython" ] = args.cython
 
 run(**kwargs)

@@ -11,6 +11,9 @@ import logging
 class jit_stat:
     disable_jit = True
 
+class cython_stat:
+    disable_cython = True
+
 def eos(**kwargs):
     """
     Interface between the user and our library of equations of state (EOS).
@@ -44,6 +47,11 @@ def eos(**kwargs):
         jit_stat.disable_jit = True
     else:
         jit_stat.disable_jit = not kwargs['jit']
+
+    if 'cython' not in kwargs:
+        cython_stat.disable_cython = True
+    else:
+        cython_stat.disable_cython = not kwargs['cython']
 
     try:
         eos_fam, eos = eos_type.split('.')

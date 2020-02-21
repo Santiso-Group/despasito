@@ -23,6 +23,7 @@ def commandline_parser():
     parser.add_argument("-t", "--threads", dest="threads", type=int, help="**This hasn't been implemented yet.** Set the number of threads used.",default=1)
     parser.add_argument("-p", "--path", default=".", help="Set the location of the data/library files (e.g. SAFTcross, etc.) for despasito to look for")
     parser.add_argument("--jit", action='store_true', default=0, help="Turn on Numba's JIT compilation for accelerated computation")
+    parser.add_argument("--cython", action='store_true', default=0, help="Turn on Cython for accelerated computation")
 
     return parser
 
@@ -37,6 +38,7 @@ def run(filename="input.json", path=".", **args):
     logger.info("Begin processing input file: %s" % filename)
     eos_dict, thermo_dict, output_file = read_input.extract_calc_data(filename, path, **args)
     eos_dict['jit'] = args['jit']
+    eos_dict['cython'] = args['cython']
 
     if output_file:
         file_dict = {"output_file":output_file}

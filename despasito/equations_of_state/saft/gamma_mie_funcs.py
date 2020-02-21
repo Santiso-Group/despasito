@@ -18,6 +18,7 @@ import os
 from . import constants
 from . import solv_assoc
 
+# Check for Numba
 if 'NUMBA_DISABLE_JIT' in os.environ:
     disable_jit = os.environ['NUMBA_DISABLE_JIT']
 else:
@@ -26,11 +27,20 @@ else:
 
 if disable_jit:
     from .nojit_exts import calc_a1s, calc_da1sii_drhos
-    #uncomment line below for cython extensions:
-    #from .c_exts import calc_a1s
-    #we need to add another command-line arg to replace this hackish approach
 else:
     from .jit_exts import calc_a1s, calc_Xika, calc_da1sii_drhos
+
+# Check for cython
+from .. import cython_stat
+disable_cython = cython_stat.disable_cython
+if not disable_cython:
+    if not disable_jit:
+        logger = logging.getLogger(__name__)
+        logger.warning("Flag for Numba and Cython were given. Using Numba")
+    else:
+#        from .nojit_exts import calc_da1sii_drhos
+#        from .c_exts import calc_a1s
+        from .c_exts import calc_a1s, calc_Xika, calc_da1sii_drhos
 
 ############################################################
 #                                                          #
