@@ -783,7 +783,7 @@ def calc_phiv(P, T, yi, eos, rhodict={}):
         Flag identifying the fluid type. A value of 0 is vapor, 1 is liquid, 2 mean a critical fluid, 3 means that neither is true, 4 means ideal gas is assumed
     """
 
-    #logger = logging.getLogger(__name__)
+    logger = logging.getLogger(__name__)
 
     rhov, flagv = calc_rhov(P, T, yi, eos, rhodict)
     if flagv == 4:
@@ -1029,6 +1029,7 @@ def calc_Prange_xi(T, xi, yi, eos, rhodict={}, Pmin=1000, zi_opts={}):
     # A flag value of 0 is vapor, 1 is liquid, 2 mean a critical fluid, 3 means that neither is true, 4 means we should assume ideal gas
 
     flag = 0
+    Pflag = 0
     for z in range(maxiter):
 
         # Be sure guess in pressure is larger than lower bound
@@ -1051,21 +1052,28 @@ def calc_Prange_xi(T, xi, yi, eos, rhodict={}, Pmin=1000, zi_opts={}):
             logger.info("Estimate Maximum Pressure: {},  Obj. Func: {}".format(Parray[1],ObjArray[1]))
         else: # New guess and evaluation of pressure
             # Update pressure
-            tmp_sum = np.abs(ObjArray[-2] + ObjArray[-1])
-            tmp_dif = np.abs(ObjArray[-2] - ObjArray[-1])
+            tmp_sum = np.abs(ObjArray[0] + ObjArray[-1])
+            tmp_dif = np.abs(ObjArray[0] - ObjArray[-1])
             if Parray[-1] == Parray[-2]: # If guess in pressure repeats, get us out of the cycle
                 print("stuck in a rut")
-                if flag == 0:
-                    p = 2*p
+                if Parray[-1] != Pflag:
+                    Pflag = Parray[-1]
+                    p = (2+flag)*p
                 else:
-                    raise ValueError("Maximum pressure value could not be found to bound search.")
+                    if flag > 5:  
+                        phil, rhol, flagl = calc_phil(p, T, xi, eos, rhodict=rhodict)
+                        yi_new = find_new_yi(p, T, phil, xi, eos, rhodict=rhodict) 
+                        if np.sum(np.abs(yi_range-yi_new)) < 1e-5:
+                            raise ValueError("Maximum pressure value could not be found to bound search.")
+                    flag += 1
+                    p = (2+flag)*p
             elif tmp_dif > tmp_sum: # Found a negative value!
                 print("We got a neg baby!")
                 if flagv_max not in [0,2,4]:
                     p = 0.9*Parray[-1]
                 else:
                     logger.info("Got the pressure range!")
-                    slope = (ObjArray[-1] - ObjArray[-2]) / (Parray[-1] - Parray[-2])
+                    slope = (ObjArray[-1] - ObjArray[0]) / (Parray[-1] - Parray[0])
                     intercept = ObjArray[-1] - slope * Parray[-1]
                     Pguess = -intercept / slope
                     break
@@ -1109,8 +1117,18 @@ def calc_Prange_xi(T, xi, yi, eos, rhodict={}, Pmin=1000, zi_opts={}):
        # plt.xlabel("Pressure / Pa")
        # plt.savefig("CannotFindMax_{}_{}.png".format(T,xi[0]))
 
-    Prange = Parray[-2:]
-    ObjRange = ObjArray[-2:]
+    Parray = np.array(Parray)
+    ObjArray = np.array(ObjArray)
+    
+    Prange = [Parray[0], Parray[-1]]
+    ObjRange = [ObjArray[0], ObjArray[-1]]
+    if Parray[Parray<Parray[-1]].shape[0] > 1:
+        ind = np.where(Parray==max(Parray[Parray<Parray[-1]]))[0]
+        Prange[0] = Parray[ind]
+        print(ind, len(Parray), len(ObjArray))
+        ObjRange[0] = ObjArray[ind]
+        slope = (ObjRange[1]-ObjRange[0])/(Prange[1]-Prange[0])
+        Pguess = -(ObjRange[0]-slope*Prange[0])/slope
     logger.info("[Pmin, Pmax]: {}, Obj. Values: {}".format(str(Prange),str(ObjRange)))
     logger.info("Initial guess in pressure: {} Pa".format(Pguess))
 
@@ -1279,12 +1297,13 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxiter=30, tol=1e-6):
 
         if ((any(np.isnan(phiv)) or flagv==1) and flag_check_vapor): # If vapor density doesn't exist
             flag_check_vapor = False
-            logger.info("    Composition doesn't produce a vapor, let's find one!")
             if (all(yi != 0.) and len(yi)==2):
-                yinew = find_new_yi(P, T, phil, xi, eos, rhodict=rhodict)
-                phiv, rhov, flagv = calc_phiv(P, T, yinew, eos, rhodict=rhodict)
+                logger.info("    Composition doesn't produce a vapor, let's find one!")
+                yi_tmp = find_new_yi(P, T, phil, xi, eos, rhodict=rhodict)
+                phiv, rhov, flagv = calc_phiv(P, T, yi_tmp, eos, rhodict=rhodict)
                 yinew = xi * phil / phiv
             else:
+                logger.info("    Composition doesn't produce a vapor, we need a function to search compositions for more than two components.")
                 yinew = yi
                 phiv, rhov, flagv = calc_phiv(P, T, yi, eos, rhodict=rhodict)
 
@@ -1293,6 +1312,7 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxiter=30, tol=1e-6):
                 logger.error("Fugacity coefficient of vapor should not be NaN")
         else:
             yinew = xi * phil / phiv
+
         yinew[np.isnan(yinew)] = 0.
 
         ## Check for bouncing between values
@@ -1489,36 +1509,44 @@ def find_new_yi(P, T, phil, xi, eos, rhodict={}):
 
     yi_ext = np.linspace(0.01,.99,30) # Guess for yi
     obj_ext = []
-    flag_ext = [[],[]]
+    flag0 = []
+    flag_ext = []
 
     for yi in yi_ext:
+
         yi = np.array([yi, 1-yi])
-        ####
         phiv, rhov, flagv = calc_phiv(P, T, yi, eos, rhodict=rhodict)
-        yinew = xi * phil / phiv
-        yinew_total_1 = np.sum(yinew)
 
-        yi2 = yinew/yinew_total_1
+        #### Try next two iterations with traditional objective function
+        yinew1 = xi * phil / phiv
+        yinew_total_1 = np.sum(yinew1)
+
+        yi2 = yinew1/yinew_total_1
         phiv2, rhov2, flagv2 = calc_phiv(P, T, yi2, eos, rhodict=rhodict)
-        yinew = xi * phil / phiv2
-        yinew_total_2 = np.sum(yinew)
+        #yinew2 = xi * phil / phiv2
+        #yinew_total_2 = np.sum(yinew2)
 
-        logger.debug("    yi_totals {} {}".format(yinew_total_1,yinew_total_2))
+        #obj = abs(yinew_total_1 - yinew_total_2)
+        #logger.debug("    Guess {}, Next 2 itr: {}={} {}={}, dyi_total={}".format(yi,yinew1,yinew_total_1,yinew2,yinew_total_2,abs(obj)))
 
-        obj = yinew_total_1 - yinew_total_2
+        #flag0.append(flagv)
+        #flag_ext.append(flagv2)
 
-        flag_ext[0].append(flagv)
-        flag_ext[1].append(flagv2)
-        ######
-    #    obj = obj_yi(yi, P, T, phil, xi, eos, rhodict=rhodict)
-        obj_ext.append(abs(obj))
-        logger.debug("    Obj yi {} total1 - total2 = {}".format(yi,obj))
+        ###### Try minimizing the ratio with liquid fugacities
+        flag_ext.append(flagv)
+        tmp1 = yi*phiv
+        #tmp2 = xi*phil
+        tmp2 = yi2*phiv2
+        obj = abs(tmp1[0]/tmp1[1] - tmp2[0]/tmp2[1])
+        logger.debug("    Guess {}, yi ratio: {}, xi ratio: {}, diff={}".format(yi,tmp1[0]/tmp1[1],tmp2[0]/tmp2[1],obj))
+        #######################
+        obj_ext.append(obj)        
 
     #plt.figure(1)
     #plt.plot(yi_ext,obj_ext,".-b")
     #plt.figure(2)
-    #plt.plot(yi_ext,flag_ext[0],".-b")
-    #plt.plot(yi_ext,flag_ext[1],".-r")
+    #plt.plot(yi_ext,flag0,".-b")
+    #plt.plot(yi_ext,flag_ext,".-r")
     #plt.show()
 
     obj_ext = np.array(obj_ext)
@@ -1533,7 +1561,7 @@ def find_new_yi(P, T, phil, xi, eos, rhodict={}):
         # Remove any NaN
         obj_tmp  =  obj_ext[~np.isnan(obj_ext)]
         yi_tmp   =   yi_ext[~np.isnan(obj_ext)]
-        flag_tmp = flag_ext[1][~np.isnan(obj_ext)]
+        flag_tmp = flag_ext[~np.isnan(obj_ext)]
  
         # Assess vapor values
         # A value of 0 is vapor, 1 is liquid, 2 mean a critical fluid, 3 means that neither is true, 4 means we should assume ideal gas
@@ -1595,18 +1623,31 @@ def obj_yi(yi, P, T, phil, xi, eos, rhodict={}):
         else:
             yi = np.array([yi, 1-yi])
 
-    phiv, rhov, flagv = calc_phiv(P, T, yi, eos, rhodict=rhodict)
+    phiv, _, flagv = calc_phiv(P, T, yi, eos, rhodict=rhodict)
+
+    # Method 1: Traditional Obj but test yi values
+    #yinew = xi * phil / phiv
+    #yinew_total_1 = np.sum(yinew)
+
+    #yi2 = yinew/yinew_total_1
+    #phiv2, rhov2, flagv2 = calc_phiv(P, T, yi2, eos, rhodict=rhodict)
+    #yinew = xi * phil / phiv2
+    #yinew_total_2 = np.sum(yinew)
+
+    #logger.debug("    yi_totals {} {}".format(yinew_total_1,yinew_total_2))
+
+    #obj = np.abs(yinew_total_1 - yinew_total_2)
+
+    # Method 2: Compare ratios
+    tmp1 = yi*phiv
+    #tmp2 = xi*phil
     yinew = xi * phil / phiv
-    yinew_total_1 = np.sum(yinew)
-
-    yi2 = yinew/yinew_total_1
-    phiv2, rhov2, flagv2 = calc_phiv(P, T, yi2, eos, rhodict=rhodict)
-    yinew = xi * phil / phiv2
-    yinew_total_2 = np.sum(yinew)
-
-    logger.debug("    yi_totals {} {}".format(yinew_total_1,yinew_total_2))
-
-    obj = np.abs(yinew_total_1 - yinew_total_2)
+    yinew /= np.sum(yinew)
+    phiv2, _, flagv2 = calc_phiv(P, T, yinew, eos, rhodict=rhodict)
+    tmp2 = yinew*phiv2
+    obj = abs(tmp1[0]/tmp1[1] - tmp2[0]/tmp2[1])
+    logger.debug("    Guess {}, yi ratio: {}, xi ratio: {}, diff={}, flagv {}".format(yi,tmp1[0]/tmp1[1],tmp2[0]/tmp2[1],obj,flagv))
+    
     
     return obj
 
