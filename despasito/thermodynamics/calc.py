@@ -381,7 +381,7 @@ def calc_Psat(T, xi, eos, rhodict={}):
             raise ValueError("Multiple components have compositions greater than 10%, check code for source")
         else:
             ind = np.where((xi>0.1)==True)[0]
-            raise ValueError("Multiple components have compositions greater than 0. Do you mean to obtain the saturation pressure of {} with a mole fraction of {}?".format(eos._beads[ind],xi[ind]))
+            raise ValueError("Multiple components have compositions greater than 0. Do you mean to obtain the saturation pressure of {} with a mole fraction of {}?".format(eos.eos_dict['beads'][ind],xi[ind]))
 
     vlist, Plist = PvsRho(T, xi, eos, **rhodict)
     Pvspline, roots, extrema = PvsV_spline(vlist, Plist)
@@ -1935,19 +1935,19 @@ def setPsat(ind, eos):
 
     logger = logging.getLogger(__name__)
 
-    for j in range(np.size(eos._nui[ind])):
-        if eos._nui[ind][j] > 0.0 and eos._beads[j] == "CO2":
+    for j in range(np.size(eos.eos_dict['nui'][ind])):
+        if eos.eos_dict['nui'][ind][j] > 0.0 and eos.eos_dict['beads'][j] == "CO2":
             Psat = 10377000.0
-        elif eos._nui[ind][j] > 0.0 and eos._beads[j] == "N2":
+        elif eos.eos_dict['nui'][ind][j] > 0.0 and eos.eos_dict['beads'][j] == "N2":
             Psat = 7377000.0
-        elif eos._nui[ind][j] > 0.0 and ("CH4" in eos._beads[j]):
+        elif eos.eos_dict['nui'][ind][j] > 0.0 and ("CH4" in eos.eos_dict['beads'][j]):
             Psat = 6377000.0
-        elif eos._nui[ind][j] > 0.0 and ("CH3CH3" in eos._beads[j]):
+        elif eos.eos_dict['nui'][ind][j] > 0.0 and ("CH3CH3" in eos.eos_dict['beads'][j]):
             Psat = 7377000.0
-        elif eos._nui[ind][j] > 0.0:
+        elif eos.eos_dict['nui'][ind][j] > 0.0:
             #Psat = np.nan
             Psat = 7377000.0
-            NaNbead = eos._beads[j]
+            NaNbead = eos.eos_dict['beads'][j]
             logger.warning("Bead, {}, is above its critical point. Psat is assumed to be {}. To add an exception go to thermodynamics.calc.setPsat".format(NaNbead,Psat))
 
     if "NaNbead" not in list(locals().keys()):

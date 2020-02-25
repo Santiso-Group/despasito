@@ -69,16 +69,17 @@ class saft_gamma_mie(EOStemplate):
 
         #logger = logging.getLogger(__name__)
 
+        self.eos_dict = {}
         # Self interaction parameters
-        self._nui = kwargs['nui']
-        self._beads = kwargs['beads']
-        self._beadlibrary = kwargs['beadlibrary']
+        self.eos_dict['nui'] = kwargs['nui']
+        self.eos_dict['beads'] = kwargs['beads']
+        self.eos_dict['beadlibrary'] = kwargs['beadlibrary']
 
-        massi = np.zeros(len(self._nui))
-        for i in range(len(self._nui)):
-            for k in range(np.size(self._beads)):
-                massi[i] += self._nui[i, k] * self._beadlibrary[self._beads[k]]["mass"]
-        self._massi = massi
+        massi = np.zeros(len(self.eos_dict['nui']))
+        for i in range(len(self.eos_dict['nui'])):
+            for k in range(np.size(self.eos_dict['beads'])):
+                massi[i] += self.eos_dict['nui'][i, k] * self.eos_dict['beadlibrary'][self.eos_dict['beads'][k]]["mass"]
+        self.eos_dict['massi'] = massi
 
         # Cross interaction parameters
         if 'crosslibrary' in kwargs:
@@ -86,14 +87,14 @@ class saft_gamma_mie(EOStemplate):
         else:
             crosslibrary = {}
 
-        epsilonkl, sigmakl, l_akl, l_rkl, Ckl = funcs.calc_interaction_matrices(self._beads, self._beadlibrary, crosslibrary=crosslibrary)
+        epsilonkl, sigmakl, l_akl, l_rkl, Ckl = funcs.calc_interaction_matrices(self.eos_dict['beads'], self.eos_dict['beadlibrary'], crosslibrary=crosslibrary)
 
         self._crosslibrary = crosslibrary
-        self._epsilonkl = epsilonkl
-        self._sigmakl = sigmakl
-        self._l_akl = l_akl
-        self._l_rkl = l_rkl
-        self._Ckl = Ckl
+        self.eos_dict['epsilonkl'] = epsilonkl
+        self.eos_dict['sigmakl'] = sigmakl
+        self.eos_dict['l_akl'] = l_akl
+        self.eos_dict['l_rkl'] = l_rkl
+        self.eos_dict['Ckl'] = Ckl
 
         # Association sites
         if 'sitenames' in kwargs:
@@ -101,11 +102,11 @@ class saft_gamma_mie(EOStemplate):
         else:
             self._sitenames = ["H", "e1", "e2"]
 
-        epsilonHB, Kklab, nk = funcs.calc_assoc_matrices(self._beads, self._beadlibrary, sitenames=self._sitenames, crosslibrary=self._crosslibrary)
+        epsilonHB, Kklab, nk = funcs.calc_assoc_matrices(self.eos_dict['beads'], self.eos_dict['beadlibrary'], sitenames=self._sitenames, crosslibrary=self._crosslibrary)
 
-        self._epsilonHB = epsilonHB
-        self._Kklab = Kklab
-        self._nk = nk
+        self.eos_dict['epsilonHB'] = epsilonHB
+        self.eos_dict['Kklab'] = Kklab
+        self.eos_dict['nk'] = nk
 
         # Initialize temperature attribute
         self.T = np.nan
@@ -128,11 +129,11 @@ class saft_gamma_mie(EOStemplate):
 
         #logger = logging.getLogger(__name__)
 
-        dkk, dkl, x0kl = funcs.calc_hard_sphere_matricies(self._beads, self._beadlibrary, self._sigmakl, T)
+        dkk, dkl, x0kl = funcs.calc_hard_sphere_matricies(self.eos_dict['beads'], self.eos_dict['beadlibrary'], self.eos_dict['sigmakl'], T)
         self.T = T
-        self._dkk = dkk
-        self._dkl = dkl
-        self._x0kl = x0kl
+        self.eos_dict['dkk'] = dkk
+        self.eos_dict['dkl'] = dkl
+        self.eos_dict['x0kl'] = x0kl
 
     def _xi_dependent_variables(self, xi):
 
@@ -148,10 +149,10 @@ class saft_gamma_mie(EOStemplate):
 
         #logger = logging.getLogger(__name__)
 
-        Cmol2seg, xsk, xskl = funcs.calc_composition_dependent_variables(xi, self._nui, self._beads, self._beadlibrary)
-        self._Cmol2seg = Cmol2seg
-        self._xsk = xsk
-        self._xskl = xskl
+        Cmol2seg, xsk, xskl = funcs.calc_composition_dependent_variables(xi, self.eos_dict['nui'], self.eos_dict['beads'], self.eos_dict['beadlibrary'])
+        self.eos_dict['Cmol2seg'] = Cmol2seg
+        self.eos_dict['xsk'] = xsk
+        self.eos_dict['xskl'] = xskl
 
     def P(self, rho, T, xi):
         """
@@ -174,7 +175,7 @@ class saft_gamma_mie(EOStemplate):
 
         #logger = logging.getLogger(__name__)
 
-        if len(xi) != len(self._nui):
+        if len(xi) != len(self.eos_dict['nui']):
             raise ValueError("Number of components in mole fraction list doesn't match components in nui. Check bead_config.")
 
         if T != self.T:
@@ -194,7 +195,7 @@ class saft_gamma_mie(EOStemplate):
         nrho = np.size(rho)
 
         # computer rho+step and rho-step for better a bit better performance
-        A = funcs.calc_A(np.append(rho + step, rho - step), xi, T, self._beads, self._beadlibrary, self._massi, self._nui, self._Cmol2seg, self._xsk, self._xskl, self._dkk, self._epsilonkl, self._sigmakl, self._dkl, self._l_akl, self._l_rkl, self._Ckl,self._x0kl, self._epsilonHB, self._Kklab, self._nk)
+        A = funcs.calc_A(rho=np.append(rho + step, rho - step), xi=xi, T=T, **self.eos_dict)
 
         P_tmp = (A[:nrho]-A[nrho:])*((constants.kb*T)/(2.0*step))*rho**2
 
@@ -224,7 +225,7 @@ class saft_gamma_mie(EOStemplate):
 
         #logger = logging.getLogger(__name__)
 
-        if len(xi) != len(self._nui):
+        if len(xi) != len(self.eos_dict['nui']):
             raise ValueError("Number of components in mole fraction list doesn't match components in nui. Check bead_config.")
 
         if len(rho.shape) > 1:
@@ -245,7 +246,7 @@ class saft_gamma_mie(EOStemplate):
 #        logger.debug("    Compute phi for density, {}, with step size {}.".format(rho,drho))
 #
 #        # compute phi
-#        Ares = funcs.calc_Ares(rho *  constants.Nav, xi, T, self._beads, self._beadlibrary, self._massi, self._nui, self._Cmol2seg, self._xsk, self._xskl, self._dkk, self._epsilonkl, self._sigmakl, self._dkl, self._l_akl, self._l_rkl, self._Ckl,self._x0kl, self._epsilonHB, self._Kklab, self._nk)
+#        Ares = funcs.calc_Ares(rho=rho *  constants.Nav, xi=xi, T=T, **self.eos_dict)
 #        rhoi = rho*np.array(xi,float)
 #        for i in range(np.size(phi_tmp)):
 #            dAres = np.zeros(2)
@@ -264,7 +265,7 @@ class saft_gamma_mie(EOStemplate):
         #dy = 0.05
 
         # compute phi
-        Ares = funcs.calc_Ares(rho *  constants.Nav, xi, T, self._beads, self._beadlibrary, self._massi, self._nui, self._Cmol2seg, self._xsk, self._xskl, self._dkk, self._epsilonkl, self._sigmakl, self._dkl, self._l_akl, self._l_rkl, self._Ckl,self._x0kl, self._epsilonHB, self._Kklab, self._nk)
+        Ares = funcs.calc_Ares(rho=rho *  constants.Nav, xi=xi, T=T, **self.eos_dict)
         for i in range(np.size(phi_tmp)):
             if xi[i] != 0.0:
                 dAres = np.zeros(2)
@@ -310,9 +311,9 @@ class saft_gamma_mie(EOStemplate):
 
         self._xi_dependent_variables(xi)
 
-        Cmol2seg, xsk, xskl = funcs.calc_composition_dependent_variables(xi, self._nui, self._beads, self._beadlibrary)
+        Cmol2seg, xsk, xskl = funcs.calc_composition_dependent_variables(xi, self.eos_dict['nui'], self.eos_dict['beads'], self.eos_dict['beadlibrary'])
 
-        Ares = funcs.calc_Ares(rho * constants.Nav, xi, T, self._beads, self._beadlibrary, self._massi, self._nui, Cmol2seg, xsk, xskl, self._dkk, self._epsilonkl, self._sigmakl, self._dkl, self._l_akl, self._l_rkl, self._Ckl, self._x0kl, self._epsilonHB, self._Kklab, self._nk)
+        Ares = funcs.calc_Ares(rho=rho * constants.Nav, xi=xi, T=T, **self.eos_dict)
 
         return Ares
 
@@ -339,7 +340,7 @@ class saft_gamma_mie(EOStemplate):
 
         logger = logging.getLogger(__name__)
 
-        if len(xi) != len(self._nui):
+        if len(xi) != len(self.eos_dict['nui']):
             raise ValueError("Number of components in mole fraction list doesn't match components in nui. Check bead_config.")
 
         if T != self.T:
@@ -362,14 +363,14 @@ class saft_gamma_mie(EOStemplate):
         # compute mui
         for i in range(np.size(mui)):
             dAres = np.zeros(2)
-            ares = funcs.calc_Ares(rho * constants.Nav, xi, T, self._beads, self._beadlibrary, self._massi, self._nui, self._Cmol2seg, self._xsk, self._xskl,self._dkk, self._epsilonkl, self._sigmakl, self._dkl, self._l_akl, self._l_rkl, self._Ckl, self._x0kl, self._epsilonHB, self._Kklab, self._nk)
+            ares = funcs.calc_Ares(rho=rho * constants.Nav, xi=xi, T=T, **self.eos_dict)
             for j, delta in enumerate((dnmol, -dnmol)):
                 xi_temp = np.copy(xi)
                 if xi_temp[i] != 0.:
                     xi_temp[i] += delta
-                Cmol2seg_tmp, xsk_tmp, xskl_tmp = funcs.calc_composition_dependent_variables(xi_temp, self._nui, self._beads, self._beadlibrary)
+                Cmol2seg_tmp, xsk_tmp, xskl_tmp = funcs.calc_composition_dependent_variables(xi_temp, self.eos_dict['nui'], self.eos_dict['beads'], self.eos_dict['beadlibrary'])
                 # xi_temp/=(nmol+delta)
-                dAres[j] = funcs.calc_Ares(rho * constants.Nav, xi_temp, T, self._beads, self._beadlibrary, self._massi, self._nui, Cmol2seg_tmp, xsk_tmp, xskl_tmp, self._dkk, self._epsilonkl, self._sigmakl, self._dkl, self._l_akl, self._l_rkl, self._Ckl, self._x0kl, self._epsilonHB, self._Kklab, self._nk)
+                dAres[j] = funcs.calc_Ares(rho=rho * constants.Nav, xi=xi_temp, T=T, **self.eos_dict)
             daresdxi[i] = (dAres[0] - dAres[1]) / (2.0 * dnmol)
 
         # compute Z
@@ -410,7 +411,7 @@ class saft_gamma_mie(EOStemplate):
 
         # estimate the maximum density based on the hard sphere packing fraction
         # etax, assuming a maximum packing fraction specified by maxpack
-        maxrho = maxpack * 6.0 / (self._Cmol2seg * np.pi * np.sum(self._xskl * (self._dkl**3))) / constants.Nav
+        maxrho = maxpack * 6.0 / (self.eos_dict['Cmol2seg'] * np.pi * np.sum(self.eos_dict['xskl'] * (self.eos_dict['dkl']**3))) / constants.Nav
 
         return maxrho
 
@@ -437,15 +438,15 @@ class saft_gamma_mie(EOStemplate):
 
         if len(bead_names) > 2:
             raise ValueError("The bead names {} were given, but only a maximum of 2 are permitted.".format(", ".join(bead_names)))
-        if not set(bead_names).issubset(self._beads):
-            raise ValueError("The bead names {} were given, but they are not in the allowed list: {}".format(", ".join(bead_names),", ".join(self._beads)))
+        if not set(bead_names).issubset(self.eos_dict['beads']):
+            raise ValueError("The bead names {} were given, but they are not in the allowed list: {}".format(", ".join(bead_names),", ".join(self.eos_dict['beads'])))
 
         # Non bonded parameters
         if (param_name in ["epsilon", "sigma", "l_r", "l_a", "Sk"]):
             # Self interaction parameter
             if len(bead_names) == 1:
-                if bead_names[0] in self._beadlibrary:
-                    param_value = self._beadlibrary[bead_names[0]][param_name]
+                if bead_names[0] in self.eos_dict['beadlibrary']:
+                    param_value = self.eos_dict['beadlibrary'][bead_names[0]][param_name]
                 else:
                     param_value = self.check_bounds(param_name, bead_names, np.empty(2))[1]/2
             # Cross interaction parameter
@@ -480,8 +481,8 @@ class saft_gamma_mie(EOStemplate):
             tmp_nm = param_name+"".join(site_names)
             # Self interaction parameter
             if len(bead_names) == 1:
-                if bead_names[0] in self._beadlibrary and tmp_nm in self._beadlibrary[bead_names[0]]:
-                    param_value = self._beadlibrary[bead_names[0]][tmp_nm]
+                if bead_names[0] in self.eos_dict['beadlibrary'] and tmp_nm in self.eos_dict['beadlibrary'][bead_names[0]]:
+                    param_value = self.eos_dict['beadlibrary'][bead_names[0]][tmp_nm]
             # Cross interaction parameter
             elif len(bead_names) == 2:
                 if bead_names[1] in self._crosslibrary and bead_names[0] in self._crosslibrary[bead_names[1]]:
@@ -533,8 +534,8 @@ class saft_gamma_mie(EOStemplate):
         
         if len(bead_names) > 2:
             raise ValueError("The bead names {} were given, but only a maximum of 2 are permitted.".format(", ".join(bead_names)))
-        if not set(bead_names).issubset(self._beads):
-            raise ValueError("The bead names {} were given, but they are not in the allowed list: {}".format(", ".join(bead_names),", ".join(self._beads)))
+        if not set(bead_names).issubset(self.eos_dict['beads']):
+            raise ValueError("The bead names {} were given, but they are not in the allowed list: {}".format(", ".join(bead_names),", ".join(self.eos_dict['beads'])))
         
         bounds_new = np.zeros(2)
         # Non bonded parameters
@@ -628,17 +629,17 @@ class saft_gamma_mie(EOStemplate):
 
         if len(bead_names) > 2:
             raise ValueError("The bead names {} were given, but only a maximum of 2 are permitted.".format(", ".join(bead_names)))
-        if not set(bead_names).issubset(self._beads):
-            raise ValueError("The bead names {} were given, but they are not in the allowed list: {}".format(", ".join(bead_names),", ".join(self._beads)))
+        if not set(bead_names).issubset(self.eos_dict['beads']):
+            raise ValueError("The bead names {} were given, but they are not in the allowed list: {}".format(", ".join(bead_names),", ".join(self.eos_dict['beads'])))
 
         # Non bonded parameters
         if (param_name in ["epsilon", "sigma", "l_r", "l_a", "Sk"]):
             # Self interaction parameter
             if len(bead_names) == 1:
-                if bead_names[0] in self._beadlibrary:
-                    self._beadlibrary[bead_names[0]][param_name] = param_value
+                if bead_names[0] in self.eos_dict['beadlibrary']:
+                    self.eos_dict['beadlibrary'][bead_names[0]][param_name] = param_value
                 else:
-                    self._beadlibrary[bead_names[0]] = {param_name: param_value}
+                    self.eos_dict['beadlibrary'][bead_names[0]] = {param_name: param_value}
             # Cross interaction parameter
             elif len(bead_names) == 2:
                 if bead_names[1] in self._crosslibrary and bead_names[0] in self._crosslibrary[bead_names[1]]:
@@ -674,10 +675,10 @@ class saft_gamma_mie(EOStemplate):
             tmp_nm = param_name+"".join(site_names)
             # Self interaction parameter
             if len(bead_names) == 1:
-                if bead_names[0] in self._beadlibrary and tmp_nm in self._beadlibrary[bead_names[0]]:
-                    self._beadlibrary[bead_names[0]][tmp_nm] = param_value
+                if bead_names[0] in self.eos_dict['beadlibrary'] and tmp_nm in self.eos_dict['beadlibrary'][bead_names[0]]:
+                    self.eos_dict['beadlibrary'][bead_names[0]][tmp_nm] = param_value
                 else:
-                    self._beadlibrary[bead_names[0]] = {tmp_nm: param_value}
+                    self.eos_dict['beadlibrary'][bead_names[0]] = {tmp_nm: param_value}
             # Cross interaction parameter
             elif len(bead_names) == 2:
                 if bead_names[1] in self._crosslibrary and bead_names[0] in self._crosslibrary[bead_names[1]]:
@@ -703,10 +704,10 @@ class saft_gamma_mie(EOStemplate):
         #logger = logging.getLogger(__name__)
 
         # Update Non bonded matrices
-        self._epsilonkl, self._sigmakl, self._l_akl, self._l_rkl, self._Ckl = funcs.calc_interaction_matrices(self._beads, self._beadlibrary, crosslibrary=self._crosslibrary)
+        self.eos_dict['epsilonkl'], self.eos_dict['sigmakl'], self.eos_dict['l_akl'], self.eos_dict['l_rkl'], self.eos_dict['Ckl'] = funcs.calc_interaction_matrices(self.eos_dict['beads'], self.eos_dict['beadlibrary'], crosslibrary=self._crosslibrary)
 
         # Update Association site matrices
-        self._epsilonHB, self._Kklab, self._nk = funcs.calc_assoc_matrices(self._beads,self._beadlibrary,sitenames=self._sitenames,crosslibrary=self._crosslibrary)
+        self.eos_dict['epsilonHB'], self.eos_dict['Kklab'], self.eos_dict['nk'] = funcs.calc_assoc_matrices(self.eos_dict['beads'],self.eos_dict['beadlibrary'],sitenames=self._sitenames,crosslibrary=self._crosslibrary)
 
         # Update temperature dependent variables
         if np.isnan(self.T) == False:
@@ -715,7 +716,7 @@ class saft_gamma_mie(EOStemplate):
 
     def __str__(self):
 
-        string = "Beads:" + str(self._beads) + "\n"
+        string = "Beads:" + str(self.eos_dict['beads']) + "\n"
         string += "T:" + str(self.T) + "\n"
         return string
 

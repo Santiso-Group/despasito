@@ -1529,8 +1529,7 @@ def assemble_Xika(Xika_elements,indices,Xika):
 #            Total A, Helmholtz Free Energy                #
 #                                                          #
 ############################################################
-
-def calc_A(rho, xi, T, beads, beadlibrary, massi, nui, Cmol2seg, xsk, xskl, dkk, epsilonkl, sigmakl, dkl, l_akl, l_rkl, Ckl, x0kl,epsilonHB, Kklab, nk):
+def calc_A(*, rho, xi, T, beads, beadlibrary, massi, nui, Cmol2seg, xsk, xskl, dkk, epsilonkl, sigmakl, dkl, l_akl, l_rkl, Ckl, x0kl,epsilonHB, Kklab, nk):
     r"""
     Calculates total Helmholtz energy, :math:`\frac{A}{N k_{B} T}`.
 
@@ -1625,7 +1624,7 @@ def calc_A(rho, xi, T, beads, beadlibrary, massi, nui, Cmol2seg, xsk, xskl, dkk,
     return A
 
 
-def calc_Ares(rho, xi, T, beads, beadlibrary, massi, nui, Cmol2seg, xsk, xskl, dkk, epsilonkl, sigmakl, dkl, l_akl, l_rkl, Ckl, x0kl, epsilonHB, Kklab, nk):
+def calc_Ares(*, rho, xi, T, beads, beadlibrary, massi, nui, Cmol2seg, xsk, xskl, dkk, epsilonkl, sigmakl, dkl, l_akl, l_rkl, Ckl, x0kl, epsilonHB, Kklab, nk):
     r"""
     Calculates residual Helmholtz energy, :math:`\frac{A^{res.}}{N k_{B} T}` that deviates from ideal.
 
