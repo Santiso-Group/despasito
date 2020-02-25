@@ -66,14 +66,14 @@ setup(
     include_package_data=True,
 
     # Allows `setup.py test` to work correctly with pytest
-    setup_requires=["numpy","scipy"] + pytest_runner,
+    setup_requires=["jax","jaxlib","numpy","scipy"] + pytest_runner,
     ext_package=fpath,
     ext_modules = extensions,
     extras_require={'extra': ['pytest', 'numba', 'cython']},
 
     # Additional entries you may want simply uncomment the lines you want and fill in the data
     # url='http://www.my_package.com',  # Website
-    install_requires=["numpy","scipy","numba"],              # Required packages, pulls from pip if needed; do not use for Conda deployment
+    install_requires=["jax","jaxlib","numpy","scipy","numba"],              # Required packages, pulls from pip if needed; do not use for Conda deployment
     # platforms=['Linux',
     #            'Mac OS-X',
     #            'Unix',

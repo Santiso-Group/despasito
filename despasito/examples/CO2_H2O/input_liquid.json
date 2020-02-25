@@ -3,6 +3,7 @@
     "EOSgroup": "../library/SAFTgroup.json",
     "EOScross": "../library/SAFTcross.json",
     "output_file": "out_liquid.txt",
+    "rhodict": {"minrhofrac":1e-4},
     "calculation_type" : "liquid_properties",
     "association_site_names": ["H","e1","a1"],
     "Tlist" : [323.2],
