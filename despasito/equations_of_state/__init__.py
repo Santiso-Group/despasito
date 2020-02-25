@@ -8,6 +8,9 @@ Create an EOS class from options taken from factory design pattern.
 from importlib import import_module
 import logging
 
+class jax_stat:
+    disable_jax = True
+
 class jit_stat:
     disable_jit = True
 
@@ -42,6 +45,11 @@ def eos(**kwargs):
         eos_type = kwargs["eos"]  
         del kwargs["eos"]
         logger.info("Trying user defined EOS, {}".format(eos_type))
+
+    if 'jax' not in kwargs:
+        jax_stat.disable_jax = True
+    else:
+        jax_stat.disable_jax = not kwargs['jax']
 
     if 'jit' not in kwargs:
         jit_stat.disable_jit = True

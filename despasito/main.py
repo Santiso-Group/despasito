@@ -24,6 +24,7 @@ def commandline_parser():
     parser.add_argument("-p", "--path", default=".", help="Set the location of the data/library files (e.g. SAFTcross, etc.) for despasito to look for")
     parser.add_argument("--jit", action='store_true', default=0, help="Turn on Numba's JIT compilation for accelerated computation")
     parser.add_argument("--cython", action='store_true', default=0, help="Turn on Cython for accelerated computation")
+    parser.add_argument("--jax", action='store_true', default=0, help="Turn on JAX autodifferentiation for more accurate and accelerated computation")
 
     return parser
 
@@ -39,6 +40,7 @@ def run(filename="input.json", path=".", **args):
     eos_dict, thermo_dict, output_file = read_input.extract_calc_data(filename, path, **args)
     eos_dict['jit'] = args['jit']
     eos_dict['cython'] = args['cython']
+    eos_dict['jax'] = args['jax']
 
     if output_file:
         file_dict = {"output_file":output_file}

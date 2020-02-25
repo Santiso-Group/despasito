@@ -12,9 +12,18 @@ import numpy as np
 import logging
 
 from . import constants
-from . import gamma_mie_funcs as funcs
 # Later this line will be in an abstract class file in this directory, and all versions of SAFT will reference it
 from despasito.equations_of_state.interface import EOStemplate
+
+###### JAX ##########
+
+from .. import jax_stat
+disable_jax = jax_stat.disable_jax
+
+if disable_jax:
+    from . import gamma_mie_funcs as funcs
+else:
+    from . import gamma_mie_funcs_jax as funcs
 
 # ________________ Saft Family ______________
 # NoteHere: Insert SAFT family abstract class in this directory to clean up
@@ -361,7 +370,7 @@ class saft_gamma_mie(EOStemplate):
             dnmol = 10**exp
 
         # compute mui
-        for i in range(np.size(mui)):
+        for i in range(len(mui)):
             dAres = np.zeros(2)
             ares = funcs.calc_Ares(rho=rho * constants.Nav, xi=xi, T=T, **self.eos_dict)
             for j, delta in enumerate((dnmol, -dnmol)):
@@ -377,7 +386,7 @@ class saft_gamma_mie(EOStemplate):
         Z = P / (rho * T * constants.Nav * constants.kb)
 
         xjdaresdxj = np.sum(xi * daresdxi)
-        for i in range(np.size(mui)):
+        for i in range(len(mui)):
             mui[i] = ares + Z - 1.0 + daresdxi[i] - xjdaresdxj - np.log(Z)
     
         return mui

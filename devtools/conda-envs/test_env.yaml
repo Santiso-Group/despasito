@@ -6,6 +6,8 @@ dependencies:
   - pip
   - numpy
   - scipy
+  - jax
+  - jaxlib
   - numba
 
     # Testing

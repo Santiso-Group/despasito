@@ -2,6 +2,19 @@ import numpy as np
 import os
 #from timeit import default_timer as timer
 
+###### JAX ##########
+
+from .. import jax_stat
+disable_jax = jax_stat.disable_jax
+
+if disable_jax:
+    import numpy as np
+else:
+    import jax.numpy as np
+    from jax import jit
+
+###### JIT ##########
+
 if 'NUMBA_DISABLE_JIT' in os.environ:
     disable_jit = os.environ['NUMBA_DISABLE_JIT']
 else:
@@ -273,10 +286,10 @@ def calc_Xika(indices, rho, xi, nui, nk, Fklab, Kklab, Iij): # , maxiter=500, to
     damp=.1
 
     nbeads    = nui.shape[1]
-    ncomp     = len(xi)
+    ncomp     = xi.shape[0]
     nsitesmax = nk.shape[1]
-    nrho      = len(rho)
-    l_ind = len(indices)
+    nrho      = rho.shape[0]
+    l_ind = indices.shape[0]
 
 
     Xika_final = np.ones((nrho,ncomp, nbeads, nsitesmax))
@@ -284,37 +297,36 @@ def calc_Xika(indices, rho, xi, nui, nk, Fklab, Kklab, Iij): # , maxiter=500, to
 
     # Parallelize here, wrt rho!
     Xika_elements = .5*np.ones(len(indices))
-    for r in range(nrho):
-        for knd in range(maxiter):
+    for r in np.arange(nrho):
+        for knd in np.arange(maxiter):
 
             Xika_elements_new = np.ones(len(Xika_elements))
-            ind = 0
-            for iind in range(l_ind):
+            for iind in np.arange(l_ind):
                 i, k, a = indices[iind]
-                jnd = 0
-                for jjnd in range(l_ind):
+                for jjnd in np.arange(l_ind):
                     j, l, b = indices[jjnd]
                     delta = Fklab[k, l, a, b] * Kklab[k, l, a, b] * Iij[r,i, j]
-                    Xika_elements_new[ind] += rho[r] * xi[j] * nui[j,l] * nk[l,b] * Xika_elements[jnd] * delta
-                    jnd += 1
-                ind += 1
+                    tmp = Xika_elements_new[iind] + rho[r] * xi[j] * nui[j,l] * nk[l,b] * Xika_elements[jjnd] * delta
+                    Xika_elements_new[iind] += rho[r] * xi[j] * nui[j,l] * nk[l,b] * Xika_elements[jjnd] * delta
+
             Xika_elements_new = 1./Xika_elements_new
             obj = np.sum(np.abs(Xika_elements_new - Xika_elements))
 
             if obj < tol:
                 break
             else:
-                if obj/max(Xika_elements) > 1e+3:
+                if obj/np.max(Xika_elements) > 1e+3:
                     Xika_elements = Xika_elements + damp*(Xika_elements_new - Xika_elements)
                 else:
                     Xika_elements = Xika_elements_new
 
       #  if knd == maxiter-1:
       #      print("Didn't find Xika within {} iterations, error: {}".format(maxiter,obj))
+        print(r, rho[r], Xika_elements_new)
 
         err_array[r] = obj
 
-        for jjnd in range(l_ind):
+        for jjnd in np.arange(l_ind):
             i,k,a = indices[jjnd]
             Xika_final[r,i,k,a] = Xika_elements[jjnd]
 

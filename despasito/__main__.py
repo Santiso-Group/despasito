@@ -44,6 +44,7 @@ if quiet == False:
 logging.info("Input args: {}".format(args))
 logging.info("JIT compilation: {}".format(args.jit))
 logging.info("Use Cython: {}".format(args.cython))
+logging.info("JAX Autodifferentiation: {}".format(args.jax))
 
 # Threads
 # if args.threads != None:
@@ -61,5 +62,6 @@ kwargs["threads"] = args.threads
 kwargs["path"] = args.path
 kwargs["jit" ] = args.jit
 kwargs["cython" ] = args.cython
+kwargs["jax" ] = args.jax
 
 run(**kwargs)
