@@ -7,9 +7,8 @@ r"""
     
 """
 
-import logging # NoteHere
+import logging
 import numpy as np
-from scipy import misc
 from scipy import integrate
 import scipy.optimize as spo
 #import matplotlib.pyplot as plt
@@ -79,6 +78,9 @@ def calc_Aideal(xi, rho, massi, T):
         raise ValueError("No value of density, rho, was given")
     elif any(rho < 0.):
         raise ValueError("Density values cannot be negative.")
+
+    if not np.shape(rho):
+        rho = np.array([rho])
 
     # Check for mole fractions of zero and remove those components
     ind = np.where(np.array(xi)<1e-32)[0]
@@ -274,25 +276,16 @@ def calc_interaction_matrices(beads, beadlibrary, crosslibrary={}):
     # testing if crosslibrary is empty ie not specified
     if crosslibrary:
         # find any cross terms in the cross term library
-        crosslist = []
-
         for (i, beadname) in enumerate(beads):
             if beadname in crosslibrary:
                 for (j, beadname2) in enumerate(beads):
                     if beadname2 in crosslibrary[beadname]:
-                        crosslist.append([i, j])
-
-        for i in range(len(crosslist)):
-            a = crosslist[i][0]
-            b = crosslist[i][1]
-            if beads[a] in crosslibrary:
-                if beads[b] in crosslibrary[beads[a]]:
-                    if "epsilon" in crosslibrary[beads[a]][beads[b]]:
-                        epsilonkl[a, b] = crosslibrary[beads[a]][beads[b]]["epsilon"]
-                        epsilonkl[b, a] = epsilonkl[a, b]
-                    if "l_r" in crosslibrary[beads[a]][beads[b]]:
-                        l_rkl[a, b] = crosslibrary[beads[a]][beads[b]]["l_r"]
-                        l_rkl[b, a] = l_rkl[a, b]
+                        if "epsilon" in crosslibrary[beads[i]][beads[j]]:
+                            epsilonkl[i, j] = crosslibrary[beads[i]][beads[j]]["epsilon"]
+                            epsilonkl[j, i] = epsilonkl[i, j]
+                        if "l_r" in crosslibrary[beads[i]][beads[j]]:
+                            l_rkl[i, j] = crosslibrary[beads[i]][beads[j]]["l_r"]
+                            l_rkl[j, i] = l_rkl[i, j]
 
     Ckl = C(l_rkl, l_akl)
 
@@ -493,7 +486,6 @@ def calc_dBkl_drhos(l_kl, dkl, epsilonkl, x0kl, zetax):
         Matrix used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy, size is rho x l_kl.shape
 
     """
-    # NoteHere
     #logger = logging.getLogger(__name__)
 
     # compute Ikl(l_kl), eq. 23
@@ -608,6 +600,9 @@ def calc_Amono(rho, xi, nui, Cmol2seg, xsk, xskl, dkk, T, epsilonkl, sigmakl, dk
 
     logger = logging.getLogger(__name__)
 
+    if not np.shape(rho):
+        rho = np.array([rho])
+
     # initialize variables
     rhos = rho * Cmol2seg
 
@@ -637,10 +632,6 @@ def calc_Amono(rho, xi, nui, Cmol2seg, xsk, xskl, dkk, T, epsilonkl, sigmakl, dk
     a1kl = calc_a1ii(rho, Cmol2seg, dkl, l_akl, l_rkl, x0kl, epsilonkl, zetax)
 
     ##### compute a2kl, eq. 30 #####
-
-    # initialize variables for a2kl
-    # a2kl = np.zeros((nbeads,nbeads))
-    # alphakl = np.zeros((nbeads,nbeads))
 
     # compute KHS(rho), eq. 31
     KHS = ((1.0 - zetax)**4) / (1.0 + (4.0 * zetax) + (4.0 * (zetax**2)) - (4.0 * (zetax**3)) + (zetax**4))
@@ -863,8 +854,6 @@ def calc_da2ii_1pchi_drhos(rho, Cmol2seg, epsilonii_avg, dii_eff, x0ii, l_rii_av
         
     """
 
-    # NoteHere g2mca der_a2kl
-
     #logger = logging.getLogger(__name__)
 
     # Calculate terms and derivatives used in derivative chain rule 
@@ -960,6 +949,9 @@ def calc_Achain(rho, Cmol2seg, xi, T, nui, sigmakl, epsilonkl, dkl, xskl, l_rkl,
     """
 
     #logger = logging.getLogger(__name__)
+
+    if not np.shape(rho):
+        rho = np.array([rho])
 
     #initialize values
     ngroups = len(beads)
@@ -1259,6 +1251,9 @@ def calc_A_assoc(rho, xi, T, nui, xskl, sigmakl, sigmaii_avg, epsilonii_avg, eps
 
     logger = logging.getLogger(__name__)
 
+    if not np.shape(rho):
+        rho = np.array([rho])
+
     kT = T * constants.kb
     nbeads = list(nui.shape)[1]
     ncomp = np.size(xi)
@@ -1372,7 +1367,7 @@ def calc_A_assoc(rho, xi, T, nui, xskl, sigmakl, sigmaii_avg, epsilonii_avg, eps
    # plt.plot(rho[:nrho],Aassoc[:nrho]-Aassoc[nrho:])
    # plt.show()
 
-    print(Aassoc)
+    print("Aassoc",Aassoc)
 
     return Aassoc
 
@@ -1488,9 +1483,6 @@ def obj_Xika(Xika_elements, indices, rho, xi, nui, nk, Fklab, Kklab, Iij):
 
     obj = (Xika_elements_new - Xika_elements)/Xika_elements
 
-    
-    #print("Xika guess and obj ",Xika_elements,Xika_elements_new,obj)
-
     #logger.debug("    Xika: {}, Error: {}".format(Xika_elements_new,obj))
 
     return obj
@@ -1530,7 +1522,7 @@ def assemble_Xika(Xika_elements,indices,Xika):
 #            Total A, Helmholtz Free Energy                #
 #                                                          #
 ############################################################
-def calc_A(*, rho, xi, T, beads, beadlibrary, massi, nui, Cmol2seg, xsk, xskl, dkk, epsilonkl, sigmakl, dkl, l_akl, l_rkl, Ckl, x0kl,epsilonHB, Kklab, nk):
+def calc_A(rho, xi, T, *, beads, beadlibrary, massi, nui, Cmol2seg, xsk, xskl, dkk, epsilonkl, sigmakl, dkl, l_akl, l_rkl, Ckl, x0kl,epsilonHB, Kklab, nk):
     r"""
     Calculates total Helmholtz energy, :math:`\frac{A}{N k_{B} T}`.
 
@@ -1599,6 +1591,9 @@ def calc_A(*, rho, xi, T, beads, beadlibrary, massi, nui, Cmol2seg, xsk, xskl, d
 
     #logger = logging.getLogger(__name__)
 
+    if not np.shape(rho):
+        rho = np.array([rho])
+
     if any(np.array(xi) < 0.):
         raise ValueError("Mole fractions cannot be less than zero.")
 
@@ -1625,7 +1620,7 @@ def calc_A(*, rho, xi, T, beads, beadlibrary, massi, nui, Cmol2seg, xsk, xskl, d
     return A
 
 
-def calc_Ares(*, rho, xi, T, beads, beadlibrary, massi, nui, Cmol2seg, xsk, xskl, dkk, epsilonkl, sigmakl, dkl, l_akl, l_rkl, Ckl, x0kl, epsilonHB, Kklab, nk):
+def calc_Ares(rho, xi, T, *, beads, beadlibrary, massi, nui, Cmol2seg, xsk, xskl, dkk, epsilonkl, sigmakl, dkl, l_akl, l_rkl, Ckl, x0kl, epsilonHB, Kklab, nk):
     r"""
     Calculates residual Helmholtz energy, :math:`\frac{A^{res.}}{N k_{B} T}` that deviates from ideal.
 
@@ -1693,6 +1688,9 @@ def calc_Ares(*, rho, xi, T, beads, beadlibrary, massi, nui, Cmol2seg, xsk, xskl
     """
 
     #logger = logging.getLogger(__name__)
+
+    if not np.shape(rho):
+        rho = np.array([rho])
 
     if any(np.array(xi) < 0.):
         raise ValueError("Mole fractions cannot be less than zero.")

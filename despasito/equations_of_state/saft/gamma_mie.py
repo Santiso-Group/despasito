@@ -8,6 +8,7 @@ r"""
     
 """
 
+import sys
 import numpy as np
 import logging
 
@@ -20,9 +21,14 @@ from despasito.equations_of_state.interface import EOStemplate
 from .. import jax_stat
 disable_jax = jax_stat.disable_jax
 
+from .gamma_mie_funcs import calc_assoc_matrices, calc_interaction_matrices, calc_hard_sphere_matricies, calc_composition_dependent_variables
+
 if disable_jax:
     from . import gamma_mie_funcs as funcs
 else:
+    from jax.config import config
+    config.update("jax_enable_x64", True)    
+    from jax import grad
     from . import gamma_mie_funcs_jax as funcs
 
 # ________________ Saft Family ______________
@@ -96,7 +102,7 @@ class saft_gamma_mie(EOStemplate):
         else:
             crosslibrary = {}
 
-        epsilonkl, sigmakl, l_akl, l_rkl, Ckl = funcs.calc_interaction_matrices(self.eos_dict['beads'], self.eos_dict['beadlibrary'], crosslibrary=crosslibrary)
+        epsilonkl, sigmakl, l_akl, l_rkl, Ckl = calc_interaction_matrices(self.eos_dict['beads'], self.eos_dict['beadlibrary'], crosslibrary=crosslibrary)
 
         self._crosslibrary = crosslibrary
         self.eos_dict['epsilonkl'] = epsilonkl
@@ -111,7 +117,7 @@ class saft_gamma_mie(EOStemplate):
         else:
             self._sitenames = ["H", "e1", "e2"]
 
-        epsilonHB, Kklab, nk = funcs.calc_assoc_matrices(self.eos_dict['beads'], self.eos_dict['beadlibrary'], sitenames=self._sitenames, crosslibrary=self._crosslibrary)
+        epsilonHB, Kklab, nk = calc_assoc_matrices(self.eos_dict['beads'], self.eos_dict['beadlibrary'], sitenames=self._sitenames, crosslibrary=self._crosslibrary)
 
         self.eos_dict['epsilonHB'] = epsilonHB
         self.eos_dict['Kklab'] = Kklab
@@ -138,7 +144,7 @@ class saft_gamma_mie(EOStemplate):
 
         #logger = logging.getLogger(__name__)
 
-        dkk, dkl, x0kl = funcs.calc_hard_sphere_matricies(self.eos_dict['beads'], self.eos_dict['beadlibrary'], self.eos_dict['sigmakl'], T)
+        dkk, dkl, x0kl = calc_hard_sphere_matricies(self.eos_dict['beads'], self.eos_dict['beadlibrary'], self.eos_dict['sigmakl'], T)
         self.T = T
         self.eos_dict['dkk'] = dkk
         self.eos_dict['dkl'] = dkl
@@ -158,7 +164,7 @@ class saft_gamma_mie(EOStemplate):
 
         #logger = logging.getLogger(__name__)
 
-        Cmol2seg, xsk, xskl = funcs.calc_composition_dependent_variables(xi, self.eos_dict['nui'], self.eos_dict['beads'], self.eos_dict['beadlibrary'])
+        Cmol2seg, xsk, xskl = calc_composition_dependent_variables(xi, self.eos_dict['nui'], self.eos_dict['beads'], self.eos_dict['beadlibrary'])
         self.eos_dict['Cmol2seg'] = Cmol2seg
         self.eos_dict['xsk'] = xsk
         self.eos_dict['xskl'] = xskl
@@ -199,14 +205,36 @@ class saft_gamma_mie(EOStemplate):
 
         rho = rho*constants.Nav
 
-        step = np.sqrt(np.finfo(float).eps) *rho * 10000.0
-        # Decreasing step size by 2 orders of magnitude didn't reduce noise in P values
-        nrho = np.size(rho)
+        if disable_jax:
+            step = np.sqrt(np.finfo(float).eps) *rho * 10000.0
+            # Decreasing step size by 2 orders of magnitude didn't reduce noise in P values
+            nrho = np.size(rho)
 
-        # computer rho+step and rho-step for better a bit better performance
-        A = funcs.calc_A(rho=np.append(rho + step, rho - step), xi=xi, T=T, **self.eos_dict)
+            # computer rho+step and rho-step for better a bit better performance
+            A = funcs.calc_A(np.append(rho + step, rho - step), xi, T, **self.eos_dict)
+            P_tmp = (A[:nrho]-A[nrho:])*((constants.kb*T)/(2.0*step))*rho**2
+            print("Pcd",P_tmp)
 
-        P_tmp = (A[:nrho]-A[nrho:])*((constants.kb*T)/(2.0*step))*rho**2
+        else:
+
+            #rho = rho[1000]
+
+            # NoteHere
+            step = np.sqrt(np.finfo(float).eps) *rho * 10000.0
+            # Decreasing step size by 2 orders of magnitude didn't reduce noise in P values
+            nrho = np.size(rho)
+            # computer rho+step and rho-step for better a bit better performance
+            A = funcs.calc_A(np.append(rho + step, rho - step), xi, T, **self.eos_dict)
+            P_tmp = (A[:nrho]-A[nrho:])*((constants.kb*T)/(2.0*step))*rho**2
+
+            #dA = grad(funcs.calc_A,argnums=(0))
+            #P_tmp_2 = dA(rho, xi, T, **self.eos_dict)*constants.kb*T*rho**2
+
+            #print("Pcd",P_tmp)
+            #print("Pgrad",P_tmp_2)
+            #print("P%error",(P_tmp_2-P_tmp)/P_tmp_2*100)
+
+            #sys.exit("stop, what now?")
 
         return P_tmp
 
@@ -255,7 +283,7 @@ class saft_gamma_mie(EOStemplate):
 #        logger.debug("    Compute phi for density, {}, with step size {}.".format(rho,drho))
 #
 #        # compute phi
-#        Ares = funcs.calc_Ares(rho=rho *  constants.Nav, xi=xi, T=T, **self.eos_dict)
+#        Ares = funcs.calc_Ares(rho *  constants.Nav, xi, T, **self.eos_dict)
 #        rhoi = rho*np.array(xi,float)
 #        for i in range(np.size(phi_tmp)):
 #            dAres = np.zeros(2)
@@ -274,7 +302,7 @@ class saft_gamma_mie(EOStemplate):
         #dy = 0.05
 
         # compute phi
-        Ares = funcs.calc_Ares(rho=rho *  constants.Nav, xi=xi, T=T, **self.eos_dict)
+        Ares = funcs.calc_Ares(rho *  constants.Nav, xi, T, **self.eos_dict)
         for i in range(np.size(phi_tmp)):
             if xi[i] != 0.0:
                 dAres = np.zeros(2)
@@ -320,9 +348,9 @@ class saft_gamma_mie(EOStemplate):
 
         self._xi_dependent_variables(xi)
 
-        Cmol2seg, xsk, xskl = funcs.calc_composition_dependent_variables(xi, self.eos_dict['nui'], self.eos_dict['beads'], self.eos_dict['beadlibrary'])
+        Cmol2seg, xsk, xskl = calc_composition_dependent_variables(xi, self.eos_dict['nui'], self.eos_dict['beads'], self.eos_dict['beadlibrary'])
 
-        Ares = funcs.calc_Ares(rho=rho * constants.Nav, xi=xi, T=T, **self.eos_dict)
+        Ares = funcs.calc_Ares(rho * constants.Nav, xi, T, **self.eos_dict)
 
         return Ares
 
@@ -372,14 +400,14 @@ class saft_gamma_mie(EOStemplate):
         # compute mui
         for i in range(len(mui)):
             dAres = np.zeros(2)
-            ares = funcs.calc_Ares(rho=rho * constants.Nav, xi=xi, T=T, **self.eos_dict)
+            ares = funcs.calc_Ares(rho * constants.Nav, xi, T, **self.eos_dict)
             for j, delta in enumerate((dnmol, -dnmol)):
                 xi_temp = np.copy(xi)
                 if xi_temp[i] != 0.:
                     xi_temp[i] += delta
-                Cmol2seg_tmp, xsk_tmp, xskl_tmp = funcs.calc_composition_dependent_variables(xi_temp, self.eos_dict['nui'], self.eos_dict['beads'], self.eos_dict['beadlibrary'])
+                Cmol2seg_tmp, xsk_tmp, xskl_tmp = calc_composition_dependent_variables(xi_temp, self.eos_dict['nui'], self.eos_dict['beads'], self.eos_dict['beadlibrary'])
                 # xi_temp/=(nmol+delta)
-                dAres[j] = funcs.calc_Ares(rho=rho * constants.Nav, xi=xi_temp, T=T, **self.eos_dict)
+                dAres[j] = funcs.calc_Ares(rho * constants.Nav, xi_temp, T, **self.eos_dict)
             daresdxi[i] = (dAres[0] - dAres[1]) / (2.0 * dnmol)
 
         # compute Z
@@ -713,10 +741,10 @@ class saft_gamma_mie(EOStemplate):
         #logger = logging.getLogger(__name__)
 
         # Update Non bonded matrices
-        self.eos_dict['epsilonkl'], self.eos_dict['sigmakl'], self.eos_dict['l_akl'], self.eos_dict['l_rkl'], self.eos_dict['Ckl'] = funcs.calc_interaction_matrices(self.eos_dict['beads'], self.eos_dict['beadlibrary'], crosslibrary=self._crosslibrary)
+        self.eos_dict['epsilonkl'], self.eos_dict['sigmakl'], self.eos_dict['l_akl'], self.eos_dict['l_rkl'], self.eos_dict['Ckl'] = calc_interaction_matrices(self.eos_dict['beads'], self.eos_dict['beadlibrary'], crosslibrary=self._crosslibrary)
 
         # Update Association site matrices
-        self.eos_dict['epsilonHB'], self.eos_dict['Kklab'], self.eos_dict['nk'] = funcs.calc_assoc_matrices(self.eos_dict['beads'],self.eos_dict['beadlibrary'],sitenames=self._sitenames,crosslibrary=self._crosslibrary)
+        self.eos_dict['epsilonHB'], self.eos_dict['Kklab'], self.eos_dict['nk'] = calc_assoc_matrices(self.eos_dict['beads'],self.eos_dict['beadlibrary'],sitenames=self._sitenames,crosslibrary=self._crosslibrary)
 
         # Update temperature dependent variables
         if np.isnan(self.T) == False:

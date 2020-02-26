@@ -47,20 +47,23 @@ def calc_Aideal(xi, rho, massi, T):
         Helmholtz energy of ideal gas for each density given.
     """
 
-    logger = logging.getLogger(__name__)
 
-    if any(np.isnan(rho)):
+    #logger = logging.getLogger(__name__)
+
+    if np.any(np.isnan(rho)):
         raise ValueError("NaN was given as a value of density, rho") 
     elif rho.size == 0:
         raise ValueError("No value of density, rho, was given")
+    elif np.any(rho < 0.):
+        raise ValueError("Density values cannot be negative.")
 
     # Check for mole fractions of zero and remove those components
     tol = 1e-32
-    l_x = len(xi)
-    l_x0 = len(xi[xi<tol])
+    l_x = xi.shape[0]
+    l_x0 = xi[xi<tol].shape[0]
     if l_x0:
-        xi_tmp = np.zeros(l_x-len(ind))
-        massi_tmp = np.zeros(l_x-len(ind))
+        xi_tmp = np.zeros(l_x-ind.shape[0])
+        massi_tmp = np.zeros(l_x-ind.shape[0])
 
         j = 0
         for i,x in enumerate(xi):
@@ -72,13 +75,16 @@ def calc_Aideal(xi, rho, massi, T):
         xi_tmp = xi
         massi_tmp = massi
 
+    if not np.shape(rho):
+        rho = np.array([rho])
+
     # rhoi: (number of components,number of densities) number density of each component for each density
     rhoi = np.outer(rho, xi_tmp)
     Lambda3 = (constants.h / np.sqrt(2.0 * np.pi * (massi_tmp / constants.Nav) * constants.kb * T))**3
     Aideal_tmp = rhoi*Lambda3
     log_broglie3_rho = np.log(Aideal_tmp)
 
-#    if not any(np.sum(xi_tmp * np.log(Aideal_tmp), axis=1)):
+#    if not np.any(np.sum(xi_tmp * np.log(Aideal_tmp), axis=1)):
     if np.isnan(np.sum(np.sum(xi_tmp * log_broglie3_rho, axis=1))):
         raise ValueError("Aideal has values of zero when taking the log. All mole fraction values should be nonzero. Mole fraction: {}".format(xi_tmp))
     else:
@@ -115,7 +121,7 @@ def _dkk_int(r, Ce_kT, sigma, l_r, l_a):
         Integrand used to calculate the hard sphere diameter
     """
 
-    logger = logging.getLogger(__name__)
+    #logger = logging.getLogger(__name__)
 
     dkk_int_tmp = 1.0 - np.exp(-Ce_kT * (np.power(sigma / r, l_r) - np.power(sigma / r, l_a)))
 
@@ -145,11 +151,9 @@ def calc_dkk(epsilon, sigma, T, l_r, l_a=6.0):
         Hard sphere diameter of a group [Å] 
     """
 
-    logger = logging.getLogger(__name__)
+    #logger = logging.getLogger(__name__)
 
     Ce_kT = C(l_r, l_a) * epsilon / T
-    # calculate integral of dkk_int from 0.0 to sigma
-#    results = integrate.quad(lambda r: _dkk_int(r, Ce_kT, sigma, l_r, l_a), 0.0, sigma, epsabs=1.0e-16, epsrel=1.0e-16)
     # 40 point Gauss Lengedre quadrature
     w = np.array([0.077505948, 0.077505948, 0.077039818, 0.077039818, 0.076110362, 0.076110362, 0.074723169, 0.074723169, 0.072886582, 0.072886582, 0.070611647, 0.070611647, 0.067912046, 0.067912046, 0.064804013, 0.064804013, 0.061306242, 0.061306242, 0.057439769, 0.057439769, 0.053227847, 0.053227847, 0.048695808, 0.048695808, 0.043870908, 0.043870908, 0.038782168, 0.038782168, 0.033460195, 0.033460195, 0.027937007, 0.027937007, 0.022245849, 0.022245849, 0.016421058, 0.016421058, 0.010498285, 0.010498285, 0.004521277, 0.004521277])
     x = np.array([-0.038772418, 0.038772418, -0.116084071, 0.116084071, -0.192697581, 0.192697581, -0.268152185, 0.268152185, -0.341994091, 0.341994091, -0.413779204, 0.413779204, -0.483075802, 0.483075802, -0.549467125, 0.549467125, -0.61255389, 0.61255389, -0.671956685, 0.671956685, -0.727318255, 0.727318255, -0.778305651, 0.778305651, -0.824612231, 0.824612231, -0.865959503, 0.865959503, -0.902098807, 0.902098807, -0.932812808, 0.932812808, -0.957916819, 0.957916819, -0.97725995, 0.97725995, -0.990726239, 0.990726239, -0.99823771, 0.99823771])
@@ -177,212 +181,6 @@ def C(l_r, l_a):
     """
 
     return (l_r / (l_r - l_a)) * (l_r / l_a)**(l_a / (l_r - l_a))
-
-def calc_interaction_matrices(beads, beadlibrary, crosslibrary={}):
-    r"""
-    Computes matrices of cross interaction parameters epsilonkl, sigmakl, l_akl, l_rkl (attractive and repulsive exponents), Ckl
-
-    Parameters
-    ----------
-    beads : list[str]
-        List of unique bead names used among components
-    beadlibrary : dict
-        A dictionary where bead names are the keys to access EOS self interaction parameters:
-
-        - epsilon: :math:`\epsilon_{k,k}/k_B`, Energy well depth scaled by Boltzmann constant
-        - sigma: :math:`\sigma_{k,k}`, Size parameter [m]
-        - mass: Bead mass [kg/mol]
-        - l_r: :math:`\lambda^{r}_{k,k}`, Exponent of repulsive term between groups of type k
-        - l_a: :math:`\lambda^{a}_{k,k}`, Exponent of attractive term between groups of type k
-        - Vks: :math:`V_{k,s}`, Number of groups, k, in component
-        - Sk: Optional, :math:`S_{k}`, Shape parameter of group k
-        - epsilon*: Optional, Interaction energy between each bead and association site. Asterisk represents string from sitenames.
-        - K**: Optional, Bonding volume between each association site. Asterisk represents two strings from sitenames.
-        - Nk*: Optional, The number of sites of from list sitenames. Asterisk represents string from sitenames.
-
-    crosslibrary : dict, Optional, default: {}
-        Optional library of bead cross interaction parameters. As many or as few of the desired parameters may be defined for whichever group combinations are desired. If this matrix isn't provided, the SAFT mixing rules are used.
-
-        - epsilon: :math:`\epsilon_{k,l}/k_B`, Energy parameter scaled by Boltzmann Constant
-        - l_r: :math:`\lambda^{r}_{k,l}`, Exponent of repulsive term between groups of type k and l
-        - epsilon*: Optional, Interaction energy between each bead and association site. Asterisk represents string from sitenames.
-        - K**: Optional, Bonding volume between each association site. Asterisk represents two strings from sitenames.
-
-    Returns
-    -------
-    epsilonkl : numpy.ndarray
-        Matrix of well depths for groups (k,l)
-    sigmakl : numpy.ndarray
-        Matrix of mie diameter for groups (k,l)
-    l_akl : numpy.ndarray
-        Matrix of mie potential attractive exponents for k,l groups
-    l_rkl : numpy.ndarray
-        Matrix of mie potential attractive exponents for k,l groups
-    Ckl : numpy.ndarray
-        Matrix of mie potential prefactors for k,l groups
-    """
-
-    logger = logging.getLogger(__name__)
-
-    nbeads = len(beads)
-    sigmakl = np.zeros((nbeads, nbeads))
-    l_rkl = np.zeros((nbeads, nbeads))
-    l_akl = np.zeros((nbeads, nbeads))
-    epsilonkl = np.zeros((nbeads, nbeads))
-
-    # compute default interaction parameters for beads
-    for k in range(nbeads):
-        for l in range(nbeads):
-
-            tmp = (beadlibrary[beads[k]]["sigma"] + beadlibrary[beads[l]]["sigma"]) / 2.0
-            sigmakl = index_update(sigmakl, index[k, l], tmp)
-
-            tmp = 3 + np.sqrt((beadlibrary[beads[k]]["l_r"] - 3.0) * (beadlibrary[beads[l]]["l_r"] - 3.0))
-            l_rkl = index_update(l_rkl, index[k, l], tmp)
-
-            tmp = 3 + np.sqrt((beadlibrary[beads[k]]["l_a"] - 3.0) * (beadlibrary[beads[l]]["l_a"] - 3.0))
-            l_akl = index_update(l_akl, index[k, l], tmp)
-
-            tmp = np.sqrt(beadlibrary[beads[k]]["epsilon"] * beadlibrary[beads[l]]["epsilon"]) * \
-                            np.sqrt((beadlibrary[beads[k]]["sigma"] ** 3) * \
-                            (beadlibrary[beads[l]]["sigma"] ** 3)) / (sigmakl[k, l] ** 3)
-            epsilonkl = index_update(epsilonkl, index[k, l], tmp)
-
-    # testing if crosslibrary is empty i.e. not specified
-    if crosslibrary:
-
-        for (i, beadname) in enumerate(beads):
-            if beadname in crosslibrary:
-                for (j, beadname2) in enumerate(beads):
-                    if beadname2 in crosslibrary[beadname]:
-                        if "epsilon" in crosslibrary[beads[i]][beads[j]]:
-                            epsilonkl = index_update(epsilonkl,index[i, j], crosslibrary[beads[i]][beads[j]]["epsilon"])
-                            epsilonkl = index_update(epsilonkl,index[j, i],epsilonkl[i, j])
-                        if "l_r" in crosslibrary[beads[i]][beads[j]]:
-                            l_rkl = index_update(l_rkl,index[i, j], crosslibrary[beads[i]][beads[j]]["l_r"])
-                            l_rkl = index_update(l_rkl,index[j, i],l_rkl[i, j])
-
-    Ckl = C(l_rkl, l_akl)
-
-    return epsilonkl, sigmakl, l_akl, l_rkl, Ckl
-
-def calc_composition_dependent_variables(xi, nui, beads, beadlibrary):
-    r""" 
-    Return conversion factor from molecular number density, :math:`\rho`, to segment (i.e. group) number density, :math:`\rho_S`. Shown in eq. 13
-
-    Parameters
-    ----------
-    xi : numpy.ndarray
-        Mole fraction of each component, sum(xi) should equal 1.0
-    nui : numpy.array
-        :math:`\nu_{i,k}/k_B`, Array of number of components by number of bead types. Defines the number of each type of group in each component. 
-        Defined for eq. 11. Note that indices are flipped from definition in reference.
-    beads : list[str]
-        List of unique bead names used among components
-    beadlibrary : dict
-        A dictionary where bead names are the keys to access EOS self interaction parameters:
-
-        - epsilon: :math:`\epsilon_{k,k}/k_B`, Energy well depth scaled by Boltzmann constant
-        - sigma: :math:`\sigma_{k,k}`, Size parameter [m]
-        - mass: Bead mass [kg/mol]
-        - l_r: :math:`\lambda^{r}_{k,k}`, Exponent of repulsive term between groups of type k
-        - l_a: :math:`\lambda^{a}_{k,k}`, Exponent of attractive term between groups of type k
-        - Vks: :math:`V_{k,s}`, Number of groups, k, in component
-        - Sk: Optional, :math:`S_{k}`, Shape parameter of group k
-        - epsilon*: Optional, Interaction energy between each bead and association site. Asterisk represents string from sitenames.
-        - K**: Optional, Bonding volume between each association site. Asterisk represents two strings from sitenames.
-        - Nk*: Optional, The number of sites of from list sitenames. Asterisk represents string from sitenames.
-
-    Returns
-    -------
-    Cmol2seg : float
-        Conversion factor from from molecular number density, :math:`\rho`, to segment (i.e. group) number density, :math:`\rho_S`. Shown in eq. 13
-    xsk : numpy.ndarray
-        Mole fraction of each bead (i.e. segment or group), sum(xsk) should equal 1.0
-    xskl : numpy.ndarray
-        Matrix of mole fractions of bead (i.e. segment or group) k multiplied by bead l
-    """
-
-    logger = logging.getLogger(__name__)
-
-    # compute Conversion factor
-    Cmol2seg = 0.0
-    for i in range(np.size(xi)):
-        for j in range(np.size(beads)):
-            Cmol2seg = Cmol2seg + xi[i] * nui[i, j] * beadlibrary[beads[j]]["Vks"] * beadlibrary[beads[j]]["Sk"]
-
-    # initialize variables and arrays
-    nbeads = len(beads)
-    xsk = np.zeros(nbeads, float)
-    # compute xsk
-    for k in range(nbeads):
-        xsk = index_update(xsk,index[k],np.sum(xi * nui[:, k]) * beadlibrary[beads[k]]["Vks"] * \
-                 beadlibrary[beads[k]]["Sk"])
-    xsk = xsk/Cmol2seg
-
-    # calculate  xskl matrix
-    xskl = np.zeros((nbeads, nbeads))
-    for k in range(nbeads):
-        for l in range(nbeads):
-            xskl = index_update(xskl,index[k, l],xsk[k] * xsk[l])
-
-    return Cmol2seg, xsk, xskl
-
-def calc_hard_sphere_matricies(beads, beadlibrary, sigmakl, T):
-    r"""
-    Computes matrix of hard sphere interaction parameters dkk, dkl, and x0kl
-    This does not include function specific or association terms
-
-    Parameters
-    ----------
-    beads : list[str]
-        List of unique bead names used among components
-    beadlibrary : dict
-        A dictionary where bead names are the keys to access EOS self interaction parameters:
-
-        - epsilon: :math:`\epsilon_{k,k}/k_B`, Energy well depth scaled by Boltzmann constant
-        - sigma: :math:`\sigma_{k,k}`, Size parameter [m]
-        - mass: Bead mass [kg/mol]
-        - l_r: :math:`\lambda^{r}_{k,k}`, Exponent of repulsive term between groups of type k
-        - l_a: :math:`\lambda^{a}_{k,k}`, Exponent of attractive term between groups of type k
-        - Vks: :math:`V_{k,s}`, Number of groups, k, in component
-        - Sk: Optional, :math:`S_{k}`, Shape parameter of group k
-        - epsilon*: Optional, Interaction energy between each bead and association site. Asterisk represents string from sitenames.
-        - K**: Optional, Bonding volume between each association site. Asterisk represents two strings from sitenames.
-        - Nk*: Optional, The number of sites of from list sitenames. Asterisk represents string from sitenames.
-
-    sigmakl : numpy.ndarray
-        Matrix of mie diameter for groups (k,l)
-    T : float
-        Temperature of the system [K]
-    
-    Returns
-    -------
-    dkk : numpy.ndarray
-        Array of hard sphere diameters for each group
-    dkl : numpy.ndarray
-        Matrix of hard sphere diameters for groups (k,l)
-    x0kl : numpy.ndarray
-        Matrix of sigmakl/dkl, sigmakl is the mie radius for groups (k,l)
-    """
-
-    logger = logging.getLogger(__name__)
-
-    nbeads = len(beads)
-    dkk = np.zeros(np.size(beads))
-    for i in range(np.size(beads)):
-        tmp = calc_dkk(beadlibrary[beads[i]]["epsilon"], beadlibrary[beads[i]]["sigma"], T,
-                          beadlibrary[beads[i]]["l_r"], beadlibrary[beads[i]]["l_a"])
-        dkk = index_update(dkk,index[i],tmp)
-
-    dkl = np.zeros((nbeads, nbeads))
-    for k in range(nbeads):
-        for l in range(nbeads):
-            dkl = index_update(dkl,index[k, l],(dkk[k] + dkk[l]) / 2.0)
-
-    x0kl = sigmakl / dkl
-
-    return dkk, dkl, x0kl
 
 def calc_Bkl(rho, l_kl, Cmol2seg, dkl, epsilonkl, x0kl, zetax):
     r""" 
@@ -422,8 +220,6 @@ def calc_Bkl(rho, l_kl, Cmol2seg, dkl, epsilonkl, x0kl, zetax):
     Jkl = (1.0 - ((x0kl**(4.0 - l_kl)) * (l_kl - 3.0)) + ((x0kl**(3.0 - l_kl)) * (l_kl - 4.0))) / ((l_kl - 3.0) * (l_kl - 4.0))
 
     if np.size(np.shape(l_kl)) == 2:
-        # Bkl=np.zeros((np.size(rho),np.size(l_kl,axis=0),np.size(l_kl,axis=0)))
-
         Bkl = np.einsum("i,jk", rhos * (2.0 * np.pi),
                         (dkl**3) * epsilonkl) * (np.einsum("i,jk", (1.0 - (zetax / 2.0)) / ((1.0 - zetax)**3), Ikl) - np.einsum("i,jk", ((9.0 * zetax * (1.0 + zetax)) / (2.0 * ((1 - zetax)**3))), Jkl))
     elif np.size(np.shape(l_kl)) == 1:
@@ -458,7 +254,7 @@ def calc_dBkl_drhos(l_kl, dkl, epsilonkl, x0kl, zetax):
 
     """
 
-    logger = logging.getLogger(__name__)
+    #logger = logging.getLogger(__name__)
 
     # compute Ikl(l_kl), eq. 23
     Ikl = (1.0 - (x0kl**(3.0 - l_kl))) / (l_kl - 3.0)
@@ -493,9 +289,9 @@ def calc_fm(alphakl, mlist):
         List of coefficients used to compute the correction term for :math:`A_{2}` which is related to the fluctuations of attractive energy.
     """
 
+
     logger = logging.getLogger(__name__)
 
-    nbeads = np.size(alphakl, axis=0)
     if np.size(np.shape(alphakl)) == 2:
         fmlist = np.zeros((np.size(mlist), np.size(alphakl, axis=0), np.size(alphakl, axis=0)))
     elif np.size(np.shape(alphakl)) == 1:
@@ -505,12 +301,12 @@ def calc_fm(alphakl, mlist):
     mlist = mlist - 1
 
     for i, m in enumerate(mlist):
-        for n in range(4):
+        for n in np.arange(4):
             tmp = fmlist[i] +constants.phimn[m, n] * (alphakl**n)
             fmlist = index_update(fmlist,index[i],tmp)
 
         dum = np.ones_like(fmlist[i])
-        for n in range(4, 7):
+        for n in np.arange(4, 7):
             dum = dum + constants.phimn[m, n] * (alphakl**(n - 3.0))
         fmlist = index_update(fmlist,index[i],fmlist[i] / dum)
 
@@ -528,7 +324,7 @@ def calc_a1s(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
     Cmol2seg : float
         Conversion factor from from molecular number density, :math:`\rho`, to segment (i.e. group) number density, :math:`\rho_S`. Shown in eq. 13
     l_kl : numpy.ndarray
-        Matrix of mie potential exponents for k,l groups
+        Matrix of Mie potential exponents for k,l groups
     zetax : numpy.ndarray
         Matrix of hypothetical packing fraction based on hard sphere diameter for groups (k,l)
     epsilonkl : numpy.ndarray
@@ -542,19 +338,20 @@ def calc_a1s(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
         Matrix used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy, size is the Ngroups by Ngroups
     """
 
-    logger = logging.getLogger(__name__)
+    #logger = logging.getLogger(__name__)
+
 
     nbeads = np.size(dkl, axis=0)
     zetax_pow = np.zeros((np.size(rho), 4))
     zetax_pow = index_update(zetax_pow,index[:,0],zetax)
-    for i in range(1, 4):
+    for i in np.arange(1, 4):
         zetax_pow = index_update(zetax_pow,index[:,i],zetax_pow[:, i - 1] * zetax_pow[:, 0])
 
     # check if you have more than 1 bead types
     if np.size(np.shape(l_kl)) == 2:
         etakl = np.zeros((np.size(rho), nbeads, nbeads))
-        for k in range(nbeads):
-            for l in range(nbeads):
+        for k in np.arange(nbeads):
+            for l in np.arange(nbeads):
                 cikl = np.inner(constants.ckl_coef, np.transpose(np.array([1.0, l_kl[k, l]**-1, l_kl[k, l]**-2, l_kl[k, l]**-3])))
                 etakl = index_update(etakl,index[:, k, l],np.einsum("ij,j", zetax_pow, cikl))
 
@@ -565,7 +362,7 @@ def calc_a1s(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
 
     elif np.size(np.shape(l_kl)) == 1:
         etakl = np.zeros((np.size(rho), nbeads))
-        for k in range(nbeads):
+        for k in np.arange(nbeads):
             cikl = np.inner(constants.ckl_coef, np.transpose(np.array([1.0, l_kl[k]**-1, l_kl[k]**-2, l_kl[k]**-3])))
             etakl = index_update(etakl,index[:,k],np.einsum("ij,j", zetax_pow, cikl))
         a1s = np.einsum("ij,j->ij", (1.0 - (etakl / 2.0)) / ((1.0 - etakl)**3),
@@ -602,17 +399,17 @@ def calc_Amono(rho, xi, nui, Cmol2seg, xsk, xskl, dkk, T, epsilonkl, sigmakl, dk
     epsilonkl : numpy.ndarray
         Matrix of well depths for groups (k,l)
     sigmakl : numpy.ndarray
-        Matrix of mie diameter for groups (k,l)
+        Matrix of Mie diameter for groups (k,l)
     dkl : numpy.ndarray
         Matrix of hardsphere diameters for groups (k,l)
     l_akl : numpy.ndarray
-        Matrix of mie potential attractive exponents for k,l groups
+        Matrix of Mie potential attractive exponents for k,l groups
     l_rkl : numpy.ndarray
-        Matrix of mie potential attractive exponents for k,l groups
+        Matrix of Mie potential attractive exponents for k,l groups
     Ckl : numpy.ndarray
-        Matrix of mie potential prefactors for k,l groups
+        Matrix of Mie potential prefactors for k,l groups
     x0kl : numpy.ndarray
-        Matrix of sigmakl/dkl, sigmakl is the mie radius for groups (k,l)
+        Matrix of sigmakl/dkl, sigmakl is the Mie radius for groups (k,l)
 
     Returns
     -------
@@ -634,8 +431,10 @@ def calc_Amono(rho, xi, nui, Cmol2seg, xsk, xskl, dkk, T, epsilonkl, sigmakl, dk
 
     logger = logging.getLogger(__name__)
 
+    if not np.shape(rho):
+        rho = np.array([rho])
+
     # initialize variables
-    nbeads = list(nui.shape)[1]  # nbeads is the number of unique groups used by any compnent
     rhos = rho * Cmol2seg
 
     ##### compute AHS (eq. 16) #####
@@ -644,11 +443,10 @@ def calc_Amono(rho, xi, nui, Cmol2seg, xsk, xskl, dkk, T, epsilonkl, sigmakl, dk
     eta = np.zeros((np.size(rho), 4))
 
     # compute eta, eq. 14
-    for m in range(4):
+    for m in np.arange(4):
         eta = index_update(eta,index[:, m],rhos * (np.sum(xsk * (dkk**m)) * (np.pi / 6.0)))
-
-    if rho.any() == 0.0:
-        logger.warning("rho:",rho)
+    if np.any(rho== 0.0):
+        logger.warning("rho: {}".format(rho))
     # compute AHS, eq. 16
     tmp1 = np.log(1.0 - eta[:, 3]) * (((eta[:, 2]**3) / (eta[:, 3]**2)) - eta[:, 0])
     tmp2 = (3.0 * eta[:, 1] * eta[:, 2] / (1 - eta[:, 3]))
@@ -664,10 +462,6 @@ def calc_Amono(rho, xi, nui, Cmol2seg, xsk, xskl, dkk, T, epsilonkl, sigmakl, dk
     a1kl = calc_a1ii(rho, Cmol2seg, dkl, l_akl, l_rkl, x0kl, epsilonkl, zetax)
 
     ##### compute a2kl, eq. 30 #####
-
-    # initialize variables for a2kl
-    # a2kl = np.zeros((nbeads,nbeads))
-    # alphakl = np.zeros((nbeads,nbeads))
 
     # compute KHS(rho), eq. 31
     KHS = ((1.0 - zetax)**4) / (1.0 + (4.0 * zetax) + (4.0 * (zetax**2)) - (4.0 * (zetax**3)) + (zetax**4))
@@ -696,7 +490,6 @@ def calc_Amono(rho, xi, nui, Cmol2seg, xsk, xskl, dkk, T, epsilonkl, sigmakl, dk
     a2kl = np.einsum("i,ijk->ijk", KHS / 2.0, a2kl)
 
     ##### compute a3kl #####
-    a3kl = np.zeros((nbeads, nbeads))
     fmlist456 = calc_fm(alphakl, np.array([4, 5, 6]))
 
     a3kl = np.einsum("i,jk", zetaxstar, -(epsilonkl**3) * fmlist456[0]) * np.exp(
@@ -713,7 +506,6 @@ def calc_Amono(rho, xi, nui, Cmol2seg, xsk, xskl, dkk, T, epsilonkl, sigmakl, dk
     A1 = (Cmol2seg / T) * a1
     A2 = (Cmol2seg / (T**2)) * a2
     A3 = (Cmol2seg / (T**3)) * a3
-
 
     return AHS, A1, A2, A3, zetax, zetaxstar, KHS
 
@@ -752,7 +544,7 @@ def calc_a1ii(rho, Cmol2seg, dii_eff, l_aii_avg, l_rii_avg, x0ii, epsilonii_avg,
         Matrix used in the calculation of the radial distribution function of a hypothetical one-fluid Mie system.
     """
 
-    logger = logging.getLogger(__name__)
+    #logger = logging.getLogger(__name__)
 
     Cii = C(l_rii_avg, l_aii_avg)
 
@@ -775,7 +567,7 @@ def calc_da1sii_drhos(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
     Cmol2seg : float
         Conversion factor from from molecular number density, :math:`\rho`, to segment (i.e. group) number density, :math:`\rho_S`. Shown in eq. 13
     l_kl : numpy.ndarray
-        Matrix of mie potential exponents for k,l groups
+        Matrix of Mie potential exponents for k,l groups
     zetax : numpy.ndarray
         Matrix of hypothetical packing fraction based on hard sphere diameter for groups (k,l)
     epsilonkl : numpy.ndarray
@@ -789,20 +581,20 @@ def calc_da1sii_drhos(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
         Matrix used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy, size is the Ngroups by Ngroups
     """
 
-    logger = logging.getLogger(__name__)
+    #logger = logging.getLogger(__name__)
 
     nbeads = np.size(dkl, axis=0)
     zetax_pow = np.zeros((np.size(rho), 4))
     zetax_pow = index_update(zetax_pow,index[:,0],zetax)
-    for i in range(1, 4):
+    for i in np.arange(1, 4):
         zetax_pow = index_update(zetax_pow,index[:, i],zetax_pow[:, i - 1] * zetax_pow[:, 0])
 
     # check if you have more than 1 bead types
     if np.size(np.shape(l_kl)) == 2:
         etakl = np.zeros((np.size(rho), nbeads, nbeads))
         rhos_detakl_drhos = np.zeros((np.size(rho), nbeads, nbeads))
-        for k in range(nbeads):
-            for l in range(nbeads):
+        for k in np.arange(nbeads):
+            for l in np.arange(nbeads):
                 # Constants to calculate eta_eff
                 cikl = np.inner(constants.ckl_coef, np.transpose([1.0, l_kl[k, l]**-1, l_kl[k, l]**-2, l_kl[k, l]**-3]))
                 etakl = index_update(etakl,index[:, k, l],np.einsum("ij,j", zetax_pow, cikl))
@@ -813,7 +605,7 @@ def calc_da1sii_drhos(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
     elif np.size(np.shape(l_kl)) == 1:
         etakl = np.zeros((np.size(rho), nbeads))
         rhos_detakl_drhos = np.zeros((np.size(rho), nbeads))
-        for k in range(nbeads):
+        for k in np.arange(nbeads):
             cikl = np.inner(constants.ckl_coef, np.transpose(np.array([1.0, l_kl[k]**-1, l_kl[k]**-2, l_kl[k]**-3])))
             etakl = index_update(etakl,index[:, k],np.einsum("ij,j", zetax_pow, cikl))
             rhos_detakl_drhos = index_update(rhos_detakl_drhos,index[:, k],np.einsum("ij,j", zetax_pow, cikl*np.array([1.,2.,3.,4.])))
@@ -857,7 +649,7 @@ def calc_da1iidrhos(rho, Cmol2seg, dii_eff, l_aii_avg, l_rii_avg, x0ii, epsiloni
         Derivative of term with respect to segment density
     """
 
-    logger = logging.getLogger(__name__)
+    #logger = logging.getLogger(__name__)
 
     Cii = C(l_rii_avg, l_aii_avg)
 
@@ -897,12 +689,12 @@ def calc_a2ii_1pchi(rho, Cmol2seg, epsilonii_avg, dii_eff, x0ii, l_rii_avg, l_ai
 
     Returns
     -------
-    a2ii_1pchi : nump.ndarray
+    a2ii_1pchi : numpy.ndarray
         Term used in the calculation of the second-order term from the macroscopic compressibility
         
     """
 
-    logger = logging.getLogger(__name__)
+    #logger = logging.getLogger(__name__)
 
     KHS = ((1.0 - zetax)**4) / (1.0 + (4.0 * zetax) + (4.0 * (zetax**2)) - (4.0 * (zetax**3)) + (zetax**4))
     Cii = C(l_rii_avg, l_aii_avg)
@@ -947,12 +739,12 @@ def calc_da2ii_1pchi_drhos(rho, Cmol2seg, epsilonii_avg, dii_eff, x0ii, l_rii_av
 
     Returns
     -------
-    da2ii_1pchi_drhos : nump.ndarray
+    da2ii_1pchi_drhos : numpy.ndarray
         Term used in the calculation of the second-order term from the macroscopic compressibility
         
     """
 
-    logger = logging.getLogger(__name__)
+    #logger = logging.getLogger(__name__)
 
     # Calculate terms and derivatives used in derivative chain rule 
     KHS = ((1.0 - zetax)**4) / (1.0 + (4.0 * zetax) + (4.0 * (zetax**2)) - (4.0 * (zetax**3)) + (zetax**4))
@@ -1005,7 +797,7 @@ def calc_Achain(rho, Cmol2seg, xi, T, nui, sigmakl, epsilonkl, dkl, xskl, l_rkl,
         :math:`\nu_{i,k}/k_B`, Array of number of components by number of bead types. Defines the number of each type of group in each component. 
         Defined for eq. 11. Note that indices are flipped from definition in reference.
     sigmakl : numpy.ndarray
-        Matrix of mie diameter for groups (k,l)
+        Matrix of Mie diameter for groups (k,l)
     epsilonkl : numpy.ndarray
         Matrix of well depths for groups (k,l)
     dkl : numpy.ndarray
@@ -1013,9 +805,9 @@ def calc_Achain(rho, Cmol2seg, xi, T, nui, sigmakl, epsilonkl, dkl, xskl, l_rkl,
     xskl : numpy.ndarray
         Matrix of mole fractions of bead (i.e. segment or group) k multiplied by bead l
     l_rkl : numpy.ndarray
-        Matrix of mie potential attractive exponents for k,l groups
+        Matrix of Mie potential attractive exponents for k,l groups
     l_akl : numpy.ndarray
-        Matrix of mie potential attractive exponents for k,l groups
+        Matrix of Mie potential attractive exponents for k,l groups
     beads : list[str]
         List of unique bead names used among components
     beadlibrary : dict
@@ -1046,7 +838,7 @@ def calc_Achain(rho, Cmol2seg, xi, T, nui, sigmakl, epsilonkl, dkl, xskl, l_rkl,
 
     """
 
-    logger = logging.getLogger(__name__)
+    #logger = logging.getLogger(__name__)
 
     #initialize values
     ngroups = len(beads)
@@ -1058,32 +850,33 @@ def calc_Achain(rho, Cmol2seg, xi, T, nui, sigmakl, epsilonkl, dkl, xskl, l_rkl,
     epsilonii_avg = np.zeros_like(sigmaii_avg)
     l_rii_avg = np.zeros_like(sigmaii_avg)
     l_aii_avg = np.zeros_like(sigmaii_avg)
-    x0ii = np.zeros_like(sigmaii_avg)
     km = np.zeros((np.size(rho), 4))
     gdHS = np.zeros((np.size(rho), ncomp))
 
     kT = T * constants.kb
+
+    if not np.shape(rho):
+        rho = np.array([rho])
+
     rhos = rho * Cmol2seg
 
-    stepmult = 100
-
     #compute zki
-    for i in range(ncomp):
-        for k in range(ngroups):
+    for i in np.arange(ncomp):
+        for k in np.arange(ngroups):
             zki = index_update(zki,index[i, k],nui[i, k] * beadlibrary[beads[k]]["Vks"] * beadlibrary[beads[k]]["Sk"])
             zkinorm = index_update(zkinorm,index[i],zkinorm[i] + zki[i, k])
 
-    for i in range(ncomp):
-        for k in range(ngroups):
+    for i in np.arange(ncomp):
+        for k in np.arange(ngroups):
             zki = index_update(zki,index[i,k],zki[i, k] / zkinorm[i])
 
     # compute average molecular segment size: sigmaii_avg
     # compute effective hard sphere diameter : dii_eff
     # compute average interaction energy epsilonii_avg
     #compute average repulsive and attractive exponenets l_rkl, l_akl
-    for i in range(ncomp):
-        for k in range(ngroups):
-            for l in range(ngroups):
+    for i in np.arange(ncomp):
+        for k in np.arange(ngroups):
+            for l in np.arange(ngroups):
                 sigmaii_avg = index_update(sigmaii_avg,index[i],sigmaii_avg[i] + zki[i, k] * zki[i, l] * sigmakl[k, l]**3)
                 dii_eff = index_update(dii_eff,index[i],dii_eff[i] + zki[i, k] * zki[i, l] * dkl[k, l]**3)
                 epsilonii_avg = index_update(epsilonii_avg,index[i],epsilonii_avg[i] + zki[i, k] * zki[i, l] * epsilonkl[k, l] * constants.kb)
@@ -1101,7 +894,7 @@ def calc_Achain(rho, Cmol2seg, xi, T, nui, sigmakl, epsilonkl, dkl, xskl, l_rkl,
     km = index_update(km,index[:,2],-3.0 * zetax**2 / (8.0 * (1.0 - zetax)**2))
     km = index_update(km,index[:,3],(-zetax**4 + 3.0 * zetax**2 + 3.0 * zetax) / (6.0 * (1.0 - zetax)**3))
 
-    for i in range(ncomp):
+    for i in np.arange(ncomp):
         gdHS = index_update(gdHS,index[:,i],np.exp(km[:, 0] + km[:, 1] * x0ii[i] + km[:, 2] * x0ii[i]**2 + km[:, 3] * x0ii[i]**3))
 
     da1iidrhos = calc_da1iidrhos(rho, Cmol2seg, dii_eff, l_aii_avg, l_rii_avg, x0ii, epsilonii_avg, zetax)
@@ -1122,11 +915,9 @@ def calc_Achain(rho, Cmol2seg, xi, T, nui, sigmakl, epsilonkl, dkl, xskl, l_rkl,
     theta = np.exp(epsilonii_avg / kT) - 1.0
 
     gammacii = np.zeros_like(gdHS)
-    for i in range(ncomp):
+    for i in np.arange(ncomp):
         tmp = phi7[0] * (-np.tanh(phi7[1] * (phi7[2] - alphaii[i])) + 1.0) * zetaxstar * theta[i] * np.exp(phi7[3] * zetaxstar + phi7[4] * (zetaxstar**2))
         gammacii = index_update(gammacii,index[:, i],tmp)
-
-    a2iidchi = calc_a2ii_1pchi(rho, Cmol2seg, epsilonii_avg, dii_eff, x0ii, l_rii_avg, l_aii_avg, zetax)
 
     da2iidrhos = calc_da2ii_1pchi_drhos(rho, Cmol2seg, epsilonii_avg, dii_eff, x0ii, l_rii_avg, l_aii_avg, zetax)
 
@@ -1153,10 +944,10 @@ def calc_Achain(rho, Cmol2seg, xi, T, nui, sigmakl, epsilonkl, dkl, xskl, l_rkl,
     tmp = [(epsilonii_avg * g1 / (kT * gdHS)), (((epsilonii_avg / kT)**2) * g2 / gdHS)]
     Achain = 0.0
     tmp_A = [0, 0]
-    for i in range(ncomp):
+    for i in np.arange(ncomp):
         beadsum = -1.0
 
-        for k in range(ngroups):
+        for k in np.arange(ngroups):
             beadsum = beadsum + (nui[i, k] * beadlibrary[beads[k]]["Vks"] * beadlibrary[beads[k]]["Sk"])
 
         Achain = Achain - xi[i] * beadsum * np.log(gii[:, i])
@@ -1165,118 +956,6 @@ def calc_Achain(rho, Cmol2seg, xi, T, nui, sigmakl, epsilonkl, dkl, xskl, l_rkl,
 
     #return Achain,sigmaii_avg,epsilonii_avg,np.array(tmp_A)
     return Achain, sigmaii_avg, epsilonii_avg
-
-############################################################
-#                                                          #
-#            A Association Site Contribution               #
-#                                                          #
-############################################################
-
-def calc_assoc_matrices(beads, beadlibrary, sitenames=["H", "e1", "e2"], crosslibrary={}):
-    r"""
-
-    Generate matrices used for association site calculations.  Compute epsilonHB (interaction energy for association term),Kklab (association interaction bonding volume,nk (number of sites )
-
-    Parameters
-    ----------
-    beads : list[str]
-        List of unique bead names used among components
-    beadlibrary : dict
-        A dictionary where bead names are the keys to access EOS self interaction parameters:
-
-        - epsilon: :math:`\epsilon_{k,k}/k_B`, Energy well depth scaled by Boltzmann constant
-        - sigma: :math:`\sigma_{k,k}`, Size parameter [m]
-        - mass: Bead mass [kg/mol]
-        - l_r: :math:`\lambda^{r}_{k,k}`, Exponent of repulsive term between groups of type k
-        - l_a: :math:`\lambda^{a}_{k,k}`, Exponent of attractive term between groups of type k
-        - Vks: :math:`V_{k,s}`, Number of groups, k, in component
-        - Sk: Optional, :math:`S_{k}`, Shape parameter of group k
-        - epsilon*: Optional, Interaction energy between each bead and association site. Asterisk represents string from sitenames.
-        - K**: Optional, Bonding volume between each association site. Asterisk represents two strings from sitenames.
-        - Nk*: Optional, The number of sites of from list sitenames. Asterisk represents string from sitenames.
-
-    sitenames : list[str], Optional, default: []
-        List of unique association sites used among components
-    crosslibrary : dict, Optional, default: {}
-        Optional library of bead cross interaction parameters. As many or as few of the desired parameters may be defined for whichever group combinations are desired.
-
-        - epsilon: :math:`\epsilon_{k,l}/k_B`, Energy parameter scaled by Boltzmann Constant
-        - l_r: :math:`\lambda^{r}_{k,l}`, Exponent of repulsive term between groups of type k and l
-        - epsilon*: Interaction energy between each bead and association site. Asterisk represents string from sitenames.
-        - K**: Bonding volume between each association site. Asterisk represents two strings from sitenames.
-
-    Returns
-    -------
-    epsilonHB : numpy.ndarray
-        Interaction energy between each bead and association site.
-    Kklab : numpy.ndarray 
-        Bonding volume between each association site
-    nk : numpy.ndarray
-        For each bead the number of each type of site
-    """
-
-    logger = logging.getLogger(__name__)
-
-    # initialize variables
-    nbeads = len(beads)
-    sitemax = np.size(sitenames)
-    epsilonHB = np.zeros((nbeads, nbeads, sitemax, sitemax))
-    Kklab = np.zeros((nbeads, nbeads, sitemax, sitemax))
-    nk = np.zeros((nbeads, sitemax))
-
-    for i in range(nbeads):
-        for j in range(np.size(sitenames)):
-            if "Nk"+sitenames[j] in beadlibrary[beads[i]]:
-                logger.debug("Bead {} has {} of the association site {}".format(beads[i],beadlibrary[beads[i]]["Nk"+sitenames[j]],"Nk"+sitenames[j]))
-                nk = index_update(nk,index[i,j],beadlibrary[beads[i]]["Nk" + sitenames[j]])
-
-    if crosslibrary:
-        # find any cross terms in the cross term library
-        crosslist = []
-        for (i, beadname) in enumerate(beads):
-            if beadname in crosslibrary:
-                for (j, beadname2) in enumerate(beads):
-                    if beadname2 in crosslibrary[beadname]:
-
-                        for a in range(np.size(sitenames)):
-                            for b in range(np.size(sitenames)):
-                                if beads[i] in crosslibrary:
-                                    if beads[j] in crosslibrary[beads[i]]:
-                                        
-                                        epsilon_tmp = "epsilon"+sitenames[a]+sitenames[b]
-                                        K_tmp = "K"+sitenames[a]+sitenames[b]
-                                        if epsilon_tmp in crosslibrary[beads[i]][beads[j]]:
-                                            if (nk[i][a] == 0 or nk[j][b] == 0):
-                                                if 0 not in [nk[i][b],nk[j][a]]:
-                                                    logger.warning("Site names were listed in wrong order for parameter definitions in cross interaction library. Changing {}_{} - {}_{} interaction to {}_{} - {}_{}".format(beads[i],sitenames[a],beads[j],sitenames[b],beads[i],sitenames[b],beads[j],sitenames[a]))
-                                                a, b = [b, a]
-                                            elif nk[i][a] == 0:
-                                                logger.warning("Cross interaction library parameters suggest a {}_{} - {}_{} interaction, but {} doesn't have site {}.".format(beads[i],sitenames[a],beads[j],sitenames[b],beads[i],sitenames[a]))
-                                            elif nk[j][b] == 0:
-                                                logger.warning("Cross interaction library parameters suggest a {}_{} - {}_{} interaction, but {} doesn't have site {}.".format(beads[i],sitenames[a],beads[j],sitenames[b],beads[j],sitenames[b]))
-    
-                                            epsilonHB = index_update(epsilonHB,index[i, j, a, b],crosslibrary[beads[i]][beads[j]][epsilon_tmp])
-                                            epsilonHB = index_update(epsilonHB,index[j, i, b, a],epsilonHB[i, j,a, b])
-    
-                                    if K_tmp in crosslibrary[beads[i]][beads[j]]:
-                                        Kklab = index_update(Kklab,index[i, j, a, b],crosslibrary[beads[i]][beads[j]][K_tmp])
-                                        Kklab = index_update(Kklab,index[j, i, b, a],Kklab[i, j, a, b])
-
-    for i in range(nbeads):
-        for a in range(np.size(sitenames)):
-            for b in range(np.size(sitenames)):
-                tmp = ["epsilon"+sitenames[a]+sitenames[b], "K"+sitenames[a]+sitenames[b]]
-                if all(x in beadlibrary[beads[i]] for x in tmp):
-                    epsilonHB = index_update(epsilonHB,index[i, i, a, b],beadlibrary[beads[i]]["epsilon" + sitenames[a] + sitenames[b]])
-                    epsilonHB = index_update(epsilonHB,index[i, i, b, a],epsilonHB[i, i, a, b])
-                    Kklab = index_update(Kklab,index[i, i, a, b], beadlibrary[beads[i]]["K" + sitenames[a] + sitenames[b]])
-                    Kklab = index_update(Kklab,index[i, i, b, a],Kklab[i, i, a, b])                    
-
-    if Kklab.size:
-        if max(Kklab.flatten()) > 1e-27:
-            raise ValueError("Check units for association site parameter K. Should be in units of m^3.")
-
-    return epsilonHB, Kklab, nk
 
 #@jit
 def calc_Xika(indices, rho, xi, nui, nk, Fklab, Kklab, Iij, tol=1e-12, damp=.1):
@@ -1305,7 +984,7 @@ def calc_Xika(indices, rho, xi, nui, nk, Fklab, Kklab, Iij, tol=1e-12, damp=.1):
     Returns
     -------
     Xika : numpy.ndarray
-        NoteHere
+        The fraction of molecules of component i that are not bonded at a site of type a on group k
     """
 
     nbeads    = nui.shape[1]
@@ -1324,14 +1003,14 @@ def calc_Xika(indices, rho, xi, nui, nk, Fklab, Kklab, Iij, tol=1e-12, damp=.1):
     # Old Method #############
     #l_ind = np.array(indices).shape[0]
 
-    #for r in range(nrho):
+    #for r in np.arange(nrho):
 
     #    #inputs = _calc_Xika_debug(_calc_Xika_cond, _calc_Xika_inner, (Xika_elements, indices, rho[r], xi, nui, nk, Fklab, Kklab, Iij[r], damp, tol))
     #    inputs = lax.while_loop(_calc_Xika_cond, _calc_Xika_inner, (Xika_elements, indices, rho[r], xi, nui, nk, Fklab, Kklab, Iij[r], damp, tol))
 
     #    Xika_elements, _, _, _, _, _, _, _, _, _, _ = inputs
 
-    #    for jjnd in range(l_ind):
+    #    for jjnd in np.arange(l_ind):
     #        i,k,a = indices[jjnd]
     #        Xika_final = index_update(Xika_final,index[r,i,k,a],Xika_elements[0][jjnd])
      #########################
@@ -1375,7 +1054,7 @@ def _calc_Xika_outer(r, inputs):
     # New Way ################
     _, _, _, Xika_final = lax.fori_loop(0,indices.shape[0],_Xika_update_1,(r, indices, Xika_elements[0], Xika_final0))
     # Old Way ################
-    #for jjnd in range(np.array(indices).shape[0]):
+    #for jjnd in np.arange(np.array(indices).shape[0]):
     #    i,k,a = indices[jjnd]
     #    Xika_final = index_update(Xika_final,index[r,i,k,a],Xika_elements[0][jjnd])
     ##########################
@@ -1400,7 +1079,7 @@ def _calc_Xika_while_debug(cond_fun,body_fun,init_val):
     val = init_val
     while cond_fun(val):
         val = body_fun(val)
-        print(val[0][0],val[0][1],cond_fun(val))
+        print("while",val[0][0],val[0][1],cond_fun(val))
     return val
 
 #@jit
@@ -1430,9 +1109,9 @@ def _calc_Xika_inner(inputs0):
     inputs = lax.fori_loop(0,l_ind,_Xika_update_2a,(Xika_elements0, indices, rho, xi, nui, nk, Fklab, Kklab, Iij, damp, tol))
     Xika_elements, _, _, _, _, _, _, _, _, _, _ = inputs
     # Old Way #################
-    #for ind in range(l_ind):
+    #for ind in np.arange(l_ind):
     #    i, k, a = indices[ind]
-    #    for jnd in range(l_ind):
+    #    for jnd in np.arange(l_ind):
     #        j, l, b = indices[jnd]
     #        delta = Fklab[k, l, a, b] * Kklab[k, l, a, b] * Iij[i, j]
     #        tmp = Xika_elements[0][ind] + rho * xi[j] * nui[j,l] * nk[l,b] * Xika_elements[1][jnd] * delta
@@ -1519,7 +1198,7 @@ def calc_A_assoc(rho, xi, T, nui, xskl, sigmakl, sigmaii_avg, epsilonii_avg, eps
     xskl : numpy.ndarray
         Matrix of mole fractions of bead (i.e. segment or group) k multiplied by bead l
     sigmakl : numpy.ndarray
-        Matrix of mie diameter for groups (k,l)
+        Matrix of Mie diameter for groups (k,l)
     sigmaii_avg : numpy.ndarray
         Average bead (i.e. group or segment) size in component (i.e. molecule) i.
     epsilonii_avg : numpy.ndarray
@@ -1537,25 +1216,23 @@ def calc_A_assoc(rho, xi, T, nui, xskl, sigmakl, sigmaii_avg, epsilonii_avg, eps
         Association site contribution of Helmholtz energy, length of array rho
     """
 
-    logger = logging.getLogger(__name__)
+    #logger = logging.getLogger(__name__)
 
     kT = T * constants.kb
     nbeads = list(nui.shape)[1]
     ncomp = np.size(xi)
     nsitesmax = np.size(nk, axis=1)
-    Fklab = np.zeros((nbeads, nbeads, nsitesmax, nsitesmax))
     epsilonij = np.zeros((ncomp, ncomp))
     Iij = np.zeros((np.size(rho), ncomp, ncomp))
     delta = np.zeros((np.size(rho), ncomp, ncomp, nbeads, nbeads, nsitesmax, nsitesmax))
-    Xika = np.zeros((np.size(rho), ncomp, nbeads, nsitesmax))
     Aassoc = np.zeros_like(rho)
 
     # compute F_klab
     Fklab = np.exp(epsilonHB * constants.kb / kT) - 1.0
 
     # compute epsilonij
-    for i in range(ncomp):
-        for j in range(i, ncomp):
+    for i in np.arange(ncomp):
+        for j in np.arange(i, ncomp):
             tmp = np.sqrt(sigmaii_avg[i] * sigmaii_avg[j])**3.0 * np.sqrt(epsilonii_avg[i] * epsilonii_avg[j]) / (((sigmaii_avg[i] + sigmaii_avg[j]) / 2.0)**3)
             epsilonij = index_update(epsilonij,index[i, j],tmp)
             epsilonij = index_update(epsilonij,index[j, i],epsilonij[i, j])
@@ -1565,10 +1242,10 @@ def calc_A_assoc(rho, xi, T, nui, xskl, sigmakl, sigmaii_avg, epsilonii_avg, eps
 
     # compute Iijklab 
     # {BottleNeck}
-    for p in range(11):
-        for q in range(11 - p):
+    for p in np.arange(11):
+        for q in np.arange(11 - p):
             #Iij += np.einsum("i,jk->ijk", constants.cij[p, q] * ((sigmax3 * rho)**p), ((kT / epsilonij)**q))
-            if p == 0: Iij += np.einsum("i,jk->ijk", constants.cij[p, q] * np.ones(len(rho)), ((kT / epsilonij)**q))
+            if p == 0: Iij += np.einsum("i,jk->ijk", constants.cij[p, q] * np.ones(rho.shape[0]), ((kT / epsilonij)**q))
             elif p == 1: Iij += np.einsum("i,jk->ijk", constants.cij[p, q] * ((sigmax3 * rho)), ((kT / epsilonij)**q))
             elif p == 2: 
                rho2 = rho**2
@@ -1594,13 +1271,13 @@ def calc_A_assoc(rho, xi, T, nui, xskl, sigmakl, sigmaii_avg, epsilonii_avg, eps
         Xika = calc_Xika(indices,rho, xi, nui, nk, Fklab, Kklab, Iij)
 
     # Compute A_assoc
-    for i in range(ncomp):
-        for k in range(nbeads):
-            for a in range(nsitesmax):
+    for i in np.arange(ncomp):
+        for k in np.arange(nbeads):
+            for a in np.arange(nsitesmax):
                 if nk[k, a] != 0.0:
                     Aassoc = Aassoc + xi[i] * nui[i, k] * nk[k, a] * (np.log(Xika[:, i, k, a]) +
                                                               ((1.0 - Xika[:, i, k, a]) / 2.0))
-    print(Aassoc)
+    print("Aassoc",Aassoc)
 
     return Aassoc
 
@@ -1623,9 +1300,10 @@ def assoc_site_indices(xi, nui, nk):
         A list of sets of (component, bead, site) to identify the values of the Xika matrix that are being fit
     """
 
-    logger = logging.getLogger(__name__)
 
-    lx, ly, lz = len(xi),len(nk),len(nk[0])
+    #logger = logging.getLogger(__name__)
+
+    lx, ly, lz = xi.size, nk.shape[0], nk[0].shape[0]
     indices_tmp = np.zeros(lx*ly*lz)
 
     # Indices of components will minimal mole fractions
@@ -1637,7 +1315,7 @@ def assoc_site_indices(xi, nui, nk):
         if not zero_frac[i]:
             for j, bead in enumerate(comp):
                 if (bead != 0 and np.any(nk[j]!=0.0)):
-                    for k in range(len(nk[j])):
+                    for k in np.arange(lz):
                         if nk[j][k] != 0.0:
                             ind = i*(ly*lz) + j*lz + k
                             indices_tmp = index_update(indices_tmp,index[ind],1.)
@@ -1645,12 +1323,13 @@ def assoc_site_indices(xi, nui, nk):
 
     indices = np.zeros((l_tmp,3),int)
     bool_assoc = np.asarray(indices_tmp==1.)
+
     j = 0
-    for i in range(lx*ly*lz):
+    for i in np.arange(lx*ly*lz):
         if bool_assoc[i]:
-            i_tmp = float(i)
-            ii, tmp = i_tmp // float(ly*lz), i_tmp % float(ly*lz)
-            jj, kk = tmp // float(lz), tmp % float(lz)
+            i_tmp = np.float64(i)
+            ii, tmp = i_tmp // np.float64(ly*lz), i_tmp % np.float64(ly*lz)
+            jj, kk = tmp // np.float64(lz), tmp % np.float64(lz)
             indices = index_update(indices,index[j],np.array([ii,jj,kk],int))
             j += 1
 
@@ -1689,28 +1368,10 @@ def obj_Xika(Xika_elements, indices, rho, xi, nui, nk, Fklab, Kklab, Iij):
         The sum of the absolute difference between each of the target elements.
     """
 
-    logger = logging.getLogger(__name__)
-
-    ## Option 1: A lot of for loops
-#    nbeads    = nui.shape[1]
-#    ncomp     = np.size(xi)
-#    nsitesmax = np.size(nk, axis=1)
-#
-#    Xika = np.ones((ncomp, nbeads, nsitesmax))
-#    Xika0 = assemble_Xika(Xika_elements,indices,Xika)
-#    for i in range(ncomp):
-#        for k in range(nbeads):
-#            for a in range(nsitesmax):
-#
-#                for j in range(ncomp):
-#                    for l in range(nbeads):
-#                        for b in range(nsitesmax):
-#                            Xika[i,k,a] += (rho * xi[j] * nui[j,l] * nk[l,b] * Xika0[j,l,b] * delta[i,j,k,l,a,b])
-#    Xika = 1./Xika
-#    Xika_elements_new = [Xika[i][j][k] for i,j,k in indices]
+    #logger = logging.getLogger(__name__)
 
     ## Option 2: Fewer forloops
-    Xika_elements_new = np.ones(len(Xika_elements))
+    Xika_elements_new = np.ones(Xika_elements.shape[0])
     Xika_elements = np.array(Xika_elements)
     ind = 0
     for i,k,a in indices:
@@ -1750,9 +1411,8 @@ def assemble_Xika(Xika_elements,indices,Xika):
 
     logger = logging.getLogger(__name__)
 
-    if len(Xika_elements) != len(indices):
+    if Xika_elements.shape[0] != indices.shape[0]:
         raise ValueError("Number of elements should each have a corresponding set of indices.")
-        logger.exception("Number of elements should each have a corresponding set of indices.")
 
     for j,ind in enumerate(indices):
         i,k,a = ind
@@ -1765,8 +1425,7 @@ def assemble_Xika(Xika_elements,indices,Xika):
 #            Total A, Helmholtz Free Energy                #
 #                                                          #
 ############################################################
-
-def calc_A(rho, xi, T, beads, beadlibrary, massi, nui, Cmol2seg, xsk, xskl, dkk, epsilonkl, sigmakl, dkl, l_akl, l_rkl, Ckl, x0kl,epsilonHB, Kklab, nk):
+def calc_A(rho, xi, T, *,beads, beadlibrary, massi, nui, Cmol2seg, xsk, xskl, dkk, epsilonkl, sigmakl, dkl, l_akl, l_rkl, Ckl, x0kl,epsilonHB, Kklab, nk):
     r"""
     Calculates total Helmholtz energy, :math:`\frac{A}{N k_{B} T}`.
 
@@ -1809,17 +1468,17 @@ def calc_A(rho, xi, T, beads, beadlibrary, massi, nui, Cmol2seg, xsk, xskl, dkk,
     epsilonkl : numpy.ndarray
         Matrix of well depths for groups (k,l)
     sigmakl : numpy.ndarray
-        Matrix of mie diameter for groups (k,l)
+        Matrix of Mie diameter for groups (k,l)
     dkl : numpy.ndarray
         Matrix of hardsphere diameters for groups (k,l)
     l_akl : numpy.ndarray
-        Matrix of mie potential attractive exponents for k,l groups
+        Matrix of Mie potential attractive exponents for k,l groups
     l_rkl : numpy.ndarray
-        Matrix of mie potential attractive exponents for k,l groups
+        Matrix of Mie potential attractive exponents for k,l groups
     Ckl : numpy.ndarray
-        Matrix of mie potential prefactors for k,l groups
+        Matrix of Mie potential prefactors for k,l groups
     x0kl : numpy.ndarray
-        Matrix of sigmakl/dkl, sigmakl is the mie radius for groups (k,l)
+        Matrix of sigmakl/dkl, sigmakl is the Mie radius for groups (k,l)
     epsilonHB : numpy.ndarray
         Interaction energy between each bead and association site.
     Kklab : numpy.ndarray 
@@ -1833,9 +1492,12 @@ def calc_A(rho, xi, T, beads, beadlibrary, massi, nui, Cmol2seg, xsk, xskl, dkk,
         Total Helmholtz energy, length of array rho
     """
 
-    logger = logging.getLogger(__name__)
+    #logger = logging.getLogger(__name__)
 
-    if any(np.array(xi) < 0.):
+    if not np.shape(rho):
+        rho = np.array([rho])
+
+    if np.any(np.array(xi) < 0.):
         raise ValueError("Mole fractions cannot be less than zero.")
 
     Aideal = calc_Aideal(xi, rho, massi, T)
@@ -1858,10 +1520,14 @@ def calc_A(rho, xi, T, beads, beadlibrary, massi, nui, Cmol2seg, xsk, xskl, dkk,
     else:
         A = Aideal + AHS + A1 + A2 + A3 + Achain
 
+    # NoteHere
+    if np.size(A) == 1:
+        A = A[0]
+
     return A
 
 
-def calc_Ares(rho, xi, T, beads, beadlibrary, massi, nui, Cmol2seg, xsk, xskl, dkk, epsilonkl, sigmakl, dkl, l_akl, l_rkl, Ckl, x0kl, epsilonHB, Kklab, nk):
+def calc_Ares(rho, xi, T, *, beads, beadlibrary, massi, nui, Cmol2seg, xsk, xskl, dkk, epsilonkl, sigmakl, dkl, l_akl, l_rkl, Ckl, x0kl, epsilonHB, Kklab, nk):
     r"""
     Calculates residual Helmholtz energy, :math:`\frac{A^{res.}}{N k_{B} T}` that deviates from ideal
 
@@ -1904,17 +1570,17 @@ def calc_Ares(rho, xi, T, beads, beadlibrary, massi, nui, Cmol2seg, xsk, xskl, d
     epsilonkl : numpy.ndarray
         Matrix of well depths for groups (k,l)
     sigmakl : numpy.ndarray
-        Matrix of mie diameter for groups (k,l)
+        Matrix of Mie diameter for groups (k,l)
     dkl : numpy.ndarray
         Matrix of hardsphere diameters for groups (k,l)
     l_akl : numpy.ndarray
-        Matrix of mie potential attractive exponents for k,l groups
+        Matrix of Mie potential attractive exponents for k,l groups
     l_rkl : numpy.ndarray
-        Matrix of mie potential attractive exponents for k,l groups
+        Matrix of Mie potential attractive exponents for k,l groups
     Ckl : numpy.ndarray
-        Matrix of mie potential prefactors for k,l groups
+        Matrix of Mie potential prefactors for k,l groups
     x0kl : numpy.ndarray
-        Matrix of sigmakl/dkl, sigmakl is the mie radius for groups (k,l)
+        Matrix of sigmakl/dkl, sigmakl is the Mie radius for groups (k,l)
     epsilonHB : numpy.ndarray
         Interaction energy between each bead and association site.
     Kklab : numpy.ndarray 
@@ -1928,9 +1594,12 @@ def calc_Ares(rho, xi, T, beads, beadlibrary, massi, nui, Cmol2seg, xsk, xskl, d
         Residual Helmholtz energy that deviates from Aideal, length of array rho
     """
 
-    logger = logging.getLogger(__name__)
+    #logger = logging.getLogger(__name__)
 
-    if any(np.array(xi) < 0.):
+    if not np.shape(rho):
+        rho = np.array([rho])
+
+    if np.any(np.array(xi) < 0.):
         raise ValueError("Mole fractions cannot be less than zero.")
 
     AHS, A1, A2, A3, zetax, zetaxstar, KHS = calc_Amono(rho, xi, nui, Cmol2seg, xsk, xskl, dkk, T, epsilonkl, sigmakl, dkl, l_akl, l_rkl, Ckl, x0kl)
