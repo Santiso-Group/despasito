@@ -996,24 +996,12 @@ def calc_Xika(indices, rho, xi, nui, nk, Fklab, Kklab, Iij, tol=1e-12, damp=.1):
     Xika_final0 = np.ones((nrho,ncomp, nbeads, nsitesmax))
     Xika_elements = np.ones((2,l_ind))*0.5
 
-    # New Method #############
-    inputs = _calc_Xika_fori_debug(0, nrho, _calc_Xika_outer, (Xika_final0, Xika_elements, indices, rho, xi, nui, nk, Fklab, Kklab, Iij, damp, tol))
+    # ----- LAX --------
     #inputs = lax.fori_loop(0, nrho, _calc_Xika_outer, (Xika_final0, Xika_elements, indices, rho, xi, nui, nk, Fklab, Kklab, Iij, damp, tol))
+    # ----- Pure Python --------
+    inputs = _calc_Xika_fori_debug(0, nrho, _calc_Xika_outer, (Xika_final0, Xika_elements, indices, rho, xi, nui, nk, Fklab, Kklab, Iij, damp, tol))
+    # ------------------------
     Xika_final, _, _, _, _, _, _, _, _, _, _, _ = inputs
-    # Old Method #############
-    #l_ind = np.array(indices).shape[0]
-
-    #for r in np.arange(nrho):
-
-    #    #inputs = _calc_Xika_debug(_calc_Xika_cond, _calc_Xika_inner, (Xika_elements, indices, rho[r], xi, nui, nk, Fklab, Kklab, Iij[r], damp, tol))
-    #    inputs = lax.while_loop(_calc_Xika_cond, _calc_Xika_inner, (Xika_elements, indices, rho[r], xi, nui, nk, Fklab, Kklab, Iij[r], damp, tol))
-
-    #    Xika_elements, _, _, _, _, _, _, _, _, _, _ = inputs
-
-    #    for jjnd in np.arange(l_ind):
-    #        i,k,a = indices[jjnd]
-    #        Xika_final = index_update(Xika_final,index[r,i,k,a],Xika_elements[0][jjnd])
-     #########################
 
     return Xika_final
 
@@ -1046,28 +1034,26 @@ def _calc_Xika_outer(r, inputs):
     Xika_final0, Xika_elements0, indices, rho, xi, nui, nk, Fklab, Kklab, Iij, damp, tol = inputs
     Xika_elements0 = index_update(Xika_elements0,index[1,:],1.0)
 
-    Xika_elements, _, _, _, _, _, _, _, _, _, _ = _calc_Xika_while_debug(_calc_Xika_cond, _calc_Xika_inner, (Xika_elements0, indices, rho[r], xi, nui, nk, Fklab, Kklab, Iij[r], damp, tol))
+    # ----- LAX --------
     #Xika_elements, _, _, _, _, _, _, _, _, _, _ = lax.while_loop(_calc_Xika_cond, _calc_Xika_inner, (Xika_elements0, indices, rho[r], xi, nui, nk, Fklab, Kklab, Iij[r], damp, tol))
+    # ----- Pure Python --------
+    Xika_elements, _, _, _, _, _, _, _, _, _, _ = _calc_Xika_while_debug(_calc_Xika_cond, _calc_Xika_inner, (Xika_elements0, indices, rho[r], xi, nui, nk, Fklab, Kklab, Iij[r], damp, tol))
+    # ------------------------
 
-    #print(r, rho[r], Xika_elements[0])
-
-    # New Way ################
-    _, _, _, Xika_final = lax.fori_loop(0,indices.shape[0],_Xika_update_1,(r, indices, Xika_elements[0], Xika_final0))
-    # Old Way ################
-    #for jjnd in np.arange(np.array(indices).shape[0]):
-    #    i,k,a = indices[jjnd]
-    #    Xika_final = index_update(Xika_final,index[r,i,k,a],Xika_elements[0][jjnd])
-    ##########################
+    # ----- LAX --------
+    #_, _, _, Xika_final = lax.fori_loop(0,indices.shape[0],_Xika_update_1,(r, indices, Xika_elements[0], Xika_final0))
+    # ----- Pure Python --------
+    _, _, _, Xika_final = _calc_Xika_fori_debug(0,indices.shape[0],_Xika_update_1,(r, indices, Xika_elements[0], Xika_final0))
+    # ------------------------
 
     inputs = (Xika_final, Xika_elements, indices, rho, xi, nui, nk, Fklab, Kklab, Iij, damp, tol)
 
     return inputs
 
-#@jit
+@jit
 def _Xika_update_1(ii, inputs):
 
-    r, indices, Xika_elements0, Xika_final = inputs
-    
+    r, indices, Xika_elements0, Xika_final = inputs 
     i,k,a = indices[ii]
     Xika_final = index_update(Xika_final,index[r,i,k,a],Xika_elements0[ii])
     input_out = (r, indices, Xika_elements0, Xika_final)
@@ -1076,10 +1062,13 @@ def _Xika_update_1(ii, inputs):
 #@jit
 def _calc_Xika_while_debug(cond_fun,body_fun,init_val):
 
+    #print("_calc_Xika_while_debug")
+
     val = init_val
+    #print(cond_fun(val))
     while cond_fun(val):
+        #print("while",val[0][0],val[0][1],cond_fun(val))
         val = body_fun(val)
-        print("while",val[0][0],val[0][1],cond_fun(val))
     return val
 
 #@jit
@@ -1105,18 +1094,12 @@ def _calc_Xika_inner(inputs0):
     Xika_elements0 = index_update(Xika_elements0,index[1],Xika_elements0[0])
     Xika_elements0 = index_update(Xika_elements0,index[0,:],1.0)
 
-    # New Way #################
-    inputs = lax.fori_loop(0,l_ind,_Xika_update_2a,(Xika_elements0, indices, rho, xi, nui, nk, Fklab, Kklab, Iij, damp, tol))
+    # ----- LAX --------
+    #inputs = lax.fori_loop(0,l_ind,_Xika_update_2a,(Xika_elements0, indices, rho, xi, nui, nk, Fklab, Kklab, Iij, damp, tol))
+    # ----- Pure Python --------
+    inputs = _calc_Xika_fori_debug(0,l_ind,_Xika_update_2a,(Xika_elements0, indices, rho, xi, nui, nk, Fklab, Kklab, Iij, damp, tol))
+    # ------------------------
     Xika_elements, _, _, _, _, _, _, _, _, _, _ = inputs
-    # Old Way #################
-    #for ind in np.arange(l_ind):
-    #    i, k, a = indices[ind]
-    #    for jnd in np.arange(l_ind):
-    #        j, l, b = indices[jnd]
-    #        delta = Fklab[k, l, a, b] * Kklab[k, l, a, b] * Iij[i, j]
-    #        tmp = Xika_elements[0][ind] + rho * xi[j] * nui[j,l] * nk[l,b] * Xika_elements[1][jnd] * delta
-    #        Xika_elements = index_update(Xika_elements,index[0,ind],tmp)
-    ###########################
 
     Xika_elements = index_update(Xika_elements,index[0], np.reciprocal(Xika_elements[0]))
 
@@ -1130,19 +1113,23 @@ def _calc_Xika_inner(inputs0):
 
     return inputs
 
-#@jit
+@jit
 def _Xika_update_2a(ii,inputs0):
 
     Xika_elements0, indices, rho, xi, nui, nk, Fklab, Kklab, Iij, damp, tol = inputs0
 
-    inputs = lax.fori_loop(0,indices.shape[0],_Xika_update_2b,(ii,Xika_elements0, indices, rho, xi, nui, nk, Fklab, Kklab, Iij, damp, tol))
+    # ----- LAX --------
+    #inputs = lax.fori_loop(0,indices.shape[0],_Xika_update_2b,(ii,Xika_elements0, indices, rho, xi, nui, nk, Fklab, Kklab, Iij, damp, tol))
+    # ----- Pure Python --------
+    inputs = _calc_Xika_fori_debug(0,indices.shape[0],_Xika_update_2b,(ii,Xika_elements0, indices, rho, xi, nui, nk, Fklab, Kklab, Iij, damp, tol))
+    # ------------------------
     _, Xika_elements, _, _, _, _, _, _, _, _, _, _ = inputs
 
     input_out = (Xika_elements, indices, rho, xi, nui, nk, Fklab, Kklab, Iij, damp, tol)
 
     return input_out
 
-#@jit
+@jit
 def _Xika_update_2b( jj, inputs0):
 
     ii, Xika_elements, indices, rho, xi, nui, nk, Fklab, Kklab, Iij, damp, tol = inputs0
@@ -1159,8 +1146,7 @@ def _Xika_update_2b( jj, inputs0):
 
     return input_out
 
-
-#@jit
+@jit
 def _calc_Xika_cond(inputs):
     r"""
     Calculate the fraction of molecules of component i that are not bonded at a site of type a on group k in an iterative fashion. Inner loop for use with jit
@@ -1215,6 +1201,8 @@ def calc_A_assoc(rho, xi, T, nui, xskl, sigmakl, sigmaii_avg, epsilonii_avg, eps
     Aassoc : numpy.ndarray
         Association site contribution of Helmholtz energy, length of array rho
     """
+
+    #print("calc_A_assoc")
 
     #logger = logging.getLogger(__name__)
 
@@ -1299,7 +1287,6 @@ def assoc_site_indices(xi, nui, nk):
     indices : list[list]
         A list of sets of (component, bead, site) to identify the values of the Xika matrix that are being fit
     """
-
 
     #logger = logging.getLogger(__name__)
 

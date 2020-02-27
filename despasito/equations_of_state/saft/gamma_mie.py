@@ -206,6 +206,7 @@ class saft_gamma_mie(EOStemplate):
         rho = rho*constants.Nav
 
         if disable_jax:
+
             step = np.sqrt(np.finfo(float).eps) *rho * 10000.0
             # Decreasing step size by 2 orders of magnitude didn't reduce noise in P values
             nrho = np.size(rho)
@@ -213,28 +214,25 @@ class saft_gamma_mie(EOStemplate):
             # computer rho+step and rho-step for better a bit better performance
             A = funcs.calc_A(np.append(rho + step, rho - step), xi, T, **self.eos_dict)
             P_tmp = (A[:nrho]-A[nrho:])*((constants.kb*T)/(2.0*step))*rho**2
-            print("Pcd",P_tmp)
 
         else:
 
-            #rho = rho[1000]
+            # ------ Restrict to a single float -------
+            rho = rho[1000]
 
-            # NoteHere
+            # ---- Central Difference Method -----
             step = np.sqrt(np.finfo(float).eps) *rho * 10000.0
-            # Decreasing step size by 2 orders of magnitude didn't reduce noise in P values
             nrho = np.size(rho)
-            # computer rho+step and rho-step for better a bit better performance
             A = funcs.calc_A(np.append(rho + step, rho - step), xi, T, **self.eos_dict)
             P_tmp = (A[:nrho]-A[nrho:])*((constants.kb*T)/(2.0*step))*rho**2
+            #print("Pcd",P_tmp)
 
+            # ---- Jax Grad -----
             #dA = grad(funcs.calc_A,argnums=(0))
             #P_tmp_2 = dA(rho, xi, T, **self.eos_dict)*constants.kb*T*rho**2
-
-            #print("Pcd",P_tmp)
             #print("Pgrad",P_tmp_2)
-            #print("P%error",(P_tmp_2-P_tmp)/P_tmp_2*100)
 
-            #sys.exit("stop, what now?")
+        sys.exit("Success! We intentionally stopped prematurely so it won't take forever.")
 
         return P_tmp
 
