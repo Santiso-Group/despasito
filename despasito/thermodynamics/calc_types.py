@@ -20,7 +20,7 @@ def phase_xiT(eos, sys_dict):
     r"""
     Calculate phase diagram given liquid mole fractions, xi, and temperature.
 
-    Input and system information is assessed first. An output file is generated with T, xi, and corresponding P and yi.
+    Input and system information are assessed first. An output file is generated with T, xi, and corresponding P and yi.
     
     Parameters
     ----------
@@ -121,7 +121,7 @@ def phase_xiT(eos, sys_dict):
         if "Pguess" in opts:
             optsi["Pguess"] = optsi["Pguess"][i]
 
-        logger.info("T (K), xi: {} {}, Let's Begin!".format(str(T_list[i]), str(xi_list[i])))
+        logger.info("T (K), xi: {} {}, Let's Begin!".format(T_list[i], xi_list[i]))
         try:
             if len(xi_list[i][xi_list[i]!=0.])==1:
                 if "rhodict" in optsi:
@@ -155,7 +155,7 @@ def phase_yiT(eos, sys_dict):
     r"""
     Calculate phase diagram given vapor mole fractions, yi, and temperature.
 
-    Input and system information is assessed first. An output file is generated with T, yi, and corresponding P and xi.
+    Input and system information are assessed first. An output file is generated with T, yi, and corresponding P and xi.
     
     Parameters
     ----------
@@ -253,7 +253,7 @@ def phase_yiT(eos, sys_dict):
         optsi = opts
         if "Pguess" in opts:
             optsi["Pguess"] = optsi["Pguess"][i]
-        logger.info("T (K), yi: {} {}, Let's Begin!".format(str(T_list[i]), str(yi_list[i])))
+        logger.info("T (K), yi: {} {}, Let's Begin!".format(T_list[i], yi_list[i]))
         try:
             if len(yi_list[i][yi_list[i]!=0.])==1:
                 if "rhodict" in optsi:
@@ -265,18 +265,110 @@ def phase_yiT(eos, sys_dict):
             else:
                 P_list[i], xi_list[i], flagl_list[i], flagv_list[i], obj_list[i]  = calc.calc_yT_phase(yi_list[i], T_list[i], eos, **optsi)
         except:
-            logger.warning("T (K), yi: {} {}, calculation did not produce a valid result.".format(str(T_list[i]), str(yi_list[i])))
+            logger.warning("T (K), yi: {} {}, calculation did not produce a valid result.".format(T_list[i], yi_list[i]))
             logger.debug("Calculation Failed:", exc_info=True)
             P_list[i], xi_list[i] = [np.nan, np.nan]
             flagl_list[i], flagv_list[i], obj_list[i] = [3, 3, np.nan]
             continue
-        logger.info("P (Pa), xi: {} {}".format(str(P_list[i]), str(xi_list[i])))
+        logger.info("P (Pa), xi: {} {}".format(P_list[i], xi_list[i]))
 
     logger.info("--- Calculation phase_yiT Complete ---")
 
     return {"T":T_list,"yi":yi_list,"P":P_list,"xi":xi_list,"flagl":flagl_list,"flagv":flagv_list, "obj":obj_list}
 
 ######################################################################
+#                                                                    #
+#                Phase Equilibria given yi and T                     #
+#                                                                    #
+######################################################################
+def flash(eos, sys_dict):
+
+    r"""
+    Flash calculation of vapor and liquid mole fractions. Only binary systems are currently supported
+
+    Input and system information are assessed first. An output file is generated with T, yi, and corresponding P and xi.
+    
+    Parameters
+    ----------
+    eos : obj
+        An instance of the defined EOS class to be used in thermodynamic computations.
+    sys_dict: dict
+        A dictionary of all information given in the input .json file that wasn't used to create the EOS object (e.g. options for density array :func:`~despasito.thermodynamics.calc.PvsRho`).
+
+    Returns
+    -------
+    output_dict : dict
+        Output of dictionary containing given and calculated values
+    """
+
+    logger = logging.getLogger(__name__)
+
+    ## Extract and check input data
+    if 'Tlist' in sys_dict:
+        T_list = np.array(sys_dict['Tlist'],float)
+        logger.info("Using Tlist")
+    else:
+        raise ValueError('Tlist is not specified')
+
+    if 'Plist' in sys_dict:
+        P_list = np.array(sys_dict['Plist'],float)
+        logger.info("Using Plist")
+    else:
+        P_list = 101325.0 * np.ones_like(T_list)
+        logger.info("Assuming atmospheric pressure.")
+
+    if np.size(T_list) != np.size(P_list, axis=0):
+        if len(T_list) == 1:
+            T_list = np.ones(len(P_list))*T_list[0]
+            logger.info("The same temperature, {}, was used for all mole fraction values".format(T_list[0]))
+        else:
+            raise ValueError("The number of provided temperatures and mole fraction sets are different")
+
+    # Extract rho dict
+    if "rhodict" in sys_dict:
+        logger.info("Accepted options for P vs. density curve")
+        opts["rhodict"] = sys_dict["rhodict"]
+
+    # Extract pressure optimization dict
+    if "mole fraction options" in sys_dict:
+        logger.info("Accepted options for mole fraction optimization")
+        zi_opts = sys_dict["mole fraction options"]
+    else:
+        zi_opts = {}
+
+    # Initialize Variables
+    l_c = len(eos.eos_dict['nui'])
+    if l_c != 2:
+        raise ValueError("Only binary systems are currently supported for flash calculations, {} were given.".format(l_c))
+    l_x = np.array(T_list).shape[0]
+    T_list = np.array(T_list)
+    P_list = np.array(P_list)
+    flagv_list = np.zeros(l_x)
+    flagl_list = np.zeros(l_x)
+    xi_list = np.zeros((l_x,l_c))
+    yi_list = np.zeros((l_x,l_c))
+    obj_list = np.zeros(l_x)
+
+    # Calculate xi and yi values
+    for i in range(l_x):
+        logger.info("T (K) {}, P (Pa) {}, Let's Begin!".format(T_list[i], P_list[i]))
+        try:
+            xi_list[i], flagl_list[i], yi_list[i], flagv_list[i], obj_list[i]  = calc.calc_flash(P_list[i], T_list[i], eos, **zi_opts)
+        except:
+            logger.warning("T (K) {}, P (Pa) {}, calculation did not produce a valid result.".format(T_list[i], P_list[i]))
+            logger.debug("Calculation Failed:", exc_info=True)
+            yi_list[i], xi_list[i] = [np.nan, np.nan]
+            flagl_list[i], flagv_list[i], obj_list[i] = [3, 3, np.nan]
+            continue
+        logger.info("xi: {}, yi: {}".format(xi_list[i], yi_list[i]))
+
+    logger.info("--- Calculation phase_yiT Complete ---")
+
+    return {"T":T_list,"yi":yi_list,"P":P_list,"xi":xi_list,"flagl":flagl_list,"flagv":flagv_list, "obj":obj_list}
+
+######################################################################
+
+
 #                                                                    #
 #                Saturation calc for 1 Component                     #
 #                                                                    #
@@ -286,7 +378,7 @@ def sat_props(eos, sys_dict):
     r"""
     Computes the saturated pressure, liquid, and gas density a one component phase at a temperature.
 
-    Input and system information is assessed first.  An output file is generated with T, :math:`P^{sat}`, :math:`\rho^{sat}_{l}, :math:`\rho^{sat}_{v}
+    Input and system information are assessed first.  An output file is generated with T, :math:`P^{sat}`, :math:`\rho^{sat}_{l}, :math:`\rho^{sat}_{v}
     
     Parameters
     ----------
@@ -351,10 +443,10 @@ def sat_props(eos, sys_dict):
 
     for i in range(l_x):
 
-        logger.info("T (K), xi: {} {}, Let's Begin!".format(str(T_list[i]), str(xi_list[i])))
+        logger.info("T (K), xi: {} {}, Let's Begin!".format(T_list[i], xi_list[i]))
         Psat[i], rholsat[i], rhovsat[i] = calc.calc_Psat(T_list[i], xi_list[i], eos, **opts)
         if np.isnan(Psat[i]):
-            logger.warning("T (K), xi: {} {}, calculation did not produce a valid result.".format(str(T_list[i]), str(xi_list[i])))
+            logger.warning("T (K), xi: {} {}, calculation did not produce a valid result.".format(T_list[i], xi_list[i]))
             logger.debug("Calculation Failed:", exc_info=True)
             Psat[i], rholsat[i], rhovsat[i] = [np.nan, np.nan, np.nan]
             continue
@@ -375,7 +467,7 @@ def liquid_properties(eos, sys_dict):
     r"""
     Computes the liquid density and chemical potential given a temperature, pressure, and liquid mole fractions.
 
-    Input and system information is assessed first. An output file is generated with P, T, xi, :math:`\rho_{l}, and :math:`\phi_{l}.
+    Input and system information are assessed first. An output file is generated with P, T, xi, :math:`\rho_{l}, and :math:`\phi_{l}.
     
     Parameters
     ----------
@@ -464,7 +556,7 @@ def vapor_properties(eos, sys_dict):
     r"""
     Computes the vapor density and chemical potential given a temperature, pressure, and vapor mole fractions.
 
-    Input and system information is assessed first. An output file is generated with P, T, yi, :math:`\rho_{v}, and :math:`\phi_{v}.
+    Input and system information are assessed first. An output file is generated with P, T, yi, :math:`\rho_{v}, and :math:`\phi_{v}.
     
     Parameters
     ----------
@@ -553,7 +645,7 @@ def solubility_parameter(eos, sys_dict):
     r"""
     Calculate the Hildebrand solubility parameter based on temperature and composition. This function is based on the method used in Zeng, Z., Y. Xi, and Y. Li "Calculation of Solubility Parameter Using Perturbed-Chain SAFT and Cubic-Plus-Association Equations of State" Ind. Eng. Chem. Res. 2008, 47, 9663–9669.
 
-    Input and system information is assessed first. An output file is generated with T, xi, :math:`\rho_{l}, and :math:`\detla.
+    Input and system information are assessed first. An output file is generated with T, xi, :math:`\rho_{l}, and :math:`\detla.
     
     Parameters
     ----------
