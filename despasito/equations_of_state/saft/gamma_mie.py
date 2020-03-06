@@ -275,7 +275,7 @@ class saft_gamma_mie(EOStemplate):
                     dAres[j] = self._calc_dAres_drhoi_wrap(T, np.exp(y_temp))
                 phi_tmp[i] = np.exp(Ares + rho/np.exp(y[i])*(dAres[0] - dAres[1]) / (2.0 * dy) - np.log(Z))
             else:
-                phi_tmp[i] = 0.0 # This should be zero, but to prevent the thermo calculation from complaining about diving by zero we give it a value, the mole fraction is zero though, so it'll go away.
+                phi_tmp[i] = 1e-32 # This should be zero, but to prevent the thermo calculation from complaining about diving by zero we give it a value, the mole fraction is zero though, so it'll go away.
         ##########################################
 
         # Reset composition dependent variables

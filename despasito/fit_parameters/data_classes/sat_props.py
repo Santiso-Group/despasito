@@ -173,11 +173,11 @@ class Data(ExpDataTemplate):
         # objective function
         obj_value = np.zeros(3)
         if "Psat" in self._thermodict:
-            obj_value[0] = np.sum((((phase_list[0] - self._thermodict['Psat']) / self._thermodict['Psat'])**2)*self.weights['Psat'])
+            obj_value[0] = np.nansum((((phase_list[0] - self._thermodict['Psat']) / self._thermodict['Psat'])**2)*self.weights['Psat'])
         if "rhol" in self._thermodict:
-            obj_value[1] = np.sum((((phase_list[1] - self._thermodict['rhol']) / self._thermodict['rhol'])**2)*self.weights['rhol'])
+            obj_value[1] = np.nansum((((phase_list[1] - self._thermodict['rhol']) / self._thermodict['rhol'])**2)*self.weights['rhol'])
         if "rhov" in self._thermodict:
-            obj_value[2] = np.sum((((phase_list[2] - self._thermodict['rhov']) / self._thermodict['rhov'])**2)*self.weights['rhov'])
+            obj_value[2] = np.nansum((((phase_list[2] - self._thermodict['rhov']) / self._thermodict['rhov'])**2)*self.weights['rhov'])
 
         logger.debug("Obj. breakdown for {}: Psat {}, rhol {}, rhov {}".format(self.name,obj_value[0],obj_value[1],obj_value[2]))
 
@@ -185,7 +185,7 @@ class Data(ExpDataTemplate):
             obj_total = np.nan
         else:
             obj_total = np.nansum(obj_value)
-
+      
         return obj_total
 
     def __str__(self):

@@ -17,9 +17,9 @@ from despasito.fit_parameters.interface import ExpDataTemplate
 class Data(ExpDataTemplate):
 
     r"""
-    Object for Temperature dependent VLE data. 
+    Object for flash calculation. 
 
-    This data could be evaluated with phase_xiT or phase_yiT. Most entries in the exp. dictionary are converted to attributes. 
+    This data could be evaluated with flash. Most entries in the exp. dictionary are converted to attributes. 
 
     Parameters
     ----------
@@ -29,7 +29,7 @@ class Data(ExpDataTemplate):
         * name : str, data type, in this case TLVE
         * calctype : str, Optional, default: 'phase_xiT', 'phase_yiT' is also acceptable
         * T : list, List of temperature values for calculation
-        * xi(yi) : list, List of liquid (or vapor) mole fractions used in phase_xiT (or phase_yiT) calculation.
+        * P : list, List of pressure values for calculation
         * weights : dict, A dictionary where each key is the header used in the exp. data file. The value associated with a header can be a list as long as the number of data points to multiply by the objective value associated with each point, or a float to multiply the objective value of this data set.
         * rhodict : dict, Optional, default: {"minrhofrac":(1.0 / 300000.0), "rhoinc":10.0, "vspacemax":1.0E-4}, Dictionary of options used in calculating pressure vs. mole fraction curves.
 
@@ -41,6 +41,8 @@ class Data(ExpDataTemplate):
         Thermodynamic calculation type, 'phase_yiT' is another acceptable option for this data type
     T : list
         List of temperature values for calculation
+    P : list
+        List of pressure values for calculation
     xi : list
         List of liquid mole fractions, sum(xi) should equal 1
     yi : list
@@ -92,10 +94,10 @@ class Data(ExpDataTemplate):
                         raise ValueError("Array of weights for '{}' values not equal to number of experimental values given.".format(key))
 
         if not any([x in self._thermodict.keys() for x in ['Plist', 'Tlist']]):
-            raise ImportError("Given TLVE data, values for P and T should have been provided.")
+            raise ImportError("Given flash data, values for P and T should have been provided.")
 
         if not all([x in self._thermodict.keys() for x in ['xilist', 'yilist']]):
-            raise ImportError("Given TLVE data, mole fractions should have been provided.")
+            raise ImportError("Given flash data, mole fractions should have been provided.")
 
         if not any(np.array([len(x) for key,x in self._thermodict.items()]) == len(self._thermodict['xilist'])):
             raise ValueError("T, P, yi, and xi are not all the same length.")
@@ -105,23 +107,14 @@ class Data(ExpDataTemplate):
             self.calctype = data_dict["calctype"]
         else:
             logger.warning("No calculation type has been provided.")
-            if self.xi:
-                self.calctype = "phase_xiT"
-                self._thermodict["calculation_type"] = "phasexiT"
-                logger.warning("Assume a calculation type of phase_xiT")
-            elif self.yi:
-                self.calctype = "phase_yiT"
-                self._thermodict["calculation_type"] = "phaseyiT"
-                logger.warning("Assume a calculation type of phase_yiT")
-            else:
-                raise ValueError("Unknown calculation instructions")
+            self._thermodict["calculation_type"] = "flash"
 
         for key in self._thermodict.keys():
             if key not in self.weights:
                 if key != 'calculation_type':
                     self.weights[key] = 1.0
 
-        logger.info("Data type 'TLVE' initiated with calctype, {}, and data types: {}.\nWeight data by: {}".format(self.calctype,", ".join(self._thermodict.keys()),self.weights))
+        logger.info("Data type 'flash' initiated with calctype, {}, and data types: {}.\nWeight data by: {}".format(self.calctype,", ".join(self._thermodict.keys()),self.weights))
 
         if 'rhodict' in data_dict:
             self._thermodict["rhodict"] = data_dict["rhodict"]
@@ -144,19 +137,11 @@ class Data(ExpDataTemplate):
             A list of the predicted thermodynamic values estimated from thermo calculation. This list can be composed of lists or floats
         """
 
-        if self.calctype == "phase_xiT":
-            try:
-                output_dict = thermo(eos, self._thermodict)
-                output = [output_dict['P'],output_dict["yi"]]
-            except:
-                raise ValueError("Calculation of calc_xT_phase failed")
-
-        elif self.calctype == "phase_yiT":
-            try:
-                output_dict = thermo(eos, self._thermodict)
-                output = [output_dict['P'],output_dict["xi"]]
-            except:
-                raise ValueError("Calculation of calc_yT_phase failed")
+        try:
+            output_dict = thermo(eos, self._thermodict)
+            output = [output_dict['xi'],output_dict["yi"]]
+        except:
+            raise ValueError("Calculation of flash failed")
 
         return output
 
@@ -182,22 +167,20 @@ class Data(ExpDataTemplate):
         phase_list = self._thermo_wrapper(eos)
         phase_list, len_cluster = ff.reformat_ouput(phase_list)
         phase_list = np.transpose(np.array(phase_list))
+
+        ncomp = np.shape(eos.eos_dict['nui'])[0]
    
         obj_value = np.zeros(2)
 
-        if "Plist" in self._thermodict:
-            obj_value[0] = np.nansum((((phase_list[0] - self._thermodict["Plist"]) / self._thermodict["Plist"])**2)*self.weights['Plist'])
+        if "yilist" in self._thermodict:
+            yi = np.transpose(self._thermodict["yilist"])
+            obj_value[0] = np.nansum((((phase_list[0:ncomp] - yi)/yi)**2)*self.weights['yilist'])
 
-        if self.calctype == "phase_xiT":
-            if "yilist" in self._thermodict:
-                yi = np.transpose(self._thermodict["yilist"])
-                obj_value[1] = np.nansum((((phase_list[1:] - yi)/yi)**2)*self.weights['yilist'])
-        elif self.calctype == "phase_yiT":
-            if "xilist" in self._thermodict:
-                xi = np.transpose(self._thermodict["xilist"])
-                obj_value[1] = np.nansum((((phase_list[1:] - xi)/xi)**2)*self.weights['xilist'])
+        if "xilist" in self._thermodict:
+            xi = np.transpose(self._thermodict["xilist"])
+            obj_value[1] = np.nansum((((phase_list[ncomp:] - xi)/xi)**2)*self.weights['xilist'])
 
-        logger.debug("Obj. breakdown for {}: P {}, zi {}".format(self.name,obj_value[0],obj_value[1]))
+        logger.debug("Obj. breakdown for {}: xi {}, yi {}".format(self.name,obj_value[0],obj_value[1]))
 
         if all(np.isnan(obj_value)):
             obj_total = np.nan
