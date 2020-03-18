@@ -154,7 +154,7 @@ class saft_gamma_mie(EOStemplate):
         self.eos_dict['xsk'] = xsk
         self.eos_dict['xskl'] = xskl
 
-    def P(self, rho, T, xi):
+    def pressure(self, rho, T, xi):
         """
         Compute pressure given system information.
        
@@ -173,7 +173,7 @@ class saft_gamma_mie(EOStemplate):
             Array of pressure values [Pa] associated with each density and so equal in length
         """
 
-        #logger = logging.getLogger(__name__)
+        logger = logging.getLogger(__name__)
 
         if len(xi) != len(self.eos_dict['nui']):
             raise ValueError("Number of components in mole fraction list doesn't match components in nui. Check bead_config.")
@@ -187,6 +187,9 @@ class saft_gamma_mie(EOStemplate):
             rho = np.array([rho])
         elif type(rho) != np.ndarray:
             rho = np.array(rho)
+
+        if np.all(rho > self.density_max(xi, T)):
+            logger.error("Density value, {}, should not all be greater than {}, or calc_Amono will fail in log calculation.".format(rho, self.density_max(xi, T)))
 
         rho = rho*constants.Nav
 
@@ -230,6 +233,9 @@ class saft_gamma_mie(EOStemplate):
 
         if len(rho.shape) > 1:
             rho = rho[0]
+
+        if np.all(rho > self.density_max(xi, T)):
+            raise ValueError("Density value, {}, should not all be greater than {}, or calc_Amono will fail in log calculation.".format(rho, self.density_max(xi, T)))
 
         if T != self.T:
             self._temp_dependent_variables(T)

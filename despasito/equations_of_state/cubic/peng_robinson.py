@@ -158,7 +158,7 @@ class cubic_peng_robinson(EOStemplate):
         self.aij = aij
         self.bij = np.sum(xi*self.bi)
 
-    def P(self, rho, T, xi):
+    def pressure(self, rho, T, xi):
         """
         Compute pressure given system information
        

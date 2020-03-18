@@ -14,6 +14,8 @@ from scipy import integrate
 import scipy.optimize as spo
 #import matplotlib.pyplot as plt
 import os
+import sys
+np.set_printoptions(threshold=sys.maxsize)
 
 from . import constants
 from . import solv_assoc
@@ -187,9 +189,9 @@ def calc_dkk(epsilon, sigma, T, l_r, l_a=6.0):
     x = np.array([-0.038772418, 0.038772418, -0.116084071, 0.116084071, -0.192697581, 0.192697581, -0.268152185, 0.268152185, -0.341994091, 0.341994091, -0.413779204, 0.413779204, -0.483075802, 0.483075802, -0.549467125, 0.549467125, -0.61255389, 0.61255389, -0.671956685, 0.671956685, -0.727318255, 0.727318255, -0.778305651, 0.778305651, -0.824612231, 0.824612231, -0.865959503, 0.865959503, -0.902098807, 0.902098807, -0.932812808, 0.932812808, -0.957916819, 0.957916819, -0.97725995, 0.97725995, -0.990726239, 0.990726239, -0.99823771, 0.99823771])
 
     r = 0.5*sigma*(x+1)
-    results = 0.5*sigma*np.sum(w*_dkk_int(r, Ce_kT, sigma, l_r, l_a))
+    dkk = 0.5*sigma*np.sum(w*_dkk_int(r, Ce_kT, sigma, l_r, l_a))
 
-    return results
+    return dkk
 
 def C(l_r, l_a):
     r""" 
@@ -268,9 +270,8 @@ def calc_interaction_matrices(beads, beadlibrary, crosslibrary={}):
             sigmakl[k, l] = (beadlibrary[beads[k]]["sigma"] + beadlibrary[beads[l]]["sigma"]) / 2.0
             l_rkl[k, l] = 3 + np.sqrt((beadlibrary[beads[k]]["l_r"] - 3.0) * (beadlibrary[beads[l]]["l_r"] - 3.0))
             l_akl[k, l] = 3 + np.sqrt((beadlibrary[beads[k]]["l_a"] - 3.0) * (beadlibrary[beads[l]]["l_a"] - 3.0))
-            epsilonkl[k, l] = np.sqrt(beadlibrary[beads[k]]["epsilon"] * beadlibrary[beads[l]]["epsilon"]) * \
-                              np.sqrt((beadlibrary[beads[k]]["sigma"] ** 3) * (beadlibrary[beads[l]]["sigma"] ** 3)) / (
-                                          sigmakl[k, l] ** 3)
+            epsilonkl[k, l] = np.sqrt(beadlibrary[beads[k]]["epsilon"] * beadlibrary[beads[l]]["epsilon"]) * np.sqrt((beadlibrary[beads[k]]["sigma"] ** 3) * (beadlibrary[beads[l]]["sigma"] ** 3)) / (sigmakl[k, l] ** 3)
+
     # testing if crosslibrary is empty ie not specified
     if crosslibrary:
         # find any cross terms in the cross term library
@@ -293,6 +294,12 @@ def calc_interaction_matrices(beads, beadlibrary, crosslibrary={}):
                     if "l_r" in crosslibrary[beads[a]][beads[b]]:
                         l_rkl[a, b] = crosslibrary[beads[a]][beads[b]]["l_r"]
                         l_rkl[b, a] = l_rkl[a, b]
+                    if "l_a" in crosslibrary[beads[a]][beads[b]]:
+                        l_akl[a, b] = crosslibrary[beads[a]][beads[b]]["l_a"]
+                        l_akl[b, a] = l_akl[a, b]
+                    if "sigma" in crosslibrary[beads[a]][beads[b]]:
+                        sigmakl[a, b] = crosslibrary[beads[a]][beads[b]]["sigma"]
+                        sigmakl[b, a] = sigmakl[a, b]
 
     Ckl = C(l_rkl, l_akl)
 
@@ -613,34 +620,16 @@ def calc_Amono(rho, xi, nui, Cmol2seg, xsk, xskl, dkk, T, epsilonkl, sigmakl, dk
 
     ##### compute AHS (eq. 16) #####
 
-    # initialize variables for AHS
-    eta = np.zeros((np.size(rho), 4))
-
-    # compute eta, eq. 14
-    for m in range(4):
-        eta[:, m] = rhos * (np.sum(xsk * (dkk**m)) * (np.pi / 6.0))
-
     if rho.any() == 0.0:
         logger.warning("rho: {}".format(rho))
-    # compute AHS, eq. 16
-    tmp1 = np.log(1.0 - eta[:, 3]) * (((eta[:, 2]**3) / (eta[:, 3]**2)) - eta[:, 0])
-    tmp2 = (3.0 * eta[:, 1] * eta[:, 2] / (1 - eta[:, 3]))
-    tmp3 = ((eta[:, 2]**3) / (eta[:, 3] * ((1.0 - eta[:, 3])**2)))
-    AHS = (6.0 / (np.pi * rho)) * (tmp1 + tmp2 + tmp3)
 
-    ##### compute a1kl, eq. 19 #####
+    ###### New Variable ######
 
     # calc zetax eq. 22
     zetax = rhos * ((np.pi / 6.0) * np.sum(xskl * (dkl**3)))
 
-    # compute components of eq. 19
-    a1kl = calc_a1ii(rho, Cmol2seg, dkl, l_akl, l_rkl, x0kl, epsilonkl, zetax)
-
-    ##### compute a2kl, eq. 30 #####
-
-    # initialize variables for a2kl
-    # a2kl = np.zeros((nbeads,nbeads))
-    # alphakl = np.zeros((nbeads,nbeads))
+    # compute zetaxstar eq. 35
+    zetaxstar = rhos * ((np.pi / 6.0) * np.sum(xskl * (sigmakl**3)))
 
     # compute KHS(rho), eq. 31
     KHS = ((1.0 - zetax)**4) / (1.0 + (4.0 * zetax) + (4.0 * (zetax**2)) - (4.0 * (zetax**3)) + (zetax**4))
@@ -648,14 +637,35 @@ def calc_Amono(rho, xi, nui, Cmol2seg, xsk, xskl, dkk, T, epsilonkl, sigmakl, dk
     # compute alphakl eq. 33
     alphakl = Ckl * ((1.0 / (l_akl - 3.0)) - (1.0 / (l_rkl - 3.0)))
 
-    # compute zetaxstar eq. 35
-    zetaxstar = rhos * ((np.pi / 6.0) * np.sum(xskl * (sigmakl**3)))
+    ####### compute AHS, eq. 16 ##########
+    # initialize variables for AHS
+    eta = np.zeros((np.size(rho), 4))
+
+    # compute eta, eq. 14
+    for m in range(4):
+        eta[:, m] = rhos * (np.sum(xsk * (dkk**m)) * (np.pi / 6.0))
+    tmp1 = np.log(1.0 - eta[:, 3]) * (((eta[:, 2]**3) / (eta[:, 3]**2)) - eta[:, 0])
+    tmp2 = (3.0 * eta[:, 1] * eta[:, 2] / (1 - eta[:, 3]))
+    tmp3 = ((eta[:, 2]**3) / (eta[:, 3] * ((1.0 - eta[:, 3])**2)))
+    AHS = (6.0 / (np.pi * rho)) * (tmp1 + tmp2 + tmp3)
+
+    ##### compute A1 #####
+
+    # compute components of eq. 19
+    a1kl = calc_a1ii(rho, Cmol2seg, dkl, l_akl, l_rkl, x0kl, epsilonkl, zetax)
+
+    # eq. 18 
+    a1 = np.einsum("ijk,jk->i", a1kl, xskl)
+    A1 = (Cmol2seg / T) * a1 # Units of K
+
+    ##### compute A2 #####
+
+    ## compute a2kl, eq. 30 #####
 
     # compute f1, f2, and f3 for eq. 32
     fmlist123 = calc_fm(alphakl, np.array([1, 2, 3]))
 
-    chikl = np.einsum("i,jk", zetaxstar, fmlist123[0]) + np.einsum("i,jk", zetaxstar**5, fmlist123[1]) + np.einsum(
-        "i,jk", zetaxstar**8, fmlist123[2])
+    chikl = np.einsum("i,jk", zetaxstar, fmlist123[0]) + np.einsum("i,jk", zetaxstar**5, fmlist123[1]) + np.einsum("i,jk", zetaxstar**8, fmlist123[2])
 
     a1s_2la = calc_a1s(rho, Cmol2seg, 2.0 * l_akl, zetax, epsilonkl, dkl)
     a1s_2lr = calc_a1s(rho, Cmol2seg, 2.0 * l_rkl, zetax, epsilonkl, dkl)
@@ -664,27 +674,26 @@ def calc_Amono(rho, xi, nui, Cmol2seg, xsk, xskl, dkk, T, epsilonkl, sigmakl, dk
     B_2lr = calc_Bkl(rho, 2.0 * l_rkl, Cmol2seg, dkl, epsilonkl, x0kl, zetax)
     B_lalr = calc_Bkl(rho, l_akl + l_rkl, Cmol2seg, dkl, epsilonkl, x0kl, zetax)
 
-    a2kl = (x0kl**(2.0 * l_akl)) * (a1s_2la + B_2la) - ((2.0 * x0kl**(l_akl + l_rkl)) *
-                                                        (a1s_lalr + B_lalr)) + ((x0kl**(2.0 * l_rkl)) * (a1s_2lr + B_2lr))
+
+    a2kl = (x0kl**(2.0 * l_akl)) * (a1s_2la + B_2la) - ((2.0 * x0kl**(l_akl + l_rkl)) * (a1s_lalr + B_lalr)) + ((x0kl**(2.0 * l_rkl)) * (a1s_2lr + B_2lr))
     a2kl *= (1.0 + chikl) * epsilonkl * (Ckl**2)  # *(KHS/2.0)
     a2kl = np.einsum("i,ijk->ijk", KHS / 2.0, a2kl)
 
-    ##### compute a3kl #####
+    # eq. 29
+    a2 = np.einsum("ijk,jk->i", a2kl, xskl)
+    A2 = (Cmol2seg / (T**2)) * a2
+
+    ##### compute A3 #####
+
+    # compute a3kl
     fmlist456 = calc_fm(alphakl, np.array([4, 5, 6]))
 
     a3kl = np.einsum("i,jk", zetaxstar, -(epsilonkl**3) * fmlist456[0]) * np.exp(
         np.einsum("i,jk", zetaxstar, fmlist456[1]) + np.einsum("i,jk", zetaxstar**2, fmlist456[2]))
     # a3kl=-(epsilonkl**3)*fmlist456[0]*zetaxstar*np.exp((fmlist456[1]*zetaxstar)+(fmlist456[2]*(zetaxstar**2)))
 
-    # compute a1, a2, a3 from 18, 29, and 37 respectively
-    a1 = np.einsum("ijk,jk->i", a1kl, xskl)
-    a2 = np.einsum("ijk,jk->i", a2kl, xskl)
+    # eq. 37
     a3 = np.einsum("ijk,jk->i", a3kl, xskl)
-
-    # compute A1, A2, and A3
-    # note that a1, a2, and a3 have units of K, K^2, and K^3 respectively
-    A1 = (Cmol2seg / T) * a1
-    A2 = (Cmol2seg / (T**2)) * a2
     A3 = (Cmol2seg / (T**3)) * a3
 
     return AHS, A1, A2, A3, zetax, zetaxstar, KHS
@@ -780,58 +789,6 @@ def calc_da1iidrhos(rho, Cmol2seg, dii_eff, l_aii_avg, l_rii_avg, x0ii, epsiloni
     da1iidrhos = (Cii * (((x0ii**l_aii_avg) * (das1_drhos_a + dB_drhos_a)) - ((x0ii**l_rii_avg) * (das1_drhos_r + dB_drhos_r))))
 
     return da1iidrhos
-
-def calc_a2ii_1pchi(rho, Cmol2seg, epsilonii_avg, dii_eff, x0ii, l_rii_avg, l_aii_avg, zetax):
-
-    r""" 
-    Calculate the term, :math:`\frac{\bar{a}_{2,ii}}{1+\bar{\chi}_{ii}}`.
-
-    Used in the calculation of the second-order term from the macroscopic compressibility approximation based on the fluctuation term of the Sutherland potential.
-
-    Parameters
-    ----------
-    rho : numpy.ndarray
-        Number density of system [molecules/m^3]
-    Cmol2seg : float
-        Conversion factor from from molecular number density, :math:`\rho`, to segment (i.e. group) number density, :math:`\rho_S`. Shown in eq. 13
-    epsilonii_avg : numpy.ndarray
-        Average bead (i.e. group or segment) potential well depth in component (i.e. molecule) i.
-    dii_eff : numpy.ndarray
-        Effective hard sphere diameter of the beads (i.e. groups or segments) in component (i.e. molecule) i.
-    x0ii : numpy.ndarray
-        Matrix of sigmaii_avg/dii_eff
-    l_rii_avg : numpy.ndarray
-        Average bead (i.e. group or segment) attractive exponent in component (i.e. molecule) i.
-    l_aii_avg : numpy.ndarray
-        Average bead (i.e. group or segment) attractive exponent in component (i.e. molecule) i.
-    zetax : numpy.ndarray 
-        Matrix of hypothetical packing fraction based on hard sphere diameter for groups (k,l)
-
-    Returns
-    -------
-    a2ii_1pchi : nump.ndarray
-        Term used in the calculation of the second-order term from the macroscopic compressibility
-        
-    """
-
-    #logger = logging.getLogger(__name__)
-
-    KHS = ((1.0 - zetax)**4) / (1.0 + (4.0 * zetax) + (4.0 * (zetax**2)) - (4.0 * (zetax**3)) + (zetax**4))
-    Cii = C(l_rii_avg, l_aii_avg)
-
-    a1sii_2l_aii_avg = calc_a1s(rho, Cmol2seg, 2.0 * l_aii_avg, zetax, epsilonii_avg, dii_eff)
-    a1sii_2l_rii_avg = calc_a1s(rho, Cmol2seg, 2.0 * l_rii_avg, zetax, epsilonii_avg, dii_eff)
-    a1sii_l_rii_avgl_aii_avg = calc_a1s(rho, Cmol2seg, l_aii_avg + l_rii_avg, zetax, epsilonii_avg, dii_eff)
-
-    Bii_2l_aii_avg = calc_Bkl(rho, 2.0 * l_aii_avg, Cmol2seg, dii_eff, epsilonii_avg, x0ii, zetax)
-    Bii_2l_rii_avg = calc_Bkl(rho, 2.0 * l_rii_avg, Cmol2seg, dii_eff, epsilonii_avg, x0ii, zetax)
-    Bii_l_aii_avgl_rii_avg = calc_Bkl(rho, l_aii_avg + l_rii_avg, Cmol2seg, dii_eff, epsilonii_avg, x0ii, zetax)
-
-    a2ii_1pchi = 0.5 * epsilonii_avg * (Cii**2) * ((x0ii**(2.0 * l_aii_avg)) * (a1sii_2l_aii_avg + Bii_2l_aii_avg) - (2.0 * (x0ii**(l_aii_avg + l_rii_avg))) * (a1sii_l_rii_avgl_aii_avg + Bii_l_aii_avgl_rii_avg) +
- (x0ii**(2.0 * l_rii_avg)) * (a1sii_2l_rii_avg + Bii_2l_rii_avg))
-
-    a2ii_1pchi = np.einsum("i,ij->ij", KHS, a2ii_1pchi)
-    return a2ii_1pchi
 
 def calc_da2ii_1pchi_drhos(rho, Cmol2seg, epsilonii_avg, dii_eff, x0ii, l_rii_avg, l_aii_avg, zetax):
 
@@ -1034,8 +991,7 @@ def calc_Achain(rho, Cmol2seg, xi, T, nui, sigmakl, epsilonkl, dkl, xskl, l_rkl,
 
     gammacii = np.zeros_like(gdHS)
     for i in range(ncomp):
-        gammacii[:, i] = phi7[0] * (-np.tanh(phi7[1] * (phi7[2] - alphaii[i])) +
-                                    1.0) * zetaxstar * theta[i] * np.exp(phi7[3] * zetaxstar + phi7[4] * (zetaxstar**2))
+        gammacii[:, i] = phi7[0] * (-np.tanh(phi7[1] * (phi7[2] - alphaii[i])) + 1.0) * zetaxstar * theta[i] * np.exp(phi7[3] * zetaxstar + phi7[4] * (zetaxstar**2))
 
     da2iidrhos = calc_da2ii_1pchi_drhos(rho, Cmol2seg, epsilonii_avg, dii_eff, x0ii, l_rii_avg, l_aii_avg, zetax)
 
@@ -1059,9 +1015,8 @@ def calc_Achain(rho, Cmol2seg, xi, T, nui, sigmakl, epsilonkl, dkl, xskl, l_rkl,
     #g2=np.einsum("i,ij->ij",1.0+gammacii,g2MCA)
 
     gii = gdHS * np.exp((epsilonii_avg * g1 / (kT * gdHS)) + (((epsilonii_avg / kT)**2) * g2 / gdHS))
-    tmp = [(epsilonii_avg * g1 / (kT * gdHS)), (((epsilonii_avg / kT)**2) * g2 / gdHS)]
+
     Achain = 0.0
-    tmp_A = [0, 0]
     for i in range(ncomp):
         beadsum = -1.0
 
@@ -1069,8 +1024,9 @@ def calc_Achain(rho, Cmol2seg, xi, T, nui, sigmakl, epsilonkl, dkl, xskl, l_rkl,
             beadsum += (nui[i, k] * beadlibrary[beads[k]]["Vks"] * beadlibrary[beads[k]]["Sk"])
 
         Achain -= xi[i] * beadsum * np.log(gii[:, i])
-        tmp_A[0] -= tmp[0][:, i]
-        tmp_A[1] -= tmp[1][:, i]
+
+    if np.any(np.isnan(Achain)):
+        logger.error("Some Helmholtz values are NaN, check energy parameters.")
 
     #return Achain,sigmaii_avg,epsilonii_avg, np.array(tmp_A)
     return Achain, sigmaii_avg, epsilonii_avg
@@ -1697,6 +1653,7 @@ def calc_Ares(*, rho, xi, T, beads, beadlibrary, massi, nui, Cmol2seg, xsk, xskl
         raise ValueError("Mole fractions cannot be less than zero.")
 
     AHS, A1, A2, A3, zetax, zetaxstar, KHS = calc_Amono(rho, xi, nui, Cmol2seg, xsk, xskl, dkk, T, epsilonkl, sigmakl, dkl, l_akl, l_rkl, Ckl, x0kl)
+
     Achain, sigmaii_avg, epsilonii_avg = calc_Achain(rho, Cmol2seg, xi, T, nui, sigmakl, epsilonkl, dkl, xskl, l_rkl, l_akl, beads, beadlibrary, zetax, zetaxstar, KHS)
 
     indices = assoc_site_indices(xi, nui, nk)

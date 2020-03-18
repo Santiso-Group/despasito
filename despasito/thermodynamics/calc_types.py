@@ -137,7 +137,7 @@ def phase_xiT(eos, sys_dict):
             logger.debug("Calculation Failed:", exc_info=True)
             P_list[i], yi_list[i] = [np.nan, np.nan]
             flagl_list[i], flagv_list[i], obj_list[i] = [3, 3, np.nan]
-            continue
+
         logger.info("P (Pa), yi: {} {}".format(P_list[i], yi_list[i]))
 
     logger.info("--- Calculation phase_xiT Complete ---")
