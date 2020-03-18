@@ -20,7 +20,7 @@ class EOStemplate(ABC):
     """
 
     @abstractmethod
-    def P(self, rho, T, xi):
+    def pressure(self, rho, T, xi):
         """
         Output pressure value predicted by EOS.
         """
