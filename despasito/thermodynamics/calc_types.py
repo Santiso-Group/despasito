@@ -5,6 +5,7 @@
     
 """
 
+import multiprocessing
 import numpy as np
 import logging
 
@@ -47,6 +48,11 @@ def phase_xiT(eos, sys_dict):
     if 'xilist' in sys_dict:
         xi_list = np.array(sys_dict['xilist'],float)
         logger.info("Using xilist")
+
+    if 'ncores' in sys_dict:
+        ncores = sys_dict['ncores']
+    else:
+        ncores = 1
 
     variables = list(locals().keys())
     if all([key not in variables for key in ["xi_list", "T_list"]]):
@@ -109,40 +115,47 @@ def phase_xiT(eos, sys_dict):
         opts["zi_opts"] = sys_dict["mole fraction options"]
 
     ## Calculate P and yi
-    l_x, l_c = np.array(xi_list).shape
-    T_list = np.array(T_list)
-    P_list = np.zeros(l_x)
-    flagv_list = np.zeros(l_x)
-    flagl_list = np.zeros(l_x)
-    yi_list = np.zeros((l_x,l_c))
-    obj_list = np.zeros(l_x)
-    for i in range(l_x):
-        optsi = opts
-        if "Pguess" in opts:
-            optsi["Pguess"] = optsi["Pguess"][i]
 
-        logger.info("T (K), xi: {} {}, Let's Begin!".format(T_list[i], xi_list[i]))
-        try:
-            if len(xi_list[i][xi_list[i]!=0.])==1:
-                if "rhodict" in optsi:
-                    opt_tmp = {"rhodict": optsi["rhodict"]}
-                else:
-                    opt_tmp = {}
-                P_list[i], _, _ = calc.calc_Psat(T_list[i], xi_list[i], eos, **opt_tmp)
-                yi_list[i], flagv_list[i], flagl_list[i], obj_list[i] = xi_list[i], 0, 1, 0.0 
-            else:
-                P_list[i], yi_list[i], flagv_list[i], flagl_list[i], obj_list[i] = calc.calc_xT_phase(xi_list[i], T_list[i], eos, **optsi)
-        except:
-            logger.warning("T (K), xi: {} {}, calculation did not produce a valid result.".format(T_list[i], xi_list[i]))
-            logger.debug("Calculation Failed:", exc_info=True)
-            P_list[i], yi_list[i] = [np.nan, np.nan]
-            flagl_list[i], flagv_list[i], obj_list[i] = [3, 3, np.nan]
-            continue
-        logger.info("P (Pa), yi: {} {}".format(P_list[i], yi_list[i]))
+    pool = multiprocessing.Pool(ncores)
+    if 'Pguess' in sys_dict:
+        inputs = [(T_list[i], xi_list[i], eos, opts, Pguess[i]) for i in range(len(T_list))]
+    else:
+        inputs = [(T_list[i], xi_list[i], eos, opts) for i in range(len(T_list))]
+    P_list, yi_list, flagv_list, flagl_list, obj_list = zip(*pool.map(_phase_xiT_wrapper, inputs))
 
     logger.info("--- Calculation phase_xiT Complete ---")
 
     return {"T":T_list,"xi":xi_list,"P":P_list,"yi":yi_list,"flagl":flagl_list,"flagv":flagv_list,"obj":obj_list}
+
+def _phase_xiT_wrapper(args):
+
+    logger = logging.getLogger(__name__)
+
+    if len(args) == 4:
+        T, xi, eos, opts = args
+    elif len(args) == 5:
+        T, xi, eos, opts, Pguess = args
+        opts["Pguess"] = Pguess
+
+    logger.info("T (K), xi: {} {}, Let's Begin!".format(T, xi))
+    try:
+        if len(xi[xi!=0.])==1:
+            if "rhodict" in opts:
+                opt_tmp = {"rhodict": opts["rhodict"]}
+            else:
+                opt_tmp = {}
+            P, _, _ = calc.calc_Psat(T, xi, eos, **opt_tmp)
+            yi, flagv, flagl, obj = xi, 0, 1, 0.0
+        else:
+            P, yi, flagv, flagl, obj = calc.calc_xT_phase(xi, T, eos, **opts)
+    except:
+        logger.warning("T (K), xi: {} {}, calculation did not produce a valid result.".format(T, xi))
+        logger.debug("Calculation Failed:", exc_info=True)
+        P, yi, flagl, flagv, obj = [np.nan, np.nan, 3, 3, np.nan]
+
+    logger.info("P (Pa), yi: {} {}".format(P, yi)) 
+
+    return P, yi, flagv, flagl, obj
 
 
 ######################################################################

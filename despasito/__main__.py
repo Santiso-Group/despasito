@@ -45,19 +45,13 @@ logging.info("Input args: {}".format(args))
 logging.info("JIT compilation: {}".format(args.jit))
 logging.info("Use Cython: {}".format(args.cython))
 
-# Threads
-# if args.threads != None:
-#     threadcount = args.threads
-# else:
-#     threadcount = 1
-
 # Run program
 if args.input:
     kwargs = {"filename":args.input}
 else:
     kwargs = {}
 #kwargs["logFile"] = args.logFile
-kwargs["threads"] = args.threads
+kwargs["ncores"] = args.ncores
 kwargs["path"] = args.path
 kwargs["jit" ] = args.jit
 kwargs["cython" ] = args.cython
