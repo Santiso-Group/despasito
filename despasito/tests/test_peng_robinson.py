@@ -31,9 +31,9 @@ def test_PR_coefficients(xi=xi,beads=beads,nui=nui,beadlibrary=beadlibrary):  # 
             eos_class.bi==pytest.approx(np.array([7.00758212e-05, 6.34118233e-05]),abs=1e-9) and \
             eos_class._kappa==pytest.approx(np.array([0.81854211, 0.70357958]),abs=1e-4))
 
-def test_peng_robinson_class_assoc_P(xi=xi,T=T,eos=eos,rho=rho):
+def test_peng_robinson_pressure(xi=xi,T=T,eos=eos,rho=rho):
 #   """Test ability to predict P with association sites"""
-    P = eos.P(rho,T,xi)[0]
+    P = eos.pressure(rho,T,xi)[0]
     assert P == pytest.approx(69904905.698,abs=1e-1)
 
 def test_peng_robinson_class_assoc_mu(P=P,xi=xi,T=T,eos=eos,rho=rho):

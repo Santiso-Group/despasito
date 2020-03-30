@@ -917,7 +917,7 @@ def calc_Achain(rho, Cmol2seg, xi, T, nui, sigmakl, epsilonkl, dkl, xskl, l_rkl,
 
     """
 
-    #logger = logging.getLogger(__name__)
+    logger = logging.getLogger(__name__)
 
     #initialize values
     ngroups = len(beads)
