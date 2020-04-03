@@ -9,6 +9,8 @@ from despasito.thermodynamics import thermo
 from despasito.fit_parameters import fit_funcs as ff
 from despasito.fit_parameters.interface import ExpDataTemplate
 
+logger = logging.getLogger(__name__)
+
 ##################################################################
 #                                                                #
 #                              TLVE                              #
@@ -51,8 +53,6 @@ class Data(ExpDataTemplate):
     """
 
     def __init__(self, data_dict):
-
-        logger = logging.getLogger(__name__)
 
         # Self interaction parameters
         self.name = data_dict["name"]
@@ -160,8 +160,6 @@ class Data(ExpDataTemplate):
         obj_val : float
             A value for the objective function
         """
-
-        logger = logging.getLogger(__name__)
 
         # objective function
         phase_list = self._thermo_wrapper(eos)

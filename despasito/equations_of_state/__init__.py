@@ -14,6 +14,8 @@ class jit_stat:
 class cython_stat:
     disable_cython = True
 
+logger = logging.getLogger(__name__)
+
 def eos(**kwargs):
     """
     Interface between the user and our library of equations of state (EOS).
@@ -33,7 +35,6 @@ def eos(**kwargs):
             An instance of the defined EOS class to be used in thermodynamic computations.
     """
 
-    logger = logging.getLogger(__name__)
 
     if "eos" not in kwargs:
         eos_type = "saft.gamma_mie"

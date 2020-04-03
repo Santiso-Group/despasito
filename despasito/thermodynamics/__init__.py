@@ -11,6 +11,8 @@ from inspect import getmembers, isfunction
 
 from . import calc_types
 
+#logger = logging.getLogger(__name__)
+
 def thermo(eos, thermo_dict):
     """
     Use factory design pattern to search for matching calctype with those supported in this module.
@@ -30,8 +32,6 @@ def thermo(eos, thermo_dict):
         output_dict : dict
             Output of dictionary containing given and calculated values
     """
-
-    #logger = logging.getLogger(__name__)
 
     try:
         calctype = thermo_dict['calculation_type']

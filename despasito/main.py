@@ -14,6 +14,8 @@ from .equations_of_state import eos as eos_mod
 from .thermodynamics import thermo
 from .fit_parameters import fit
 
+logger = logging.getLogger(__name__)
+
 def commandline_parser():
     ## Define parser functions and arguments
     parser = argparse.ArgumentParser(description="DESPASITO: Determining Equilibrium State and Parametrization: Application for SAFT, Intended for Thermodynamic Output.  This is an open-source application for thermodynamic calculations and parameter fitting for the Statistical Associating Fluid Theory (SAFT) EOS and SAFT-𝛾-Mie coarse-grained simulations.")
@@ -32,11 +34,10 @@ def run(filename="input.json", path=".", **args):
     """ Main function for running despasito calculations. All inputs and settings should be in the supplied JSON file(s).
     """
 
-    logger = logging.getLogger(__name__)
-    
     #read input file (need to add command line specification)
     logger.info("Begin processing input file: %s" % filename)
     eos_dict, thermo_dict, output_file = read_input.extract_calc_data(filename, path, **args)
+
     eos_dict['jit'] = args['jit']
     eos_dict['cython'] = args['cython']
 

@@ -10,7 +10,7 @@ import logging
 
 from despasito.equations_of_state.interface import EOStemplate
 
-
+logger = logging.getLogger(__name__)
 
 class cubic_peng_robinson(EOStemplate):
 
@@ -46,7 +46,6 @@ class cubic_peng_robinson(EOStemplate):
 
     def __init__(self, kwargs):
 
-        logger = logging.getLogger(__name__)
 
         # Self interaction parameters
         self._beads = kwargs['beads']
@@ -177,8 +176,6 @@ class cubic_peng_robinson(EOStemplate):
             Array of pressure values [Pa] associated with each density and so equal in length
         """
 
-        #logger = logging.getLogger(__name__)
-
         if T != self.T:
             self.T = T
             self._calc_temp_dependent_parameters(T)
@@ -215,8 +212,6 @@ class cubic_peng_robinson(EOStemplate):
         mui : numpy.ndarray
             :math:`\mu_i`, Array of chemical potential values for each component
         """
-
-        #logger = logging.getLogger(__name__)
 
         if T != self.T:
             self.T = T
@@ -265,8 +260,6 @@ class cubic_peng_robinson(EOStemplate):
             Maximum molar density [mol/m^3]
         """
 
-        #logger = logging.getLogger(__name__)
-
         if T != self.T:
             self.T = T
             self._calc_temp_dependent_parameters(T)
@@ -295,8 +288,6 @@ class cubic_peng_robinson(EOStemplate):
         param_initial_guess : numpy.ndarray,
             An initial guess for parameter, it will be optimized throughout the process.
         """
-        
-        #logger = logging.getLogger(__name__)
         
         param_types = ["ai", "bi", "kij"]
         
@@ -349,8 +340,6 @@ class cubic_peng_robinson(EOStemplate):
             A screened and possibly corrected low and a high value for the parameter, param_name
         """
         
-        #logger = logging.getLogger(__name__)
-        
         param_types = {"ai":[0., 50.], "bi":[0., 1e-3], "kij":[-1.,1.]}
         
         if len(bead_names) > 2:
@@ -392,8 +381,6 @@ class cubic_peng_robinson(EOStemplate):
         param_value : float
             Value of parameter
         """
-
-        #logger = logging.getLogger(__name__)
 
         param_types = ["ai", "bi", "kij"]
 

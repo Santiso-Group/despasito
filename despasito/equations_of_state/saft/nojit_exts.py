@@ -11,6 +11,8 @@ import logging
 
 from . import constants
 
+logger = logging.getLogger(__name__)
+
 #@profile
 def calc_a1s(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
     r""" 
@@ -38,8 +40,6 @@ def calc_a1s(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
     a1s : numpy.ndarray
         Matrix used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy, size is the Ngroups by Ngroups
     """
-
-    #logger = logging.getLogger(__name__)
 
     nbeads = np.size(dkl, axis=0)
     zetax_pow = np.zeros((np.size(rho), 4))
@@ -100,8 +100,6 @@ def calc_da1sii_drhos(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
     da1s_drhos : numpy.ndarray
         Matrix used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy, size is the Ngroups by Ngroups
     """
-
-    #logger = logging.getLogger(__name__)
 
     nbeads = np.size(dkl, axis=0)
     zetax_pow = np.zeros((np.size(rho), 4))
@@ -170,8 +168,6 @@ def calc_Xika(indices, rho, xi, nui, nk, Fklab, Kklab, Iij, maxiter=500, tol=1e-
     Xika : numpy.ndarray
         NoteHere
     """
-
-    #logger = logging.getLogger(__name__)
 
     nbeads    = nui.shape[1]
     ncomp     = np.size(xi)

@@ -20,6 +20,8 @@ np.set_printoptions(threshold=sys.maxsize)
 from . import constants
 from . import solv_assoc
 
+logger = logging.getLogger(__name__)
+
 # Check for Numba
 if 'NUMBA_DISABLE_JIT' in os.environ:
     disable_jit = os.environ['NUMBA_DISABLE_JIT']
@@ -37,7 +39,6 @@ from .. import cython_stat
 disable_cython = cython_stat.disable_cython
 if not disable_cython:
     if not disable_jit:
-        logger = logging.getLogger(__name__)
         logger.warning("Flag for Numba and Cython were given. Using Numba")
     else:
 #        from .nojit_exts import calc_da1sii_drhos
@@ -73,7 +74,6 @@ def calc_Aideal(xi, rho, massi, T):
         Helmholtz energy of ideal gas for each density given.
     """
 
-    #logger = logging.getLogger(__name__)
 
     if any(np.isnan(rho)):
         raise ValueError("NaN was given as a value of density, rho") 
@@ -138,8 +138,6 @@ def _dkk_int(r, Ce_kT, sigma, l_r, l_a):
         Integrand used to calculate the hard sphere diameter
     """
 
-    #logger = logging.getLogger(__name__)
-
     dkk_int_tmp = 1.0 - np.exp(-Ce_kT * (np.power(sigma / r, l_r) - np.power(sigma / r, l_a)))
 
     return dkk_int_tmp
@@ -167,8 +165,6 @@ def calc_dkk(epsilon, sigma, T, l_r, l_a=6.0):
     dkk : float
         Hard sphere diameter of a group [Å] 
     """
-
-    #logger = logging.getLogger(__name__)
 
     Ce_kT = C(l_r, l_a) * epsilon / T
     # calculate integral of dkk_int from 0.0 to sigma
@@ -256,8 +252,6 @@ def calc_interaction_matrices(beads, beadlibrary, crosslibrary={}):
         Matrix of Mie potential prefactors for k,l groups
     """
 
-    #logger = logging.getLogger(__name__)
-
     nbeads = len(beads)
     sigmakl = np.zeros((nbeads, nbeads))
     l_rkl = np.zeros((nbeads, nbeads))
@@ -344,8 +338,6 @@ def calc_composition_dependent_variables(xi, nui, beads, beadlibrary):
         Matrix of mole fractions of bead (i.e. segment or group) k multiplied by bead l
     """
 
-    #logger = logging.getLogger(__name__)
-
     # compute Conversion factor
     Cmol2seg = 0.0
     for i in range(np.size(xi)):
@@ -408,8 +400,6 @@ def calc_hard_sphere_matricies(beads, beadlibrary, sigmakl, T):
         Matrix of sigmakl/dkl, sigmakl is the Mie radius for groups (k,l)
     """
 
-    #logger = logging.getLogger(__name__)
-
     nbeads = len(beads)
     dkk = np.zeros(np.size(beads))
     for i in range(np.size(beads)):
@@ -453,8 +443,6 @@ def calc_Bkl(rho, l_kl, Cmol2seg, dkl, epsilonkl, x0kl, zetax):
         Matrix used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy, size is rho x l_kl.shape
 
     """
-
-    #logger = logging.getLogger(__name__)
 
     rhos = Cmol2seg * rho
 
@@ -500,8 +488,6 @@ def calc_dBkl_drhos(l_kl, dkl, epsilonkl, x0kl, zetax):
         Matrix used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy, size is rho x l_kl.shape
 
     """
-    # NoteHere
-    #logger = logging.getLogger(__name__)
 
     # compute Ikl(l_kl), eq. 23
     Ikl = (1.0 - (x0kl**(3.0 - l_kl))) / (l_kl - 3.0)
@@ -535,8 +521,6 @@ def calc_fm(alphakl, mlist):
     fmlist : numpy.ndarray
         List of coefficients used to compute the correction term for :math:`A_{2}` which is related to the fluctuations of attractive energy.
     """
-
-    logger = logging.getLogger(__name__)
 
     if np.size(np.shape(alphakl)) == 2:
         fmlist = np.zeros((np.size(mlist), np.size(alphakl, axis=0), np.size(alphakl, axis=0)))
@@ -612,8 +596,6 @@ def calc_Amono(rho, xi, nui, Cmol2seg, xsk, xskl, dkk, T, epsilonkl, sigmakl, dk
     KHS : numpy.ndarray
         (length of densities) isothermal compressibility of system with packing fraction zetax
     """
-
-    logger = logging.getLogger(__name__)
 
     # initialize variables
     rhos = rho * Cmol2seg
@@ -735,8 +717,6 @@ def calc_a1ii(rho, Cmol2seg, dii_eff, l_aii_avg, l_rii_avg, x0ii, epsilonii_avg,
         Matrix used in the calculation of the radial distribution function of a hypothetical one-fluid Mie system.
     """
 
-    #logger = logging.getLogger(__name__)
-
     Cii = C(l_rii_avg, l_aii_avg)
 
     Bii_r = calc_Bkl(rho, l_rii_avg, Cmol2seg, dii_eff, epsilonii_avg, x0ii, zetax)
@@ -775,8 +755,6 @@ def calc_da1iidrhos(rho, Cmol2seg, dii_eff, l_aii_avg, l_rii_avg, x0ii, epsiloni
     da1iidrhos : numpy.ndarray
         Derivative of term with respect to segment density
     """
-
-    #logger = logging.getLogger(__name__)
 
     Cii = C(l_rii_avg, l_aii_avg)
 
@@ -822,8 +800,6 @@ def calc_da2ii_1pchi_drhos(rho, Cmol2seg, epsilonii_avg, dii_eff, x0ii, l_rii_av
     """
 
     # NoteHere g2mca der_a2kl
-
-    #logger = logging.getLogger(__name__)
 
     # Calculate terms and derivatives used in derivative chain rule 
     KHS = ((1.0 - zetax)**4) / (1.0 + (4.0 * zetax) + (4.0 * (zetax**2)) - (4.0 * (zetax**3)) + (zetax**4))
@@ -916,8 +892,6 @@ def calc_Achain(rho, Cmol2seg, xi, T, nui, sigmakl, epsilonkl, dkl, xskl, l_rkl,
         Chain contribution of Helmholtz energy, length of array rho
 
     """
-
-    #logger = logging.getLogger(__name__)
 
     #initialize values
     ngroups = len(beads)
@@ -1026,7 +1000,7 @@ def calc_Achain(rho, Cmol2seg, xi, T, nui, sigmakl, epsilonkl, dkl, xskl, l_rkl,
         Achain -= xi[i] * beadsum * np.log(gii[:, i])
 
     if np.any(np.isnan(Achain)):
-        raise ValueError("Some Helmholtz values are NaN, check energy parameters.")
+        logger.error("Some Helmholtz values are NaN, check energy parameters.")
 
     #return Achain,sigmaii_avg,epsilonii_avg, np.array(tmp_A)
     return Achain, sigmaii_avg, epsilonii_avg
@@ -1081,8 +1055,6 @@ def calc_assoc_matrices(beads, beadlibrary, sitenames=["H", "e1", "e2"], crossli
     nk : numpy.ndarray
         For each bead the number of each type of site
     """
-
-    logger = logging.getLogger(__name__)
 
     # initialize variables
     nbeads = len(beads)
@@ -1173,8 +1145,6 @@ def calc_Xika_wrap(Xika0, xi, rho, nui, nk, delta):
         Used in calculation of association term of Helmholtz energy
     """
 
-    #logger = logging.getLogger(__name__)
-
     # val=solv_assoc.calc_xika(Xika0,xi,rho,nui,nk,delta)
     obj_func, Xika = solv_assoc.calc_xika(Xika0, xi, rho, nui, nk, delta)
     return obj_func
@@ -1213,8 +1183,6 @@ def calc_A_assoc(rho, xi, T, nui, xskl, sigmakl, sigmaii_avg, epsilonii_avg, eps
     Aassoc : numpy.ndarray
         Association site contribution of Helmholtz energy, length of array rho
     """
-
-    logger = logging.getLogger(__name__)
 
     kT = T * constants.kb
     nbeads = list(nui.shape)[1]
@@ -1352,8 +1320,6 @@ def assoc_site_indices(xi, nui, nk):
         A list of sets of (component, bead, site) to identify the values of the Xika matrix that are being fit
     """
 
-    #logger = logging.getLogger(__name__)
-
     indices = []
 
     # List of site indices for each bead type
@@ -1407,8 +1373,6 @@ def obj_Xika(Xika_elements, indices, rho, xi, nui, nk, Fklab, Kklab, Iij):
     obj : numpy.ndarray
         The sum of the absolute difference between each of the target elements.
     """
-
-    #logger = logging.getLogger(__name__)
 
     ## Option 1: A lot of for loops
 #    nbeads    = nui.shape[1]
@@ -1468,8 +1432,6 @@ def assemble_Xika(Xika_elements,indices,Xika):
     Xika : numpy.ndarray
         The final matrix of the fraction of molecules of component i that are not bonded at a site of type a on group k,
     """
-
-    #logger = logging.getLogger(__name__)
 
     if len(Xika_elements) != len(indices):
         raise ValueError("Number of elements should each have a corresponding set of indices.")
@@ -1551,8 +1513,6 @@ def calc_A(*, rho, xi, T, beads, beadlibrary, massi, nui, Cmol2seg, xsk, xskl, d
     A : numpy.ndarray
         Total Helmholtz energy, length of array rho
     """
-
-    #logger = logging.getLogger(__name__)
 
     if any(np.array(xi) < 0.):
         raise ValueError("Mole fractions cannot be less than zero.")
@@ -1646,8 +1606,6 @@ def calc_Ares(*, rho, xi, T, beads, beadlibrary, massi, nui, Cmol2seg, xsk, xskl
     Ares : numpy.ndarray
         Residual Helmholtz energy that deviates from Aideal, length of array rho
     """
-
-    #logger = logging.getLogger(__name__)
 
     if any(np.array(xi) < 0.):
         raise ValueError("Mole fractions cannot be less than zero.")

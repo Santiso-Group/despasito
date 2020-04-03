@@ -5,11 +5,13 @@
     
 """
 
-import multiprocessing
 import numpy as np
 import logging
 
 from . import calc
+from despasito.utils.parallelization import batch_jobs
+
+logger = logging.getLogger(__name__)
 
 ######################################################################
 #                                                                    #
@@ -35,8 +37,6 @@ def phase_xiT(eos, sys_dict):
     output_dict : dict
         Output of dictionary containing given and calculated values    
     """
-
-    logger = logging.getLogger(__name__)
 
     #computes P and yi from xi and T
 
@@ -116,20 +116,17 @@ def phase_xiT(eos, sys_dict):
 
     ## Calculate P and yi
 
-    pool = multiprocessing.Pool(ncores)
     if 'Pguess' in sys_dict:
         inputs = [(T_list[i], xi_list[i], eos, opts, Pguess[i]) for i in range(len(T_list))]
     else:
         inputs = [(T_list[i], xi_list[i], eos, opts) for i in range(len(T_list))]
-    P_list, yi_list, flagv_list, flagl_list, obj_list = zip(*pool.map(_phase_xiT_wrapper, inputs))
+    P_list, yi_list, flagv_list, flagl_list, obj_list = batch_jobs( _phase_xiT_wrapper, inputs, ncores=ncores, logger=logger)
 
     logger.info("--- Calculation phase_xiT Complete ---")
 
     return {"T":T_list,"xi":xi_list,"P":P_list,"yi":yi_list,"flagl":flagl_list,"flagv":flagv_list,"obj":obj_list}
 
 def _phase_xiT_wrapper(args):
-
-    logger = logging.getLogger(__name__)
 
     if len(args) == 4:
         T, xi, eos, opts = args
@@ -183,8 +180,6 @@ def phase_yiT(eos, sys_dict):
         Output of dictionary containing given and calculated values
     """
 
-    logger = logging.getLogger(__name__)
-
     ## Extract and check input data
     if 'Tlist' in sys_dict:
         T_list = np.array(sys_dict['Tlist'],float)
@@ -204,6 +199,11 @@ def phase_yiT(eos, sys_dict):
             logger.info("The same temperature, {}, was used for all mole fraction values".format(T_list[0]))
         else:
             raise ValueError("The number of provided temperatures and mole fraction sets are different")
+
+    if 'ncores' in sys_dict:
+        ncores = sys_dict['ncores']
+    else:
+        ncores = 1
 
     ## Optional values
     opts = {}
@@ -255,39 +255,44 @@ def phase_yiT(eos, sys_dict):
         opts["zi_opts"] = sys_dict["mole fraction options"]
 
     ## Calculate P and xi
-    l_x, l_c = np.array(yi_list).shape
     T_list = np.array(T_list)
-    P_list = np.zeros(l_x)
-    flagv_list = np.zeros(l_x)
-    flagl_list = np.zeros(l_x)
-    xi_list = np.zeros((l_x,l_c))
-    obj_list = np.zeros(l_x)
-    for i in range(l_x):
-        optsi = opts
-        if "Pguess" in opts:
-            optsi["Pguess"] = optsi["Pguess"][i]
-        logger.info("T (K), yi: {} {}, Let's Begin!".format(T_list[i], yi_list[i]))
-        try:
-            if len(yi_list[i][yi_list[i]!=0.])==1:
-                if "rhodict" in optsi:
-                    opt_tmp = {"rhodict": optsi["rhodict"]}
-                else:
-                    opt_tmp = {}
-                P_list[i], _, _ = calc.calc_Psat(T_list[i], yi_list[i], eos, **opt_tmp)
-                xi_list[i], flagv_list[i], flagl_list[i], obj_list[i] = yi_list[i], 0, 1, 0.0
-            else:
-                P_list[i], xi_list[i], flagl_list[i], flagv_list[i], obj_list[i]  = calc.calc_yT_phase(yi_list[i], T_list[i], eos, **optsi)
-        except:
-            logger.warning("T (K), yi: {} {}, calculation did not produce a valid result.".format(T_list[i], yi_list[i]))
-            logger.debug("Calculation Failed:", exc_info=True)
-            P_list[i], xi_list[i] = [np.nan, np.nan]
-            flagl_list[i], flagv_list[i], obj_list[i] = [3, 3, np.nan]
-            continue
-        logger.info("P (Pa), xi: {} {}".format(P_list[i], xi_list[i]))
+    if 'Pguess' in sys_dict:
+        inputs = [(T_list[i], yi_list[i], eos, opts, Pguess[i]) for i in range(len(T_list))]
+    else:
+        inputs = [(T_list[i], yi_list[i], eos, opts) for i in range(len(T_list))]
+    P_list, xi_list, flagv_list, flagl_list, obj_list = batch_jobs( _phase_yiT_wrapper, inputs, ncores=ncores, logger=logger)
 
     logger.info("--- Calculation phase_yiT Complete ---")
 
     return {"T":T_list,"yi":yi_list,"P":P_list,"xi":xi_list,"flagl":flagl_list,"flagv":flagv_list, "obj":obj_list}
+
+def _phase_yiT_wrapper(args):
+
+    if len(args) == 4:
+        T, yi, eos, opts = args
+    elif len(args) == 5:
+        T, yi, eos, opts, Pguess = args
+        opts["Pguess"] = Pguess
+
+    logger.info("T (K), yi: {} {}, Let's Begin!".format(T, yi))
+    try:
+        if len(yi[yi!=0.])==1:
+            if "rhodict" in opts:
+                opt_tmp = {"rhodict": opts["rhodict"]}
+            else:
+                opt_tmp = {}
+            P, _, _ = calc.calc_Psat(T, yi, eos, **opt_tmp)
+            xi, flagv, flagl, obj = yi, 0, 1, 0.0
+        else:
+            P, xi, flagl, flagv, obj = calc.calc_yT_phase(yi, T, eos, **opts)
+    except:
+        logger.warning("T (K), yi: {} {}, calculation did not produce a valid result.".format(T, yi))
+        logger.debug("Calculation Failed:", exc_info=True)
+        P, xi, flagl, flagv, obj = [np.nan, np.nan, 3, 3, np.nan]
+
+    logger.info("P (Pa), xi: {} {}".format(P, xi))
+
+    return P, xi, flagv, flagl, obj
 
 ######################################################################
 #                                                                    #
@@ -314,8 +319,6 @@ def flash(eos, sys_dict):
         Output of dictionary containing given and calculated values
     """
 
-    logger = logging.getLogger(__name__)
-
     ## Extract and check input data
     if 'Tlist' in sys_dict:
         T_list = np.array(sys_dict['Tlist'],float)
@@ -337,6 +340,11 @@ def flash(eos, sys_dict):
         else:
             raise ValueError("The number of provided temperatures and mole fraction sets are different")
 
+    if 'ncores' in sys_dict:
+        ncores = sys_dict['ncores']
+    else:
+        ncores = 1
+
     # Extract rho dict
     if "rhodict" in sys_dict:
         logger.info("Accepted options for P vs. density curve")
@@ -345,9 +353,9 @@ def flash(eos, sys_dict):
     # Extract pressure optimization dict
     if "mole fraction options" in sys_dict:
         logger.info("Accepted options for mole fraction optimization")
-        zi_opts = sys_dict["mole fraction options"]
+        opts = sys_dict["mole fraction options"]
     else:
-        zi_opts = {}
+        opts = {}
 
     # Initialize Variables
     l_c = len(eos.eos_dict['nui'])
@@ -356,32 +364,31 @@ def flash(eos, sys_dict):
     l_x = np.array(T_list).shape[0]
     T_list = np.array(T_list)
     P_list = np.array(P_list)
-    flagv_list = np.zeros(l_x)
-    flagl_list = np.zeros(l_x)
-    xi_list = np.zeros((l_x,l_c))
-    yi_list = np.zeros((l_x,l_c))
-    obj_list = np.zeros(l_x)
 
-    # Calculate xi and yi values
-    for i in range(l_x):
-        logger.info("T (K) {}, P (Pa) {}, Let's Begin!".format(T_list[i], P_list[i]))
-        try:
-            xi_list[i], flagl_list[i], yi_list[i], flagv_list[i], obj_list[i]  = calc.calc_flash(P_list[i], T_list[i], eos, **zi_opts)
-        except:
-            logger.warning("T (K) {}, P (Pa) {}, calculation did not produce a valid result.".format(T_list[i], P_list[i]))
-            logger.debug("Calculation Failed:", exc_info=True)
-            yi_list[i], xi_list[i] = [np.nan, np.nan]
-            flagl_list[i], flagv_list[i], obj_list[i] = [3, 3, np.nan]
-            continue
-        logger.info("xi: {}, yi: {}".format(xi_list[i], yi_list[i]))
+    inputs = [(T_list[i], P_list[i], eos, opts) for i in range(len(T_list))]
+    xi_list, yi_list, flagv_list, flagl_list, obj_list = batch_jobs( _flash_wrapper, inputs, ncores=ncores, logger=logger)
 
-    logger.info("--- Calculation phase_yiT Complete ---")
+    logger.info("--- Calculation flash Complete ---")
 
     return {"T":T_list,"yi":yi_list,"P":P_list,"xi":xi_list,"flagl":flagl_list,"flagv":flagv_list, "obj":obj_list}
 
+def _flash_wrapper(args):
+
+    T, P, eos, opts = args
+
+    logger.info("T (K), P (Pa): {} {}, Let's Begin!".format(T, P))
+    try:
+        xi, flagl, yi, flagv, obj = calc.calc_flash(P, T, eos, **opts)
+    except:
+        logger.warning("T (K), P (Pa): {} {}, calculation did not produce a valid result.".format(T, P))
+        logger.debug("Calculation Failed:", exc_info=True)
+        xi, yi, flagl, flagv, obj = [np.nan, np.nan, 3, 3, np.nan]
+
+    logger.info("xi: {}, yi: {}".format(xi, yi))
+
+    return xi, yi, flagv, flagl, obj
+
 ######################################################################
-
-
 #                                                                    #
 #                Saturation calc for 1 Component                     #
 #                                                                    #
@@ -405,8 +412,6 @@ def sat_props(eos, sys_dict):
     output_dict : dict
         Output of dictionary containing given and calculated values
     """
-
-    logger = logging.getLogger(__name__)
 
     ## Extract and check input data
     if 'Tlist' in sys_dict:
@@ -447,28 +452,36 @@ def sat_props(eos, sys_dict):
         logger.info("Accepted options for P vs. density curve")
         opts["rhodict"] = sys_dict["rhodict"]
 
+    if 'ncores' in sys_dict:
+        ncores = sys_dict['ncores']
+    else:
+        ncores = 1
+
     ## Calculate saturation properties
-    l_x = len(T_list)
     T_list = np.array(T_list)
-    Psat = np.zeros(l_x)
-    rholsat = np.zeros(l_x)
-    rhovsat = np.zeros(l_x)
 
-    for i in range(l_x):
-
-        logger.info("T (K), xi: {} {}, Let's Begin!".format(T_list[i], xi_list[i]))
-        Psat[i], rholsat[i], rhovsat[i] = calc.calc_Psat(T_list[i], xi_list[i], eos, **opts)
-        if np.isnan(Psat[i]):
-            logger.warning("T (K), xi: {} {}, calculation did not produce a valid result.".format(T_list[i], xi_list[i]))
-            logger.debug("Calculation Failed:", exc_info=True)
-            Psat[i], rholsat[i], rhovsat[i] = [np.nan, np.nan, np.nan]
-            continue
-        logger.info("Psat {} Pa, rhol {}, rhov {}".format(Psat[i],rholsat[i],rhovsat[i]))
+    inputs = [(T_list[i], xi_list[i], eos, opts) for i in range(len(T_list))]
+    Psat, rholsat, rhovsat = batch_jobs( _sat_props_wrapper, inputs, ncores=ncores, logger=logger)
 
     logger.info("--- Calculation sat_props Complete ---")
 
     return {"T":T_list,"Psat":Psat,"rhol":rholsat,"rhov":rhovsat}
 
+def _sat_props_wrapper(args):
+
+    T, xi, eos, opts = args
+
+    logger.info("T (K), xi: {} {}, Let's Begin!".format(T, xi))
+
+    Psat, rholsat, rhovsat = calc.calc_Psat(T, xi, eos, **opts)
+    if np.isnan(Psat):
+        logger.warning("T (K), xi: {} {}, calculation did not produce a valid result.".format(T_list, xi_list))
+        logger.debug("Calculation Failed:", exc_info=True)
+        Psat, rholsat, rhovsat = [np.nan, np.nan, np.nan]
+    else:
+        logger.info("Psat {} Pa, rhol {}, rhov {}".format(Psat,rholsat,rhovsat))
+
+    return Psat, rholsat, rhovsat
 
 ######################################################################
 #                                                                    #
@@ -494,8 +507,6 @@ def liquid_properties(eos, sys_dict):
     output_dict : dict
         Output of dictionary containing given and calculated values
     """
-
-    logger = logging.getLogger(__name__)
 
     ## Extract and check input data
     if 'Tlist' in sys_dict:
@@ -524,6 +535,11 @@ def liquid_properties(eos, sys_dict):
         P_list = 101325.0 * np.ones_like(T_list)
         logger.info("Assuming atmospheric pressure.")
 
+    if 'ncores' in sys_dict:
+        ncores = sys_dict['ncores']
+    else:
+        ncores = 1
+
     ## Optional values
     opts = {}
 
@@ -542,22 +558,30 @@ def liquid_properties(eos, sys_dict):
     ## Calculate liquid density
     l_x = len(T_list)
     T_list = np.array(T_list)
-    rhol = np.zeros(l_x)
-    phil = []
-    for i in range(l_x):
-        rhol[i], flagl = calc.calc_rhol(P_list[i], T_list[i], xi_list[i], eos, **opts)
 
-        if np.isnan(rhol[i]):
-            logger.warning('Failed to calculate rhol at {}'.format(T_list[i]))
-            phil[i] = np.nan
-        else:
-            phil_tmp = eos.fugacity_coefficient(P_list[i], np.array([rhol[i]]), xi_list[i], T_list[i])
-            phil.append(phil_tmp)
-            logger.info("P {} Pa, T {} K, xi {}, rhol {}, phil {}".format(P_list[i],T_list[i],xi_list[i],rhol[i],phil_tmp))
+    inputs = [(P_list[i], T_list[i], xi_list[i], eos, opts) for i in range(len(T_list))]
+    rhol, phil, flagl = batch_jobs( _liquid_properties_wrapper, inputs, ncores=ncores, logger=logger)
 
     logger.info("--- Calculation liquid_properties Complete ---")
 
-    return {"P":P_list,"T":T_list,"xi":xi_list,"rhol":rhol,"phil":phil}
+    return {"P":P_list,"T":T_list,"xi":xi_list,"rhol":rhol,"phil":phil,"flagl":flagl}
+
+def _liquid_properties_wrapper(args):
+
+    P, T, xi, eos, opts = args
+
+    logger.info("T (K), P (Pa), xi: {} {} {}, Let's Begin!".format(T, P, xi))
+
+    rhol, flagl = calc.calc_rhol(P, T, xi, eos, **opts)
+
+    if np.isnan(rhol):
+        logger.warning('Failed to calculate rhol at {} K and {} Pa'.format(T,P))
+        phil = np.nan
+    else:
+        phil = eos.fugacity_coefficient(P, np.array([rhol]), xi, T)
+        logger.info("P {} Pa, T {} K, xi {}, rhol {}, phil {}, flagl {}".format(P, T, xi, rhol, phil, flagl))
+
+    return rhol, phil, flagl
 
 ######################################################################
 #                                                                    #
@@ -583,8 +607,6 @@ def vapor_properties(eos, sys_dict):
     output_dict : dict
         Output of dictionary containing given and calculated values
     """
-
-    logger = logging.getLogger(__name__)
 
     ## Extract and check input data
     if 'Tlist' in sys_dict:
@@ -613,6 +635,11 @@ def vapor_properties(eos, sys_dict):
         P_list = 101325.0 * np.ones_like(T_list)
         logger.info("Assuming atmospheric pressure.")
 
+    if 'ncores' in sys_dict:
+        ncores = sys_dict['ncores']
+    else:
+        ncores = 1
+
     ## Optional values
     opts = {}
 
@@ -629,23 +656,31 @@ def vapor_properties(eos, sys_dict):
         opts["rhodict"] = sys_dict["rhodict"]
 
     ## Calculate vapor density
-    l_x = len(T_list)
     T_list = np.array(T_list)
-    rhov = np.zeros(l_x)
-    phiv = []
-    for i in range(l_x):
-        rhov[i], flagv = calc.calc_rhov(P_list[i], T_list[i], yi_list[i], eos, **opts)
-        if np.isnan(rhov[i]):
-            logger.warning('Failed to calculate rhov at {}'.format(T_list[i]))
-            phiv[i] = np.nan
-        else:
-            phiv_tmp = eos.fugacity_coefficient(P_list[i], np.array([rhov[i]]), yi_list[i], T_list[i])
-            phiv.append(phiv_tmp)
-            logger.info("P {} Pa, T {} K, yi {}, rhov {}, phiv {}".format(P_list[i],T_list[i],yi_list[i],rhov[i],phiv_tmp))
+
+    inputs = [(P_list[i], T_list[i], yi_list[i], eos, opts) for i in range(len(T_list))]
+    rhov, phiv, flagv = batch_jobs( _vapor_properties_wrapper, inputs, ncores=ncores, logger=logger)
 
     logger.info("--- Calculation vapor_properties Complete ---")
 
-    return {"P":P_list,"T":T_list,"yi":yi_list,"rhov":rhov,"phiv":phiv}
+    return {"P":P_list,"T":T_list,"yi":yi_list,"rhov":rhov,"phiv":phiv,"flagv":flagv}
+
+def _vapor_properties_wrapper(args):
+
+    P, T, yi, eos, opts = args
+
+    logger.info("T (K), P (Pa), yi: {} {} {}, Let's Begin!".format(T, P, yi))
+
+    rhov, flagv = calc.calc_rhov(P, T, yi, eos, **opts)
+
+    if np.isnan(rhov):
+        logger.warning('Failed to calculate rhov at {} K and {} Pa'.format(T,P))
+        phiv = np.nan
+    else:
+        phiv = eos.fugacity_coefficient(P, np.array([rhov]), yi, T)
+        logger.info("P {} Pa, T {} K, yi {}, rhov {}, phiv {}, flagv {}".format(P, T, yi, rhov, phiv, flagv))
+
+    return rhov, phiv, flagv
 
 ######################################################################
 #                                                                    #
@@ -672,8 +707,6 @@ def solubility_parameter(eos, sys_dict):
     output_dict : dict
         Output of dictionary containing given and calculated values
     """
-
-    logger = logging.getLogger(__name__)
 
     ## Extract and check input data
     if 'Tlist' in sys_dict:
@@ -718,6 +751,11 @@ def solubility_parameter(eos, sys_dict):
         else:
             raise ValueError("The number of provided temperatures and pressure sets are different")
 
+    if 'ncores' in sys_dict:
+        ncores = sys_dict['ncores']
+    else:
+        ncores = 1
+
     # Extract rho dict
     if "rhodict" in sys_dict:
         logger.info("Accepted options for P vs. density curve")
@@ -735,28 +773,31 @@ def solubility_parameter(eos, sys_dict):
 
     logger.info("The sys_dict keys: {}, were not used.".format(", ".join(list(sys_dict.keys()))))
 
-    ## Calculate vapor density
-    l_x = len(T_list)
-    rhol = np.zeros(l_x)
-    delta = np.zeros(l_x)
-    for i in range(l_x):
-        # Find rhol
-        if (i==0 or ([P_list[i], T_list[i]] != [P_list[i-1], T_list[i-1]])):
-            rhol[i], flag = calc.calc_rhol(P_list[i], T_list[i], xi_list[i], eos, rhodict=rhodict)
-        else:
-            rhol[i] = rhol[i-1]
+    ## Calculate solubility parameter
+    T_list = np.array(T_list)
 
-        if flag not in [1,2]:
-            logger.error('Failed to calculate rhov at {}, flag {}'.format(T_list[i],flag))
-            delta[i] = np.nan
-        else:
-            delta[i] = calc.hildebrand_solubility(rhol[i], xi_list[i], T_list[i], eos, **opts)
-            logger.info("P {} Pa, T {} K, xi {}, rhol {}, delta {}".format(P_list[i],T_list[i],xi_list[i],rhol[i],delta[i]))
+    inputs = [(P_list[i], T_list[i], xi_list[i], eos, opts) for i in range(len(T_list))]
+    rhol, flagl, delta = batch_jobs( _solubility_parameter_wrapper, inputs, ncores=ncores, logger=logger)
 
     logger.info("--- Calculation solubility_parameter Complete ---")
 
     return {"P":P_list,"T":T_list,"xi":xi_list,"rhol":rhol,"delta":delta}
 
+def _solubility_parameter_wrapper(args):
 
+    P, T, xi, eos, opts = args
+
+    logger.info("T (K), P (Pa), xi: {} {} {}, Let's Begin!".format(T, P, xi))
+
+    rhol, flagl = calc.calc_rhol(P, T, xi, eos, **opts)
+
+    if flagl not in [1,2]:
+        logger.warning('Failed to calculate rhov at {} K and {} Pa'.format(T,P))
+        delta = np.nan
+    else:
+        delta = calc.hildebrand_solubility(rhol, xi, T, eos, **opts)
+        logger.info("P {} Pa, T {} K, xi {}, rhol {}, flagl {}, delta {}".format(P, T, xi, rhol, flagl, delta))
+
+    return rhol, flagl, delta
 
 

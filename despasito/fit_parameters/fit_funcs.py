@@ -3,6 +3,7 @@ import numpy as np
 import logging
 import scipy.optimize as spo
 
+logger = logging.getLogger(__name__)
 
 def initial_guess(opt_params, eos):
     r"""
@@ -92,8 +93,6 @@ def reformat_ouput(cluster):
         
     """
 
-    #logger = logging.getLogger(__name__)
-
     # Arrange data
     type_cluster = [type(x[0]) for x in cluster]
 
@@ -159,8 +158,6 @@ class BasinStep(object):
             
         """
 
-        #logger = logging.getLogger(__name__)
-        
         self._stepsize = stepsize
         self._stepmag = stepmag
 
@@ -180,8 +177,6 @@ class BasinStep(object):
             
         """
 
-        logger = logging.getLogger(__name__)
-        
         # Save intital guess in array
         xold = np.copy(x)
 
@@ -383,8 +378,6 @@ def compute_obj(beadparams, fit_bead, fit_params, eos, exp_dict):
         Value of sum of objective values according to appropriate weights. Output file saved in current working directory.
         
     """
-
-    logger = logging.getLogger(__name__)
 
     # Update beadlibrary with test paramters
 

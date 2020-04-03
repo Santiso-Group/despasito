@@ -17,6 +17,8 @@ import logging
 from . import fit_funcs as ff
 from . import data_classes
 
+logger = logging.getLogger(__name__)
+
 def fit(eos, thermo_dict):
     r"""
     Fit defined parameters for equation of state object with given experimental data. 
@@ -59,8 +61,6 @@ def fit(eos, thermo_dict):
     -------
     Output file saved in current working directory
     """
-
-    logger = logging.getLogger(__name__)
 
     # Extract relevant quantities from thermo_dict
     dicts = {}

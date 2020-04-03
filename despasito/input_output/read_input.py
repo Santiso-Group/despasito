@@ -9,6 +9,8 @@ import json
 import numpy as np
 import os
 
+logger = logging.getLogger(__name__)
+
 ######################################################################
 #                                                                    #
 #                   Appends path to find data files                  #
@@ -61,8 +63,6 @@ def extract_calc_data(input_fname, path='.', **args):
         Dictionary of instructions for thermodynamic calculations or parameter fitting. :func:`despasito.thermodynamics.thermo`
     """
 
-    logger = logging.getLogger(__name__)
-
     ## Extract dictionary from input file
     with open(input_fname, 'r') as input_file:
         input_dict = json.loads(input_file.read())
@@ -105,6 +105,8 @@ def extract_calc_data(input_fname, path='.', **args):
 
     ## Make dictionary of data needed for thermodynamic calculation
     thermo_dict = {}
+    for key, value in args.items():
+        thermo_dict[key] = value
     # Extract relevant system state inputs
     EOS_dict_keys = ['beadconfig', 'EOSgroup', 'EOScross','association_site_names',"output_file","eos"]
     for key, value in input_dict.items():
@@ -147,8 +149,6 @@ def file2paramdict(filename,delimiter=" "):
         Resulting dictionary
     """
 
-    #logger = logging.getLogger(__name__)
-
     dictionary = {}
     with  open(filename, "r") as filedata:
         for line in filedata:
@@ -190,8 +190,6 @@ def make_xi_matrix(filename):
         Array of number of components by number of bead types. Defines the number of each type of group in each component.
     """
 
-    #logger = logging.getLogger(__name__)
-
     f = open(filename, 'r').read()
     comp = json.loads(f)
     beads, nui = process_bead_data(comp)
@@ -220,8 +218,6 @@ def process_bead_data(bead_data):
     nui : numpy.ndarray
         Array of number of components by number of bead types. Defines the number of each type of group in each component.
     """
-
-    #logger = logging.getLogger(__name__)
 
     #find list of unique beads
     beads = []
@@ -283,8 +279,6 @@ def process_param_fit_inputs(thermo_dict):
 
             - name (obj) - One of the supported data type objects to fit parameters
     """
-
-    logger = logging.getLogger(__name__)
 
     # Initial new dictionary that will have dictionary for extracted data
     new_thermo_dict = {"exp_data":{}}
@@ -366,8 +360,6 @@ def process_exp_data(exp_data_dict):
         - name (str) - One of the supported data type objects to fit parameters
     """
 
-    #logger = logging.getLogger(__name__)
-
     exp_data = {}
     for key, value in exp_data_dict.items():
         if key == "datatype":
@@ -402,8 +394,6 @@ def process_exp_data_file(fname):
     file_dict : dict
         Dictionary of experimental data from file.
     """
-
-    #logger = logging.getLogger(__name__)
 
     try:
         data = np.transpose(np.genfromtxt(fname, delimiter=',',names=True,skip_header=1))

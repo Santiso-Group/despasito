@@ -6,6 +6,7 @@ from .main import run, commandline_parser
 import os
 import logging
 import logging.handlers
+import multiprocessing_logging
 
 parser = commandline_parser()
 
@@ -41,6 +42,8 @@ if quiet == False:
     console_handler.setLevel(args.verbose)
     logger.addHandler(console_handler)
 
+multiprocessing_logging.install_mp_handler()
+
 logging.info("Input args: {}".format(args))
 logging.info("JIT compilation: {}".format(args.jit))
 logging.info("Use Cython: {}".format(args.cython))
@@ -50,7 +53,6 @@ if args.input:
     kwargs = {"filename":args.input}
 else:
     kwargs = {}
-#kwargs["logFile"] = args.logFile
 kwargs["ncores"] = args.ncores
 kwargs["path"] = args.path
 kwargs["jit" ] = args.jit
