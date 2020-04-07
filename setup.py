@@ -35,11 +35,12 @@ try:
 except:
     long_description = "\n".join(short_description[2:])
 
-try:
-    ext1 = Extension(name="solv_assoc",sources=[os.path.join(fpath,"solv_assoc.f90")],include_dirs=[fpath])
-    extensions.append(ext1)
-except:
-    raise OSError("Fortran compiler is not found")
+#try:
+#    ext1 = Extension(name="solv_assoc",sources=[os.path.join(fpath,"solv_assoc.f90")],include_dirs=[fpath])
+#    extensions.append(ext1)
+#except:
+#    print("Fortran compiler is not found, default will use Numba")
+
 # try Extension and compile
 # !!!! Note that we have fortran modules that need to be compiled with "f2py3 -m solv_assoc -c solve_assoc.f90" and the same with solve_assoc_matrix.f90
 

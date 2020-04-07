@@ -18,7 +18,6 @@ import sys
 np.set_printoptions(threshold=sys.maxsize)
 
 from . import constants
-from . import solv_assoc
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +29,18 @@ else:
     disable_jit = jit_stat.disable_jit
 
 if disable_jit:
-    from .nojit_exts import calc_a1s, calc_da1sii_drhos
+    try:
+        from . import solv_assoc
+        from .nojit_exts import calc_a1s, calc_da1sii_drhos
+    except ImportError:
+        try:
+            from .jit_exts import calc_a1s, calc_Xika, calc_da1sii_drhos
+            logger.info("Fortan module is not available, using Numba")
+        except ImportError:
+            from .c_exts import calc_a1s, calc_Xika, calc_da1sii_drhos
+            logger.info("Fortan module and Numba are not available, using Cython")
+    else:
+        raise ValueError("Fortran, Numba, and Cython modules are not available.")    
 else:
     from .jit_exts import calc_a1s, calc_Xika, calc_da1sii_drhos
 
