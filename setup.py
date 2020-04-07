@@ -7,6 +7,8 @@ import os
 from setuptools import find_packages
 import versioneer
 from numpy.distutils.core import Extension, setup
+from numpy.distutils.fcompiler import available_fcompilers_for_platform
+import numpy as np
 
 short_description = __doc__.split("\n")
 fpath = os.path.join("despasito","equations_of_state","saft")
@@ -19,7 +21,6 @@ if sys.version_info.minor > 7:
 
 try:
     from Cython.Build import cythonize
-#    cy_exts = cythonize(os.path.join('despasito','equations_of_state','saft','c_exts.pyx'))
     cy_ext_1 = Extension(name="c_exts",sources=[os.path.join(fpath,'c_exts.pyx')],include_dirs=[fpath])
     extensions.extend(cythonize([cy_ext_1]))
 except:
@@ -35,11 +36,12 @@ try:
 except:
     long_description = "\n".join(short_description[2:])
 
-try:
+if len(available_fcompilers_for_platform()) != 0:
     ext1 = Extension(name="solv_assoc",sources=[os.path.join(fpath,"solv_assoc.f90")],include_dirs=[fpath])
     extensions.append(ext1)
-except:
-    raise OSError("Fortran compiler is not found")
+else:
+    print("Fortran compiler is not found, default will use Numba")
+
 # try Extension and compile
 # !!!! Note that we have fortran modules that need to be compiled with "f2py3 -m solv_assoc -c solve_assoc.f90" and the same with solve_assoc_matrix.f90
 

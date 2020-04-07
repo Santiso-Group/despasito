@@ -6,6 +6,7 @@ from .main import run, commandline_parser
 import os
 import logging
 import logging.handlers
+#from .utils import multiprocessing_logging_2 as multiprocessing_logging
 import multiprocessing_logging
 
 parser = commandline_parser()
