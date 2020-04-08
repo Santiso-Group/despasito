@@ -1,7 +1,8 @@
 
 import multiprocessing
-from multiprocessing_logging import install_mp_handler
 import logging
+import os
+import glob
 
 logger = logging.getLogger(__name__)
 
@@ -87,15 +88,15 @@ logger = logging.getLogger(__name__)
 #        self.pool.close()
 #        self.pool.join()
 
-def initialize_MY_mp_handler(logger=None):
+def initialize_MY_mp_handler():
     """Wraps the handlers in the given Logger with an MultiProcessingHandler.
 
     :param logger: whose handlers to wrap. By default, the root logger.
     """
-    if logger is None:
-        logger = logging.getLogger()
-
-    logging.handlers.RotatingFileHandler('mp-handler')
+    logger = logging.getLogger()
+    pid = os.getpid()
+    filename = 'mp-handler-{0}.log'.format(pid)
+    handler = logging.handlers.RotatingFileHandler(filename)
     logger.addHandler(handler)
 
 def batch_jobs( func, inputs, ncores=1, logger=None):
@@ -120,16 +121,19 @@ def batch_jobs( func, inputs, ncores=1, logger=None):
 
     """
 
-    ## multiprocessing_logging from pypi
-    install_mp_handler(logger=logger)
-#    pool = multiprocessing.Pool(ncores, initializer=install_mp_handler) 
-    pool = multiprocessing.Pool(ncores)
+    if logger == None:
+        logger = logging.getLogger()
 
     ## New rotating handling (In CH3OH case, we don't need to worry about deleting during a run)
-#    pool = multiprocessing.Pool(ncores, initializer=initialize_MY_mp_handler) 
+    pool = multiprocessing.Pool(ncores, initializer=initialize_MY_mp_handler) 
 
     ## Run Multiprocessing
     output = zip(*pool.map(func, inputs))
+
+    for i, fn in enumerate(glob.glob('./mp-handler-*.log')):
+        with open(fn) as f:
+           logger.info("Log from thread {0}:\n{1}".format(i, f.read()))
+        os.remove(fn)
 
     return output
 
