@@ -3,11 +3,10 @@ Process command line argparse and initiate logging settings.
 """
 
 from .main import run, commandline_parser
+from .utils.parallelization import MultiprocessingJob
 import os
 import logging
 import logging.handlers
-#from .utils import multiprocessing_logging_2 as multiprocessing_logging
-import multiprocessing_logging
 
 parser = commandline_parser()
 
@@ -43,8 +42,6 @@ if quiet == False:
     console_handler.setLevel(args.verbose)
     logger.addHandler(console_handler)
 
-multiprocessing_logging.install_mp_handler()
-
 logging.info("Input args: {}".format(args))
 logging.info("JIT compilation: {}".format(args.jit))
 logging.info("Use Cython: {}".format(args.cython))
@@ -54,6 +51,8 @@ if args.input:
     kwargs = {"filename":args.input}
 else:
     kwargs = {}
+
+kwargs["mpObj"] = MultiprocessingJob(ncores=args.ncores)
 kwargs["ncores"] = args.ncores
 kwargs["path"] = args.path
 kwargs["jit" ] = args.jit

@@ -72,6 +72,9 @@ def fit(eos, thermo_dict):
             opt_params  = value
         elif key == "exp_data":
             exp_data = value
+            if "mpObj" in thermo_dict:
+                for k2 in list(exp_data.keys()):
+                    exp_data[k2]["mpObj"] = thermo_dict["mpObj"]
         # Optional inputs
         elif key == "bounds":
             bounds = value
@@ -105,9 +108,12 @@ def fit(eos, thermo_dict):
             exp_module = import_module("."+fittype,package="despasito.fit_parameters.data_classes")
             data_class = getattr(exp_module, "Data")
         except:
-            if not type_list: raise ImportError("No fit types")
-            elif len(type_list) == 1: tmp = type_list[0]
-            else: tmp = ", ".join(type_list)
+            if not type_list:
+                raise ImportError("No fit types")
+            elif len(type_list) == 1:
+                tmp = type_list[0]
+            else:
+                tmp = ", ".join(type_list)
             raise ImportError("The experimental data type, '"+fittype+"', was not found\nThe following calculation types are supported: "+tmp)
 
         try:

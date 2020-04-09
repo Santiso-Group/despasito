@@ -8,6 +8,8 @@ import logging
 from despasito.thermodynamics import thermo
 from despasito.fit_parameters import fit_funcs as ff
 from despasito.fit_parameters.interface import ExpDataTemplate
+from despasito.utils.parallelization import MultiprocessingJob
+
 
 logger = logging.getLogger(__name__)
 
@@ -102,6 +104,9 @@ class Data(ExpDataTemplate):
 
         if 'rhodict' in data_dict:
             self._thermodict["rhodict"] = data_dict["rhodict"]
+
+        if "mpObj" in data_dict:
+            self._thermodict["mpObj"] = data_dict["mpObj"]
 
     def _thermo_wrapper(self, eos):
 

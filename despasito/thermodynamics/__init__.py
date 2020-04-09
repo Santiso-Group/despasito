@@ -42,12 +42,10 @@ def thermo(eos, thermo_dict):
     calc_list = [o[0] for o in getmembers(calc_types) if isfunction(o[1])]
 
     # Unpack inputs and check
-    sys_dict, kwargs = {}, {}
+    sys_dict = {}
     for key, value in thermo_dict.items():
-        if key not in ['output_file','calculation_type']:
+        if key not in ['calculation_type']:
             sys_dict[key] = value
-        elif key != 'calculation_type':
-            kwargs[key] = value
 
     try:
         func = getattr(calc_types, calctype)
@@ -55,7 +53,7 @@ def thermo(eos, thermo_dict):
         raise ImportError("The calculation type, '"+calctype+"', was not found\nThe following calculation types are supported: "+", ".join(calc_list))
 
     try:
-        output_dict = func(eos, sys_dict, **kwargs)
+        output_dict = func(eos, sys_dict)
     except:
         raise TypeError("The calculation type, '"+calctype+"', failed")
 

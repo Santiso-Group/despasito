@@ -7,6 +7,7 @@
 
 import numpy as np
 import logging
+from despasito.utils.parallelization import MultiprocessingJob
 
 from . import calc
 from despasito.utils.parallelization import batch_jobs
@@ -53,6 +54,12 @@ def phase_xiT(eos, sys_dict):
         ncores = sys_dict['ncores']
     else:
         ncores = 1
+
+    if 'mpObj' in sys_dict:
+        mpObj = sys_dict['mpObj']
+        flag_use_mp_object = True
+    else:
+        flag_use_mp_object = False
 
     variables = list(locals().keys())
     if all([key not in variables for key in ["xi_list", "T_list"]]):
@@ -120,7 +127,12 @@ def phase_xiT(eos, sys_dict):
         inputs = [(T_list[i], xi_list[i], eos, opts, Pguess[i]) for i in range(len(T_list))]
     else:
         inputs = [(T_list[i], xi_list[i], eos, opts) for i in range(len(T_list))]
-    P_list, yi_list, flagv_list, flagl_list, obj_list = batch_jobs( _phase_xiT_wrapper, inputs, ncores=ncores, logger=logger)
+
+    if flag_use_mp_object:
+        P_list, yi_list, flagv_list, flagl_list, obj_list = mpObj.pool_job(_phase_xiT_wrapper, inputs)
+    else:
+        P_list, yi_list, flagv_list, flagl_list, obj_list = MultiprocessingJob.serial_job(_phase_xiT_wrapper, inputs)
+    #P_list, yi_list, flagv_list, flagl_list, obj_list = batch_jobs( _phase_xiT_wrapper, inputs, ncores=ncores, logger=logger)
 
     logger.info("--- Calculation phase_xiT Complete ---")
 
@@ -205,6 +217,12 @@ def phase_yiT(eos, sys_dict):
     else:
         ncores = 1
 
+    if 'mpObj' in sys_dict:
+        mpObj = sys_dict['mpObj']
+        flag_use_mp_object = True
+    else:
+        flag_use_mp_object = False
+
     ## Optional values
     opts = {}
 
@@ -260,7 +278,12 @@ def phase_yiT(eos, sys_dict):
         inputs = [(T_list[i], yi_list[i], eos, opts, Pguess[i]) for i in range(len(T_list))]
     else:
         inputs = [(T_list[i], yi_list[i], eos, opts) for i in range(len(T_list))]
-    P_list, xi_list, flagv_list, flagl_list, obj_list = batch_jobs( _phase_yiT_wrapper, inputs, ncores=ncores, logger=logger)
+
+    if flag_use_mp_object:
+        P_list, xi_list, flagv_list, flagl_list, obj_list = mpObj.pool_job(__phase_yiT_wrapper, inputs)
+    else:
+        P_list, xi_list, flagv_list, flagl_list, obj_list = MultiprocessingJob.serial_job(__phase_yiT_wrapper, inputs)
+    #P_list, xi_list, flagv_list, flagl_list, obj_list = batch_jobs( _phase_yiT_wrapper, inputs, ncores=ncores, logger=logger)
 
     logger.info("--- Calculation phase_yiT Complete ---")
 
@@ -345,6 +368,12 @@ def flash(eos, sys_dict):
     else:
         ncores = 1
 
+    if 'mpObj' in sys_dict:
+        mpObj = sys_dict['mpObj']
+        flag_use_mp_object = True
+    else:
+        flag_use_mp_object = False
+
     # Extract rho dict
     if "rhodict" in sys_dict:
         logger.info("Accepted options for P vs. density curve")
@@ -366,7 +395,11 @@ def flash(eos, sys_dict):
     P_list = np.array(P_list)
 
     inputs = [(T_list[i], P_list[i], eos, opts) for i in range(len(T_list))]
-    xi_list, yi_list, flagv_list, flagl_list, obj_list = batch_jobs( _flash_wrapper, inputs, ncores=ncores, logger=logger)
+    if flag_use_mp_object:
+        xi_list, yi_list, flagv_list, flagl_list, obj_list = mpObj.pool_job(_flash_wrapper, inputs)
+    else:
+        xi_list, yi_list, flagv_list, flagl_list, obj_list = MultiprocessingJob.serial_job(_flash_wrapper, inputs)
+    #xi_list, yi_list, flagv_list, flagl_list, obj_list = batch_jobs( _flash_wrapper, inputs, ncores=ncores, logger=logger)
 
     logger.info("--- Calculation flash Complete ---")
 
@@ -457,11 +490,21 @@ def sat_props(eos, sys_dict):
     else:
         ncores = 1
 
+    if 'mpObj' in sys_dict:
+        mpObj = sys_dict['mpObj']
+        flag_use_mp_object = True
+    else:
+        flag_use_mp_object = False
+
     ## Calculate saturation properties
     T_list = np.array(T_list)
 
     inputs = [(T_list[i], xi_list[i], eos, opts) for i in range(len(T_list))]
-    Psat, rholsat, rhovsat = batch_jobs( _sat_props_wrapper, inputs, ncores=ncores, logger=logger)
+    if flag_use_mp_object:
+        Psat, rholsat, rhovsat = mpObj.pool_job(_sat_props_wrapper, inputs)
+    else:
+        Psat, rholsat, rhovsat = MultiprocessingJob.serial_job(_sat_props_wrapper, inputs)
+    #Psat, rholsat, rhovsat = batch_jobs( _sat_props_wrapper, inputs, ncores=ncores, logger=logger)
 
     logger.info("--- Calculation sat_props Complete ---")
 
@@ -540,6 +583,12 @@ def liquid_properties(eos, sys_dict):
     else:
         ncores = 1
 
+    if 'mpObj' in sys_dict:
+        mpObj = sys_dict['mpObj']
+        flag_use_mp_object = True
+    else:
+        flag_use_mp_object = False
+
     ## Optional values
     opts = {}
 
@@ -560,7 +609,11 @@ def liquid_properties(eos, sys_dict):
     T_list = np.array(T_list)
 
     inputs = [(P_list[i], T_list[i], xi_list[i], eos, opts) for i in range(len(T_list))]
-    rhol, phil, flagl = batch_jobs( _liquid_properties_wrapper, inputs, ncores=ncores, logger=logger)
+    if flag_use_mp_object:
+        rhol, phil, flagl = mpObj.pool_job(_liquid_properties_wrapper, inputs)
+    else:
+        rhol, phil, flagl = MultiprocessingJob.serial_job(_liquid_properties_wrapper, inputs)
+    #rhol, phil, flagl = batch_jobs( _liquid_properties_wrapper, inputs, ncores=ncores, logger=logger)
 
     logger.info("--- Calculation liquid_properties Complete ---")
 
@@ -640,6 +693,12 @@ def vapor_properties(eos, sys_dict):
     else:
         ncores = 1
 
+    if 'mpObj' in sys_dict:
+        mpObj = sys_dict['mpObj']
+        flag_use_mp_object = True
+    else:
+        flag_use_mp_object = False
+
     ## Optional values
     opts = {}
 
@@ -659,7 +718,11 @@ def vapor_properties(eos, sys_dict):
     T_list = np.array(T_list)
 
     inputs = [(P_list[i], T_list[i], yi_list[i], eos, opts) for i in range(len(T_list))]
-    rhov, phiv, flagv = batch_jobs( _vapor_properties_wrapper, inputs, ncores=ncores, logger=logger)
+    if flag_use_mp_object:
+        rhov, phiv, flagv = mpObj.pool_job(_vapor_properties_wrapper, inputs)
+    else:
+        rhov, phiv, flagv = MultiprocessingJob.serial_job(_vapor_properties_wrapper, inputs)
+    #rhov, phiv, flagv = batch_jobs( _vapor_properties_wrapper, inputs, ncores=ncores, logger=logger)
 
     logger.info("--- Calculation vapor_properties Complete ---")
 
@@ -756,6 +819,12 @@ def solubility_parameter(eos, sys_dict):
     else:
         ncores = 1
 
+    if 'mpObj' in sys_dict:
+        mpObj = sys_dict['mpObj']
+        flag_use_mp_object = True
+    else:
+        flag_use_mp_object = False
+
     # Extract rho dict
     if "rhodict" in sys_dict:
         logger.info("Accepted options for P vs. density curve")
@@ -777,7 +846,11 @@ def solubility_parameter(eos, sys_dict):
     T_list = np.array(T_list)
 
     inputs = [(P_list[i], T_list[i], xi_list[i], eos, opts) for i in range(len(T_list))]
-    rhol, flagl, delta = batch_jobs( _solubility_parameter_wrapper, inputs, ncores=ncores, logger=logger)
+    if flag_use_mp_object:
+        rhol, flagl, delta = mpObj.pool_job(_solubility_parameter_wrapper, inputs)
+    else:
+        rhol, flagl, delta = MultiprocessingJob.serial_job(_solubility_parameter_wrapper, inputs)
+    #rhol, flagl, delta = batch_jobs( _solubility_parameter_wrapper, inputs, ncores=ncores, logger=logger)
 
     logger.info("--- Calculation solubility_parameter Complete ---")
 

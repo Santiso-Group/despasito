@@ -22,24 +22,25 @@ def commandline_parser():
     parser.add_argument("-i", "--input", dest="input", help="Input .json file with calculation instructions and path(s) to equation of state parameters. See documentation for explicit explanation. Compile docs or visit https://despasito.readthedocs.io")
     parser.add_argument("-v", "--verbose", action="count", default=0, help="Verbose level: repeat up to three times for Warning, Info, or Debug levels.")
     parser.add_argument("--log", nargs='?', dest="logFile", default="despasito.log", help="Output a log file. The default name is despasito.log.")
-    parser.add_argument("-n", "--ncores", dest="ncores", type=int, help="Set the number of cores used.",default=1)
+    parser.add_argument("-n", "--ncores", dest="ncores", type=int, help="Set the number of cores used.",default=-1)
     parser.add_argument("-p", "--path", default=".", help="Set the location of the data/library files (e.g. SAFTcross, etc.) for despasito to look for")
     parser.add_argument("--jit", action='store_true', default=0, help="Turn on Numba's JIT compilation for accelerated computation")
     parser.add_argument("--cython", action='store_true', default=0, help="Turn on Cython for accelerated computation")
 
     return parser
 
-def run(filename="input.json", path=".", **args):
+def run(filename="input.json", path=".", **kwargs):
 
     """ Main function for running despasito calculations. All inputs and settings should be in the supplied JSON file(s).
     """
 
     #read input file (need to add command line specification)
     logger.info("Begin processing input file: %s" % filename)
-    eos_dict, thermo_dict, output_file = read_input.extract_calc_data(filename, path, **args)
+    eos_dict, thermo_dict, output_file = read_input.extract_calc_data(filename, path, **kwargs)
 
-    eos_dict['jit'] = args['jit']
-    eos_dict['cython'] = args['cython']
+    eos_dict['jit'] = kwargs['jit']
+    eos_dict['cython'] = kwargs['cython']
+    thermo_dict['mpObj'] = kwargs['mpObj']
 
     if output_file:
         file_dict = {"output_file":output_file}
@@ -56,7 +57,6 @@ def run(filename="input.json", path=".", **args):
     if "opt_params" in list(thermo_dict.keys()):
         logger.info("Initializing parametrization procedure")
         output_dict = fit(eos, thermo_dict)
-        #output = fit(eos, thermo_dict)
         logger.info("Finished parametrization")
         write_output.writeout_fit_dict(output_dict,eos,**file_dict)
     else:

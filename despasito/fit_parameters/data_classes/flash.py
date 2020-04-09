@@ -121,6 +121,9 @@ class Data(ExpDataTemplate):
         else:
             self._thermodict["rhodict"] = {"minrhofrac":(1.0 / 300000.0), "rhoinc":10.0, "vspacemax":1.0E-4}
 
+        if "mpObj" in data_dict:
+            self._thermodict["mpObj"] = data_dict["mpObj"]
+
     def _thermo_wrapper(self, eos):
 
         """
