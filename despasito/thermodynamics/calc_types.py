@@ -518,7 +518,7 @@ def _sat_props_wrapper(args):
 
     Psat, rholsat, rhovsat = calc.calc_Psat(T, xi, eos, **opts)
     if np.isnan(Psat):
-        logger.warning("T (K), xi: {} {}, calculation did not produce a valid result.".format(T_list, xi_list))
+        logger.warning("T (K), xi: {} {}, calculation did not produce a valid result.".format(T, xi))
         logger.debug("Calculation Failed:", exc_info=True)
         Psat, rholsat, rhovsat = [np.nan, np.nan, np.nan]
     else:

@@ -97,7 +97,7 @@ def solve_root( func, args=None, method="bisect", x0=None, bounds=None, options=
         logger.debug("Using the method, {}, with the following options:\n{}".format(method,outer_dict))
         sol = spo.least_squares(func, x0, bounds=(bounds[0],bounds[1]), args=args, **outer_dict)
     elif method == 'bisect':
-        outer_dict = {'maxiter': 50}
+        outer_dict = {'maxiter': 100}
         for key, value in options.items():
             if key in ['xtol', 'rtol', 'maxiter', 'full_output', 'disp']:
                 outer_dict[key] = value

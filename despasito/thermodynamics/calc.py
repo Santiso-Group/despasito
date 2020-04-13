@@ -235,7 +235,7 @@ def PvsV_spline(vlist, Plist):
     """
 
     # Larger sigma value 
-    Psmoothed = gaussian_filter1d(Plist, sigma=0.1)
+    Psmoothed = gaussian_filter1d(Plist, sigma=1.0e-2)
 
     Pvspline = interpolate.InterpolatedUnivariateSpline(vlist, Psmoothed)
     roots = Pvspline.roots().tolist()
@@ -336,7 +336,7 @@ def PvsV_plot(vlist, Plist, Pvspline, markers=[]):
     for k in range(len(markers)):
         plt.plot([markers[k], markers[k]],[min(Plist),max(Plist)],"k")
     plt.xlabel("Specific Volume [$m^3$/mol]"), plt.ylabel("Pressure [Pa]")
-    plt.ylim(min(Plist)/2,np.abs(min(Plist))/2)
+#    plt.ylim(min(Plist)/2,np.abs(min(Plist))/2)
     plt.xlim(0.0,0.001)
     plt.legend(loc="best")
     plt.tight_layout()
@@ -397,22 +397,25 @@ def calc_Psat(T, xi, eos, rhodict={}):
         Pminsearch = max(Pconverged, np.amin(Plist[ind_Pmin1:ind_Pmax1]))
 
         #search Pressure that gives equal area in maxwell construction
+      #  try:
         Psat = spo.minimize_scalar(eq_area,
                                args=(Plist, vlist),
-                               bounds=(Pminsearch * 1.0001, Pmaxsearch * .9999),
+                               bounds=(Pminsearch, Pmaxsearch),
                                method='bounded')
 
         #Using computed Psat find the roots in the maxwell construction to give liquid (first root) and vapor (last root) densities
         Psat = Psat.x
         Pvspline, roots, extrema = PvsV_spline(vlist, Plist-Psat)
-
-        #PvsV_plot(vlist, Plist, Pvspline, markers=extrema)
+      #  except:
+      #      PvsV_plot(vlist, Plist, Pvspline, markers=extrema)
 
         logger.debug("    Psat found: {} Pa, obj value: {}, with {} roots and {} extrema".format(Psat,eq_area(Psat,Plist,vlist),np.size(roots),np.size(extrema)))
 
         if len(roots) ==2:
             slope, yroot = np.polyfit(vlist[-4:], Plist[-4:]-Psat, 1)
             vroot = -yroot/slope
+            if vroot < 0.0:
+                vroot = np.finfo(float).eps
             rho_tmp = spo.minimize(Pdiff, 1.0/vroot, args=(Psat, T, xi, eos), bounds=[(1.0/(vroot*1e+2), 1.0/(1.1*roots[-1]))])
             roots = np.append(roots,[1.0/rho_tmp.x])
 
@@ -971,6 +974,7 @@ def calc_Prange_xi(T, xi, yi, eos, rhodict={}, Pmin=10000, zi_opts={}):
     global yi_global
 
     tol = 1e-2
+    flag_liqu = False
 
     # Guess a range from Pmin to the local max of the liquid curve
     vlist, Plist = PvsRho(T, xi, eos, **rhodict)
@@ -991,9 +995,9 @@ def calc_Prange_xi(T, xi, yi, eos, rhodict={}, Pmin=10000, zi_opts={}):
     yi_range = yi
 
     maxiter = 200
+    p = Prange[0]
     for z in range(maxiter):
         # Find Obj Function for Min pressure above
-        p = Prange[0]
         phil, rhol, flagl = calc_phil(p, T, xi, eos, rhodict=rhodict)
         if any(np.isnan(phil)):
             logger.error("Estimated minimum pressure is too low.")
@@ -1002,26 +1006,39 @@ def calc_Prange_xi(T, xi, yi, eos, rhodict={}, Pmin=10000, zi_opts={}):
 
         if flagl in [1,2]:
             yi_range, phiv_min, flagv_min = solve_yi_xiT(yi_range, xi, phil, p, T, eos, rhodict=rhodict, **zi_opts)
-            ObjRange[0] = (np.nansum(xi * phil / phiv_min) - 1.0)
+            obj = (np.nansum(xi * phil / phiv_min) - 1.0)
             logger.debug("Liquid / Vapor Phi: {} /  {}".format(phil,phiv_min))
             if np.any(np.isnan(yi_range)):
                 logger.info("Estimated Minimum Pressure produces NaN")
-                Prange[0] /= 2
+                Prange[0] = p
+                ObjRange[0] = obj
+                p /= 2
             elif np.sum(np.abs(xi-yi_range)) < 1e-5:
-                logger.info("Estimated Minimum Pressure Reproduces xi: {},  Obj. Func: {}".format(Prange[0],ObjRange[0]))
-                Prange[0] = 2*Prange[0]
-            elif ObjRange[0] > 0:
-                logger.info("Estimated Minimum Pressure: {},  Obj. Func: {}".format(Prange[0],ObjRange[0]))
+                flag_liqu = True
+                ObjRange[1] = obj
+                Prange[1] = p
+                phiv_max, flagv_max = phiv_min, flagv_min
+                logger.info("Estimated Minimum Pressure Reproduces xi: {},  Obj. Func: {}".format(p,obj))
+                p = 0.75*p
+            elif obj > 0:
+                Prange[0] = p
+                ObjRange[0] = obj
+                logger.info("Estimated Minimum Pressure: {},  Obj. Func: {}".format(p,obj))
                 break
             elif ObjRange[0] < 0:
-                logger.info("Estimated Minimum Pressure too High: {},  Obj. Func: {}".format(Prange[0],ObjRange[0]))
-                ObjRange[1] = ObjRange[0]
-                Prange[1] = Prange[0]
+                logger.info("Estimated Minimum Pressure too High: {},  Obj. Func: {}".format(p,obj))
+                ObjRange[1] = obj
+                Prange[1] = p
                 phiv_max, flagv_max = phiv_min, flagv_min
-                Prange[0] /= 2
+                p /= 2
         else:
-            logger.info("Estimated Minimum Pressure Produced Vapor: {},  Obj. Func: {}".format(Prange[0],ObjRange[0]))
-            Prange[0] = 2*Prange[0]
+            logger.info("Estimated Minimum Pressure Produced Vapor: {}".format(p))
+            Prange[0] = p
+            p = 2*Prange[0]
+
+        print(Prange, p, p < Prange[0], (flag_liqu and p > Prange[1]), p < Prange[0] or (flag_liqu and p > Prange[1]))
+        if p < Prange[0] or (flag_liqu and p > Prange[1]):
+            p = (Prange[1]-Prange[0])*np.random.rand(1)[0] + Prange[0]
 
     if z == maxiter-1:
         logger.error("Maximum Number of Iterations Reached: Proper minimum pressure for liquid density could not be found")
@@ -1034,7 +1051,6 @@ def calc_Prange_xi(T, xi, yi, eos, rhodict={}, Pmin=10000, zi_opts={}):
         if z ==0:
             ObjRange[1] == 0.
 
-    flag_liqu = False
     flag_min = False
     p = Prange[1]
     Parray = [Prange[1]]

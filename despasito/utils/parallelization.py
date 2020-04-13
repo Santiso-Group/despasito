@@ -1,4 +1,5 @@
 
+import sys
 import numpy as np
 import multiprocessing
 import logging
@@ -76,8 +77,9 @@ class MultiprocessingJob:
         handler = logging.handlers.RotatingFileHandler(filename)
         if hasattr(self, '_level'):
             handler.setLevel(self._level)
-        if hasattr(self, '_formatter'):
+        if hasattr(self, '_logformat'):
             handler.setFormatter( logging.Formatter(self._logformat) )
+
         logger.addHandler(handler)
 
     def pool_job(self, func, inputs):
@@ -99,8 +101,6 @@ class MultiprocessingJob:
         """
 
         if self.flag_use_mp:
-
-            self._remove_mp_logs()
             self._swap_root_to_mp_handlers()
 
             output = zip(*self._pool.map(func, inputs))
@@ -152,7 +152,7 @@ class MultiprocessingJob:
         """ Ensure all previous mp logs are removed
         """
         for i, fn in enumerate(glob.glob('./mp-handler-*.log')):
-            open(fn,"w").write("")
+            os.remove(fn)
 
     def _swap_root_to_mp_handlers(self):
         """ Swap root handlers defined in despasito.__main__ with process specific log handlers
@@ -167,8 +167,9 @@ class MultiprocessingJob:
     def end_pool(self):
         """ Close multiprocessing pool
         """
-        self.pool.close()
-        self.pool.join()
+        self._pool.close()
+        self._pool.join()
+        self._remove_mp_logs()
 
 def initialize_mp_handler(level,logformat):
 #def initialize_mp_handler():
