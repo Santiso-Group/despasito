@@ -1036,12 +1036,18 @@ def calc_Prange_xi(T, xi, yi, eos, rhodict={}, Pmin=10000, zi_opts={}):
             Prange[0] = p
             p = 2*Prange[0]
 
-        print(Prange, p, p < Prange[0], (flag_liqu and p > Prange[1]), p < Prange[0] or (flag_liqu and p > Prange[1]))
-        if p < Prange[0] or (flag_liqu and p > Prange[1]):
+        if Prange[0] > Prange[1]:
+            Prange[0] = Prange[1]
+            ObjRange[0] = ObjRange[1]
+
+        if (p < Prange[0] and Prange[0] != Prange[1]) or (flag_liqu and p > Prange[1]):
             p = (Prange[1]-Prange[0])*np.random.rand(1)[0] + Prange[0]
 
+        if p <= 0.:
+            raise ValueError("Pressure, {}, cannot be equal to or less than zero. Given composition, {}, and T {}, results in a supercritical value without a coexistent fluid.".format(p,xi,T))
+
     if z == maxiter-1:
-        logger.error("Maximum Number of Iterations Reached: Proper minimum pressure for liquid density could not be found")
+        raise ValueError("Maximum Number of Iterations Reached: Proper minimum pressure for liquid density could not be found")
             
     # A flag value of 0 is vapor, 1 is liquid, 2 mean a critical fluid, 3 means that neither is true, 4 means we should assume ideal gas
 
@@ -1320,6 +1326,7 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxiter=30, tol=1e-7):
     yi_total = [np.sum(yi)]
     yi /= np.sum(yi)
     flag_check_vapor = True # Make sure we only search for vapor compositions once
+    flag_trivial_sol = True # Make sure we only try to find alternative to trivial solution once
     logger.info("    Solve yi: P {}, T {}, xi {}, phil {}".format(P, T, xi, phil))
 
     for z in range(maxiter):
@@ -1343,7 +1350,22 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxiter=30, tol=1e-7):
             else:
                 logger.info("    Composition doesn't produce a vapor, we need a function to search compositions for more than two components.")
                 yinew = yi
+        elif (np.sum(np.abs(xi-yi_tmp)) < 1e-5 and flag_trivial_sol):
+            flag_trivial_sol = False
+            if (all(yi_tmp != 0.) and len(yi_tmp)==2):
+                logger.info("    Composition produces trivial solution, let's find a different one!")
+                yi2 = find_new_yi(P, T, phil, xi, eos, rhodict=rhodict)
+            else:
+                logger.info("    Composition produces trivial solution, using random guess to reset")
+                yi2 = np.random.rand(len(yi_tmp))
+                yi2 /= np.sum(yi2)
 
+            if np.any(np.isnan(yi2)):
+                phiv, rhov, flagv = [np.nan, np.nan, 3]
+                break
+            else:
+                phiv, rhov, flagv = calc_phiv(P, T, yi2, eos, rhodict=rhodict)
+                yinew = xi * phil / phiv
         else:
             yinew = xi * phil / phiv
 
