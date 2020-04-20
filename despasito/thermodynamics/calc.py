@@ -12,7 +12,7 @@ import copy
 #import matplotlib.pyplot as plt
 import logging
 
-import despasito.utils.optimization as opt
+import despasito.utils.general_toolbox as gtb
 from . import fund_constants as constants
 
 logger = logging.getLogger(__name__)
@@ -377,7 +377,7 @@ def calc_Psat(T, xi, eos, rhodict={}):
             raise ValueError("Multiple components have compositions greater than 10%, check code for source")
         else:
             ind = np.where((xi>0.1)==True)[0]
-            raise ValueError("Multiple components have compositions greater than 0. Do you mean to obtain the saturation pressure of {} with a mole fraction of {}?".format(eos.eos_dict['beads'][ind],xi[ind]))
+            raise ValueError("Multiple components have compositions greater than 0. Do you mean to obtain the saturation pressure of {} with a mole fraction of {}?".format(eos.beads[ind],xi[ind]))
 
     vlist, Plist = PvsRho(T, xi, eos, **rhodict)
     Pvspline, roots, extrema = PvsV_spline(vlist, Plist)
@@ -2065,19 +2065,19 @@ def setPsat(ind, eos):
         Bead name of the component that is above it's critical point
     """
 
-    for j in range(np.size(eos.eos_dict['nui'][ind])):
-        if eos.eos_dict['nui'][ind][j] > 0.0 and eos.eos_dict['beads'][j] == "CO2":
+    for j in range(np.size(eos.nui[ind])):
+        if eos.nui[ind][j] > 0.0 and eos.beads[j] == "CO2":
             Psat = 10377000.0
-        elif eos.eos_dict['nui'][ind][j] > 0.0 and eos.eos_dict['beads'][j] == "N2":
+        elif eos.nui[ind][j] > 0.0 and eos.beads[j] == "N2":
             Psat = 7377000.0
-        elif eos.eos_dict['nui'][ind][j] > 0.0 and ("CH4" in eos.eos_dict['beads'][j]):
+        elif eos.nui[ind][j] > 0.0 and ("CH4" in eos.beads[j]):
             Psat = 6377000.0
-        elif eos.eos_dict['nui'][ind][j] > 0.0 and ("CH3CH3" in eos.eos_dict['beads'][j]):
+        elif eos.nui[ind][j] > 0.0 and ("CH3CH3" in eos.beads[j]):
             Psat = 7377000.0
-        elif eos.eos_dict['nui'][ind][j] > 0.0:
+        elif eos.nui[ind][j] > 0.0:
             #Psat = np.nan
             Psat = 7377000.0
-            NaNbead = eos.eos_dict['beads'][j]
+            NaNbead = eos.beads[j]
             logger.warning("Bead, {}, is above its critical point. Psat is assumed to be {}. To add an exception go to thermodynamics.calc.setPsat".format(NaNbead,Psat))
 
     if "NaNbead" not in list(locals().keys()):
@@ -2157,7 +2157,7 @@ def calc_yT_phase(yi, T, eos, rhodict={}, zi_opts={}, Pguess=-1, meth="hybr", pr
     Prange, Pguess = calc_Prange_yi(T, xi, yi, eos, rhodict, zi_opts=zi_opts)
     P = Pguess
 
-    P = opt.solve_root(solve_P_yiT, args=(yi, T, eos, rhodict, zi_opts), x0=P, method=meth, bounds=Prange, options=pressure_opts)
+    P = gtb.solve_root(solve_P_yiT, args=(yi, T, eos, rhodict, zi_opts), x0=P, method=meth, bounds=Prange, options=pressure_opts)
 
     #find vapor density and fugacity
     phiv, rhov, flagv = calc_phiv(P, T, yi, eos, rhodict=rhodict)
@@ -2245,7 +2245,7 @@ def calc_xT_phase(xi, T, eos, rhodict={}, zi_opts={}, Pguess=-1, meth="bisect", 
     else:
         P = Pguess
 
-    P = opt.solve_root(solve_P_xiT, args=(xi, T, eos, rhodict, zi_opts), x0=P, method=meth, bounds=Prange, options=pressure_opts)
+    P = gtb.solve_root(solve_P_xiT, args=(xi, T, eos, rhodict, zi_opts), x0=P, method=meth, bounds=Prange, options=pressure_opts)
 
     #find liquid density and fugacity
     phil, rhol, flagl = calc_phil(P, T, xi, eos, rhodict=rhodict)
@@ -2319,7 +2319,7 @@ def hildebrand_solubility(rhol, xi, T, eos, dT=.1, tol=1e-4, rhodict={}):
         U_res += -RT*integrand_list[-1]*(xroot-vlist[-1])/2
 
     if (U_res) > 0.:
-        logger.error("The solubility parameter can not be imaginary")
+        raise ValueError("The solubility parameter can not be imaginary")
     else:
         delta = np.sqrt(-(U_res)*rhol)
         logger.info("When T={}, xi={}, delta={}".format(T,xi,delta))
@@ -2365,7 +2365,7 @@ def calc_flash(P, T, eos, rhodict={}, maxiter=200, tol=1e-9):
     """
 
     # Initialize Variables
-    lx = len(eos.eos_dict['nui'])
+    lx = len(eos.nui)
 
     if lx != 2:
         raise ValueError("Only binary systems are currently supported for flash calculations, {} were given.".format(lx))

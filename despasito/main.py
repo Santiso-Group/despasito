@@ -65,5 +65,6 @@ def run(filename="input.json", path=".", **kwargs):
         logger.info("Finished thermodynamic calculation")
         write_output.writeout_thermo_dict(output_dict,thermo_dict["calculation_type"],**file_dict)
 
-    thermo_dict['mpObj'].end_pool()
+    if thermo_dict['mpObj'].flag_use_mp:
+        thermo_dict['mpObj'].end_pool()
     

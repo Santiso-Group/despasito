@@ -280,9 +280,9 @@ def phase_yiT(eos, sys_dict):
         inputs = [(T_list[i], yi_list[i], eos, opts) for i in range(len(T_list))]
 
     if flag_use_mp_object:
-        P_list, xi_list, flagv_list, flagl_list, obj_list = mpObj.pool_job(__phase_yiT_wrapper, inputs)
+        P_list, xi_list, flagv_list, flagl_list, obj_list = mpObj.pool_job(_phase_yiT_wrapper, inputs)
     else:
-        P_list, xi_list, flagv_list, flagl_list, obj_list = MultiprocessingJob.serial_job(__phase_yiT_wrapper, inputs)
+        P_list, xi_list, flagv_list, flagl_list, obj_list = MultiprocessingJob.serial_job(_phase_yiT_wrapper, inputs)
     #P_list, xi_list, flagv_list, flagl_list, obj_list = batch_jobs( _phase_yiT_wrapper, inputs, ncores=ncores, logger=logger)
 
     logger.info("--- Calculation phase_yiT Complete ---")

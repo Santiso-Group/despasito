@@ -113,3 +113,34 @@ def solve_root( func, args=None, method="bisect", x0=None, bounds=None, options=
         solution = sol
 
     return solution
+
+def central_difference(x, func, step_factor=1E+4, args=None):
+    """
+    Take the derivative of a dependent variable calculated with a given function using the central difference method.
+    
+    Parameters
+    ----------
+    x : numpy.ndarray
+        Independent variable to take derivative with respect too, using the central difference method.
+    func : function
+        Function used in job to calculate dependent factor. This function should have a single output.
+    step_factor : float, Optional, default: 1E+4
+        This function calculates a relative step size for each independent variable. Each step is equal to the square root of the machine precision * x * step_factor.
+    args : list, Optional, default: None
+        Each entry of this list contains the input arguements for each job
+    Returns
+    -------
+    dydx : numpy.ndarray
+        Array of derivative of y with respect to x, given an array of independent variables.
+    """
+
+    if type(x) != np.ndarray:
+        x = np.array(x)
+    
+    lx = np.size(x)
+    step = np.sqrt(np.finfo(float).eps) * x * step_factor
+
+    y = func(np.append(x+step,x-step),*args)
+    dydx = (y[:lx]-y[lx:])/(2.0*step)*x**2
+
+    return dydx
