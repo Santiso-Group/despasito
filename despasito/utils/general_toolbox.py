@@ -1,4 +1,5 @@
 
+import sys
 import numpy as np
 import scipy.optimize as spo
 import logging
@@ -114,7 +115,7 @@ def solve_root( func, args=None, method="bisect", x0=None, bounds=None, options=
 
     return solution
 
-def central_difference(x, func, step_factor=1E+4, args=None):
+def central_difference(x, func, step_size=1E-5, args=None):
     """
     Take the derivative of a dependent variable calculated with a given function using the central difference method.
     
@@ -124,8 +125,8 @@ def central_difference(x, func, step_factor=1E+4, args=None):
         Independent variable to take derivative with respect too, using the central difference method.
     func : function
         Function used in job to calculate dependent factor. This function should have a single output.
-    step_factor : float, Optional, default: 1E+4
-        This function calculates a relative step size for each independent variable. Each step is equal to the square root of the machine precision * x * step_factor.
+    step_size : float, Optional, default: 1E-4
+        This function calculates a relative step size for each independent variable. Each step is equal x * step_size.
     args : list, Optional, default: None
         Each entry of this list contains the input arguements for each job
     Returns
@@ -138,9 +139,23 @@ def central_difference(x, func, step_factor=1E+4, args=None):
         x = np.array(x)
     
     lx = np.size(x)
-    step = np.sqrt(np.finfo(float).eps) * x * step_factor
+########
+    step = x * step_size
+########
+    #x = x*6.02214086e23
+    #step = x * 1e+4 *np.sqrt(np.finfo(float).eps)
+########
+    if type(step) not in [list, np.ndarray]:
+        step = np.array([step])
+    step = np.array([2*np.finfo(float).eps if xx < np.finfo(float).eps else xx for xx in step])
 
+########
     y = func(np.append(x+step,x-step),*args)
     dydx = (y[:lx]-y[lx:])/(2.0*step)*x**2
+########
+    #y = func(np.append(x+step,x-step)/6.02214086e23,*args)
+    #dydx = (y[:lx]-y[lx:])/(2.0*step)*x**2/6.02214086e23
+########
 
     return dydx
+

@@ -169,7 +169,7 @@ class Data(ExpDataTemplate):
         phase_list, len_cluster = ff.reformat_ouput(phase_list)
         phase_list = np.transpose(np.array(phase_list))
 
-        ncomp = np.shape(eos.eos_dict['nui'])[0]
+        ncomp = np.shape(eos.nui)[0]
    
         obj_value = np.zeros(2)
 

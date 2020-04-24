@@ -1283,7 +1283,7 @@ def calc_Prange_yi(T, xi, yi, eos, rhodict={}, zi_opts={}):
 #                       Solve Yi for xi and T                        #
 #                                                                    #
 ######################################################################
-def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxiter=30, tol=1e-7):
+def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxiter=30, tol=1e-8):
     r"""
     Find vapor mole fraction given pressure, liquid mole fraction, and temperature.
 
@@ -1690,6 +1690,7 @@ def bracket_bounding_yi(P, T, phil, xi, eos, bounds=(0.01, 0.99), maxiter=50, to
         logger.error("    Both mole fractions have flag, {}, continue seeking convergence".format(flag_bounds[0]))
         y1 = bounds[1]
         flagv = flag_bounds[1]
+        i = maxiter - 1
 
     else:
         flag_high_vapor = False

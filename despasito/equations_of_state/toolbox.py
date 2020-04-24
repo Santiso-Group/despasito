@@ -20,7 +20,7 @@ def remove_insignificant_components(xi_old,massi_old):
     massi_old : numpy.ndarray
         Mass for each component [kg/mol]
 
-    Returns
+   Returns
     -------
     xi_new : numpy.ndarray
         Mole fraction of each component, sum(xi) should equal 1.0
@@ -40,7 +40,7 @@ def remove_insignificant_components(xi_old,massi_old):
 
     return xi_new, massi_new
 
-def partial_density_central_difference(xi, rho, T, func, step_size=1E-4, log_method=False):
+def partial_density_central_difference(xi, rho, T, func, step_size=1E-2, log_method=False):
     """
     Take the derivative of a dependent variable calculated with a given function using the central difference method.
     
@@ -66,20 +66,26 @@ def partial_density_central_difference(xi, rho, T, func, step_size=1E-4, log_met
     """
     
     dAdrho = np.zeros(len(xi))
-    
+
     if log_method: # Central Difference Method with log(y) transform
+
+#        y = np.log(rho*np.array(xi,float))
+        y = np.log(6.02214086e23*rho*np.array(xi,float))
+
         dy = step_size
-        y = np.log(rho*np.array(xi,float))
         for i in range(np.size(dAdrho)):
             if xi[i] != 0.0:
                 Ares = np.zeros(2)
                 for j, delta in enumerate((dy, -dy)):
                     y_temp = np.copy(y)
                     y_temp[i] += delta
-                    Ares[j] = _partial_density_wrapper(np.exp(y_temp), T, func)
-                dAdrho[i] = (Ares[0] - Ares[1]) / (2.0 * dy) / np.exp(y[i])
+#                    Ares[j] = _partial_density_wrapper(np.exp(y_temp), T, func)
+#                dAdrho[i] = (Ares[0] - Ares[1]) / (2.0 * dy) / np.exp(y[i])
+                    Ares[j] = _partial_density_wrapper(np.exp(y_temp)/6.02214086e23, T, func)
+                dAdrho[i] = (Ares[0] - Ares[1]) / (2.0 * dy) / np.exp(y[i]) * 6.02214086e23
             else:
                 dAdrho[i] = np.finfo(float).eps
+
     else: # Traditional Central Difference Method
         
         exp = np.floor(np.log10(rho))-3 # Make sure step size is three orders of magnitude lower

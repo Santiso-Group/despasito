@@ -10,6 +10,7 @@ r"""
 import sys
 import numpy as np
 import logging
+#np.set_printoptions(threshold=sys.maxsize)
 
 from despasito.equations_of_state import constants
 import despasito.utils.general_toolbox as gtb
@@ -111,7 +112,7 @@ class saft(EOStemplate):
             Residual helmholtz energy for each density value given.
         """
     
-        if len(xi) != len(self.Amonomer.eos_dict['nui']):
+        if len(xi) != len(self.nui):
             raise ValueError("Number of components in mole fraction list doesn't match components in nui. Check bead_config.")
     
         if np.isscalar(rho):
@@ -150,9 +151,6 @@ class saft(EOStemplate):
             Total helmholtz energy for each density value given.
         """
 
-#        np.savetxt("new_method.csv",np.transpose(np.array([rho, rho*constants.Nav])),delimiter=",")
-#        sys.exit("stop")
-
         if np.isscalar(rho):
             rho = np.array([rho])
         elif type(rho) != np.ndarray:
@@ -160,13 +158,13 @@ class saft(EOStemplate):
 
         A = self.residual_helmholtz_energy(rho, T, xi) + self.Aideal.Aideal(rho, T, xi)
 
-      #  tmp = np.transpose(np.array([rho*constants.Nav, self.Aideal.Aideal(rho, T, xi), self.Amonomer.Ahard_sphere(rho, T, xi), self.Amonomer.Afirst_order(rho, T, xi), self.Amonomer.Asecond_order(rho, T, xi), self.Amonomer.Athird_order(rho, T, xi), self.Achain.Achain(rho, T, xi), self.Aassoc.Aassoc(rho, T, xi)]))
-      #  np.savetxt("new_method.csv",tmp,delimiter=",")
-      #  sys.exit("stop")
+#        tmp = np.transpose(np.array([rho, self.Aideal.Aideal(rho, T, xi), self.Amonomer.Amonomer(rho, T, xi), self.Achain.Achain(rho, T, xi), self.Aassoc.Aassoc(rho, T, xi), A]))
+#        np.savetxt("new_method.csv",tmp,delimiter=",")
+#        sys.exit("stop")
 
         return A
 
-    def pressure(self, rho, T, xi, step_factor=1E+4):
+    def pressure(self, rho, T, xi, step_size=1E-5):
         """
         Compute pressure given system information.
        
@@ -185,12 +183,12 @@ class saft(EOStemplate):
             Array of pressure values [Pa] associated with each density and so equal in length
         """
 
-        P_tmp = gtb.central_difference(rho, self.helmholtz_energy, args=(T, xi), step_factor=step_factor)
+        P_tmp = gtb.central_difference(rho, self.helmholtz_energy, args=(T, xi), step_size=step_size)
         pressure = P_tmp*T*(constants.kb*constants.Nav)
 
         return pressure
 
-    def fugacity_coefficient(self, P, rho, xi, T, dy=1e-2):
+    def fugacity_coefficient(self, P, rho, xi, T, dy=1e-2, log_method=True):
 
         """
         Compute fugacity coefficient.
@@ -205,6 +203,8 @@ class saft(EOStemplate):
             Temperature of the system [K]
         xi : list[float]
             Mole fraction of each component
+        log_method : bool, Optional, default: False
+            Choose to use a log transform in central difference method. This allows easier calulations for very small numbers.
     
         Returns
         -------
@@ -214,7 +214,8 @@ class saft(EOStemplate):
 
         logZ = np.log(P / (rho * T * (constants.Nav * constants.kb)))
         Ares = self.residual_helmholtz_energy(rho, T, xi)
-        dAresdrho = tb.partial_density_central_difference(xi, rho, T, self.residual_helmholtz_energy, step_size=dy)
+        dAresdrho = tb.partial_density_central_difference(xi, rho, T, self.residual_helmholtz_energy, step_size=dy, log_method=True)
+
         phi = np.exp(Ares + rho*dAresdrho - logZ)
 
         return phi
@@ -265,15 +266,15 @@ class saft(EOStemplate):
 
         if len(bead_names) > 2:
             raise ValueError("The bead names {} were given, but only a maximum of 2 are permitted.".format(", ".join(bead_names)))
-        if not set(bead_names).issubset(self.eos_dict['beads']):
-            raise ValueError("The bead names {} were given, but they are not in the allowed list: {}".format(", ".join(bead_names),", ".join(self.eos_dict['beads'])))
+        if not set(bead_names).issubset(self.beads):
+            raise ValueError("The bead names {} were given, but they are not in the allowed list: {}".format(", ".join(bead_names),", ".join(self.beads)))
 
         # Non bonded parameters
         if (param_name in ["epsilon", "sigma", "l_r", "l_a", "Sk"]):
             # Self interaction parameter
             if len(bead_names) == 1:
-                if bead_names[0] in self.eos_dict['beadlibrary']:
-                    param_value = self.eos_dict['beadlibrary'][bead_names[0]][param_name]
+                if bead_names[0] in self.beadlibrary:
+                    param_value = self.beadlibrary[bead_names[0]][param_name]
                 else:
                     param_value = self.check_bounds(param_name, bead_names, np.empty(2))[1]/2
             # Cross interaction parameter
@@ -311,8 +312,8 @@ class saft(EOStemplate):
             tmp_nm = param_name+"".join(site_names)
             # Self interaction parameter
             if len(bead_names) == 1:
-                if bead_names[0] in self.eos_dict['beadlibrary'] and tmp_nm in self.eos_dict['beadlibrary'][bead_names[0]]:
-                    param_value = self.eos_dict['beadlibrary'][bead_names[0]][tmp_nm]
+                if bead_names[0] in self.beadlibrary and tmp_nm in self.beadlibrary[bead_names[0]]:
+                    param_value = self.beadlibrary[bead_names[0]][tmp_nm]
             # Cross interaction parameter
             elif len(bead_names) == 2:
                 if bead_names[1] in self._crosslibrary and bead_names[0] in self._crosslibrary[bead_names[1]]:
@@ -363,8 +364,8 @@ class saft(EOStemplate):
         
         if len(bead_names) > 2:
             raise ValueError("The bead names {} were given, but only a maximum of 2 are permitted.".format(", ".join(bead_names)))
-        if not set(bead_names).issubset(self.eos_dict['beads']):
-            raise ValueError("The bead names {} were given, but they are not in the allowed list: {}".format(", ".join(bead_names),", ".join(self.eos_dict['beads'])))
+        if not set(bead_names).issubset(self.beads):
+            raise ValueError("The bead names {} were given, but they are not in the allowed list: {}".format(", ".join(bead_names),", ".join(self.beads)))
         
         bounds_new = np.zeros(2)
         # Non bonded parameters
@@ -456,17 +457,17 @@ class saft(EOStemplate):
 
         if len(bead_names) > 2:
             raise ValueError("The bead names {} were given, but only a maximum of 2 are permitted.".format(", ".join(bead_names)))
-        if not set(bead_names).issubset(self.eos_dict['beads']):
-            raise ValueError("The bead names {} were given, but they are not in the allowed list: {}".format(", ".join(bead_names),", ".join(self.eos_dict['beads'])))
+        if not set(bead_names).issubset(self.beads):
+            raise ValueError("The bead names {} were given, but they are not in the allowed list: {}".format(", ".join(bead_names),", ".join(self.beads)))
 
         # Non bonded parameters
         if (param_name in ["epsilon", "sigma", "l_r", "l_a", "Sk"]):
             # Self interaction parameter
             if len(bead_names) == 1:
-                if bead_names[0] in self.eos_dict['beadlibrary']:
-                    self.eos_dict['beadlibrary'][bead_names[0]][param_name] = param_value
+                if bead_names[0] in self.beadlibrary:
+                    self.beadlibrary[bead_names[0]][param_name] = param_value
                 else:
-                    self.eos_dict['beadlibrary'][bead_names[0]] = {param_name: param_value}
+                    self.beadlibrary[bead_names[0]] = {param_name: param_value}
             # Cross interaction parameter
             elif len(bead_names) == 2:
                 if bead_names[1] in self._crosslibrary and bead_names[0] in self._crosslibrary[bead_names[1]]:
@@ -502,10 +503,10 @@ class saft(EOStemplate):
             tmp_nm = param_name+"".join(site_names)
             # Self interaction parameter
             if len(bead_names) == 1:
-                if bead_names[0] in self.eos_dict['beadlibrary'] and tmp_nm in self.eos_dict['beadlibrary'][bead_names[0]]:
-                    self.eos_dict['beadlibrary'][bead_names[0]][tmp_nm] = param_value
+                if bead_names[0] in self.beadlibrary and tmp_nm in self.beadlibrary[bead_names[0]]:
+                    self.beadlibrary[bead_names[0]][tmp_nm] = param_value
                 else:
-                    self.eos_dict['beadlibrary'][bead_names[0]] = {tmp_nm: param_value}
+                    self.beadlibrary[bead_names[0]] = {tmp_nm: param_value}
             # Cross interaction parameter
             elif len(bead_names) == 2:
                 if bead_names[1] in self._crosslibrary and bead_names[0] in self._crosslibrary[bead_names[1]]:

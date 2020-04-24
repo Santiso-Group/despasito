@@ -135,17 +135,17 @@ class Amonomer():
         self._check_density(rho)
         self._check_temerature_dependent_parameters(T)
         self._check_composition_dependent_parameters(xi)
-        rhoNa = rho*constants.Nav
 
-        eta = np.zeros((np.size(rhoNa), 4))
+        eta = np.zeros((np.size(rho), 4))
         for m in range(4):
-            eta[:, m] = rhoNa * self.eos_dict['Cmol2seg'] * (np.sum(np.sqrt(np.diag(self.eos_dict['xskl'])) * (np.diag(self.eos_dict['dkl'])**m)) * (np.pi / 6.0))
-        
-        tmp1 = np.log(1.0 - eta[:, 3]) * (((eta[:, 2]**3) / (eta[:, 3]**2)) - eta[:, 0])
-        tmp2 = (3.0 * eta[:, 1] * eta[:, 2] / (1 - eta[:, 3]))
-        tmp3 = ((eta[:, 2]**3) / (eta[:, 3] * ((1.0 - eta[:, 3])**2)))
-        AHS = (6.0 / (np.pi * rhoNa)) * (tmp1 + tmp2 + tmp3)
-    
+            eta[:, m] = rho * constants.Nav * self.eos_dict['Cmol2seg'] * (np.sum(np.sqrt(np.diag(self.eos_dict['xskl'])) * (np.diag(self.eos_dict['dkl'])**m)) * (np.pi / 6.0))
+
+        tmp = (6.0 / (np.pi * rho))
+        tmp1 = np.log1p(-eta[:, 3]) * (eta[:, 2]**3 / (eta[:, 3]**2) - eta[:, 0])
+        tmp2 = 3.0 * eta[:, 2] / (1 - eta[:, 3]) * eta[:, 1]
+        tmp3 = eta[:, 2]**3 / (eta[:, 3] * ((1.0 - eta[:, 3])**2))
+        AHS = tmp*(tmp1 + tmp2 + tmp3) / constants.Nav
+
         return AHS
     
     def Afirst_order(self,rho, T, xi, zetax=None):
@@ -172,10 +172,10 @@ class Amonomer():
         self._check_density(rho)
         self._check_temerature_dependent_parameters(T)
         self._check_composition_dependent_parameters(xi)
-        
+
         if zetax is None:
             zetax = tb.calc_zetax(rho, self.eos_dict['Cmol2seg'], self.eos_dict['xskl'], self.eos_dict['dkl'])
-        
+
         # compute components of eq. 19
         a1kl = calc_a1ii(rho, self.eos_dict['Cmol2seg'], self.eos_dict['dkl'], self.eos_dict['l_akl'], self.eos_dict['l_rkl'], self.eos_dict['x0kl'], self.eos_dict['epsilonkl'], zetax)
     
@@ -237,7 +237,7 @@ class Amonomer():
         B_2lr = calc_Bkl(rho, 2.0 * self.eos_dict['l_rkl'], self.eos_dict['Cmol2seg'], self.eos_dict['dkl'], self.eos_dict['epsilonkl'], self.eos_dict['x0kl'], zetax)
         B_lalr = calc_Bkl(rho, self.eos_dict['l_akl'] + self.eos_dict['l_rkl'], self.eos_dict['Cmol2seg'], self.eos_dict['dkl'], self.eos_dict['epsilonkl'], self.eos_dict['x0kl'], zetax)
         
-        a2kl = (self.eos_dict['x0kl']**(2.0 * self.eos_dict['l_akl'])) * (a1s_2la + B_2la) - ((2.0 * self.eos_dict['x0kl']**(self.eos_dict['l_akl'] + self.eos_dict['l_rkl'])) * (a1s_lalr + B_lalr)) + ((self.eos_dict['x0kl']**(2.0 * self.eos_dict['l_rkl'])) * (a1s_2lr + B_2lr))
+        a2kl = (self.eos_dict['x0kl']**(2.0 * self.eos_dict['l_akl'])) * (a1s_2la + B_2la) / constants.Nav - ((2.0 * self.eos_dict['x0kl']**(self.eos_dict['l_akl'] + self.eos_dict['l_rkl'])) * (a1s_lalr + B_lalr) / constants.Nav) + ((self.eos_dict['x0kl']**(2.0 * self.eos_dict['l_rkl'])) * (a1s_2lr + B_2lr) / constants.Nav)
         a2kl *= (1.0 + chikl) * self.eos_dict['epsilonkl'] * (self.eos_dict['Ckl']**2)  # *(KHS/2.0)
         a2kl = np.einsum("i,ijk->ijk", KHS / 2.0, a2kl)
         
@@ -270,7 +270,7 @@ class Amonomer():
 
         self._check_density(rho)
         self._check_composition_dependent_parameters(xi)
-        
+
         if zetaxstar is None:
             zetaxstar = tb.calc_zetaxstar(rho, self.eos_dict['Cmol2seg'], self.eos_dict['xskl'], self.eos_dict['sigmakl'])
         
@@ -312,7 +312,7 @@ class Amonomer():
         self._check_density(rho)
         self._check_temerature_dependent_parameters(T)
         self._check_composition_dependent_parameters(xi)
-        
+
         zetax = tb.calc_zetax(rho, self.eos_dict['Cmol2seg'], self.eos_dict['xskl'], self.eos_dict['dkl'])
         zetaxstar = tb.calc_zetaxstar(rho, self.eos_dict['Cmol2seg'], self.eos_dict['xskl'], self.eos_dict['sigmakl'])
         

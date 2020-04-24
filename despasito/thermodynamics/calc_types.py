@@ -387,7 +387,7 @@ def flash(eos, sys_dict):
         opts = {}
 
     # Initialize Variables
-    l_c = len(eos.eos_dict['nui'])
+    l_c = len(eos.nui)
     if l_c != 2:
         raise ValueError("Only binary systems are currently supported for flash calculations, {} were given.".format(l_c))
     l_x = np.array(T_list).shape[0]

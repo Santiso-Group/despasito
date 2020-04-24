@@ -188,7 +188,7 @@ class Achain():
     
         Cii = prefactor(self.eos_dict['l_rii_avg'], self.eos_dict['l_aii_avg'])
 
-        g1 = (1.0 / (2.0 * np.pi * self.eos_dict['epsilonii_avg'] * self.eos_dict['dii_eff']**3)) * (3.0 * da1iidrhos - Cii * self.eos_dict['l_aii_avg'] * (self.eos_dict['x0ii']**self.eos_dict['l_aii_avg']) * np.einsum("ij,i->ij", (a1sii_l_aii_avg + Bii_l_aii_avg), 1.0 / (rho * constants.Nav * self.eos_dict['Cmol2seg'])) + (Cii * self.eos_dict['l_rii_avg'] *  (self.eos_dict['x0ii']**self.eos_dict['l_rii_avg'])) * np.einsum("ij,i->ij", (a1sii_l_rii_avg + Bii_l_rii_avg), 1.0 / (rho * constants.Nav * self.eos_dict['Cmol2seg'])))
+        g1 = (1.0 / (2.0 * np.pi * self.eos_dict['epsilonii_avg'] * self.eos_dict['dii_eff']**3 * constants.Nav**2)) * (3.0 * da1iidrhos - Cii * self.eos_dict['l_aii_avg'] * (self.eos_dict['x0ii']**self.eos_dict['l_aii_avg']) * np.einsum("ij,i->ij", (a1sii_l_aii_avg + Bii_l_aii_avg), 1.0 / (rho * self.eos_dict['Cmol2seg'])) + (Cii * self.eos_dict['l_rii_avg'] *  (self.eos_dict['x0ii']**self.eos_dict['l_rii_avg'])) * np.einsum("ij,i->ij", (a1sii_l_rii_avg + Bii_l_rii_avg), 1.0 / (rho * self.eos_dict['Cmol2seg'])))
 
         return g1
     
@@ -244,12 +244,14 @@ class Achain():
         
         eKC2 = np.einsum("i,j->ij", KHS / rho / self.eos_dict['Cmol2seg'], self.eos_dict['epsilonii_avg'] * (Cii**2))
         
-        g2MCA = (1.0 / (2.0 * np.pi * (self.eos_dict['epsilonii_avg']**2) * self.eos_dict['dii_eff']**3)) * (( \
-                3.0 * da2iidrhos) - (eKC2 * self.eos_dict['l_rii_avg'] * (self.eos_dict['x0ii']**(2.0 * self.eos_dict['l_rii_avg']))) \
-                * (a1sii_2l_rii_avg + Bii_2l_rii_avg) / constants.Nav + eKC2 * (self.eos_dict['l_rii_avg'] + self.eos_dict['l_aii_avg']) \
-                * (self.eos_dict['x0ii']**(self.eos_dict['l_rii_avg'] + self.eos_dict['l_aii_avg'])) * (a1sii_l_rii_avgl_aii_avg + \
-                Bii_l_aii_avgl_rii_avg) / constants.Nav - eKC2 * self.eos_dict['l_aii_avg'] * (self.eos_dict['x0ii']**(2.0 * self.eos_dict['l_aii_avg'])) \
-                * (a1sii_2l_aii_avg + Bii_2l_aii_avg) / constants.Nav)
+        g2MCA = (1.0 / (2.0 * np.pi * (self.eos_dict['epsilonii_avg']**2) * self.eos_dict['dii_eff']**3 * constants.Nav**2)) * ((3.0 * da2iidrhos) \
+                - (eKC2 * self.eos_dict['l_rii_avg'] * (self.eos_dict['x0ii']**(2.0 * self.eos_dict['l_rii_avg']))) \
+                   * (a1sii_2l_rii_avg + Bii_2l_rii_avg) \
+                + eKC2 * (self.eos_dict['l_rii_avg'] + self.eos_dict['l_aii_avg']) \
+                   * (self.eos_dict['x0ii']**(self.eos_dict['l_rii_avg'] + self.eos_dict['l_aii_avg'])) * (a1sii_l_rii_avgl_aii_avg + \
+                Bii_l_aii_avgl_rii_avg) \
+                - eKC2 * self.eos_dict['l_aii_avg'] * (self.eos_dict['x0ii']**(2.0 * self.eos_dict['l_aii_avg'])) \
+                   * (a1sii_2l_aii_avg + Bii_2l_aii_avg))
 
         g2 = (1.0 + gammacii) * g2MCA
         
@@ -278,7 +280,7 @@ class Achain():
         self._check_temerature_dependent_parameters(T)
         self._check_composition_dependent_parameters(xi)
         kT = T * constants.kb
-        
+
         zetax = tb.calc_zetax(rho, self.eos_dict['Cmol2seg'], self.eos_dict['xskl'], self.eos_dict['dkl'])
         gdHS = self.gdHS(rho, T, xi, zetax=zetax)
         g1 = self.g1(rho, T, xi, zetax=zetax)
@@ -296,10 +298,6 @@ class Achain():
         if np.any(np.isnan(Achain)):
             logger.error("Some Helmholtz values are NaN, check energy parameters.")
 
-   #     tmp = np.transpose(np.array([rho*constants.Nav, self.gdHS(rho, T, xi)[:,0], self.gdHS(rho, T, xi)[:,1], self.g1(rho, T, xi)[:,0], self.g1(rho, T, xi)[:,1], self.g2(rho, T, xi)[:,0], self.g2(rho, T, xi)[:,1], Achain]))
-   #     np.savetxt("new_method.csv",tmp,delimiter=",")
-   #     sys.exit("stop")
-        
         return Achain
     
     def _check_density(self, rho):
