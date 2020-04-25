@@ -19,7 +19,7 @@ from . import data_classes
 
 logger = logging.getLogger(__name__)
 
-def fit(eos, thermo_dict):
+def fit(thermo_dict):
     r"""
     Fit defined parameters for equation of state object with given experimental data. 
 
@@ -28,8 +28,6 @@ def fit(eos, thermo_dict):
 
     Parameters
     ----------
-    eos : obj
-        Equation of state output that writes pressure, max density, chemical potential, updates parameters, and evaluates objective functions. For parameter fitting algorithm See equation of state documentation for more details.
     thermo_dict : dict
         Dictionary of instructions for thermodynamic calculations and parameter fitting.
 
@@ -44,6 +42,7 @@ def fit(eos, thermo_dict):
         - exp_data (dict) - This dictionary is made up of a dictionary for each data set that the parameters are fit to. Each dictionary is converted into an object and saved back to this structure before parameter fitting begins. Each key is an arbitrary string used to identify the data set and used later in reporting objective function values during the fitting process. See data type objects for more details.
 
             - name (str) - One of the supported data type objects to fit parameters
+            - eos_obj (obj) - Equation of state output that writes pressure, max density, chemical potential, updates parameters, and evaluates objective functions. For parameter fitting algorithm See equation of state documentation for more details.
 
         - global_dict (dict), Optional - kwargs used in global optimization method. See :func:`~despasito.fit_parameters.fit_funcs.global_minimization`.
 
@@ -92,10 +91,6 @@ def fit(eos, thermo_dict):
     if list(thermo_dict.keys()):
         logger.info("Note: thermo_dict keys: {}, were not used.".format(", ".join(list(thermo_dict.keys()))))
 
-    if "bounds" not in thermo_dict:
-        bounds = np.empty((len(opt_params["fit_params"]),2))
-    bounds = ff.check_parameter_bounds(opt_params, eos, bounds)
-
     # Reformat exp. data into formatted dictionary
     exp_dict = {}
     pkgpath = os.path.dirname(data_classes.__file__)
@@ -124,6 +119,12 @@ def fit(eos, thermo_dict):
             raise AttributeError("Data set, {}, did not properly initiate object".format(key))
 
     # Generate initial guess for parameters if none was given
+
+    if "bounds" not in thermo_dict:
+        bounds = np.empty((len(opt_params["fit_params"]),2))
+    eos = exp_dict[list(exp_dict.keys())[0]].eos # since all eos objects use the same eos, it doesn't really matter
+    bounds = ff.check_parameter_bounds(opt_params, eos, bounds)
+
     if "beadparams0" in opt_params:
         beadparams0 = opt_params["beadparams0"]
     else:
@@ -138,7 +139,7 @@ def fit(eos, thermo_dict):
 
     # Run Parameter Fitting
     try:
-        result = ff.global_minimization(global_method, beadparams0, bounds, opt_params["fit_bead"], opt_params["fit_params"], eos, exp_dict, **dicts)
+        result = ff.global_minimization(global_method, beadparams0, bounds, opt_params["fit_bead"], opt_params["fit_params"], exp_dict, **dicts)
 
         print(result.keys())
         logger.info("Fitting terminated:\n{}".format(result.message))

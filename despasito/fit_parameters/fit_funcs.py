@@ -242,7 +242,7 @@ class BasinBounds(object):
         return tmax and tmin
 
 
-def global_minimization(global_method, beadparams0, bounds, fit_bead, fit_params, eos, exp_dict, global_dict={}, minimizer_dict={}):
+def global_minimization(global_method, beadparams0, bounds, fit_bead, fit_params, exp_dict, global_dict={}, minimizer_dict={}):
     r"""
     Fit defined parameters for equation of state object with given experimental data. 
 
@@ -261,8 +261,6 @@ def global_minimization(global_method, beadparams0, bounds, fit_bead, fit_params
         Name of bead whose parameters are being fit, should be in bead list of beadconfig
     fit_params : list[str]
         This list of contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
-    eos : obj
-        Equation of state output that writes pressure, max density, chemical potential, updates parameters, and evaluates objective functions. For parameter fitting algorithm See equation of state documentation for more details.
     exp_dict : dict
         Dictionary of experimental data objects.
     global_dict : dict, Optional
@@ -321,7 +319,7 @@ def global_minimization(global_method, beadparams0, bounds, fit_bead, fit_params
         except:
         	raise TypeError("Could not initialize BasinStep and/or BasinBounds")
 
-        result = spo.basinhopping(compute_obj, beadparams0, **global_dict, accept_test=custombounds, disp=True, minimizer_kwargs={"args": (fit_bead, fit_params, eos, exp_dict),**minimizer_dict})
+        result = spo.basinhopping(compute_obj, beadparams0, **global_dict, accept_test=custombounds, disp=True, minimizer_kwargs={"args": (fit_bead, fit_params, exp_dict),**minimizer_dict})
 
     elif global_method == "differential_evolution":
 
@@ -332,7 +330,7 @@ def global_minimization(global_method, beadparams0, bounds, fit_bead, fit_params
                 new_global_dict[key] = value
         global_dict = new_global_dict
 
-        result = spo.differential_evolution(compute_obj, bounds, args=(fit_bead, fit_params, eos, exp_dict), **global_dict)
+        result = spo.differential_evolution(compute_obj, bounds, args=(fit_bead, fit_params, exp_dict), **global_dict)
 
     elif global_method == "brute":
 
@@ -343,7 +341,7 @@ def global_minimization(global_method, beadparams0, bounds, fit_bead, fit_params
                 new_global_dict[key] = value
         global_dict = new_global_dict
 
-        result = spo.brute(compute_obj, bounds, args=(fit_bead, fit_params, eos, exp_dict), **global_dict)
+        result = spo.brute(compute_obj, bounds, args=(fit_bead, fit_params, exp_dict), **global_dict)
 
     else:
         raise ValueError("Global optimization method, {}, is not currently supported. Try: {}".format(global_method,", ".join(methods)))
@@ -351,7 +349,7 @@ def global_minimization(global_method, beadparams0, bounds, fit_bead, fit_params
     return result
 
 
-def compute_obj(beadparams, fit_bead, fit_params, eos, exp_dict):
+def compute_obj(beadparams, fit_bead, fit_params, exp_dict):
     r"""
     Fit defined parameters for equation of state object with given experimental data. 
 
@@ -367,8 +365,6 @@ def compute_obj(beadparams, fit_bead, fit_params, eos, exp_dict):
     fit_params : list[str]
         This list of contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
 
-    eos : obj
-        Equation of state output that writes pressure, max density, chemical potential, updates parameters, and evaluates objective functions. For parameter fitting algorithm See equation of state documentation for more details.
     exp_dict : dict
         Dictionary of experimental data objects.
 
@@ -384,15 +380,14 @@ def compute_obj(beadparams, fit_bead, fit_params, eos, exp_dict):
     if len(beadparams) != len(fit_params):
         raise ValueError("The length of initial guess vector should be the same number of parameters to be fit.")    
 
-    for i, param in enumerate(fit_params):
-        eos.update_parameters(fit_bead, param, beadparams[i])
-    eos.parameter_refresh()
-
     # Compute obj_function
     obj_function = []
     for key,data_obj in exp_dict.items():
         try:
-            obj_function.append(data_obj.objective(eos))
+            for i, param in enumerate(fit_params):
+                data_obj.eos.update_parameters(fit_bead, param, beadparams[i])
+            data_obj.eos.parameter_refresh()
+            obj_function.append(data_obj.objective())
         except:
             raise ValueError("Failed to evaluate objective function for {} of type {}.".format(key,data_obj.name))
 

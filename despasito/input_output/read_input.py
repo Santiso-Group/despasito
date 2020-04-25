@@ -77,8 +77,13 @@ def extract_calc_data(input_fname, path='.', **args):
 
     ## Make bead data dictionary for EOS
     #process input file
-    beads, nui = process_bead_data(input_dict['beadconfig'])
-    eos_dict = {'beads':beads,'nui':nui}
+    if 'beadconfig' in input_dict:
+        beads, nui = process_bead_data(input_dict['beadconfig'])
+        eos_dict = {'beads':beads,'nui':nui}
+    elif "opt_params" in input_dict:
+        eos_dict = {}
+    else:
+        raise ValueError("Bead configuration line is missing for thermodynamic calculation.")
 
     #read EOS groups file
     with open(input_dict['EOSgroup'], 'r') as f:
@@ -117,6 +122,12 @@ def extract_calc_data(input_fname, path='.', **args):
         logger.info("The following thermo calculation parameters have been provided: {}\n".format((", ".join(thermo_dict.keys()))))
     else: # parameter fitting
         thermo_dict = process_param_fit_inputs(thermo_dict)
+        for exp_key in thermo_dict["exp_data"]:
+            if "eos_dict" not in thermo_dict["exp_data"][exp_key]:
+                thermo_dict["exp_data"][exp_key]["eos_dict"] = {}
+            for key, value in eos_dict.items():
+                if key not in thermo_dict["exp_data"][exp_key]["eos_dict"]:
+                    thermo_dict["exp_data"][exp_key]["eos_dict"][key] = value
         tmp = ""
         for key, value in thermo_dict["exp_data"].items():
             tmp += " {} ({}),".format(key,value["name"])
@@ -367,6 +378,9 @@ def process_exp_data(exp_data_dict):
         elif key == "file":
             file_dict = process_exp_data_file(value)
             exp_data.update(file_dict)
+        elif key == "beadconfig":
+            beads, nui = process_bead_data(value)
+            exp_data["eos_dict"] = {'beads':beads,'nui':nui}
         else:
             exp_data[key] = value
 
@@ -422,9 +436,14 @@ def process_exp_data_file(fname):
     for key in key_del:
         file_dict.pop(key,None)
 
-    if xi: file_dict["xi"] = np.transpose(np.array([np.array(x) for x in xi]))
-    if yi: file_dict["yi"] = np.transpose(np.array([np.array(y) for y in yi]))
-    if zi: file_dict["zi"] = np.transpose(np.array([np.array(z) for z in zi]))
+    if xi:
+        file_dict["xi"] = np.transpose(np.array([np.array(x) for x in xi]))
+
+    if yi:
+        file_dict["yi"] = np.transpose(np.array([np.array(y) for y in yi]))
+
+    if zi:
+        file_dict["zi"] = np.transpose(np.array([np.array(z) for z in zi]))
 
     return file_dict
 

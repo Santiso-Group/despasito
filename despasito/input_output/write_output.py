@@ -104,7 +104,7 @@ def writeout_thermo_dict(output_dict,calctype,output_file="thermo_output.txt"):
 #                  Write Parameter Fitting Output                    #
 #                                                                    #
 ######################################################################
-def writeout_fit_dict(output_dict,eos,output_file="fit_output.txt"):
+def writeout_fit_dict(output_dict,output_file="fit_output.txt"):
     """
     Write out result of fitting calculation.
 
@@ -114,8 +114,6 @@ def writeout_fit_dict(output_dict,eos,output_file="fit_output.txt"):
     ----------
     output_dict : dict
         Dictionary of given and calculated information from thermodynamic module.
-    eos : obj
-        Equation of state output that writes pressure, max density, chemical potential, updates parameters, and evaluates objective functions. For parameter fitting algorithm See equation of state documentation for more details.
     output_file : str, Optional, default: thermo_output.txt
         Name of output file
 

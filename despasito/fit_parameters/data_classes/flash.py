@@ -63,6 +63,11 @@ class Data(ExpDataTemplate):
         except:
             self.weights = {}
 
+        if "eos_obj" in data_dict:
+            self.eos = data_dict["eos_obj"]
+        else:
+            raise ValueError("An eos object should have been included")
+
         if "xi" in data_dict: 
             self._thermodict["xilist"] = data_dict["xi"]
             if 'xi' in self.weights:
@@ -124,15 +129,10 @@ class Data(ExpDataTemplate):
         if "mpObj" in data_dict:
             self._thermodict["mpObj"] = data_dict["mpObj"]
 
-    def _thermo_wrapper(self, eos):
+    def _thermo_wrapper(self):
 
         """
         Generate thermodynamic predictions from eos object
-
-        Parameters
-        ----------
-        eos : obj
-            EOS object with updated parameters
 
         Returns
         -------
@@ -141,22 +141,17 @@ class Data(ExpDataTemplate):
         """
 
         try:
-            output_dict = thermo(eos, self._thermodict)
+            output_dict = thermo(self.eos, self._thermodict)
             output = [output_dict['xi'],output_dict["yi"]]
         except:
             raise ValueError("Calculation of flash failed")
 
         return output
 
-    def objective(self, eos):
+    def objective(self):
 
         """
         Generate objective function value from this dataset
-
-        Parameters
-        ----------
-        eos : obj
-            EOS object with updated parameters
 
         Returns
         -------
@@ -165,11 +160,11 @@ class Data(ExpDataTemplate):
         """
 
         # objective function
-        phase_list = self._thermo_wrapper(eos)
+        phase_list = self._thermo_wrapper()
         phase_list, len_cluster = ff.reformat_ouput(phase_list)
         phase_list = np.transpose(np.array(phase_list))
 
-        ncomp = np.shape(eos.eos_dict['nui'])[0]
+        ncomp = np.shape(self.eos.eos_dict['nui'])[0]
    
         obj_value = np.zeros(2)
 

@@ -56,6 +56,11 @@ class Data(ExpDataTemplate):
         self.name = data_dict["name"]
         self._thermodict = {}
 
+        if "eos_obj" in data_dict:
+            self.eos = data_dict["eos_obj"]
+        else:
+            raise ValueError("An eos object should have been included")
+
         try:
             self.weights = data_dict["weights"]
         except:
@@ -131,15 +136,10 @@ class Data(ExpDataTemplate):
         if "mpObj" in data_dict:
             self._thermodict["mpObj"] = data_dict["mpObj"]
 
-    def _thermo_wrapper(self, eos):
+    def _thermo_wrapper(self):
 
         """
         Generate thermodynamic predictions from eos object
-
-        Parameters
-        ----------
-        eos : obj
-            EOS object with updated parameters
 
         Returns
         -------
@@ -149,29 +149,24 @@ class Data(ExpDataTemplate):
 
         if self.calctype == "phase_xiT":
             try:
-                output_dict = thermo(eos, self._thermodict)
+                output_dict = thermo(self.eos, self._thermodict)
                 output = [output_dict['P'],output_dict["yi"]]
             except:
                 raise ValueError("Calculation of calc_xT_phase failed")
 
         elif self.calctype == "phase_yiT":
             try:
-                output_dict = thermo(eos, self._thermodict)
+                output_dict = thermo(self.eos, self._thermodict)
                 output = [output_dict['P'],output_dict["xi"]]
             except:
                 raise ValueError("Calculation of calc_yT_phase failed")
 
         return output
 
-    def objective(self, eos):
+    def objective(self):
 
         """
         Generate objective function value from this dataset
-
-        Parameters
-        ----------
-        eos : obj
-            EOS object with updated parameters
 
         Returns
         -------
@@ -180,7 +175,7 @@ class Data(ExpDataTemplate):
         """
 
         # objective function
-        phase_list = self._thermo_wrapper(eos)
+        phase_list = self._thermo_wrapper()
         phase_list, len_cluster = ff.reformat_ouput(phase_list)
         phase_list = np.transpose(np.array(phase_list))
    

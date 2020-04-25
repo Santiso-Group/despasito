@@ -38,8 +38,6 @@ def run(filename="input.json", path=".", **kwargs):
     logger.info("Begin processing input file: %s" % filename)
     eos_dict, thermo_dict, output_file = read_input.extract_calc_data(filename, path, **kwargs)
 
-    eos_dict['jit'] = kwargs['jit']
-    eos_dict['cython'] = kwargs['cython']
     thermo_dict['mpObj'] = kwargs['mpObj']
 
     if output_file:
@@ -51,15 +49,23 @@ def run(filename="input.json", path=".", **kwargs):
     logger.debug("Thermo dict:", thermo_dict)
     logger.info("Finish processing input file: {}".format(filename))
     
-    eos = eos_mod(**eos_dict)
-    
     # Run either parametrization or thermodynamic calculation
     if "opt_params" in list(thermo_dict.keys()):
+        for key,exp_dict in thermo_dict["exp_data"].items():
+            if key is not "opt_params":
+                eos_dict = exp_dict["eos_dict"]
+                thermo_dict["exp_data"][key].pop("eos_dict", None)
+                eos_dict['jit'] = kwargs['jit']
+                eos_dict['cython'] = kwargs['cython']
+                thermo_dict["exp_data"][key]["eos_obj"] = eos_mod(**eos_dict)
         logger.info("Initializing parametrization procedure")
-        output_dict = fit(eos, thermo_dict)
+        output_dict = fit(thermo_dict)
         logger.info("Finished parametrization")
-        write_output.writeout_fit_dict(output_dict,eos,**file_dict)
+        write_output.writeout_fit_dict(output_dict,**file_dict)
     else:
+        eos_dict['jit'] = kwargs['jit']
+        eos_dict['cython'] = kwargs['cython']
+        eos = eos_mod(**eos_dict)
         logger.info("Initializing thermodynamic calculation")
         output_dict = thermo(eos, thermo_dict)
         logger.info("Finished thermodynamic calculation")

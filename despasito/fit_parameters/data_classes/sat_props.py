@@ -62,6 +62,11 @@ class Data(ExpDataTemplate):
         except:
             self.weights = {}
 
+        if "eos_obj" in data_dict:
+            self.eos = data_dict["eos_obj"]
+        else:
+            raise ValueError("An eos object should have been included")
+
         if "xi" in data_dict:
             self._thermodict["xilist"] = data_dict["xi"]
         if "yi" in data_dict:
@@ -116,15 +121,10 @@ class Data(ExpDataTemplate):
         if "mpObj" in data_dict:
             self._thermodict["mpObj"] = data_dict["mpObj"]
 
-    def _thermo_wrapper(self, eos):
+    def _thermo_wrapper(self):
 
         """
         Generate thermodynamic predictions from eos object
-
-        Parameters
-        ----------
-        eos : obj
-            EOS object with updated parameters
 
         Returns
         -------
@@ -134,14 +134,14 @@ class Data(ExpDataTemplate):
 
         # Check bead type
         if 'xilist' not in self._thermodict:
-            if len(eos.eos_dict['nui']) > 1:
+            if len(self.eos.eos_dict['nui']) > 1:
                 raise ValueError("Ambiguous instructions. Include xi to define intended component to obtain saturation properties")
             else:
                 self._thermodict['xilist'] = np.array([[1.0] for x in range(len(self._thermodict['Tlist']))])
  
         # Run thermo calculations
         try:
-            output_dict = thermo(eos, self._thermodict)
+            output_dict = thermo(self.eos, self._thermodict)
             output = [output_dict["Psat"],output_dict["rhol"],output_dict["rhov"]]
         except:
             raise ValueError("Calculation of calc_Psat failed")
@@ -149,15 +149,10 @@ class Data(ExpDataTemplate):
         return output
 
 
-    def objective(self, eos):
+    def objective(self):
 
         """
         Generate objective function value from this dataset
-
-        Parameters
-        ----------
-        eos : obj
-            EOS object with updated parameters
 
         Returns
         -------
@@ -165,7 +160,7 @@ class Data(ExpDataTemplate):
             A value for the objective function
         """
 
-        phase_list = self._thermo_wrapper(eos)
+        phase_list = self._thermo_wrapper()
 
         ## Reformat array of results
         phase_list, len_list = ff.reformat_ouput(phase_list)
