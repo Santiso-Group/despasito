@@ -2370,7 +2370,7 @@ def calc_flash(P, T, eos, rhodict={}, maxiter=200, tol=1e-9):
     if lx != 2:
         raise ValueError("Only binary systems are currently supported for flash calculations, {} were given.".format(lx))
 
-    Psat, Ki, xi, yi, phil, phiv = [np.zeros(lx) for i in np.arange(6)]
+    Psat, Ki0, xi, yi, phil, phiv = [np.zeros(lx) for i in np.arange(6)]
 
     # Calculate Psat and Ki
     for i in range(np.size(xi)):
@@ -2381,39 +2381,47 @@ def calc_flash(P, T, eos, rhodict={}, maxiter=200, tol=1e-9):
             Psat[i], NaNbead = setPsat(i, eos)
             if np.isnan(Psat[i]):
                 logger.error("Component, {}, is beyond it's critical point. Add an exception to setPsat, otherwise assumed 1".format(NaNbead))
-        Ki[i] = Psat[i]/P
+        Ki0[i] = Psat[i]/P
 
-    if np.any(np.isnan(Ki)):
-        ind = np.where(np.isnan(Ki)==False)[0]
+    if np.any(np.isnan(Ki0)):
+        ind = np.where(np.isnan(Ki0)==False)[0]
         if ind.size == 2:
             logger.info("Guess in Ki values could not be made from saturation pressures. Arbitrarily choose, [1.5, 0.5]")
-            Ki = np.array([0.5, 1.5])
-        elif ind[0] == 0:
-            Ki[1] = 2.-Ki[0]
-        elif ind[0] == 1:
-            Ki[0] = 2.-Ki[1]
-            
-    if np.all(Ki>1.0):
-        ind = np.where(Ki[Ki<2.0]==max(Ki[Ki<2.0]))[0]
+            Ki0 = np.array([0.5, 1.5])
+    elif np.all(Ki0>1.0):
+        ind = np.where(Ki0[Ki0<2.0]==max(Ki0[Ki0<2.0]))[0]
         if ind.size == 0:
-            raise ValueError("All Ki values greater than 1: {}".format(Ki))
-    elif np.all(Ki<1.0):
-        ind = np.where(Ki==min(Ki))[0]
+            raise ValueError("All Ki values greater than 1: {}".format(Ki0))
+    elif np.all(Ki0<1.0):
+        ind = np.where(Ki0==min(Ki0))[0]
         if ind.size == 0:
-            raise ValueError("All Ki values less than 1: {}".format(Ki))
+            raise ValueError("All Ki values less than 1: {}".format(Ki0))
+    else:
+        ind = []
 
-    if ind[0] == 0:
-        Ki[1] = 2.-Ki[0]
-    elif ind[0] == 1:
-        Ki[0] = 2.-Ki[1]
+    if ind and ind[0] == 0:
+        Ki0[1] = 2.-Ki0[0]
+    elif ind and ind[0] == 1:
+        Ki0[0] = 2.-Ki0[1]
         
     err = 1
+    Ki = np.copy(Ki0)
+    flag_critical = 0
     for i in np.arange(maxiter):
         
         # Mole Fraction
         xi[0] = (1-Ki[1])/(Ki[0]-Ki[1])
         xi[1] = 1-xi[0]
+        if any(xi<0.0):
+            ind = np.where(xi<0.0)[0][0]
+            xi[ind] = np.sqrt(np.finfo(float).eps)
+            if ind == 0:
+                xi[1] = 1-xi[0]
+            elif ind == 0:
+                xi[0] = 1-xi[1]
+       
         yi = Ki*xi
+        logger.info("        xi: {}, yi: {}".format(xi,yi))
 
         # Fugacity Coefficients and New Ki values
         phil, rhol, flagl = calc_phil(P, T, xi, eos, rhodict=rhodict)
@@ -2428,7 +2436,12 @@ def calc_flash(P, T, eos, rhodict={}, maxiter=200, tol=1e-9):
         logger.info("  Guess Ki: {}, New Ki: {}, Error: {}".format(Ki,Kinew,err))
 
         # Check Objective function
-        if err < tol:
+        if np.all(np.abs(Ki-1.0) < 1e-6) and flag_critical < 2:
+            Ki = (2-np.sqrt(np.finfo(float).eps))*np.ones(2)
+            Ki[flag_critical] = np.sqrt(np.finfo(float).eps)
+            flag_critical += 1
+            logger.info("    Liquid and vapor mole fractions are equal, let search from Ki = {}".format(Ki))
+        elif err < tol:
             ind = np.where(Ki == min(Ki[Ki>0]))[0]
             err = np.abs(Kinew[ind] - Ki[ind]) / Ki[ind]
             if err < tol:

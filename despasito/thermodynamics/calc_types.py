@@ -132,7 +132,6 @@ def phase_xiT(eos, sys_dict):
         P_list, yi_list, flagv_list, flagl_list, obj_list = mpObj.pool_job(_phase_xiT_wrapper, inputs)
     else:
         P_list, yi_list, flagv_list, flagl_list, obj_list = MultiprocessingJob.serial_job(_phase_xiT_wrapper, inputs)
-    #P_list, yi_list, flagv_list, flagl_list, obj_list = batch_jobs( _phase_xiT_wrapper, inputs, ncores=ncores, logger=logger)
 
     logger.info("--- Calculation phase_xiT Complete ---")
 
@@ -283,7 +282,6 @@ def phase_yiT(eos, sys_dict):
         P_list, xi_list, flagv_list, flagl_list, obj_list = mpObj.pool_job(__phase_yiT_wrapper, inputs)
     else:
         P_list, xi_list, flagv_list, flagl_list, obj_list = MultiprocessingJob.serial_job(__phase_yiT_wrapper, inputs)
-    #P_list, xi_list, flagv_list, flagl_list, obj_list = batch_jobs( _phase_yiT_wrapper, inputs, ncores=ncores, logger=logger)
 
     logger.info("--- Calculation phase_yiT Complete ---")
 
@@ -399,7 +397,6 @@ def flash(eos, sys_dict):
         xi_list, yi_list, flagv_list, flagl_list, obj_list = mpObj.pool_job(_flash_wrapper, inputs)
     else:
         xi_list, yi_list, flagv_list, flagl_list, obj_list = MultiprocessingJob.serial_job(_flash_wrapper, inputs)
-    #xi_list, yi_list, flagv_list, flagl_list, obj_list = batch_jobs( _flash_wrapper, inputs, ncores=ncores, logger=logger)
 
     logger.info("--- Calculation flash Complete ---")
 
@@ -504,7 +501,6 @@ def sat_props(eos, sys_dict):
         Psat, rholsat, rhovsat = mpObj.pool_job(_sat_props_wrapper, inputs)
     else:
         Psat, rholsat, rhovsat = MultiprocessingJob.serial_job(_sat_props_wrapper, inputs)
-    #Psat, rholsat, rhovsat = batch_jobs( _sat_props_wrapper, inputs, ncores=ncores, logger=logger)
 
     logger.info("--- Calculation sat_props Complete ---")
 
@@ -613,7 +609,6 @@ def liquid_properties(eos, sys_dict):
         rhol, phil, flagl = mpObj.pool_job(_liquid_properties_wrapper, inputs)
     else:
         rhol, phil, flagl = MultiprocessingJob.serial_job(_liquid_properties_wrapper, inputs)
-    #rhol, phil, flagl = batch_jobs( _liquid_properties_wrapper, inputs, ncores=ncores, logger=logger)
 
     logger.info("--- Calculation liquid_properties Complete ---")
 
@@ -722,7 +717,6 @@ def vapor_properties(eos, sys_dict):
         rhov, phiv, flagv = mpObj.pool_job(_vapor_properties_wrapper, inputs)
     else:
         rhov, phiv, flagv = MultiprocessingJob.serial_job(_vapor_properties_wrapper, inputs)
-    #rhov, phiv, flagv = batch_jobs( _vapor_properties_wrapper, inputs, ncores=ncores, logger=logger)
 
     logger.info("--- Calculation vapor_properties Complete ---")
 
@@ -850,7 +844,6 @@ def solubility_parameter(eos, sys_dict):
         rhol, flagl, delta = mpObj.pool_job(_solubility_parameter_wrapper, inputs)
     else:
         rhol, flagl, delta = MultiprocessingJob.serial_job(_solubility_parameter_wrapper, inputs)
-    #rhol, flagl, delta = batch_jobs( _solubility_parameter_wrapper, inputs, ncores=ncores, logger=logger)
 
     logger.info("--- Calculation solubility_parameter Complete ---")
 
@@ -873,4 +866,114 @@ def _solubility_parameter_wrapper(args):
 
     return rhol, flagl, delta
 
+######################################################################
+#                                                                    #
+#               Solubility Parameter given xi and T                  #
+#                                                                    #
+######################################################################
+
+def check_eos(eos, sys_dict):
+
+    r"""
+    The following consistency checks are performed to ensure the calculated fugacity coefficients are thermodynamically consistent.
+
+    - 1. d(log phi) / dP = (Z - 1)/P
+    - 
+    
+    Parameters
+    ----------
+    eos : obj
+        An instance of the defined EOS class to be used in thermodynamic computations.
+    sys_dict: dict
+        A dictionary of all information given in the input .json file that wasn't used to create the EOS object (e.g. options for density array :func:`~despasito.thermodynamics.calc.PvsRho`).
+
+    Returns
+    -------
+    output_dict : dict
+        Output of dictionary containing given and calculated values
+    """
+
+    ## Extract and check input data
+    if 'Tlist' in sys_dict:
+        T_list = np.array(sys_dict['Tlist'],float)
+        logger.info("Using Tlist")
+        del sys_dict['Tlist']
+
+    variables = list(locals().keys())
+    if all([key not in variables for key in ["T_list"]]):
+        raise ValueError('Tlist are not specified')
+
+    if "Plist" in sys_dict:
+        P_list = np.array(sys_dict['Plist'])
+        logger.info("Using Plist")
+        del sys_dict['Plist']
+    else:
+        P_list = 101325.0 * np.ones_like(T_list)
+        logger.info("Assuming atmospheric pressure.")
+
+    if "xilist" in sys_dict:
+        xi_list = np.array(sys_dict['xilist'])
+        logger.info("Using xilist")
+        del sys_dict['xilist']
+    else:
+        xi_list = np.array([[1.0] for x in range(len(T_list))])
+        logger.info("Single mole fraction of one.")
+
+    if np.size(T_list) != np.size(xi_list, axis=0):
+        if len(T_list) == 1:
+            T_list = np.ones(len(xi_list))*T_list[0]
+            logger.info("The same temperature, {}, was used for all mole fraction values".format(T_list[0]))
+        if len(xi_list) == 1:
+            xi_list = np.array([xi_list[0] for x in range(len(T_list))])
+            logger.info("The same mole fraction values, {}, were used for all temperature values".format(xi_list[0]))
+        else:
+            raise ValueError("The number of provided temperatures and mole fraction sets are different")
+
+    if np.size(T_list) != np.size(P_list, axis=0):
+        if len(P_list) == 1:
+            P_list = np.ones(len(T_list))*P_list[0]
+            logger.info("The same pressure, {}, was used for all temperature values".format(P_list[0]))
+        else:
+            raise ValueError("The number of provided temperatures and pressure sets are different")
+
+    if 'ncores' in sys_dict:
+        ncores = sys_dict['ncores']
+    else:
+        ncores = 1
+
+    if 'mpObj' in sys_dict:
+        mpObj = sys_dict['mpObj']
+        flag_use_mp_object = True
+    else:
+        flag_use_mp_object = False
+
+    # Extract rho dict
+    if "rhodict" in sys_dict:
+        logger.info("Accepted options for P vs. density curve")
+        rhodict = sys_dict["rhodict"]
+        del sys_dict['rhodict']
+    else:
+        rhodict = {}
+
+    ## Optional values
+    opts = {}
+    for key, val in sys_dict.items():
+        if key in ['dT', 'tol']:
+            opts[key] = val
+            del sys_dict[key]
+
+    logger.info("The sys_dict keys: {}, were not used.".format(", ".join(list(sys_dict.keys()))))
+
+    ## Calculate solubility parameter
+    T_list = np.array(T_list)
+
+    inputs = [(P_list[i], T_list[i], xi_list[i], eos, opts) for i in range(len(T_list))]
+    if flag_use_mp_object:
+        rhol, flagl, delta = mpObj.pool_job(_solubility_parameter_wrapper, inputs)
+    else:
+        rhol, flagl, delta = MultiprocessingJob.serial_job(_solubility_parameter_wrapper, inputs)
+
+    logger.info("--- Calculation solubility_parameter Complete ---")
+
+    return {"P":P_list,"T":T_list,"xi":xi_list,"rhol":rhol,"delta":delta}
 

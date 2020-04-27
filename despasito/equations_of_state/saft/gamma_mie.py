@@ -75,6 +75,12 @@ class saft_gamma_mie(EOStemplate):
         self.eos_dict['beads'] = kwargs['beads']
         self.eos_dict['beadlibrary'] = kwargs['beadlibrary']
 
+        if "num_rings" in kwargs:
+            self.eos_dict['num_rings'] = kwargs['num_rings']
+            logger.info("Accepted component ring structure: {}".format(kwargs["num_rings"]))
+        else:
+            self.eos_dict['num_rings'] = np.zeros(len(self.eos_dict['nui']))
+
         massi = np.zeros(len(self.eos_dict['nui']))
         for i in range(len(self.eos_dict['nui'])):
             for k in range(np.size(self.eos_dict['beads'])):

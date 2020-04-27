@@ -74,6 +74,7 @@ def fit(thermo_dict):
             if "mpObj" in thermo_dict:
                 for k2 in list(exp_data.keys()):
                     exp_data[k2]["mpObj"] = thermo_dict["mpObj"]
+                keys_del.append("mpObj")
         # Optional inputs
         elif key == "bounds":
             bounds = value
@@ -120,8 +121,8 @@ def fit(thermo_dict):
 
     # Generate initial guess for parameters if none was given
 
-    if "bounds" not in thermo_dict:
-        bounds = np.empty((len(opt_params["fit_params"]),2))
+    if "bounds" not in locals():
+        bounds = np.zeros((len(opt_params["fit_params"]),2))
     eos = exp_dict[list(exp_dict.keys())[0]].eos # since all eos objects use the same eos, it doesn't really matter
     bounds = ff.check_parameter_bounds(opt_params, eos, bounds)
 
@@ -141,7 +142,6 @@ def fit(thermo_dict):
     try:
         result = ff.global_minimization(global_method, beadparams0, bounds, opt_params["fit_bead"], opt_params["fit_params"], exp_dict, **dicts)
 
-        print(result.keys())
         logger.info("Fitting terminated:\n{}".format(result.message))
         logger.info("Best Fit Parameters")
         logger.info("    Obj. Value: {}".format(result.fun))

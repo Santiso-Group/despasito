@@ -844,7 +844,7 @@ def calc_da2ii_1pchi_drhos(rho, Cmol2seg, epsilonii_avg, dii_eff, x0ii, l_rii_av
 
     return da2ii_1pchi_drhos
 
-def calc_Achain(rho, Cmol2seg, xi, T, nui, sigmakl, epsilonkl, dkl, xskl, l_rkl, l_akl, beads, beadlibrary, zetax, zetaxstar, KHS):
+def calc_Achain(rho, Cmol2seg, xi, T, nui, sigmakl, epsilonkl, dkl, xskl, l_rkl, l_akl, beads, beadlibrary, zetax, zetaxstar, KHS, num_rings):
     r"""
     Calculation of chain contribution of Helmholtz energy, :math:`A^{chain}`.
 
@@ -884,7 +884,7 @@ def calc_Achain(rho, Cmol2seg, xi, T, nui, sigmakl, epsilonkl, dkl, xskl, l_rkl,
         - l_r: :math:`\lambda^{r}_{k,k}`, Exponent of repulsive term between groups of type k
         - l_a: :math:`\lambda^{a}_{k,k}`, Exponent of attractive term between groups of type k
         - Vks: :math:`V_{k,s}`, Number of groups, k, in component
-        - Sk: Optional, :math:`S_{k}`, Shape parameter of group k
+        - Sk: Optional, :math:`S_{k}`, Shape parameter of group k, default: 1.
         - epsilon*: Optional, Interaction energy between each bead and association site. Asterisk represents string from sitenames.
         - K**: Optional, Bonding volume between each association site. Asterisk represents two strings from sitenames.
         - Nk*: Optional, The number of sites of from list sitenames. Asterisk represents string from sitenames.
@@ -1002,7 +1002,7 @@ def calc_Achain(rho, Cmol2seg, xi, T, nui, sigmakl, epsilonkl, dkl, xskl, l_rkl,
 
     Achain = 0.0
     for i in range(ncomp):
-        beadsum = -1.0
+        beadsum = -1.0 + num_rings[i]
 
         for k in range(ngroups):
             beadsum += (nui[i, k] * beadlibrary[beads[k]]["Vks"] * beadlibrary[beads[k]]["Sk"])
@@ -1457,7 +1457,7 @@ def assemble_Xika(Xika_elements,indices,Xika):
 #            Total A, Helmholtz Free Energy                #
 #                                                          #
 ############################################################
-def calc_A(*, rho, xi, T, beads, beadlibrary, massi, nui, Cmol2seg, xsk, xskl, dkk, epsilonkl, sigmakl, dkl, l_akl, l_rkl, Ckl, x0kl,epsilonHB, Kklab, nk):
+def calc_A(*, rho, xi, T, beads, beadlibrary, massi, nui, Cmol2seg, xsk, xskl, dkk, epsilonkl, sigmakl, dkl, l_akl, l_rkl, Ckl, x0kl,epsilonHB, Kklab, nk, num_rings=None):
     r"""
     Calculates total Helmholtz energy, :math:`\frac{A}{N k_{B} T}`.
 
@@ -1527,9 +1527,12 @@ def calc_A(*, rho, xi, T, beads, beadlibrary, massi, nui, Cmol2seg, xsk, xskl, d
     if any(np.array(xi) < 0.):
         raise ValueError("Mole fractions cannot be less than zero.")
 
+    if num_rings is None:
+        num_rings = np.zeros(len(xi))
+
     Aideal = calc_Aideal(xi, rho, massi, T)
     AHS, A1, A2, A3, zetax, zetaxstar, KHS = calc_Amono(rho, xi, nui, Cmol2seg, xsk, xskl, dkk, T,epsilonkl, sigmakl, dkl, l_akl, l_rkl, Ckl, x0kl)
-    Achain, sigmaii_avg, epsilonii_avg = calc_Achain(rho, Cmol2seg, xi, T, nui, sigmakl, epsilonkl, dkl, xskl, l_rkl, l_akl, beads, beadlibrary, zetax, zetaxstar, KHS)
+    Achain, sigmaii_avg, epsilonii_avg = calc_Achain(rho, Cmol2seg, xi, T, nui, sigmakl, epsilonkl, dkl, xskl, l_rkl, l_akl, beads, beadlibrary, zetax, zetaxstar, KHS, num_rings)
 
     indices = assoc_site_indices(xi, nui, nk)
     if indices.size != 0:
@@ -1550,7 +1553,7 @@ def calc_A(*, rho, xi, T, beads, beadlibrary, massi, nui, Cmol2seg, xsk, xskl, d
     return A
 
 
-def calc_Ares(*, rho, xi, T, beads, beadlibrary, massi, nui, Cmol2seg, xsk, xskl, dkk, epsilonkl, sigmakl, dkl, l_akl, l_rkl, Ckl, x0kl, epsilonHB, Kklab, nk):
+def calc_Ares(*, rho, xi, T, beads, beadlibrary, massi, nui, Cmol2seg, xsk, xskl, dkk, epsilonkl, sigmakl, dkl, l_akl, l_rkl, Ckl, x0kl, epsilonHB, Kklab, nk, num_rings=None):
     r"""
     Calculates residual Helmholtz energy, :math:`\frac{A^{res.}}{N k_{B} T}` that deviates from ideal.
 
@@ -1620,9 +1623,12 @@ def calc_Ares(*, rho, xi, T, beads, beadlibrary, massi, nui, Cmol2seg, xsk, xskl
     if any(np.array(xi) < 0.):
         raise ValueError("Mole fractions cannot be less than zero.")
 
+    if num_rings is None:
+        num_rings = np.zeros(len(xi))
+
     AHS, A1, A2, A3, zetax, zetaxstar, KHS = calc_Amono(rho, xi, nui, Cmol2seg, xsk, xskl, dkk, T, epsilonkl, sigmakl, dkl, l_akl, l_rkl, Ckl, x0kl)
 
-    Achain, sigmaii_avg, epsilonii_avg = calc_Achain(rho, Cmol2seg, xi, T, nui, sigmakl, epsilonkl, dkl, xskl, l_rkl, l_akl, beads, beadlibrary, zetax, zetaxstar, KHS)
+    Achain, sigmaii_avg, epsilonii_avg = calc_Achain(rho, Cmol2seg, xi, T, nui, sigmakl, epsilonkl, dkl, xskl, l_rkl, l_akl, beads, beadlibrary, zetax, zetaxstar, KHS, num_rings)
 
     indices = assoc_site_indices(xi, nui, nk)
     if indices.size != 0:

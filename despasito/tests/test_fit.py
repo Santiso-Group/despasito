@@ -25,7 +25,7 @@ beadlibrary = {'CH3OH': {'epsilon': 375.01, 'l_a': 6.0, 'l_r': 16.352, 'sigma': 
 eos = despasito.equations_of_state.eos(eos="saft.gamma_mie",beads=beads,nui=nui,beadlibrary=beadlibrary)
 
 ## Exp Data dict
-exp_data = {'Wiley': {'name': 'sat_props', 'calctype': 'sat_props', 'T': np.array([200.]), 'Psat': np.array([6.1000e+01]), 'rhol': np.array([27474.40699]), 'rhov': np.array([3.12109900e-03])}, 'Gibbard': {'name': 'sat_props', 'calctype': 'sat_props', 'T': np.array([288.1506]), 'Psat': np.array([ 9884.4])}}
+exp_data = {'Wiley': {'name': 'sat_props', "eos_obj":eos, 'calctype': 'sat_props', 'T': np.array([200.]), 'Psat': np.array([6.1000e+01]), 'rhol': np.array([27474.40699]), 'rhov': np.array([3.12109900e-03])}, 'Gibbard': {'name': 'sat_props', "eos_obj":eos, 'calctype': 'sat_props', 'T': np.array([288.1506]), 'Psat': np.array([ 9884.4])}}
 
 ## Optimization options
 opt_params = {"fit_bead" : "CH3OH", "fit_params": ["epsilon"], "epsilon_bounds" : [150.0, 400.0]}
@@ -40,7 +40,7 @@ def test_fit_import():
 def test_fit_1comp(eos=eos,thermo_dict=thermo_dict):
 
     thermo_dict = ri.process_param_fit_inputs(thermo_dict)
-    output = fit.fit(eos,thermo_dict)
+    output = fit.fit(thermo_dict)
         
     assert output["final_parameters"][0]==pytest.approx(384.93,abs=5e-1) and output["objective_value"]<1.1
 

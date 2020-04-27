@@ -55,21 +55,17 @@ def run(filename="input.json", path=".", **kwargs):
             if key is not "opt_params":
                 eos_dict = exp_dict["eos_dict"]
                 thermo_dict["exp_data"][key].pop("eos_dict", None)
-                eos_dict['jit'] = kwargs['jit']
-                eos_dict['cython'] = kwargs['cython']
                 thermo_dict["exp_data"][key]["eos_obj"] = eos_mod(**eos_dict)
         logger.info("Initializing parametrization procedure")
         output_dict = fit(thermo_dict)
         logger.info("Finished parametrization")
         write_output.writeout_fit_dict(output_dict,**file_dict)
     else:
-        eos_dict['jit'] = kwargs['jit']
-        eos_dict['cython'] = kwargs['cython']
         eos = eos_mod(**eos_dict)
         logger.info("Initializing thermodynamic calculation")
         output_dict = thermo(eos, thermo_dict)
         logger.info("Finished thermodynamic calculation")
         write_output.writeout_thermo_dict(output_dict,thermo_dict["calculation_type"],**file_dict)
 
-    thermo_dict['mpObj'].end_pool()
+    kwargs['mpObj'].end_pool()
     

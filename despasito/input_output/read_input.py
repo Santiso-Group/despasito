@@ -99,23 +99,26 @@ def extract_calc_data(input_fname, path='.', **args):
     except:
         logger.info("No EOScross file specified")
 
-    try:
-        eos_dict['sitenames'] = input_dict['association_site_names']
-        logger.info('Association sites have been accepted')
-    except:
-        logger.info('No association sites specified')
-
-    if "eos" in input_dict:
-        eos_dict['eos'] = input_dict["eos"]
-
     ## Make dictionary of data needed for thermodynamic calculation
+    EOS_flags = ['jit', 'cython']
     thermo_dict = {}
     for key, value in args.items():
-        thermo_dict[key] = value
+        if key in EOS_flags:
+            eos_dict[key] = value
+        else:
+            thermo_dict[key] = value
     # Extract relevant system state inputs
-    EOS_dict_keys = ['beadconfig', 'EOSgroup', 'EOScross','association_site_names',"output_file","eos"]
+    EOS_dict_keys = ['beadconfig', 'EOSgroup', 'EOScross',"output_file"]
     for key, value in input_dict.items():
-        if key not in EOS_dict_keys:
+        if key.split("_")[0] == "eos":
+            if len(key.split("_")) == 1:
+                eos_dict['eos'] = input_dict["eos"]
+            elif "_".join(key.split("_")[1:]) == 'association_site_names':
+                eos_dict['sitenames'] = input_dict[key]
+            else:
+                new_key = "_".join(key.split("_")[1:])
+                eos_dict[new_key] = input_dict[key]
+        elif key not in EOS_dict_keys:
             thermo_dict[key] = value
 
     if "opt_params" not in thermo_dict:

@@ -167,9 +167,10 @@ class MultiprocessingJob:
     def end_pool(self):
         """ Close multiprocessing pool
         """
-        self._pool.close()
-        self._pool.join()
-        self._remove_mp_logs()
+        if self.flag_use_mp:
+            self._pool.close()
+            self._pool.join()
+            self._remove_mp_logs()
 
 def initialize_mp_handler(level,logformat):
 #def initialize_mp_handler():

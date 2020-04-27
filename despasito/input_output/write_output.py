@@ -72,7 +72,7 @@ def writeout_thermo_dict(output_dict,calctype,output_file="thermo_output.txt"):
     keys = []
     matrix = []
     for key, value in output_dict.items():
-        tmp_matrix = np.transpose(np.array(value))
+        tmp_matrix = np.transpose(np.stack(value))
         if len(tmp_matrix.shape)==1:
             keys.append(key)
             matrix.append(np.array(value))
@@ -126,7 +126,7 @@ def writeout_fit_dict(output_dict,output_file="fit_output.txt"):
     with open(output_file,"w") as f:
         f.write(header)
         for i in range(len(output_dict["fit_parameters"])):
-            f.write("{}, {}".format(output_dict["fit_parameters"][i],output_dict["final_parameters"][i]))
+            f.write("{}, {}\n".format(output_dict["fit_parameters"][i],output_dict["final_parameters"][i]))
 
     # Add function to sort through and write out values
     # step 1, Update parameters for EOS object
