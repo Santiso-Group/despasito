@@ -45,7 +45,7 @@ def test_phase_xiT(eos=eos_co2_h2o,Tlist=Tlist,xilist=xilist):
     output = thermo.thermo(eos,{"calculation_type":"phase_xiT","Tlist":Tlist,"xilist":xilist})
         
 #    assert output["P"][0]==pytest.approx(1223211.573700886,abs=1e+1) and output["yi"][0]==pytest.approx([0.94880358, 0.05119642],abs=1e-4)
-    assert output["P"][0]==pytest.approx(3042623.2,abs=1e+1) and output["yi"][0]==pytest.approx([0.97701902, 0.02298098],abs=1e-4)
+    assert output["P"][0]==pytest.approx(3153001.9,abs=1e+1) and output["yi"][0]==pytest.approx([0.97669587, 0.02330413],abs=1e-4)
 
 #def test_phase_yiT(eos=eos_co2_h2o,Tlist=Tlist,yilist=yilist):
 #    output = thermo.thermo(eos,{"calculation_type":"phase_yiT","Tlist":Tlist,"yilist":yilist})
@@ -62,12 +62,12 @@ def test_liquid_properties(eos=eos_co2_h2o,Tlist=Tlist,xilist=xilist,Plist=Plist
     output = thermo.thermo(eos,{"calculation_type":"liquid_properties","Tlist":Tlist,"Plist":Plist,"xilist":xilist})
 
 #    assert output["rhol"][0]==pytest.approx(54072.87630577754,abs=1e-1) and output["phil"][0]==pytest.approx(np.array([2646.44010, 0.120295122]),abs=1e-1)
-    assert output["rhol"][0]==pytest.approx(54156.297,abs=1e-1) and output["phil"][0]==pytest.approx(np.array([6.04140887e+01, 2.79514245e-03]),abs=1e-1)
+    assert output["rhol"][0]==pytest.approx(54154.7,abs=1e-1) and output["phil"][0]==pytest.approx(np.array([6.22460530e+01, 2.79514815e-03]),abs=1e-1)
 
 def test_vapor_properties(eos=eos_co2_h2o,Tlist=Tlist,yilist=yilist,Plist=Plist):
 
     output = thermo.thermo(eos,{"calculation_type":"vapor_properties","Tlist":Tlist,"Plist":Plist,"yilist":yilist})
 
 #    assert output["rhov"][0]==pytest.approx(37.85937201,abs=1e-1) and output["phiv"][0]==pytest.approx(np.array([2.45619145, 0.37836741]),abs=1e-1)
-    assert output["rhov"][0]==pytest.approx(2156.81,abs=1e-1) and output["phiv"][0]==pytest.approx(np.array([0.90729601, 0.13974291]),abs=1e-1)
+    assert output["rhov"][0]==pytest.approx(2153.93,abs=1e-1) and output["phiv"][0]==pytest.approx(np.array([0.90729601, 0.13974291]),abs=1e-1)
     

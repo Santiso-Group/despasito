@@ -50,11 +50,6 @@ def phase_xiT(eos, sys_dict):
         xi_list = np.array(sys_dict['xilist'],float)
         logger.info("Using xilist")
 
-    if 'ncores' in sys_dict:
-        ncores = sys_dict['ncores']
-    else:
-        ncores = 1
-
     if 'mpObj' in sys_dict:
         mpObj = sys_dict['mpObj']
         flag_use_mp_object = True
@@ -211,11 +206,6 @@ def phase_yiT(eos, sys_dict):
         else:
             raise ValueError("The number of provided temperatures and mole fraction sets are different")
 
-    if 'ncores' in sys_dict:
-        ncores = sys_dict['ncores']
-    else:
-        ncores = 1
-
     if 'mpObj' in sys_dict:
         mpObj = sys_dict['mpObj']
         flag_use_mp_object = True
@@ -361,21 +351,11 @@ def flash(eos, sys_dict):
         else:
             raise ValueError("The number of provided temperatures and mole fraction sets are different")
 
-    if 'ncores' in sys_dict:
-        ncores = sys_dict['ncores']
-    else:
-        ncores = 1
-
     if 'mpObj' in sys_dict:
         mpObj = sys_dict['mpObj']
         flag_use_mp_object = True
     else:
         flag_use_mp_object = False
-
-    # Extract rho dict
-    if "rhodict" in sys_dict:
-        logger.info("Accepted options for P vs. density curve")
-        opts["rhodict"] = sys_dict["rhodict"]
 
     # Extract pressure optimization dict
     if "mole fraction options" in sys_dict:
@@ -383,6 +363,11 @@ def flash(eos, sys_dict):
         opts = sys_dict["mole fraction options"]
     else:
         opts = {}
+
+    # Extract rho dict
+    if "rhodict" in sys_dict:
+        logger.info("Accepted options for P vs. density curve")
+        opts["rhodict"] = sys_dict["rhodict"]
 
     # Initialize Variables
     l_c = len(eos.eos_dict['nui'])
@@ -482,11 +467,6 @@ def sat_props(eos, sys_dict):
         logger.info("Accepted options for P vs. density curve")
         opts["rhodict"] = sys_dict["rhodict"]
 
-    if 'ncores' in sys_dict:
-        ncores = sys_dict['ncores']
-    else:
-        ncores = 1
-
     if 'mpObj' in sys_dict:
         mpObj = sys_dict['mpObj']
         flag_use_mp_object = True
@@ -573,11 +553,6 @@ def liquid_properties(eos, sys_dict):
     else:
         P_list = 101325.0 * np.ones_like(T_list)
         logger.info("Assuming atmospheric pressure.")
-
-    if 'ncores' in sys_dict:
-        ncores = sys_dict['ncores']
-    else:
-        ncores = 1
 
     if 'mpObj' in sys_dict:
         mpObj = sys_dict['mpObj']
@@ -682,11 +657,6 @@ def vapor_properties(eos, sys_dict):
     else:
         P_list = 101325.0 * np.ones_like(T_list)
         logger.info("Assuming atmospheric pressure.")
-
-    if 'ncores' in sys_dict:
-        ncores = sys_dict['ncores']
-    else:
-        ncores = 1
 
     if 'mpObj' in sys_dict:
         mpObj = sys_dict['mpObj']
@@ -795,7 +765,7 @@ def solubility_parameter(eos, sys_dict):
         if len(T_list) == 1:
             T_list = np.ones(len(xi_list))*T_list[0]
             logger.info("The same temperature, {}, was used for all mole fraction values".format(T_list[0]))
-        if len(xi_list) == 1:
+        elif len(xi_list) == 1:
             xi_list = np.array([xi_list[0] for x in range(len(T_list))])
             logger.info("The same mole fraction values, {}, were used for all temperature values".format(xi_list[0]))
         else:
@@ -808,24 +778,11 @@ def solubility_parameter(eos, sys_dict):
         else:
             raise ValueError("The number of provided temperatures and pressure sets are different")
 
-    if 'ncores' in sys_dict:
-        ncores = sys_dict['ncores']
-    else:
-        ncores = 1
-
     if 'mpObj' in sys_dict:
         mpObj = sys_dict['mpObj']
         flag_use_mp_object = True
     else:
         flag_use_mp_object = False
-
-    # Extract rho dict
-    if "rhodict" in sys_dict:
-        logger.info("Accepted options for P vs. density curve")
-        rhodict = sys_dict["rhodict"]
-        del sys_dict['rhodict']
-    else:
-        rhodict = {}
 
     ## Optional values
     opts = {}
@@ -834,11 +791,12 @@ def solubility_parameter(eos, sys_dict):
             opts[key] = val
             del sys_dict[key]
 
-    logger.info("The sys_dict keys: {}, were not used.".format(", ".join(list(sys_dict.keys()))))
+    # Extract rho dict
+    if "rhodict" in sys_dict:
+        logger.info("Accepted options for P vs. density curve")
+        opts["rhodict"] = sys_dict["rhodict"]
 
     ## Calculate solubility parameter
-    T_list = np.array(T_list)
-
     inputs = [(P_list[i], T_list[i], xi_list[i], eos, opts) for i in range(len(T_list))]
     if flag_use_mp_object:
         rhol, flagl, delta = mpObj.pool_job(_solubility_parameter_wrapper, inputs)
@@ -872,7 +830,7 @@ def _solubility_parameter_wrapper(args):
 #                                                                    #
 ######################################################################
 
-def check_eos(eos, sys_dict):
+def verify_eos(eos, sys_dict):
 
     r"""
     The following consistency checks are performed to ensure the calculated fugacity coefficients are thermodynamically consistent.
@@ -894,14 +852,26 @@ def check_eos(eos, sys_dict):
     """
 
     ## Extract and check input data
+
+    ncomp = len(eos.eos_dict['nui'])
+    if "xilist" in sys_dict:
+        xi_list = np.array(sys_dict['xilist'])
+        logger.info("Using xilist")
+        del sys_dict['xilist']
+    elif ncomp == 2:
+        tmp = np.linspace(0,1,11)
+        xi_list = np.array([[x, 1.0-x] for x in tmp])
+        logger.info("Use array of mole fractions")
+    else:
+        raise ValueError("With more that 2 components, the mole fractions need to be specified")
+
     if 'Tlist' in sys_dict:
         T_list = np.array(sys_dict['Tlist'],float)
         logger.info("Using Tlist")
         del sys_dict['Tlist']
-
-    variables = list(locals().keys())
-    if all([key not in variables for key in ["T_list"]]):
-        raise ValueError('Tlist are not specified')
+    else:
+        T_list = 298.15*np.array(len(xi_list))
+        logger.info("Assume 298.15 K")
 
     if "Plist" in sys_dict:
         P_list = np.array(sys_dict['Plist'])
@@ -911,19 +881,11 @@ def check_eos(eos, sys_dict):
         P_list = 101325.0 * np.ones_like(T_list)
         logger.info("Assuming atmospheric pressure.")
 
-    if "xilist" in sys_dict:
-        xi_list = np.array(sys_dict['xilist'])
-        logger.info("Using xilist")
-        del sys_dict['xilist']
-    else:
-        xi_list = np.array([[1.0] for x in range(len(T_list))])
-        logger.info("Single mole fraction of one.")
-
     if np.size(T_list) != np.size(xi_list, axis=0):
         if len(T_list) == 1:
             T_list = np.ones(len(xi_list))*T_list[0]
             logger.info("The same temperature, {}, was used for all mole fraction values".format(T_list[0]))
-        if len(xi_list) == 1:
+        elif len(xi_list) == 1:
             xi_list = np.array([xi_list[0] for x in range(len(T_list))])
             logger.info("The same mole fraction values, {}, were used for all temperature values".format(xi_list[0]))
         else:
@@ -936,44 +898,58 @@ def check_eos(eos, sys_dict):
         else:
             raise ValueError("The number of provided temperatures and pressure sets are different")
 
-    if 'ncores' in sys_dict:
-        ncores = sys_dict['ncores']
-    else:
-        ncores = 1
-
     if 'mpObj' in sys_dict:
         mpObj = sys_dict['mpObj']
         flag_use_mp_object = True
     else:
         flag_use_mp_object = False
 
+    ## Optional values
+    opts = {}
+
     # Extract rho dict
     if "rhodict" in sys_dict:
         logger.info("Accepted options for P vs. density curve")
-        rhodict = sys_dict["rhodict"]
-        del sys_dict['rhodict']
-    else:
-        rhodict = {}
-
-    ## Optional values
-    opts = {}
-    for key, val in sys_dict.items():
-        if key in ['dT', 'tol']:
-            opts[key] = val
-            del sys_dict[key]
-
-    logger.info("The sys_dict keys: {}, were not used.".format(", ".join(list(sys_dict.keys()))))
+        opts["rhodict"] = sys_dict["rhodict"]
 
     ## Calculate solubility parameter
-    T_list = np.array(T_list)
-
     inputs = [(P_list[i], T_list[i], xi_list[i], eos, opts) for i in range(len(T_list))]
     if flag_use_mp_object:
-        rhol, flagl, delta = mpObj.pool_job(_solubility_parameter_wrapper, inputs)
+        residual_v1, residual_v2, flagv, log_phiv, residual_l1, residual_l2, flagl, log_phil = mpObj.pool_job(_verify_eos_wrapper, inputs)
     else:
-        rhol, flagl, delta = MultiprocessingJob.serial_job(_solubility_parameter_wrapper, inputs)
+        residual_v1, residual_v2, flagv, log_phiv, residual_l1, residual_l2, flagl, log_phil = MultiprocessingJob.serial_job(_verify_eos_wrapper, inputs)
 
-    logger.info("--- Calculation solubility_parameter Complete ---")
+    logger.info("--- Calculation verify_eos Complete ---")
 
-    return {"P":P_list,"T":T_list,"xi":xi_list,"rhol":rhol,"delta":delta}
+    return {"P":P_list, "T":T_list, "xi":xi_list, "residual_v1":residual_v1, "residual_v2":residual_v2, "flagv": flagv, "log_phivi":log_phiv, "residual_l1":residual_l1, "residual_l2":residual_l2, "flagl": flagl, "log_phili":log_phil}
+
+def _verify_eos_wrapper(args):
+
+    P, T, xi, eos, opts = args
+
+    logger.info("T (K), P (Pa), xi: {} {} {}, Let's Begin!".format(T, P, xi))
+
+    rhov, flagv = calc.calc_rhov(P, T, xi, eos, **opts)
+    if np.isnan(rhov):
+        logger.warning('Failed to calculate rhov at {} K and {} Pa'.format(T,P))
+        log_phiv, residual_v1, residual_v2 = np.nan, np.nan, np.nan
+    else:
+        phiv = eos.fugacity_coefficient(P, np.array([rhov]), xi, T)
+        log_phiv = np.log(phiv)
+        residual_v1 = calc.fugacity_test_1(P, T, xi, rhov, eos, **opts)
+        residual_v2 = calc.fugacity_test_2(P, T, xi, rhov, eos, **opts)
+        logger.info("rhov {}, flagv {}, log_phiv {}, log_phiv {}, residual1 {}, residual2 {}".format(rhov, flagv, np.sum(xi*log_phiv), log_phiv, residual_v1, residual_v2))
+
+    rhol, flagl = calc.calc_rhol(P, T, xi, eos, **opts)
+    if np.isnan(rhol):
+        logger.warning('Failed to calculate rhol at {} K and {} Pa'.format(T,P))
+        log_phil, residual_l1, residual_l2 = np.nan, np.nan, np.nan
+    else:
+        phil = eos.fugacity_coefficient(P, np.array([rhol]), xi, T)
+        log_phil = np.log(phil)
+        residual_l1 = calc.fugacity_test_1(P, T, xi, rhol, eos, **opts)
+        residual_l2 = calc.fugacity_test_2(P, T, xi, rhol, eos, **opts)
+        logger.info("rhol {}, flagl {}, log_phil {}, log_phil {}, residual1 {}, residual2 {}".format(rhol, flagl, np.sum(xi*log_phil), log_phil, residual_l1, residual_l2))
+
+    return residual_v1, residual_v2, flagv, log_phiv, residual_l1, residual_l2, flagl, log_phil
 
