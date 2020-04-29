@@ -2535,3 +2535,132 @@ def calc_dadT(rho, T, xi, eos, rhodict={}):
 
     return (Ap - Am) / (2.0 * step)
 
+######################################################################
+#                                                                    #
+#                          EOS Fugacity Test 1                       #
+#                                                                    #
+######################################################################
+def fugacity_test_1(P, T, xi, rho, eos, step_size=1e-5):
+    r"""
+    
+    Parameters
+    ----------
+    P : float
+        Pressure of the system [Pa]
+    T : float
+        Temperature of the system [K]
+    xi : numpy.ndarray
+        Liquid mole fraction of each component, sum(xi) should equal 1.0
+    rho : float
+        Density array. Length depends on values in rhodict [mol/:math:`m^3`]
+    eos : obj
+        An instance of the defined EOS class to be used in thermodynamic computations.
+
+    Returns
+    -------
+    Residual : float
+        
+    """
+
+    if type(rho) not in [list, np.ndarray]:
+        rho = np.array([rho])
+
+    Z = P / (rho * T * constants.R)
+    dP = P * step_size
+    log_phi_1 = np.sum(xi*np.log(eos.fugacity_coefficient(P+dP, rho, xi, T)))
+    log_phi_2 = np.sum(xi*np.log(eos.fugacity_coefficient(P-dP, rho, xi, T)))
+    residual = (log_phi_1-log_phi_2)/(2*dP) - (Z-1)/P
+
+    return residual
+
+######################################################################
+#                                                                    #
+#                          EOS Fugacity Test 2                       #
+#                                                                    #
+######################################################################
+def fugacity_test_2(P, T, xi, rho, eos, step_size=1e-6):
+    r"""
+    
+    Parameters
+    ----------
+    P : float
+        Pressure of the system [Pa]
+    T : float
+        Temperature of the system [K]
+    xi : numpy.ndarray
+        Liquid mole fraction of each component, sum(xi) should equal 1.0
+    rho : float
+        Density array. Length depends on values in rhodict [mol/:math:`m^3`]
+    eos : obj
+        An instance of the defined EOS class to be used in thermodynamic computations.
+
+    Returns
+    -------
+    Residual : float
+        
+    """
+
+    ncomp = len(xi)
+    if type(rho) not in [list, np.ndarray]:
+        rho = np.array([rho])
+
+#    drho = rho * step_size
+#    log_phi_1 = np.log(eos.fugacity_coefficient(P, rho+drho, xi, T))
+#    log_phi_2 = np.log(eos.fugacity_coefficient(P, rho-drho, xi, T))
+#    residual = np.sum(xi*(log_phi_1-log_phi_2)/(2*drho))
+
+    ind = np.where(xi>np.finfo("float").eps)[0]
+    if len(ind) == 1:
+        logger.error("Fugacity test two is for multicomponent systems.")
+    elif len(ind) != ncomp:
+        logger.info("There is not a significant amount of components {} in solution".format(np.setdiff1d(range(ncomp),ind)))
+
+    dy = step_size
+    dphi = np.zeros((2,ncomp))
+    for j, delta in enumerate((dy, -dy)):
+        y_tmp = np.copy(xi)
+        y_tmp[ind[0]] += delta
+        y_tmp[ind[-1]] -= delta
+        dphi[j,:] = eos.fugacity_coefficient(P, rho, y_tmp, T)
+    dphidx = (dphi[0] - dphi[1]) / (2.0 * dy)
+
+    residual = np.sum(xi*dphidx)
+
+    return residual
+
+######################################################################
+#                                                                    #
+#                  Activity Coefficient                              #
+#                                                                    #
+######################################################################
+def activity_coefficient(P, T, xi, yi, eos, step_size=1e-2):
+    r"""
+    
+    Parameters
+    ----------
+    P : float
+        Pressure of the system [Pa]
+    T : float
+        Temperature of the system [K]
+    xi : numpy.ndarray
+        Liquid mole fraction of each component, sum(xi) should equal 1.0
+    rho : float
+        Density array. Length depends on values in rhodict [mol/:math:`m^3`]
+    eos : obj
+        An instance of the defined EOS class to be used in thermodynamic computations.
+
+    Returns
+    -------
+    Residual : float
+        
+    """
+    ncomp = len(xi)
+    Psat = np.zeros(ncomp)
+    for i in range(ncomp):
+        tmp = np.zeros(ncomp)
+        tmp[i] = 1.
+        Psat[i], _, _ = calc_Psat(T, tmp, eos, **opts)
+
+    activity_coefficient = yi*P/(Psat*xi)
+
+    return activity_coefficient, Psat

@@ -873,4 +873,133 @@ def _solubility_parameter_wrapper(args):
 
     return rhol, flagl, delta
 
+######################################################################
+#                                                                    #
+#               Solubility Parameter given xi and T                  #
+#                                                                    #
+######################################################################
+
+def verify_eos(eos, sys_dict):
+
+    r"""
+    The following consistency checks are performed to ensure the calculated fugacity coefficients are thermodynamically consistent.
+
+    - 1. d(log phi) / dP = (Z - 1)/P
+    - 
+    
+    Parameters
+    ----------
+    eos : obj
+        An instance of the defined EOS class to be used in thermodynamic computations.
+    sys_dict: dict
+        A dictionary of all information given in the input .json file that wasn't used to create the EOS object (e.g. options for density array :func:`~despasito.thermodynamics.calc.PvsRho`).
+
+    Returns
+    -------
+    output_dict : dict
+        Output of dictionary containing given and calculated values
+    """
+
+    ## Extract and check input data
+
+    ncomp = len(eos.nui)
+    if "xilist" in sys_dict:
+        xi_list = np.array(sys_dict['xilist'])
+        logger.info("Using xilist")
+        del sys_dict['xilist']
+    elif ncomp == 2:
+        tmp = np.linspace(0,1,11)
+        xi_list = np.array([[x, 1.0-x] for x in tmp])
+        logger.info("Use array of mole fractions")
+    else:
+        raise ValueError("With more that 2 components, the mole fractions need to be specified")
+
+    if 'Tlist' in sys_dict:
+        T_list = np.array(sys_dict['Tlist'],float)
+        logger.info("Using Tlist")
+        del sys_dict['Tlist']
+    else:
+        T_list = 298.15*np.array(len(xi_list))
+        logger.info("Assume 298.15 K")
+
+    if "Plist" in sys_dict:
+        P_list = np.array(sys_dict['Plist'])
+        logger.info("Using Plist")
+        del sys_dict['Plist']
+    else:
+        P_list = 101325.0 * np.ones_like(T_list)
+        logger.info("Assuming atmospheric pressure.")
+
+    if np.size(T_list) != np.size(xi_list, axis=0):
+        if len(T_list) == 1:
+            T_list = np.ones(len(xi_list))*T_list[0]
+            logger.info("The same temperature, {}, was used for all mole fraction values".format(T_list[0]))
+        elif len(xi_list) == 1:
+            xi_list = np.array([xi_list[0] for x in range(len(T_list))])
+            logger.info("The same mole fraction values, {}, were used for all temperature values".format(xi_list[0]))
+        else:
+            raise ValueError("The number of provided temperatures and mole fraction sets are different")
+
+    if np.size(T_list) != np.size(P_list, axis=0):
+        if len(P_list) == 1:
+            P_list = np.ones(len(T_list))*P_list[0]
+            logger.info("The same pressure, {}, was used for all temperature values".format(P_list[0]))
+        else:
+            raise ValueError("The number of provided temperatures and pressure sets are different")
+
+    if 'mpObj' in sys_dict:
+        mpObj = sys_dict['mpObj']
+        flag_use_mp_object = True
+    else:
+        flag_use_mp_object = False
+
+    ## Optional values
+    opts = {}
+
+    # Extract rho dict
+    if "rhodict" in sys_dict:
+        logger.info("Accepted options for P vs. density curve")
+        opts["rhodict"] = sys_dict["rhodict"]
+
+    ## Calculate solubility parameter
+    inputs = [(P_list[i], T_list[i], xi_list[i], eos, opts) for i in range(len(T_list))]
+    if flag_use_mp_object:
+        residual_v1, residual_v2, flagv, log_phiv, residual_l1, residual_l2, flagl, log_phil = mpObj.pool_job(_verify_eos_wrapper, inputs)
+    else:
+        residual_v1, residual_v2, flagv, log_phiv, residual_l1, residual_l2, flagl, log_phil = MultiprocessingJob.serial_job(_verify_eos_wrapper, inputs)
+
+    logger.info("--- Calculation verify_eos Complete ---")
+
+    return {"P":P_list, "T":T_list, "xi":xi_list, "residual_v1":residual_v1, "residual_v2":residual_v2, "flagv": flagv, "log_phiv": np.sum(xi_list*log_phiv), "log_phivi":log_phiv, "residual_l1":residual_l1, "residual_l2":residual_l2, "flagl": flagl, "log_phil": np.sum(xi_list*log_phiv), "log_phili":log_phil}
+
+def _verify_eos_wrapper(args):
+
+    P, T, xi, eos, opts = args
+
+    logger.info("T (K), P (Pa), xi: {} {} {}, Let's Begin!".format(T, P, xi))
+
+    rhov, flagv = calc.calc_rhov(P, T, xi, eos, **opts)
+    if np.isnan(rhov):
+        logger.warning('Failed to calculate rhov at {} K and {} Pa'.format(T,P))
+        phiv, residual_v1, residual_v2 = np.nan, np.nan, np.nan
+    else:
+        phiv = eos.fugacity_coefficient(P, np.array([rhov]), xi, T)
+        log_phiv = np.log(phiv)
+        residual_v1 = calc.fugacity_test_1(P, T, xi, rhov, eos, **opts)
+        residual_v2 = calc.fugacity_test_2(P, T, xi, rhov, eos, **opts)
+        logger.info("rhov {}, flagv {}, log_phiv {}, log_phiv {}, residual1 {}, residual2 {}".format(rhov, flagv, np.sum(xi*log_phiv), log_phiv, residual_v1, residual_v2))
+
+    rhol, flagl = calc.calc_rhol(P, T, xi, eos, **opts)
+    if np.isnan(rhol):
+        logger.warning('Failed to calculate rhol at {} K and {} Pa'.format(T,P))
+        phil, residual_l1, residual_l2 = np.nan, np.nan, np.nan
+    else:
+        phil = eos.fugacity_coefficient(P, np.array([rhol]), xi, T)
+        log_phil = np.log(phil)
+        residual_l1 = calc.fugacity_test_1(P, T, xi, rhol, eos, **opts)
+        residual_l2 = calc.fugacity_test_2(P, T, xi, rhol, eos, **opts)
+        logger.info("rhol {}, flagl {}, log_phil {}, log_phil {}, residual1 {}, residual2 {}".format(rhol, flagl, np.sum(xi*log_phil), log_phil, residual_l1, residual_l2))
+
+    return residual_v1, residual_v2, flagv, log_phiv, residual_l1, residual_l2, flagl, log_phil
+
 
