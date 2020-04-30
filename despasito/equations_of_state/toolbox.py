@@ -234,6 +234,7 @@ def calc_hard_sphere_matricies(T, sigmakl, beadlibrary, beads):
     for k in range(nbeads):
         for l in range(nbeads):
             dkl[k, l] = (dkk[k] + dkk[l]) / 2.0
+
     x0kl = sigmakl / dkl
 
     return dkl, x0kl
@@ -310,6 +311,20 @@ def calc_dkk(epsilon, sigma, T, l_r, l_a=6.0):
     
     r = 0.5*sigma*(x+1)
     dkk = 0.5*sigma*np.sum(w*_dkk_int(r, Ce_kT, sigma, l_r, l_a))
+
+    # Option 3: Mullers method
+    #xgl = np.array([0.97390652852, 0.86506336669, 0.67940956830, 0.43339539413, 0.14887433898])
+    #wgl = np.array([0.06667134431, 0.14945134915, 0.21908636252, 0.26926671931, 0.29552422471])
+    #x1i = 0.5 * (1 + xgl)
+    #x2i = 0.5 * (1 - xgl)
+
+    #xsum = 0.
+    #for i in range(len(x1i)):
+    #    tmp1 = np.power(x1i[i], -l_r) - np.power(x1i[i], -l_a)
+    #    tmp2 = np.power(x2i[i], -l_r) - np.power(x2i[i], -l_a) 
+    #    xsum = xsum + wgl[i] * ((x1i[i]**2 * np.exp(-tmp1 * Ce_kT)) + (x2i[i]**2 * np.exp(-tmp2 * Ce_kT)))
+    #dcube_s = 1 - (3 / 2 * xsum)
+    #dkk = sigma*pow(dcube_s, 1/3)
     
     return dkk
 

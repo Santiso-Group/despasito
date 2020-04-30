@@ -72,7 +72,10 @@ def writeout_thermo_dict(output_dict,calctype,output_file="thermo_output.txt"):
     keys = []
     matrix = []
     for key, value in output_dict.items():
-        tmp_matrix = np.transpose(np.array(value))
+        if np.size(value[0]) > 1:
+            tmp_matrix = np.transpose(np.stack(value))
+        else:
+            tmp_matrix = np.array(value) 
         if len(tmp_matrix.shape)==1:
             keys.append(key)
             matrix.append(np.array(value))

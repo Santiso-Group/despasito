@@ -130,6 +130,7 @@ def calc_da1sii_drhos(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
             cikl = np.inner(ckl_coef, np.transpose(np.array([1.0, l_kl[k]**-1, l_kl[k]**-2, l_kl[k]**-3])))
             etakl[:, k] = np.einsum("ij,j", zetax_pow, cikl)
             rhos_detakl_drhos[:, k] = np.einsum("ij,j", zetax_pow, cikl*np.array([1.,2.,3.,4.]))
+# NoteHere
 
         tmp1 = (1.0 - (etakl / 2.0)) / ((1.0 - etakl)**3) + (5.0-2.0*etakl)/(2.0*(1.0-etakl)**4)*rhos_detakl_drhos
         tmp2 = -2.0 * np.pi * ((epsilonkl * (dkl**3 * constants.Nav**2)) / (l_kl - 3.0))
@@ -296,16 +297,12 @@ def calc_dBkl_drhos(l_kl, dkl, epsilonkl, x0kl, zetax):
     Ikl = (1.0 - (x0kl**(3.0 - l_kl))) / (l_kl - 3.0)
     # compute Jkl(l_kl), eq. 24
     Jkl = (1.0 - ((x0kl**(4.0 - l_kl)) * (l_kl - 3.0)) + ((x0kl**(3.0 - l_kl)) * (l_kl - 4.0))) / ((l_kl - 3.0) * (l_kl - 4.0))
-    
-    if np.size(np.shape(l_kl)) == 2:
-        tmp1 = np.einsum("i,jk", (1.0 - (zetax / 2.0)) / ((1.0 - zetax)**3), Ikl) - np.einsum("i,jk", ((9.0 * zetax * (1.0 + zetax)) / (2.0 * ((1 - zetax)**3))), Jkl)
-        tmp2 = np.einsum("i,jk", (5.0 - 2.0*zetax) / (2*(1.0 - zetax)**4), Ikl) - np.einsum("i,jk", ((9.0 * (zetax**2 + 4.0*zetax + 1)) / (2.0 * ((1 - zetax)**4))), Jkl)
-        dBkl_drhos = (2.0 * np.pi)*(dkl**3 * constants.Nav**2) * epsilonkl * (tmp1 + np.einsum("i,jk", zetax, tmp2))
-    elif np.size(np.shape(l_kl)) == 1:
-        tmp1 = np.einsum("i,j", (1.0 - (zetax / 2.0)) / ((1.0 - zetax)**3), Ikl) - np.einsum("i,j", ((9.0 * zetax * (1.0 + zetax)) / (2.0 * ((1 - zetax)**3))), Jkl)
-        tmp2 = np.einsum("i,j", (5.0 - 2.0*zetax) / (2*(1.0 - zetax)**4), Ikl) - np.einsum("i,j", ((9.0 * (zetax**2 + 4.0*zetax + 1)) / (2.0 * ((1 - zetax)**4))), Jkl)
-        dBkl_drhos = np.einsum( "i,j", 2.0*np.pi*np.ones_like(zetax), (dkl**3 * constants.Nav**2)*epsilonkl)*tmp1 + np.einsum("i,j", zetax, (dkl**3 * constants.Nav**2)*epsilonkl)*tmp2
-    
+
+    tmp = 2.0 * np.pi * dkl**3 * epsilonkl
+    tmp1 = np.einsum("i,j", (1.0 - (zetax / 2.0)) / ((1.0 - zetax)**3), Ikl) - np.einsum("i,j", ((9.0 * zetax * (1.0 + zetax)) / (2.0 * ((1 - zetax)**3))), Jkl)
+    tmp2 = np.einsum("i,j", (5.0 - 2.0*zetax) * zetax / (2*(1.0 - zetax)**4), Ikl) - np.einsum("i,j", ((9.0 * zetax * (zetax**2 + 4.0*zetax + 1)) / (2.0 * ((1 - zetax)**4))), Jkl)
+    dBkl_drhos = tmp*(tmp1 + tmp2) * constants.Nav**2
+
     return dBkl_drhos
 
 def calc_a1ii(rho, Cmol2seg, dii_eff, l_aii_avg, l_rii_avg, x0ii, epsilonii_avg, zetax):
@@ -380,11 +377,11 @@ def calc_da1iidrhos(rho, Cmol2seg, dii_eff, l_aii_avg, l_rii_avg, x0ii, epsiloni
     
     Cii = prefactor(l_rii_avg, l_aii_avg)
     
-    das1_drhos_r = calc_da1sii_drhos(rho, Cmol2seg, l_rii_avg, zetax, epsilonii_avg, dii_eff)
     das1_drhos_a = calc_da1sii_drhos(rho, Cmol2seg, l_aii_avg, zetax, epsilonii_avg, dii_eff)
+    das1_drhos_r = calc_da1sii_drhos(rho, Cmol2seg, l_rii_avg, zetax, epsilonii_avg, dii_eff)
     
-    dB_drhos_r = calc_dBkl_drhos(l_rii_avg, dii_eff, epsilonii_avg, x0ii, zetax)
     dB_drhos_a = calc_dBkl_drhos(l_aii_avg, dii_eff, epsilonii_avg, x0ii, zetax)
+    dB_drhos_r = calc_dBkl_drhos(l_rii_avg, dii_eff, epsilonii_avg, x0ii, zetax)
 
     da1iidrhos = (Cii * (((x0ii**l_aii_avg) * (das1_drhos_a + dB_drhos_a)) - ((x0ii**l_rii_avg) * (das1_drhos_r + dB_drhos_r))))
 

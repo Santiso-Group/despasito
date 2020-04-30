@@ -42,5 +42,5 @@ def test_fit_1comp(eos=eos,thermo_dict=thermo_dict):
     thermo_dict = ri.process_param_fit_inputs(thermo_dict)
     output = fit.fit(eos,thermo_dict)
         
-    assert output["final_parameters"][0]==pytest.approx(384.93,abs=5e-1) and output["objective_value"]<1.1
+    assert output["final_parameters"][0]==pytest.approx(386.05,abs=5e-1) and output["objective_value"]<1.1
 

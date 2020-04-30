@@ -970,7 +970,7 @@ def verify_eos(eos, sys_dict):
 
     logger.info("--- Calculation verify_eos Complete ---")
 
-    return {"P":P_list, "T":T_list, "xi":xi_list, "residual_v1":residual_v1, "residual_v2":residual_v2, "flagv": flagv, "log_phiv": np.sum(xi_list*log_phiv), "log_phivi":log_phiv, "residual_l1":residual_l1, "residual_l2":residual_l2, "flagl": flagl, "log_phil": np.sum(xi_list*log_phiv), "log_phili":log_phil}
+    return {"P":P_list, "T":T_list, "xi":xi_list, "residual_v1":residual_v1, "residual_v2":residual_v2, "flagv": flagv, "log_phivi":log_phiv, "residual_l1":residual_l1, "residual_l2":residual_l2, "flagl": flagl, "log_phili":log_phil}
 
 def _verify_eos_wrapper(args):
 
@@ -981,7 +981,7 @@ def _verify_eos_wrapper(args):
     rhov, flagv = calc.calc_rhov(P, T, xi, eos, **opts)
     if np.isnan(rhov):
         logger.warning('Failed to calculate rhov at {} K and {} Pa'.format(T,P))
-        phiv, residual_v1, residual_v2 = np.nan, np.nan, np.nan
+        log_phiv, residual_v1, residual_v2 = np.nan, np.nan, np.nan
     else:
         phiv = eos.fugacity_coefficient(P, np.array([rhov]), xi, T)
         log_phiv = np.log(phiv)
@@ -992,7 +992,7 @@ def _verify_eos_wrapper(args):
     rhol, flagl = calc.calc_rhol(P, T, xi, eos, **opts)
     if np.isnan(rhol):
         logger.warning('Failed to calculate rhol at {} K and {} Pa'.format(T,P))
-        phil, residual_l1, residual_l2 = np.nan, np.nan, np.nan
+        log_phil, residual_l1, residual_l2 = np.nan, np.nan, np.nan
     else:
         phil = eos.fugacity_coefficient(P, np.array([rhol]), xi, T)
         log_phil = np.log(phil)
