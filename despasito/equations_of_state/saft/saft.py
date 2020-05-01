@@ -184,7 +184,7 @@ class saft(EOStemplate):
         """
 
         P_tmp = gtb.central_difference(rho, self.helmholtz_energy, args=(T, xi), step_size=step_size)
-        pressure = P_tmp*T*(constants.kb*constants.Nav)
+        pressure = P_tmp*T*constants.R
 
         return pressure
 
@@ -212,7 +212,7 @@ class saft(EOStemplate):
             Array of chemical potential values for each component
         """
 
-        logZ = np.log(P / (rho * T * (constants.Nav * constants.kb)))
+        logZ = np.log(P / (rho * T * constants.R))
         Ares = self.residual_helmholtz_energy(rho, T, xi)
         dAresdrho = tb.partial_density_central_difference(xi, rho, T, self.residual_helmholtz_energy, step_size=dy, log_method=True)
 

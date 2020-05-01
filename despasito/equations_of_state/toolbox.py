@@ -69,8 +69,7 @@ def partial_density_central_difference(xi, rho, T, func, step_size=1E-2, log_met
 
     if log_method: # Central Difference Method with log(y) transform
 
-#        y = np.log(rho*np.array(xi,float))
-        y = np.log(6.02214086e23*rho*np.array(xi,float))
+        y = np.log(rho*np.array(xi,float))
 
         dy = step_size
         for i in range(np.size(dAdrho)):
@@ -79,10 +78,8 @@ def partial_density_central_difference(xi, rho, T, func, step_size=1E-2, log_met
                 for j, delta in enumerate((dy, -dy)):
                     y_temp = np.copy(y)
                     y_temp[i] += delta
-#                    Ares[j] = _partial_density_wrapper(np.exp(y_temp), T, func)
-#                dAdrho[i] = (Ares[0] - Ares[1]) / (2.0 * dy) / np.exp(y[i])
-                    Ares[j] = _partial_density_wrapper(np.exp(y_temp)/6.02214086e23, T, func)
-                dAdrho[i] = (Ares[0] - Ares[1]) / (2.0 * dy) / np.exp(y[i]) * 6.02214086e23
+                    Ares[j] = _partial_density_wrapper(np.exp(y_temp), T, func)
+                dAdrho[i] = (Ares[0] - Ares[1]) / (2.0 * dy) / np.exp(y[i])
             else:
                 dAdrho[i] = np.finfo(float).eps
 
