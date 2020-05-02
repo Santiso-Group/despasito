@@ -85,21 +85,17 @@ def partial_density_central_difference(xi, rho, T, func, step_size=1E-2, log_met
 
     else: # Traditional Central Difference Method
         
-        exp = np.floor(np.log10(rho))-3 # Make sure step size is three orders of magnitude lower
-        drho = 10**exp
-        if step_size < drho:
-           drho = step_size
-        
-        rhoi = rho*np.array(xi,float)
+        dy = step_size
+        y = rho*np.array(xi,float)
         for i in range(np.size(dAdrho)):
             if xi[i] != 0.0:
                 Ares = np.zeros(2)
-                for j, delta in enumerate((drho, -drho)):
-                    rhoi_temp = np.copy(rhoi)
-                    if rhoi_temp[i] != 0.:
-                        rhoi_temp[i] += delta
-                    Ares[j] = _partial_density_wrapper(rhoi_temp, T, func)
-                dAdrho[i] = (Ares[0] - Ares[1]) / (2.0 * drho)
+                for j, delta in enumerate((dy, -dy)):
+                    y_temp = np.copy(y)
+                    if y_temp[i] != 0.:
+                        y_temp[i] += delta
+                    Ares[j] = _partial_density_wrapper(y_temp, T, func)
+                dAdrho[i] = (Ares[0] - Ares[1]) / (2.0 * dy)
             else:
                 dAdrho[i] = np.finfo(float).eps
 
@@ -221,7 +217,7 @@ def calc_hard_sphere_matricies(T, sigmakl, beadlibrary, beads):
     x0kl : numpy.ndarray
         Matrix of sigmakl/dkl, sigmakl is the Mie radius for groups (k,l)
     """
-        
+
     nbeads = np.size(beads)
     dkk = np.zeros(nbeads)
     for i in np.arange(nbeads):
@@ -396,7 +392,7 @@ def calc_zetaxstar(rho, Cmol2seg, xskl, sigmakl):
     """
     
     # compute zetaxstar eq. 35
-    zetaxstar = rho * Cmol2seg * ((np.pi / 6.0) * np.sum(xskl * (sigmakl**3 * constants.Nav)))
+    zetaxstar = rho * Cmol2seg * ((np.pi / 6.0) * np.sum(xskl * (sigmakl**3 * constants.molecule_per_nm3)))
 
     return zetaxstar
 
@@ -420,7 +416,7 @@ def calc_zetax(rho, Cmol2seg, xskl, dkl):
         Matrix of hypothetical packing fraction based on hard sphere diameter for groups (k,l)
     """
     # calc zetax eq. 22
-    zetax = rho * Cmol2seg * ((np.pi / 6.0) * np.sum(xskl * (dkl**3 * constants.Nav)))
+    zetax = rho * Cmol2seg * ((np.pi / 6.0) * np.sum(xskl * (dkl**3 * constants.molecule_per_nm3)))
 
     return zetax
 

@@ -59,7 +59,7 @@ def calc_a1s_2d(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
             tmp = np.dot(ckl_coef, np.array( (1.0, 1.0/l_kl[k, l], 1.0/l_kl[k, l]**2, 1.0/l_kl[k, l]**3), dtype=ckl_coef.dtype ))
             etakl[:, k, l] = np.dot( zetax_pow, tmp )
 
-    a1s = - (1.0 - (etakl / 2.0)) / ((1.0 - etakl)**3) * 2.0 * np.pi * Cmol2seg * ((epsilonkl * (dkl**3 * constants.Nav)) / (l_kl - 3.0))
+    a1s = - (1.0 - (etakl / 2.0)) / ((1.0 - etakl)**3) * 2.0 * np.pi * Cmol2seg * ((epsilonkl * (dkl**3 * constants.molecule_per_nm3)) / (l_kl - 3.0))
     return np.transpose(np.transpose(a1s) * rho)
 
 def calc_a1s_1d(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
@@ -99,7 +99,7 @@ def calc_a1s_1d(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
         tmp = np.dot(ckl_coef, np.array( (1.0, 1.0/l_kl[k], 1.0/l_kl[k]**2, 1.0/l_kl[k]**3), dtype=ckl_coef.dtype ) )
         etakl[:, k] = np.dot( zetax_pow, tmp )
 
-    a1s = - (1.0 - (etakl / 2.0)) / (1.0 - etakl)**3 * 2.0 * np.pi * Cmol2seg * ((epsilonkl * (dkl**3 * constants.Nav)) / (l_kl - 3.0) )
+    a1s = - (1.0 - (etakl / 2.0)) / (1.0 - etakl)**3 * 2.0 * np.pi * Cmol2seg * ((epsilonkl * (dkl**3 * constants.molecule_per_nm3)) / (l_kl - 3.0) )
 
     return np.transpose(np.transpose(a1s) * rho)
 
@@ -274,7 +274,7 @@ def calc_Xika(indices, rho, xi, nui, nk, Fklab, Kklab, Iij): # , maxiter=500, to
                 for jjnd in range(l_ind):
                     j, l, b = indices[jjnd]
                     delta = Fklab[k, l, a, b] * Kklab[k, l, a, b] * Iij[r,i, j]
-                    Xika_elements_new[ind] += constants.Nav * rho[r] * xi[j] * nui[j,l] * nk[l,b] * Xika_elements[jnd] * delta
+                    Xika_elements_new[ind] += constants.molecule_per_nm3 * rho[r] * xi[j] * nui[j,l] * nk[l,b] * Xika_elements[jnd] * delta
                     jnd += 1
                 ind += 1
             Xika_elements_new = 1./Xika_elements_new

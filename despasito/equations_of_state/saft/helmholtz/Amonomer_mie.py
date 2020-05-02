@@ -93,6 +93,11 @@ class Amonomer():
         else:
             self.eos_dict['crosslibrary'] = kwargs['crosslibrary']
 
+#################
+        for key, value in self.eos_dict['beadlibrary'].items():
+            self.eos_dict['beadlibrary'][key]["sigma"] = value["sigma"]*1e+9
+#################
+
         if not hasattr(self, 'massi'):
             self.eos_dict['massi'] = tb.calc_massi(self.eos_dict['nui'],self.eos_dict['beadlibrary'],self.eos_dict['beads'])
 
@@ -138,13 +143,13 @@ class Amonomer():
 
         eta = np.zeros((np.size(rho), 4))
         for m in range(4):
-            eta[:, m] = rho * constants.Nav * self.eos_dict['Cmol2seg'] * (np.sum(np.sqrt(np.diag(self.eos_dict['xskl'])) * (np.diag(self.eos_dict['dkl'])**m)) * (np.pi / 6.0))
+            eta[:, m] = rho * constants.molecule_per_nm3 * self.eos_dict['Cmol2seg'] * (np.sum(np.sqrt(np.diag(self.eos_dict['xskl'])) * (np.diag(self.eos_dict['dkl'])**m)) * (np.pi / 6.0))
 
-        tmp = (6.0 / (np.pi * rho))
+        tmp = (6.0 / (np.pi * rho * constants.molecule_per_nm3))
         tmp1 = np.log1p(-eta[:, 3]) * (eta[:, 2]**3 / (eta[:, 3]**2) - eta[:, 0])
         tmp2 = 3.0 * eta[:, 2] / (1 - eta[:, 3]) * eta[:, 1]
         tmp3 = eta[:, 2]**3 / (eta[:, 3] * ((1.0 - eta[:, 3])**2))
-        AHS = tmp*(tmp1 + tmp2 + tmp3) / constants.Nav
+        AHS = tmp*(tmp1 + tmp2 + tmp3)
 
         return AHS
     
@@ -237,7 +242,7 @@ class Amonomer():
         B_2lr = calc_Bkl(rho, 2.0 * self.eos_dict['l_rkl'], self.eos_dict['Cmol2seg'], self.eos_dict['dkl'], self.eos_dict['epsilonkl'], self.eos_dict['x0kl'], zetax)
         B_lalr = calc_Bkl(rho, self.eos_dict['l_akl'] + self.eos_dict['l_rkl'], self.eos_dict['Cmol2seg'], self.eos_dict['dkl'], self.eos_dict['epsilonkl'], self.eos_dict['x0kl'], zetax)
         
-        a2kl = (self.eos_dict['x0kl']**(2.0 * self.eos_dict['l_akl'])) * (a1s_2la + B_2la) / constants.Nav - ((2.0 * self.eos_dict['x0kl']**(self.eos_dict['l_akl'] + self.eos_dict['l_rkl'])) * (a1s_lalr + B_lalr) / constants.Nav) + ((self.eos_dict['x0kl']**(2.0 * self.eos_dict['l_rkl'])) * (a1s_2lr + B_2lr) / constants.Nav)
+        a2kl = (self.eos_dict['x0kl']**(2.0 * self.eos_dict['l_akl'])) * (a1s_2la + B_2la) / constants.molecule_per_nm3 - ((2.0 * self.eos_dict['x0kl']**(self.eos_dict['l_akl'] + self.eos_dict['l_rkl'])) * (a1s_lalr + B_lalr) / constants.molecule_per_nm3) + ((self.eos_dict['x0kl']**(2.0 * self.eos_dict['l_rkl'])) * (a1s_2lr + B_2lr) / constants.molecule_per_nm3)
         a2kl *= (1.0 + chikl) * self.eos_dict['epsilonkl'] * (self.eos_dict['Ckl']**2)  # *(KHS/2.0)
         a2kl = np.einsum("i,ijk->ijk", KHS / 2.0, a2kl)
         
@@ -345,7 +350,7 @@ class Amonomer():
 
         # estimate the maximum density based on the hard sphere packing fraction
         # etax, assuming a maximum packing fraction specified by maxpack
-        maxrho = maxpack * 6.0 / (self.eos_dict['Cmol2seg'] * np.pi * np.sum(self.eos_dict['xskl'] * (self.eos_dict['dkl']**3))) / constants.Nav
+        maxrho = maxpack * 6.0 / (self.eos_dict['Cmol2seg'] * np.pi * np.sum(self.eos_dict['xskl'] * (self.eos_dict['dkl']**3))) / constants.molecule_per_nm3
         return maxrho
 
     @staticmethod

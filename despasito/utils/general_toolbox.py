@@ -139,23 +139,13 @@ def central_difference(x, func, step_size=1E-5, args=None):
         x = np.array(x)
     
     lx = np.size(x)
-########
     step = x * step_size
-########
-    #x = x*6.02214086e23
-    #step = x * 1e+4 *np.sqrt(np.finfo(float).eps)
-########
     if type(step) not in [list, np.ndarray]:
         step = np.array([step])
     step = np.array([2*np.finfo(float).eps if xx < np.finfo(float).eps else xx for xx in step])
 
-########
     y = func(np.append(x+step,x-step),*args)
-    dydx = (y[:lx]-y[lx:])/(2.0*step)*x**2
-########
-    #y = func(np.append(x+step,x-step)/6.02214086e23,*args)
-    #dydx = (y[:lx]-y[lx:])/(2.0*step)*x**2/6.02214086e23
-########
+    dydx = (y[:lx]-y[lx:])/(2.0*step)
 
     return dydx
 

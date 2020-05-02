@@ -158,13 +158,9 @@ class saft(EOStemplate):
 
         A = self.residual_helmholtz_energy(rho, T, xi) + self.Aideal.Aideal(rho, T, xi)
 
-#        tmp = np.transpose(np.array([rho, self.Aideal.Aideal(rho, T, xi), self.Amonomer.Amonomer(rho, T, xi), self.Achain.Achain(rho, T, xi), self.Aassoc.Aassoc(rho, T, xi), A]))
-#        np.savetxt("new_method.csv",tmp,delimiter=",")
-#        sys.exit("stop")
-
         return A
 
-    def pressure(self, rho, T, xi, step_size=1E-5):
+    def pressure(self, rho, T, xi, step_size=1E-6):
         """
         Compute pressure given system information.
        
@@ -184,11 +180,11 @@ class saft(EOStemplate):
         """
 
         P_tmp = gtb.central_difference(rho, self.helmholtz_energy, args=(T, xi), step_size=step_size)
-        pressure = P_tmp*T*constants.R
+        pressure = P_tmp*T*constants.R*rho**2
 
         return pressure
 
-    def fugacity_coefficient(self, P, rho, xi, T, dy=1e-2, log_method=True):
+    def fugacity_coefficient(self, P, rho, xi, T, dy=1e-5, log_method=True):
 
         """
         Compute fugacity coefficient.

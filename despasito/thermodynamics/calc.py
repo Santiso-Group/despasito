@@ -501,7 +501,7 @@ def calc_rhov(P, T, xi, eos, rhodict={}):
     Plist = Plist-P
     Pvspline, roots, extrema = PvsV_spline(vlist, Plist)
 
-    logger.info("    Find rhov: P {} Pa, roots {} m^3/mol".format(P,roots))
+    logger.debug("    Find rhov: P {} Pa, roots {} m^3/mol".format(P,roots))
 
     flag_NoOpt = False
     l_roots = len(roots)
@@ -554,7 +554,7 @@ def calc_rhov(P, T, xi, eos, rhodict={}):
         elif (Pvspline(roots[0])+P) > (Pvspline(max(extrema))+P):
             flag = 1
             rho_tmp = 1.0 / roots[0]
-            logger.info("    Flag 1: The T and yi, {} {}, combination produces a liquid at this pressure".format(T,xi))
+            logger.debug("    Flag 1: The T and yi, {} {}, combination produces a liquid at this pressure".format(T,xi))
         elif len(extrema) > 1:
             flag = 0
             rho_tmp = 1.0 / roots[0]
@@ -570,7 +570,7 @@ def calc_rhov(P, T, xi, eos, rhodict={}):
             vroot = -yroot/slope
             rho_tmp = spo.minimize(Pdiff, 1.0/vroot, args=(P, T, xi, eos), bounds=[(1e-28, 1.0/(1.1*roots[-1]))])
             rho_tmp = rho_tmp.x
-            logger.info("    Flag 0: This T and yi, {} {}, combination produces a vapor at this pressure. Warning! approaching critical fluid".format(T,xi))
+            logger.debug("    Flag 0: This T and yi, {} {}, combination produces a vapor at this pressure. Warning! approaching critical fluid".format(T,xi))
     else: # 3 roots
         logger.debug("    Flag 0: This T and yi, {} {}, combination produces a vapor at this pressure.".format(T,xi))
         rho_tmp = 1.0 / roots[2]
@@ -1283,7 +1283,7 @@ def calc_Prange_yi(T, xi, yi, eos, rhodict={}, zi_opts={}):
 #                       Solve Yi for xi and T                        #
 #                                                                    #
 ######################################################################
-def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxiter=30, tol=1e-8):
+def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxiter=30, tol=1e-6):
     r"""
     Find vapor mole fraction given pressure, liquid mole fraction, and temperature.
 
@@ -2578,7 +2578,7 @@ def fugacity_test_1(P, T, xi, rho, eos, step_size=1e-5):
 #                          EOS Fugacity Test 2                       #
 #                                                                    #
 ######################################################################
-def fugacity_test_2(P, T, xi, rho, eos, step_size=1e-6):
+def fugacity_test_2(P, T, xi, rho, eos, fractional_change=1e-1):
     r"""
     
     Parameters
@@ -2615,14 +2615,19 @@ def fugacity_test_2(P, T, xi, rho, eos, step_size=1e-6):
     elif len(ind) != ncomp:
         logger.info("There is not a significant amount of components {} in solution".format(np.setdiff1d(range(ncomp),ind)))
 
-    dy = step_size
-    dphi = np.zeros((2,ncomp))
-    for j, delta in enumerate((dy, -dy)):
-        y_tmp = np.copy(xi)
-        y_tmp[ind[0]] += delta
-        y_tmp[ind[-1]] -= delta
-        dphi[j,:] = eos.fugacity_coefficient(P, rho, y_tmp, T)
-    dphidx = (dphi[0] - dphi[1]) / (2.0 * dy)
+#    dy = step_size
+#    dphi = np.zeros((2,ncomp))
+#    for j, delta in enumerate((dy, -dy)):
+#        y_tmp = np.copy(xi)
+#        y_tmp[ind[0]] += delta
+#        y_tmp[ind[-1]] -= delta
+#        dphi[j,:] = np.log(eos.fugacity_coefficient(P, rho, y_tmp, T))
+#    dphidx = (dphi[0] - dphi[1]) / (2.0 * dy)
+
+    log_phi = np.zeros((2,ncomp))
+    for i,factor in enumerate([1.0, (1-fractional_change)]):
+        log_phi[i,:] = np.log(eos.fugacity_coefficient(P*factor, rho, xi, T))
+    dphidx = log_phi[0] - log_phi[1]
 
     residual = np.sum(xi*dphidx)
 

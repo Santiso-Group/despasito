@@ -84,7 +84,7 @@ class Achain():
             self.eos_dict['crosslibrary'] = {}
         else:
             self.eos_dict['crosslibrary'] = kwargs['crosslibrary']
-        
+
         if not hasattr(self, 'massi'):
             self.eos_dict['massi'] = tb.calc_massi(self.eos_dict['nui'],self.eos_dict['beadlibrary'],self.eos_dict['beads'])
         if not hasattr(self, 'Vks'):
@@ -188,7 +188,7 @@ class Achain():
     
         Cii = prefactor(self.eos_dict['l_rii_avg'], self.eos_dict['l_aii_avg'])
 
-        g1 = (1.0 / (2.0 * np.pi * self.eos_dict['epsilonii_avg'] * self.eos_dict['dii_eff']**3 * constants.Nav**2)) * (3.0 * da1iidrhos - Cii * self.eos_dict['l_aii_avg'] * (self.eos_dict['x0ii']**self.eos_dict['l_aii_avg']) * np.einsum("ij,i->ij", (a1sii_l_aii_avg + Bii_l_aii_avg), 1.0 / (rho * self.eos_dict['Cmol2seg'])) + (Cii * self.eos_dict['l_rii_avg'] *  (self.eos_dict['x0ii']**self.eos_dict['l_rii_avg'])) * np.einsum("ij,i->ij", (a1sii_l_rii_avg + Bii_l_rii_avg), 1.0 / (rho * self.eos_dict['Cmol2seg'])))
+        g1 = (1.0 / (2.0 * np.pi * self.eos_dict['epsilonii_avg'] * self.eos_dict['dii_eff']**3 * constants.molecule_per_nm3**2)) * (3.0 * da1iidrhos - Cii * self.eos_dict['l_aii_avg'] * (self.eos_dict['x0ii']**self.eos_dict['l_aii_avg']) * np.einsum("ij,i->ij", (a1sii_l_aii_avg + Bii_l_aii_avg), 1.0 / (rho * self.eos_dict['Cmol2seg'])) + (Cii * self.eos_dict['l_rii_avg'] *  (self.eos_dict['x0ii']**self.eos_dict['l_rii_avg'])) * np.einsum("ij,i->ij", (a1sii_l_rii_avg + Bii_l_rii_avg), 1.0 / (rho * self.eos_dict['Cmol2seg'])))
 
         return g1
     
@@ -244,7 +244,7 @@ class Achain():
         
         eKC2 = np.einsum("i,j->ij", KHS / rho / self.eos_dict['Cmol2seg'], self.eos_dict['epsilonii_avg'] * (Cii**2))
         
-        g2MCA = (1.0 / (2.0 * np.pi * (self.eos_dict['epsilonii_avg']**2) * self.eos_dict['dii_eff']**3 * constants.Nav**2)) * ((3.0 * da2iidrhos) \
+        g2MCA = (1.0 / (2.0 * np.pi * (self.eos_dict['epsilonii_avg']**2) * self.eos_dict['dii_eff']**3 * constants.molecule_per_nm3**2)) * ((3.0 * da2iidrhos) \
                 - (eKC2 * self.eos_dict['l_rii_avg'] * (self.eos_dict['x0ii']**(2.0 * self.eos_dict['l_rii_avg']))) \
                    * (a1sii_2l_rii_avg + Bii_2l_rii_avg) \
                 + eKC2 * (self.eos_dict['l_rii_avg'] + self.eos_dict['l_aii_avg']) \

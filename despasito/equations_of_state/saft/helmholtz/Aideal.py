@@ -94,7 +94,6 @@ class Aideal():
             raise ValueError("Aideal has values of zero when taking the log. All mole fraction values should be nonzero. Mole fraction: {}".format(xi_tmp))
         else:
             Aideal = np.sum(xi_tmp * log_broglie3_rho, axis=1) - 1.0
-        print(Aideal)
 
         return Aideal
     

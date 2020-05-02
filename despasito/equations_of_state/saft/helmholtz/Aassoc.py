@@ -99,6 +99,13 @@ class Aassoc():
                 self.eos_dict['sitenames']=kwargs['sitenames']
         self.nsitesmax = len(self.eos_dict['sitenames'])
 
+#################
+        for key, value in self.eos_dict['beadlibrary'].items():
+            for k2 in value:
+                if k2[0] == "K":
+                    self.eos_dict['beadlibrary'][key][k2] = value[k2]*1e+27
+#################
+
         if not hasattr(self, 'Vks'):
             self.eos_dict['Vks'] = tb.extract_property("Vks",self.eos_dict['beadlibrary'],self.eos_dict['beads'])
         if not hasattr(self, 'Sk'):
@@ -144,7 +151,6 @@ class Aassoc():
         self._check_composition_dependent_parameters(xi)
 
         kT = T * constants.kb
-        rhoNa = rho*constants.Nav
         
         # compute F_klab
         Fklab = np.exp(self.eos_dict['epsilonHB'] / T) - 1.0
@@ -162,16 +168,16 @@ class Aassoc():
                                 for b in range(self.nsitesmax):
                                     # print(Fklab[k,l,a,b],Kklab[k,l,a,b],Iij[i,j])
                                     if self.eos_dict['nui'][i, k] and self.eos_dict['nui'][j, l] > 0:
-                                        delta[:, i, j, k, l, a, b] = Fklab[k, l, a, b] * self.eos_dict['Kklab'][k, l, a, b] * Iij[:, i, j]
+                                        delta[:, i, j, k, l, a, b] = Fklab[k, l, a, b] * self.eos_dict['Kklab'][k, l, a, b] * Iij[:, i, j] * 1e-27
             
             Xika0 = np.zeros((self.ncomp, self.nbeads, self.nsitesmax))
             Xika0[:, :, :] = 1.0
-            Xika = solv_assoc.min_xika(rhoNa, Xika0, xi, self.eos_dict['nui'], self.eos_dict['nk'], delta, 500, 1.0E-12) # {BottleNeck}
+            Xika = solv_assoc.min_xika(rho*constants.Nav, Xika0, xi, self.eos_dict['nui'], self.eos_dict['nk'], delta, 500, 1.0E-12) # {BottleNeck}
             if np.any(Xika < 0.0):
                 Xika0[:, :, :] = 0.5
                 sol = spo.root(calc_Xika_wrap, Xika0, args=(xi, rho[0], delta[0]), method='broyden1')
                 Xika0 = sol.x
-                Xika = solv_assoc.min_xika(rhoNa, Xika0, xi, self.eos_dict['nui'], self.eos_dict['nk'], delta, 500, 1.0E-12) # {BottleNeck}
+                Xika = solv_assoc.min_xika(rho*constants.Nav, Xika0, xi, self.eos_dict['nui'], self.eos_dict['nk'], delta, 500, 1.0E-12) # {BottleNeck}
                 logger.warning('Xika out of bounds')
         
         else:
@@ -211,8 +217,7 @@ class Aassoc():
             Used in calculation of association term of Helmholtz energy
         """
         
-        rhoNa = rho*constants.Nav
-        obj_func, Xika = solv_assoc.calc_xika(Xika0, xi, rhoNa, self.eos_dict['nui'], self.eos_dict['nk'], delta)
+        obj_func, Xika = solv_assoc.calc_xika(Xika0, xi, rho*constants.Nav, self.eos_dict['nui'], self.eos_dict['nk'], delta)
         return obj_func
 
     def calc_Iij(self,rho, T, xi):
@@ -248,7 +253,7 @@ class Aassoc():
                 epsilonij[i, j] = np.sqrt(self.eos_dict['sigmaii_avg'][i] * self.eos_dict['sigmaii_avg'][j])**3.0 * np.sqrt(self.eos_dict['epsilonii_avg'][i] * self.eos_dict['epsilonii_avg'][j]) / (((self.eos_dict['sigmaii_avg'][i] + self.eos_dict['sigmaii_avg'][j]) / 2.0)**3)
                 epsilonij[j, i] = epsilonij[i, j]
         
-        sigmax3 = np.sum(self.eos_dict['xskl'] * (self.eos_dict['sigmakl']**3 * constants.Nav))
+        sigmax3 = np.sum(self.eos_dict['xskl'] * (self.eos_dict['sigmakl']**3 * constants.molecule_per_nm3))
 
         Iij = np.zeros((np.size(rho), self.ncomp, self.ncomp))
         for p in range(11):
@@ -422,10 +427,6 @@ class Aassoc():
                         epsilonHB[i, i, b, a] = epsilonHB[i, i, a, b]
                         Kklab[i, i, a, b] = self.eos_dict['beadlibrary'][bead]["K" + self.eos_dict['sitenames'][a] + self.eos_dict['sitenames'][b]]
                         Kklab[i, i, b, a] = Kklab[i, i, a, b]
-
-        if Kklab.size:
-            if max(Kklab.flatten()) > 1e-27:
-                raise ValueError("Check units for association site parameter K. Should be in units of m^3.")
 
         self.eos_dict['epsilonHB'] = epsilonHB
         self.eos_dict['Kklab'] = Kklab
