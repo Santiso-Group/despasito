@@ -93,11 +93,6 @@ class Amonomer():
         else:
             self.eos_dict['crosslibrary'] = kwargs['crosslibrary']
 
-#################
-        for key, value in self.eos_dict['beadlibrary'].items():
-            self.eos_dict['beadlibrary'][key]["sigma"] = value["sigma"]*1e+9
-#################
-
         if not hasattr(self, 'massi'):
             self.eos_dict['massi'] = tb.calc_massi(self.eos_dict['nui'],self.eos_dict['beadlibrary'],self.eos_dict['beads'])
 

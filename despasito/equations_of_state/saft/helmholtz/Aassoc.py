@@ -99,13 +99,6 @@ class Aassoc():
                 self.eos_dict['sitenames']=kwargs['sitenames']
         self.nsitesmax = len(self.eos_dict['sitenames'])
 
-#################
-        for key, value in self.eos_dict['beadlibrary'].items():
-            for k2 in value:
-                if k2[0] == "K":
-                    self.eos_dict['beadlibrary'][key][k2] = value[k2]*1e+27
-#################
-
         if not hasattr(self, 'Vks'):
             self.eos_dict['Vks'] = tb.extract_property("Vks",self.eos_dict['beadlibrary'],self.eos_dict['beads'])
         if not hasattr(self, 'Sk'):
