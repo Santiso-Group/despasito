@@ -3,14 +3,15 @@
     "EOSgroup": "../library/SAFTgroup.json",
     "opt_params": {
         "fit_bead" : "CH3",
-        "fit_params": ["epsilon_CH2","sigma"],
-        "epsilon_bounds" : [150.0, 400.0],
-        "beadparams0" : [300.0, 3.4e-10]
+        "fit_params": ["l_r_CH2"],
+        "global_method": "basinhopping",
+        "epsilon_CH2_bounds" : [12.0, 40.0]
     },
     "Knovel": {
-        "beadconfig": [[["CH3", 2],["CH2", 4]]],
         "datatype": "liquid_density",
         "calctype": "liquid_properties",
-        "file": "butane_solubility.csv"
+        "file": "butane_solubility.csv",
+        "weights": { "delta" : [0.75, 0.75, 0.75], "rhol" : 0.25 
+        }
     }
 }

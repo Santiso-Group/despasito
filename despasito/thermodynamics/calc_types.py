@@ -154,7 +154,7 @@ def _phase_xiT_wrapper(args):
     except:
         logger.warning("T (K), xi: {} {}, calculation did not produce a valid result.".format(T, xi))
         logger.debug("Calculation Failed:", exc_info=True)
-        P, yi, flagl, flagv, obj = [np.nan, np.nan, 3, 3, np.nan]
+        P, yi, flagl, flagv, obj = [np.nan, np.nan*np.ones(len(xi)), 3, 3, np.nan]
 
     logger.info("P (Pa), yi: {} {}".format(P, yi)) 
 
@@ -299,7 +299,7 @@ def _phase_yiT_wrapper(args):
     except:
         logger.warning("T (K), yi: {} {}, calculation did not produce a valid result.".format(T, yi))
         logger.debug("Calculation Failed:", exc_info=True)
-        P, xi, flagl, flagv, obj = [np.nan, np.nan, 3, 3, np.nan]
+        P, xi, flagl, flagv, obj = [np.nan, np.nan*np.ones(len(xi)), 3, 3, np.nan]
 
     logger.info("P (Pa), xi: {} {}".format(P, xi))
 
@@ -397,7 +397,7 @@ def _flash_wrapper(args):
     except:
         logger.warning("T (K), P (Pa): {} {}, calculation did not produce a valid result.".format(T, P))
         logger.debug("Calculation Failed:", exc_info=True)
-        xi, yi, flagl, flagv, obj = [np.nan, np.nan, 3, 3, np.nan]
+        xi, yi, flagl, flagv, obj = [np.nan*np.ones(len(eos.eos_dict["nui"])), np.nan*np.ones(len(eos.eos_dict["nui"])), 3, 3, np.nan]
 
     logger.info("xi: {}, yi: {}".format(xi, yi))
 
@@ -492,13 +492,18 @@ def _sat_props_wrapper(args):
 
     logger.info("T (K), xi: {} {}, Let's Begin!".format(T, xi))
 
-    Psat, rholsat, rhovsat = calc.calc_Psat(T, xi, eos, **opts)
-    if np.isnan(Psat):
+    try:
+        Psat, rholsat, rhovsat = calc.calc_Psat(T, xi, eos, **opts)
+        if np.isnan(Psat):
+            logger.warning("T (K), xi: {} {}, calculation did not produce a valid result.".format(T, xi))
+            logger.debug("Calculation Failed:", exc_info=True)
+            Psat, rholsat, rhovsat = [np.nan, np.nan, np.nan]
+        else:
+            logger.info("Psat {} Pa, rhol {}, rhov {}".format(Psat,rholsat,rhovsat))
+    except:
         logger.warning("T (K), xi: {} {}, calculation did not produce a valid result.".format(T, xi))
         logger.debug("Calculation Failed:", exc_info=True)
         Psat, rholsat, rhovsat = [np.nan, np.nan, np.nan]
-    else:
-        logger.info("Psat {} Pa, rhol {}, rhov {}".format(Psat,rholsat,rhovsat))
 
     return Psat, rholsat, rhovsat
 
@@ -595,14 +600,13 @@ def _liquid_properties_wrapper(args):
 
     logger.info("T (K), P (Pa), xi: {} {} {}, Let's Begin!".format(T, P, xi))
 
-    rhol, flagl = calc.calc_rhol(P, T, xi, eos, **opts)
-
-    if np.isnan(rhol):
-        logger.warning('Failed to calculate rhol at {} K and {} Pa'.format(T,P))
-        phil = np.nan
-    else:
+    try:
+        rhol, flagl = calc.calc_rhol(P, T, xi, eos, **opts)
         phil = eos.fugacity_coefficient(P, np.array([rhol]), xi, T)
         logger.info("P {} Pa, T {} K, xi {}, rhol {}, phil {}, flagl {}".format(P, T, xi, rhol, phil, flagl))
+    except:
+        logger.warning('Failed to calculate rhol at {} K and {} Pa'.format(T,P))
+        phil = np.nan*np.ones(len(eos.eos_dict["nui"]))
 
     return rhol, phil, flagl
 
@@ -698,14 +702,13 @@ def _vapor_properties_wrapper(args):
 
     logger.info("T (K), P (Pa), yi: {} {} {}, Let's Begin!".format(T, P, yi))
 
-    rhov, flagv = calc.calc_rhov(P, T, yi, eos, **opts)
-
-    if np.isnan(rhov):
-        logger.warning('Failed to calculate rhov at {} K and {} Pa'.format(T,P))
-        phiv = np.nan
-    else:
+    try:
+        rhov, flagv = calc.calc_rhov(P, T, yi, eos, **opts)
         phiv = eos.fugacity_coefficient(P, np.array([rhov]), yi, T)
         logger.info("P {} Pa, T {} K, yi {}, rhov {}, phiv {}, flagv {}".format(P, T, yi, rhov, phiv, flagv))
+    except:
+        logger.warning('Failed to calculate rhov at {} K and {} Pa'.format(T,P))
+        phiv = np.nan*np.ones(len(eos.eos_dict["nui"]))
 
     return rhov, phiv, flagv
 

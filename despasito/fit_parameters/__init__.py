@@ -124,7 +124,9 @@ def fit(thermo_dict):
     if "bounds" not in locals():
         bounds = np.zeros((len(opt_params["fit_params"]),2))
     eos = exp_dict[list(exp_dict.keys())[0]].eos # since all eos objects use the same eos, it doesn't really matter
+    print("bounds1",bounds)
     bounds = ff.check_parameter_bounds(opt_params, eos, bounds)
+    print("bounds2",bounds)
 
     if "beadparams0" in opt_params:
         beadparams0 = opt_params["beadparams0"]

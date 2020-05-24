@@ -518,7 +518,7 @@ def calc_rhov(P, T, xi, eos, rhodict={}):
                 flag = 1
                 logger.debug("    Flag 1: The T and yi, {} {}, combination produces a liquid at this pressure".format(T,xi))
             try:
-                rho_tmp = spo.minimize(Pdiff, 1/vlist[0], args=(P, T, xi, eos), bounds=[(1e-28, eos.density_max(xi, T)*.99)])
+                rho_tmp = spo.minimize(Pdiff, 1/vlist[0], args=(P, T, xi, eos), method='TNC', bounds=[(1e-28, eos.density_max(xi, T)*.99)])
                 rho_tmp = rho_tmp.x
             except:
                 rho_tmp = 1/vlist[0]
@@ -527,7 +527,7 @@ def calc_rhov(P, T, xi, eos, rhodict={}):
             slope, yroot = np.polyfit(vlist[-4:], Plist[-4:], 1)
             vroot = -yroot/slope
             try:
-                rho_tmp = spo.minimize(Pdiff, 1.0/vroot, args=(P, T, xi, eos), bounds=[(1e-28, 1.0/(1.1*roots[-1]))])
+                rho_tmp = spo.minimize(Pdiff, 1.0/vroot, args=(P, T, xi, eos), method='TNC', bounds=[(np.finfo("float").eps, 1.0/(1.1*roots[-1]))])
                 rho_tmp = rho_tmp.x
             except:
                 rho_tmp = np.nan
@@ -554,7 +554,7 @@ def calc_rhov(P, T, xi, eos, rhodict={}):
         elif (Pvspline(roots[0])+P) > (Pvspline(max(extrema))+P):
             flag = 1
             rho_tmp = 1.0 / roots[0]
-            logger.info("    Flag 1: The T and yi, {} {}, combination produces a liquid at this pressure".format(T,xi))
+            logger.debug("    Flag 1: The T and yi, {} {}, combination produces a liquid at this pressure".format(T,xi))
         elif len(extrema) > 1:
             flag = 0
             rho_tmp = 1.0 / roots[0]
@@ -568,9 +568,9 @@ def calc_rhov(P, T, xi, eos, rhodict={}):
             flag = 0
             slope, yroot = np.polyfit(vlist[-4:], Plist[-4:], 1)
             vroot = -yroot/slope
-            rho_tmp = spo.minimize(Pdiff, 1.0/vroot, args=(P, T, xi, eos), bounds=[(1e-28, 1.0/(1.1*roots[-1]))])
+            rho_tmp = spo.minimize(Pdiff, 1.0/vroot, args=(P, T, xi, eos), method='TNC', bounds=[(np.finfo("float").eps, 1.0/(1.1*roots[-1]))])
             rho_tmp = rho_tmp.x
-            logger.info("    Flag 0: This T and yi, {} {}, combination produces a vapor at this pressure. Warning! approaching critical fluid".format(T,xi))
+            logger.debug("    Flag 0: This T and yi, {} {}, combination produces a vapor at this pressure. Warning! approaching critical fluid".format(T,xi))
     else: # 3 roots
         logger.debug("    Flag 0: This T and yi, {} {}, combination produces a vapor at this pressure.".format(T,xi))
         rho_tmp = 1.0 / roots[2]
@@ -587,7 +587,7 @@ def calc_rhov(P, T, xi, eos, rhodict={}):
             if Plist[0] < 0:
                 logger.warning("Density value could not be bounded with (rhomin,rhomax), {}. Using approximate density value".format(tmp))
             elif not flag_NoOpt:
-                rho_tmp = spo.minimize(Pdiff, rho_tmp, args=(P, T, xi, eos), bounds=[(1e-28, eos.density_max(xi, T)*.99)])
+                rho_tmp = spo.minimize(Pdiff, rho_tmp, args=(P, T, xi, eos), method='TNC', bounds=[(np.finfo("float").eps, eos.density_max(xi, T)*.99)])
                 rho_tmp = rho_tmp.x
 
     logger.info("    Vapor Density: {} mol/m^3, flag {}".format(rho_tmp,flag))
@@ -654,7 +654,7 @@ def calc_rhol(P, T, xi, eos, rhodict={}):
                 logger.debug("    Flag 1: The T and xi, {} {}, combination produces a liquid at this pressure".format(T,xi))
 
             try:
-                rho_tmp = spo.minimize(Pdiff, 1/vlist[0], args=(P, T, xi, eos), bounds=[(1e-28, eos.density_max(xi, T)*.99)])
+                rho_tmp = spo.minimize(Pdiff, 1/vlist[0], args=(P, T, xi, eos), method='TNC', bounds=[(np.finfo("float").eps, eos.density_max(xi, T)*.99)])
                 rho_tmp = rho_tmp.x
             except:
                 rho_tmp = 1/vlist[0]
@@ -664,7 +664,7 @@ def calc_rhol(P, T, xi, eos, rhodict={}):
             slope, yroot = np.polyfit(vlist[-4:], Plist[-4:], 1)
             vroot = -yroot/slope
             try:
-                rho_tmp = spo.minimize(Pdiff, 1.0/vroot, args=(P, T, xi, eos), bounds=[(1e-28, 1.0/(1.1*roots[-1]))])
+                rho_tmp = spo.minimize(Pdiff, 1.0/vroot, args=(P, T, xi, eos), method='TNC', bounds=[(np.finfo("float").eps, 1.0/(1.1*roots[-1]))])
                 rho_tmp = rho_tmp.x
             except:
                 rho_tmp = np.nan
@@ -716,7 +716,7 @@ def calc_rhol(P, T, xi, eos, rhodict={}):
             if Plist[0] < 0:
                 logger.warning("Density value could not be bounded with (rhomin,rhomax), {}. Using approximate density value".format(tmp))
             elif not flag_NoOpt:
-                rho_tmp = spo.minimize(Pdiff, [rho_tmp], args=(P, T, xi, eos), bounds=[(1e-28, eos.density_max(xi, T)*.99)])
+                rho_tmp = spo.minimize(Pdiff, [rho_tmp], args=(P, T, xi, eos), method='TNC', bounds=[(np.finfo("float").eps, eos.density_max(xi, T)*.99)])
                 rho_tmp = rho_tmp.x[0]
     logger.info("    Liquid Density: {} mol/m^3, flag {}".format(rho_tmp,flag))
 
@@ -1098,8 +1098,6 @@ def calc_Prange_xi(T, xi, yi, eos, rhodict={}, Pmin=10000, zi_opts={}):
             elif (z > 0 and ObjArray[-1] > 1.1*ObjArray[-2]) or flag_min:
                 if not flag_min:
                     flag_min = True
-                    Prange[0] = Prange[1]
-                    ObjRange[0] = ObjRange[1]
 
                 if np.any(np.abs(Parray[-1]-np.array(Parray[:-1])) < tol):
                     break
@@ -1112,13 +1110,17 @@ def calc_Prange_xi(T, xi, yi, eos, rhodict={}, Pmin=10000, zi_opts={}):
 
                         ind = np.where(np.logical_and(Prange[0]<=Parray, Parray<=Prange[1]))[0]
                         if np.size(ind) > 3:
-                            x, y = _clean_plot_data([Parray[i] for i in ind], [ObjArray[i] for i in ind])
-                            xroot = np.sort(np.roots(np.polyfit(x,y,2)))
-                            if np.size(xroot) == 0:
-                                xroot = np.sort(np.roots(np.polyder(np.polyfit(x,y,3))))
 
-                            if np.size(xroot) == 0:
-                                p = (Prange[1]-Prange[0])*np.random.rand(1)[0] + Prange[0]
+                            p = spo.brentq(solve_P_xiT, Prange[0], Prange[1], args=(xi, T, eos, rhodict))
+                            obj = solve_P_xiT(p, xi, T, eos, rhodict=rhodict)
+                            break
+
+                            #x, y = _clean_plot_data([Parray[i] for i in ind], [ObjArray[i] for i in ind])
+                            #xroot = np.sort(np.roots(np.polyder(np.polyfit(x,y,2))))
+                            #if np.size(xroot) == 0:
+                            #    p = (Prange[1]-Prange[0])*np.random.rand(1)[0] + Prange[0]
+                            #else:
+                            #    p = xroot[0]
                         else:
                             p = (Prange[1]-Prange[0])*np.random.rand(1)[0] + Prange[0]
                         
@@ -1582,22 +1584,24 @@ def find_new_yi(P, T, phil, xi, eos, bounds=(0.01, 0.99), npoints=30, rhodict={}
     for yi in yi_ext:
 
         yi = np.array([yi, 1-yi])
-        phiv, rhov, flagv = calc_phiv(P, T, yi, eos, rhodict=rhodict)
 
+        ############
+        obj, flagv = obj_yi(yi, P, T, phil, xi, eos, rhodict=rhodict, return_flag=True)
         #### Try next two iterations with traditional objective function
-        yinew1 = xi * phil / phiv
-        yinew_total_1 = np.sum(yinew1)
+        #phiv, rhov, flagv = calc_phiv(P, T, yi, eos, rhodict=rhodict)
+        #yinew1 = xi * phil / phiv
+        #yinew_total_1 = np.sum(yinew1)
 
-        yi2 = yinew1/yinew_total_1
-        phiv2, rhov2, flagv2 = calc_phiv(P, T, yi2, eos, rhodict=rhodict)
+        #yi2 = yinew1/yinew_total_1
+        #phiv2, rhov2, flagv2 = calc_phiv(P, T, yi2, eos, rhodict=rhodict)
 
-        flag_ext.append(flagv)
-        tmp1 = yi*phiv
-        #tmp2 = xi*phil
-        tmp2 = yi2*phiv2
-        obj = abs(tmp1[0]/tmp1[1] - tmp2[0]/tmp2[1])
-        logger.info("    Guess yi1: {}, yi2: {}, obj:{}".format(yi,yi2,obj))
+        #tmp1 = yi*phiv
+        ##tmp2 = xi*phil
+        #tmp2 = yi2*phiv2
+        #obj = abs(tmp1[0]/tmp1[1] - tmp2[0]/tmp2[1])
+        #logger.info("    Guess yi1: {}, yi2: {}, obj:{}".format(yi,yi2,obj))
         #######################
+        flag_ext.append(flagv)
         obj_ext.append(obj)        
 
     #plt.figure(1)
@@ -2383,26 +2387,32 @@ def calc_flash(P, T, eos, rhodict={}, maxiter=200, tol=1e-9):
                 logger.error("Component, {}, is beyond it's critical point. Add an exception to setPsat, otherwise assumed 1".format(NaNbead))
         Ki0[i] = Psat[i]/P
 
-    if np.any(np.isnan(Ki0)):
-        ind = np.where(np.isnan(Ki0)==False)[0]
-        if ind.size == 2:
-            logger.info("Guess in Ki values could not be made from saturation pressures. Arbitrarily choose, [1.5, 0.5]")
-            Ki0 = np.array([0.5, 1.5])
-    elif np.all(Ki0>1.0):
-        ind = np.where(Ki0[Ki0<2.0]==max(Ki0[Ki0<2.0]))[0]
-        if ind.size == 0:
-            raise ValueError("All Ki values greater than 1: {}".format(Ki0))
-    elif np.all(Ki0<1.0):
-        ind = np.where(Ki0==min(Ki0))[0]
-        if ind.size == 0:
-            raise ValueError("All Ki values less than 1: {}".format(Ki0))
-    else:
-        ind = []
+    #if np.any(np.isnan(Ki0)):
+    #    ind = np.where(np.isnan(Ki0)==False)[0]
+    #    if ind.size == 2:
+    #        logger.info("Guess in Ki values could not be made from saturation pressures. Arbitrarily choose, [1.5, 0.5]")
+    #        Ki0 = np.array([0.5, 1.5])
+    #elif np.all(Ki0>1.0):
+    #    ind = np.where(Ki0[Ki0<2.0]==max(Ki0[Ki0<2.0]))[0]
+    #    if ind.size == 0:
+    #        raise ValueError("All Ki values greater than 1: {}".format(Ki0))
+    #elif np.all(Ki0<1.0):
+    #    ind = np.where(Ki0==min(Ki0))[0]
+    #    if ind.size == 0:
+    #        raise ValueError("All Ki values less than 1: {}".format(Ki0))
+    #else:
+    #    ind = []
 
-    if ind and ind[0] == 0:
-        Ki0[1] = 2.-Ki0[0]
-    elif ind and ind[0] == 1:
-        Ki0[0] = 2.-Ki0[1]
+    #if ind and ind[0] == 0:
+    #    Ki0[1] = 2.-Ki0[0]
+    #elif ind and ind[0] == 1:
+    #    Ki0[0] = 2.-Ki0[1]
+
+    if Ki0[0] < 1.0:
+        Ki0[0] = 1e+6
+
+    if Ki0[1] > 1.0:
+        Ki0[1] = 1e-6
         
     err = 1
     Ki = np.copy(Ki0)
@@ -2437,7 +2447,7 @@ def calc_flash(P, T, eos, rhodict={}, maxiter=200, tol=1e-9):
 
         # Check Objective function
         if np.all(np.abs(Ki-1.0) < 1e-6) and flag_critical < 2:
-            Ki = (2-np.sqrt(np.finfo(float).eps))*np.ones(2)
+            Ki = np.ones(2)/np.sqrt(np.finfo(float).eps)
             Ki[flag_critical] = np.sqrt(np.finfo(float).eps)
             flag_critical += 1
             logger.info("    Liquid and vapor mole fractions are equal, let search from Ki = {}".format(Ki))

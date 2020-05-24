@@ -218,7 +218,6 @@ class BasinBounds(object):
             
         """
         bounds = np.transpose(np.array(bounds))
-
         self.xmin = bounds[0]
         self.xmax = bounds[1]
 
@@ -239,7 +238,11 @@ class BasinBounds(object):
         x = kwargs["x_new"]
         tmax = bool(np.all(x <= self.xmax))
         tmin = bool(np.all(x >= self.xmin))
-        return tmax and tmin
+
+        feasible1 = np.abs(kwargs["f_new"]) < np.inf
+        feasible2 = not np.isnan(kwargs["f_new"])
+
+        return tmax and tmin and feasible1 and feasible2
 
 
 def global_minimization(global_method, beadparams0, bounds, fit_bead, fit_params, exp_dict, global_dict={}, minimizer_dict={}):

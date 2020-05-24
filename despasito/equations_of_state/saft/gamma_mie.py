@@ -472,34 +472,32 @@ class saft_gamma_mie(EOStemplate):
         bounds_new = np.zeros(2)
         # Non bonded parameters
         if (param_name in param_bound_extreme):
-            # Self interaction parameter
-            if len(bead_names) == 1:
-                if bounds[0] < param_bound_extreme[param_name][0]:
-                    logger.debug("Given {} lower boundary, {}, is less than what is recommended by eos object. Using value of {}.".format(param_name,bounds[0],param_bound_extreme[param_name][0]))
-                    bounds_new[0] = param_bound_extreme[param_name][0]
-                else:
-                    bounds_new[0] = bounds[0]
-        
-                if (bounds[1] > param_bound_extreme[param_name][1] or bounds[1] < 1e-32):
-                    logger.debug("Given {} upper boundary, {}, is greater than what is recommended by eos object. Using value of {}.".format(param_name,bounds[1],param_bound_extreme[param_name][1]))
-                    bounds_new[1] = param_bound_extreme[param_name][1]
-                else:
-                    bounds_new[1] = bounds[1]
-                        
-            # Cross interaction parameter
-            elif len(bead_names) == 2:
-                if bounds[0] < param_bound_extreme[param_name][0]:
-                    logger.debug("Given {}_{} lower boundary, {}, is less than what is recommended by eos object. Using value of {}.".format(param_name,bead_names[1],bounds[0],param_bound_extreme[param_name][0]))
-                    bounds_new[0] = param_bound_extreme[param_name][0]
-                else:
-                    bounds_new[0] = bounds[0]
+            if len(bead_names) == 2:
+                name = "_".join([param_name,bead_names[1]])
+            else:
+                name = param_name
 
-                if (bounds[1] > param_bound_extreme[param_name][1] or bounds[1] < 1e-32):
-                    logger.debug("Given {}_{} upper boundary, {}, is greater than what is recommended by eos object. Using value of {}.".format(param_name,bead_names[1],bounds[1],param_bound_extreme[param_name][1]))
-                    bounds_new[1] = param_bound_extreme[param_name][1]
-                else:
-                    bounds_new[1] = bounds[1]
+            if bounds[0] < param_bound_extreme[param_name][0]:
+                logger.debug("Given {} lower boundary, {}, is less than what is recommended by eos object. Using value of {}.".format(name,bounds[0],param_bound_extreme[param_name][0]))
+                bounds_new[0] = param_bound_extreme[param_name][0]
+                if bounds_new[0] >= bounds[1]:
+                    logger.debug("New {} lower boundary, {}, is greater than given upper boundary, {}. Using value of {}.".format(name,bounds_new[0],bounds[1],param_bound_extreme[param_name][1]))
+                    bounds[1] = param_bound_extreme[param_name][1]
+            else:
+                bounds_new[0] = bounds[0]
         
+            if bounds[1] > param_bound_extreme[param_name][1]:
+                logger.debug("Given {} upper boundary, {}, is greater than what is recommended by eos object. Using value of {}.".format(name,bounds[1],param_bound_extreme[param_name][1]))
+                bounds_new[1] = param_bound_extreme[param_name][1]
+                if bounds_new[0] >= bounds_new[1]:
+                    logger.debug("New {} upper boundary, {}, is greater than lower boundary, {}. Using lower boundary of {}.".format(name,bounds_new[1],bounds_new[0],param_bound_extreme[param_name][0]))
+                    bounds_new[0] = param_bound_extreme[param_name][0]
+            elif bounds[1] < bounds_new[0]:
+                logger.debug("Given {} upper boundary, {}, is less than the given lower bound. Using value of {}.".format(name,bounds[1],param_bound_extreme[param_name][1]))
+                bounds_new[1] = param_bound_extreme[param_name][1]
+            else:
+                bounds_new[1] = bounds[1]
+                        
         # Association Sites
         elif any([param_name.startswith('epsilon'), param_name.startswith('K')]):
             tmp = [param_name.startswith('epsilon'), param_name.startswith('K')]
@@ -510,17 +508,26 @@ class saft_gamma_mie(EOStemplate):
                 param_name_tmp = "K"
 
             if bounds[0] < param_bound_extreme[param_name_tmp][0]:
-                logger.debug("Given {} lower boundary, {}, is less than what is recommended by eos object. Using value of {}.".format(param_name,bounds[0],param_bound_extreme[param_name_tmp][0]))
-                bounds_new[0] = param_bound_extreme[param_name][0]
+                logger.debug("Given {} lower boundary, {}, is less than what is recommended by eos object. Using value of {}.".format(name,bounds[0],param_bound_extreme[param_name_tmp][0]))
+                bounds_new[0] = param_bound_extreme[param_name_tmp][0]
+                if bounds_new[0] >= bounds[1]:
+                    logger.debug("New {} lower boundary, {}, is greater than given upper boundary, {}. Using value of {}.".format(name,bounds_new[0],bounds[1],param_bound_extreme[param_name_tmp][1]))
+                    bounds[1] = param_bound_extreme[param_name_tmp][1]
             else:
                 bounds_new[0] = bounds[0]
-
-            if (bounds[1] > param_bound_extreme[param_name_tmp][1] or bounds[1] < 1e-32):
-                logger.debug("Given {} upper boundary, {}, is greater than what is recommended by eos object. Using value of {}.".format(param_name,bounds[1],param_bound_extreme[param_name_tmp][1]))
-                bounds_new[1] = param_bound_extreme[param_name][1]
+        
+            if bounds[1] > param_bound_extreme[param_name_tmp][1]:
+                logger.debug("Given {} upper boundary, {}, is greater than what is recommended by eos object. Using value of {}.".format(name,bounds[1],param_bound_extreme[param_name_tmp][1]))
+                bounds_new[1] = param_bound_extreme[param_name_tmp][1]
+                if bounds_new[0] >= bounds_new[1]:
+                    logger.debug("New {} upper boundary, {}, is greater than lower boundary, {}. Using lower boundary of {}.".format(name,bounds_new[1],bounds_new[0],param_bound_extreme[param_name_tmp][0]))
+                    bounds_new[0] = param_bound_extreme[param_name_tmp][0]
+            elif bounds[1] < bounds_new[0]:
+                logger.debug("Given {} upper boundary, {}, is less than the given lower bound. Using value of {}.".format(name,bounds[1],param_bound_extreme[param_name_tmp][1]))
+                bounds_new[1] = param_bound_extreme[param_name_tmp][1]
             else:
                 bounds_new[1] = bounds[1]
-                
+
         else:
             raise ValueError("The parameter name {} is not found in the allowed parameter types: {}".format(param_name,", ".join(param_types)))
         

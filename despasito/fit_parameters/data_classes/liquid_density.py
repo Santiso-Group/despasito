@@ -150,7 +150,9 @@ class Data(ExpDataTemplate):
         phase_list = np.transpose(np.array(phase_list))
 
         # objective function
-        obj_value = np.nansum((((phase_list[0] - self._thermodict["rhol"]) / self._thermodict["rhol"])**2)*self.weights['rhol'])
+        obj_value = np.nansum(((np.abs(phase_list[0] - self._thermodict["rhol"]) / self._thermodict["rhol"])**2)*self.weights['rhol'])
+        if obj_value in [0.0, np.nan]:
+            obj_value = np.inf
 
         return obj_value
 
