@@ -12,15 +12,15 @@
         "CH2OH": {"epsilon":428.692807}    
     },
     "CH2OH": {
-        "NCH2-2CH3": {"epsilon":2.13685009e+02,"epsilonHe1":1.95782306e+03,"KHe1":6.51633761e-1}, 
-        "H2O": {"epsilon": 3.23408991e+02,"epsilonHe1": 1.81877007e+03,"KHe1":5.19735068e-2,"epsilone1H": 2.44997810e+03 ,"Ke1H": 5.07030453e-2},
+        "NCH2-2CH3": {"epsilon":2.13685009e+02,"epsilonHB-H-e1":1.95782306e+03,"K-H-e1":6.51633761e-1}, 
+        "H2O": {"epsilon": 3.23408991e+02,"epsilonHB-H-e1": 1.81877007e+03,"K-H-e1":5.19735068e-2,"epsilonHB-e1-H": 2.44997810e+03 ,"K-e1-H": 5.07030453e-2},
         "CO2": {"epsilon": 302.62081202}
     },
     "CO2": {
-        "H2O": {"epsilon": 226.38, "epsilonHe1":2200.0, "KHe1":91.419e-3},
-        "NCH2-2CH3": {"epsilona1e1":3.1791323e+03, "Ka1e1": 6.54074502e-1}
+        "H2O": {"epsilon": 226.38, "epsilonHB-H-e1":2200.0, "K-H-e1":91.419e-3},
+        "NCH2-2CH3": {"epsilonHB-a1-e1":3.1791323e+03, "K-a1-e1": 6.54074502e-1}
     },
     "H2O": {
-        "NCH2-2CH3": {"epsilonHe1":1.91791323e+03, "KHe1": 6.54074502e-1}
+        "NCH2-2CH3": {"epsilonHB-H-e1":1.91791323e+03, "K-H-e1": 6.54074502e-1}
     }
 }

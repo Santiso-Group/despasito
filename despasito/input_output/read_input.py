@@ -94,12 +94,6 @@ def extract_calc_data(input_fname, path='.', **args):
     except:
         logger.info("No EOScross file specified")
 
-    try:
-        eos_dict['sitenames'] = input_dict['association_site_names']
-        logger.info('Association sites have been accepted')
-    except:
-        logger.info('No association sites specified')
-
     if "eos" in input_dict:
         eos_dict['eos'] = input_dict["eos"]
 
@@ -108,7 +102,7 @@ def extract_calc_data(input_fname, path='.', **args):
     for key, value in args.items():
         thermo_dict[key] = value
     # Extract relevant system state inputs
-    EOS_dict_keys = ['beadconfig', 'EOSgroup', 'EOScross','association_site_names',"output_file","eos"]
+    EOS_dict_keys = ['beadconfig', 'EOSgroup', 'EOScross',"output_file","eos"]
     for key, value in input_dict.items():
         if key not in EOS_dict_keys:
             thermo_dict[key] = value

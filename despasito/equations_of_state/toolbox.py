@@ -159,7 +159,7 @@ def calc_massi(nui, beadlibrary, beads):
 
     return massi
 
-def extract_property(property, beadlibrary, beads):
+def extract_property(prop, beadlibrary, beads):
     r"""
     
     
@@ -179,10 +179,10 @@ def extract_property(property, beadlibrary, beads):
     """
     prop_array = np.zeros(len(beads))
     for i , bead in enumerate(beads):
-        if property in beadlibrary[bead]:
-                prop_array[i] += beadlibrary[bead][property]
+        if prop in beadlibrary[bead]:
+                prop_array[i] += beadlibrary[bead][prop]
         else:
-            raise ValueError("The property {} for bead, {}, was not provided.".format(property,bead))
+            raise ValueError("The property {} for bead, {}, was not provided.".format(prop,bead))
 
     return prop_array
 
@@ -454,19 +454,12 @@ def calc_interaction_matrices(beads, beadlibrary, crosslibrary={}):
         - mass: Bead mass [kg/mol]
         - l_r: :math:`\lambda^{r}_{k,k}`, Exponent of repulsive term between groups of type k
         - l_a: :math:`\lambda^{a}_{k,k}`, Exponent of attractive term between groups of type k
-        - Vks: :math:`V_{k,s}`, Number of groups, k, in component
-        - Sk: Optional, :math:`S_{k}`, Shape parameter of group k
-        - epsilon*: Optional, Interaction energy between each bead and association site. Asterisk represents string from sitenames.
-        - K**: Optional, Bonding volume between each association site. Asterisk represents two strings from sitenames.
-        - Nk*: Optional, The number of sites of from list sitenames. Asterisk represents string from sitenames.
     
     crosslibrary : dict, Optional, default: {}
         Optional library of bead cross interaction parameters. As many or as few of the     desired parameters may be defined for whichever group combinations are desired. If this matrix isn't provided, the SAFT mixing rules are used.
         
         - epsilon: :math:`\epsilon_{k,l}/k_B`, Energy parameter scaled by Boltzmann Constant
         - l_r: :math:`\lambda^{r}_{k,l}`, Exponent of repulsive term between groups of type k and l
-        - epsilon*: Optional, Interaction energy between each bead and association site.     Asterisk represents string from sitenames.
-        - K**: Optional, Bonding volume between each association site. Asterisk represents two strings from sitenames.
         
     Returns
     -------

@@ -29,6 +29,9 @@ def saft_type(name):
     
     return Aideal, Amonomer, Achain, Aassoc
 
+parameter_types = ["epsilon", "epsilonHB", "sigma", "l_r", "l_a", "Sk", "K"]
+parameter_bound_extreme = {"epsilon":[0.,1000.], "sigma":[0.,9e-9], "l_r":[0.,100.], "l_a":[0.,100.], "Sk":[0.,1.], "epsilonHB":[0.,5000.], "K":[0.,10000.]}
+
 class saft(EOStemplate):
 
     r"""
@@ -76,14 +79,6 @@ class saft(EOStemplate):
 
     def __init__(self, kwargs):
 
-        needed_attributes = ['nui','beads','beadlibrary']
-
-        for key in needed_attributes:
-            if key not in kwargs:
-                raise ValueError("The one of the following inputs is missing: {}".format(", ".join(tmp)))
-            elif not hasattr(self, key):
-                setattr(self, key, kwargs[key])
-
         Aideal, Amonomer, Achain, Aassoc = saft_type(kwargs["saft_name"])
         
         self.Aideal = Aideal(kwargs)
@@ -112,7 +107,7 @@ class saft(EOStemplate):
             Residual helmholtz energy for each density value given.
         """
     
-        if len(xi) != len(self.nui):
+        if len(xi) != len(self.eos_dict['nui']):
             raise ValueError("Number of components in mole fraction list doesn't match components in nui. Check bead_config.")
     
         if np.isscalar(rho):
@@ -241,14 +236,14 @@ class saft(EOStemplate):
 
         return maxrho
 
-    def param_guess(self, param_name, bead_names):
+    def param_guess(self, parameter, bead_names):
         """
         Generate initial guesses for the parameters to be fit.
 
         Parameters
         ----------
-        param_name : str
-            Parameter to be fit. See EOS mentation for supported parameter names.
+        parameter : str
+            Parameter to be fit. See EOS documentation for supported parameter names.
         bead_names : list
             Bead names to be changed. For a self interaction parameter, the length will be 1, for a cross interaction parameter, the length will be two.
 
@@ -258,69 +253,33 @@ class saft(EOStemplate):
             An initial guess for parameter, it will be optimized throughout the process.
         """
 
-        param_types = ["epsilon", "sigma", "l_r", "l_a", "Sk", "K"]
+        #parameter_types = ["epsilon", "sigma", "l_r", "l_a", "Sk", "K"]
 
         if len(bead_names) > 2:
             raise ValueError("The bead names {} were given, but only a maximum of 2 are permitted.".format(", ".join(bead_names)))
-        if not set(bead_names).issubset(self.beads):
-            raise ValueError("The bead names {} were given, but they are not in the allowed list: {}".format(", ".join(bead_names),", ".join(self.beads)))
+        if not set(bead_names).issubset(self.eos_dict['beads']):
+            raise ValueError("The bead names {} were given, but they are not in the allowed list: {}".format(", ".join(bead_names),", ".join(self.eos_dict['beads'])))
 
-        # Non bonded parameters
-        if (param_name in ["epsilon", "sigma", "l_r", "l_a", "Sk"]):
-            # Self interaction parameter
-            if len(bead_names) == 1:
-                if bead_names[0] in self.beadlibrary:
-                    param_value = self.beadlibrary[bead_names[0]][param_name]
-                else:
-                    param_value = self.check_bounds(param_name, bead_names, np.empty(2))[1]/2
-            # Cross interaction parameter
-            elif len(bead_names) == 2:
-                if bead_names[1] in self._crosslibrary and bead_names[0] in self._crosslibrary[bead_names[1]]:
-                    param_value = self._crosslibrary[bead_names[1]][bead_names[0]][param_name]
-                elif bead_names[0] in self._crosslibrary and bead_names[1] in self._crosslibrary[bead_names[0]]:
-                    param_value = self._crosslibrary[bead_names[0]][bead_names[1]][param_name]
-                else:
-                    param_value = self.check_bounds(bead_names[0], param_name, np.empty(2))[1]/2
+        param_name = parameter.split("-")[0]
 
-        # Association Sites
-        elif any([param_name.startswith('epsilon'), param_name.startswith('K')]):
-            tmp = [param_name.startswith('epsilon'), param_name.startswith('K')]
-            # Ensure sitenames are valid and on list
-            if tmp[0] == True:
-                tmp_name_full = param_name.replace("epsilon","")
-            elif tmp[1] == True:
-                tmp_name_full = param_name.replace("K","")
-                         
-            flag = 0
+        if param_name not in parameter_types:
+            raise ValueError("The parameter name {} is not found in the allowed parameter types: {}".format(param_name,", ".join(parameter_types)))
 
-            for site1 in self._sitenames:
-                if tmp_name_full.startswith(site1):
-                    tmp_name = tmp_name_full.replace(site1,"")
-                    for site2 in self._sitenames:
-                        if tmp_name == site2:
-                            flag = 1
-                            break
-                    if flag == 1:
-                        break
-            if flag == 0:
-                raise ValueError("site_names should be two different sites in the list: {}. You gave: {}".format(tmp_name_full,", ".join(sitenames=self._sitenames)))
+        param_value = None
+        # Self interaction parameter
+        if len(bead_names) == 1:
+            if bead_names[0] in self.eos_dict['beadlibrary']:
+                param_value = self.eos_dict['beadlibrary'][bead_names[0]][parameter]
+        # Cross interaction parameter
+        elif len(bead_names) == 2:
+            if bead_names[1] in self.eos_dict['crosslibrary'] and bead_names[0] in self.eos_dict['crosslibrary'][bead_names[1]]:
+                param_value = self.eos_dict['crosslibrary'][bead_names[1]][bead_names[0]][parameter]
+            elif bead_names[0] in self.eos_dict['crosslibrary'] and bead_names[1] in self.eos_dict['crosslibrary'][bead_names[0]]:
+                param_value = self.eos_dict['crosslibrary'][bead_names[0]][bead_names[1]][parameter]
 
-            tmp_nm = param_name+"".join(site_names)
-            # Self interaction parameter
-            if len(bead_names) == 1:
-                if bead_names[0] in self.beadlibrary and tmp_nm in self.beadlibrary[bead_names[0]]:
-                    param_value = self.beadlibrary[bead_names[0]][tmp_nm]
-            # Cross interaction parameter
-            elif len(bead_names) == 2:
-                if bead_names[1] in self._crosslibrary and bead_names[0] in self._crosslibrary[bead_names[1]]:
-                    param_value = self._crosslibrary[bead_names[1]][bead_names[0]][tmp_nm]
-                elif bead_names[0] in self._crosslibrary and bead_names[1] in self._crosslibrary[bead_names[0]]:
-                    param_value = self._crosslibrary[bead_names[0]][bead_names[1]][tmp_nm]
-                else:
-                    param_value = self.check_bounds(param_name, bead_names, np.empty(2))[1]/2
-
-        else:
-            raise ValueError("The parameter name {} is not found in the allowed parameter types: {}".format(param_name,", ".join(param_types)))
+        if param_value is None:
+            bounds = self.check_bounds(bead_names[0], parameter, np.empty(2))
+            param_value = (bounds[1]-bounds[0])/2 + bounds[0]
 
         return param_value
 
@@ -343,7 +302,7 @@ class saft(EOStemplate):
             A screened and possibly corrected low and a high value for the parameter, param_name
         """
         
-        param_bound_extreme = {"epsilon":[0.,1000.], "sigma":[0.,9e-9], "l_r":[0.,100.], "l_a":[0.,100.], "Sk":[0.,1.], "epsilon-a":[0.,5000.], "K":[0.,10000.]}
+        #parameter_bound_extreme = {"epsilon":[0.,1000.], "sigma":[0.,9e-9], "l_r":[0.,100.], "l_a":[0.,100.], "Sk":[0.,1.], "epsilonHB":[0.,5000.], "K":[0.,10000.]}
 
         bead_names = [fit_bead]
 
@@ -357,66 +316,34 @@ class saft(EOStemplate):
 
             if len(fit_params_list) > 1:
                 bead_names.append(fit_params_list[1])
+
+        parameter = param_name.split("-")[0]
         
         if len(bead_names) > 2:
             raise ValueError("The bead names {} were given, but only a maximum of 2 are permitted.".format(", ".join(bead_names)))
-        if not set(bead_names).issubset(self.beads):
-            raise ValueError("The bead names {} were given, but they are not in the allowed list: {}".format(", ".join(bead_names),", ".join(self.beads)))
+        if not set(bead_names).issubset(self.eos_dict['beads']):
+            raise ValueError("The bead names {} were given, but they are not in the allowed list: {}".format(", ".join(bead_names),", ".join(self.eos_dict['beads'])))
         
         bounds_new = np.zeros(2)
         # Non bonded parameters
-        if (param_name in param_bound_extreme):
-            # Self interaction parameter
-            if len(bead_names) == 1:
-                if bounds[0] < param_bound_extreme[param_name][0]:
-                    logger.debug("Given {} lower boundary, {}, is less than what is recommended by eos object. Using value of {}.".format(param_name,bounds[0],param_bound_extreme[param_name][0]))
-                    bounds_new[0] = param_bound_extreme[param_name][0]
-                else:
-                    bounds_new[0] = bounds[0]
-        
-                if (bounds[1] > param_bound_extreme[param_name][1] or bounds[1] < 1e-32):
-                    logger.debug("Given {} upper boundary, {}, is greater than what is recommended by eos object. Using value of {}.".format(param_name,bounds[1],param_bound_extreme[param_name][1]))
-                    bounds_new[1] = param_bound_extreme[param_name][1]
-                else:
-                    bounds_new[1] = bounds[1]
-                        
-            # Cross interaction parameter
-            elif len(bead_names) == 2:
-                if bounds[0] < param_bound_extreme[param_name][0]:
-                    logger.debug("Given {}_{} lower boundary, {}, is less than what is recommended by eos object. Using value of {}.".format(param_name,bead_names[1],bounds[0],param_bound_extreme[param_name][0]))
-                    bounds_new[0] = param_bound_extreme[param_name][0]
-                else:
-                    bounds_new[0] = bounds[0]
+        if (parameter in parameter_bound_extreme):
+            if len(bead_names) == 2:
+                param_name = "{}_{}".format(param_name,bead_names[1])
 
-                if (bounds[1] > param_bound_extreme[param_name][1] or bounds[1] < 1e-32):
-                    logger.debug("Given {}_{} upper boundary, {}, is greater than what is recommended by eos object. Using value of {}.".format(param_name,bead_names[1],bounds[1],param_bound_extreme[param_name][1]))
-                    bounds_new[1] = param_bound_extreme[param_name][1]
-                else:
-                    bounds_new[1] = bounds[1]
-        
-        # Association Sites
-        elif any([param_name.startswith('epsilon'), param_name.startswith('K')]):
-            tmp = [param_name.startswith('epsilon'), param_name.startswith('K')]
-            # Ensure sitenames are valid and on list
-            if tmp[0] == True:
-                param_name_tmp = "epsilon-a"
-            elif tmp[1] == True:
-                param_name_tmp = "K"
-
-            if bounds[0] < param_bound_extreme[param_name_tmp][0]:
-                logger.debug("Given {} lower boundary, {}, is less than what is recommended by eos object. Using value of {}.".format(param_name,bounds[0],param_bound_extreme[param_name_tmp][0]))
-                bounds_new[0] = param_bound_extreme[param_name][0]
+            if bounds[0] < parameter_bound_extreme[parameter][0]:
+                logger.debug("Given {} lower boundary, {}, is less than what is recommended by eos object. Using value of {}.".format(param_name,bounds[0],parameter_bound_extreme[parameter][0]))
+                bounds_new[0] = parameter_bound_extreme[parameter][0]
             else:
                 bounds_new[0] = bounds[0]
-
-            if (bounds[1] > param_bound_extreme[param_name_tmp][1] or bounds[1] < 1e-32):
-                logger.debug("Given {} upper boundary, {}, is greater than what is recommended by eos object. Using value of {}.".format(param_name,bounds[1],param_bound_extreme[param_name_tmp][1]))
-                bounds_new[1] = param_bound_extreme[param_name][1]
+        
+            if (bounds[1] > parameter_bound_extreme[parameter][1] or bounds[1] < np.finfo("float").eps):
+                logger.debug("Given {} upper boundary, {}, is greater than what is recommended by eos object. Using value of {}.".format(param_name,bounds[1],parameter_bound_extreme[parameter][1]))
+                bounds_new[1] = parameter_bound_extreme[parameter][1]
             else:
                 bounds_new[1] = bounds[1]
-                
+                        
         else:
-            raise ValueError("The parameter name {} is not found in the allowed parameter types: {}".format(param_name,", ".join(param_types)))
+            raise ValueError("The parameter name {} is not found in the allowed parameter types: {}".format(param_name,", ".join(parameter_types)))
         
         return bounds_new
     
@@ -436,7 +363,7 @@ class saft(EOStemplate):
             Value of parameter
         """
 
-        param_types = ["epsilon", "sigma", "l_r", "l_a", "Sk", "K"]
+        #parameter_types = ["epsilon", "sigma", "l_r", "l_a", "Sk", "K"]
 
         bead_names = [fit_bead]
 
@@ -451,72 +378,40 @@ class saft(EOStemplate):
             if len(fit_params_list) > 1:
                 bead_names.append(fit_params_list[1])
 
+        parameter_list = param_name.split("-")[0]
+        parameter = parameter_list[0]
+
+        if len(parameter_list) > 1 and len(parameter_list[1:]) != 2 or parameter_list[1]==parameter_list[2]:
+            raise ValueError("sitenames should be two different sites in the list: {}. You gave: {}".format(self.eos_dict["sitenames"],", ",join(parameter_list[1:])))
+
         if len(bead_names) > 2:
             raise ValueError("The bead names {} were given, but only a maximum of 2 are permitted.".format(", ".join(bead_names)))
-        if not set(bead_names).issubset(self.beads):
-            raise ValueError("The bead names {} were given, but they are not in the allowed list: {}".format(", ".join(bead_names),", ".join(self.beads)))
+        if not set(bead_names).issubset(self.eos_dict['beads']):
+            raise ValueError("The bead names {} were given, but they are not in the allowed list: {}".format(", ".join(bead_names),", ".join(self.eos_dict['beads'])))
 
-        # Non bonded parameters
-        if (param_name in ["epsilon", "sigma", "l_r", "l_a", "Sk"]):
+        if parameter in parameter_types:
             # Self interaction parameter
             if len(bead_names) == 1:
-                if bead_names[0] in self.beadlibrary:
-                    self.beadlibrary[bead_names[0]][param_name] = param_value
+                if bead_names[0] in self.eos_dict['beadlibrary']:
+                    self.eos_dict['beadlibrary'][bead_names[0]][param_name] = param_value
                 else:
-                    self.beadlibrary[bead_names[0]] = {param_name: param_value}
+                    self.eos_dict['beadlibrary'][bead_names[0]] = {param_name: param_value}
             # Cross interaction parameter
             elif len(bead_names) == 2:
-                if bead_names[1] in self._crosslibrary and bead_names[0] in self._crosslibrary[bead_names[1]]:
-                    self._crosslibrary[bead_names[1]][bead_names[0]][param_name] = param_value
-                elif bead_names[0] in self._crosslibrary:
-                    if bead_names[1] in self._crosslibrary[bead_names[0]]:
-                        self._crosslibrary[bead_names[0]][bead_names[1]][param_name] = param_value
+                if bead_names[1] in self.eos_dict['crosslibrary'] and bead_names[0] in self.eos_dict['crosslibrary'][bead_names[1]]:
+                    self.eos_dict['crosslibrary'][bead_names[1]][bead_names[0]][param_name] = param_value
+                elif bead_names[0] in self.eos_dict['crosslibrary']:
+                    if bead_names[1] in self.eos_dict['crosslibrary'][bead_names[0]]:
+                        self.eos_dict['crosslibrary'][bead_names[0]][bead_names[1]][param_name] = param_value
                     else:
-                        self._crosslibrary[bead_names[0]][bead_names[1]] = {param_name: param_value} 
+                        self.eos_dict['crosslibrary'][bead_names[0]][bead_names[1]] = {param_name: param_value} 
                 else:
-                    self._crosslibrary[bead_names[0]] = {bead_names[1]: {param_name: param_value}}
-
-        # Association Sites
-        elif any([param_name.startswith('epsilon'), param_name.startswith('K')]):
-            tmp = [param_name.startswith('epsilon'), param_name.startswith('K')]
-            # Ensure sitenames are valid and on list
-            if tmp[0] == True: tmp_name_full = param_name.replace("epsilon","")
-            elif tmp[1] == True: tmp_name_full = param_name.replace("K","")
-            flag = 0
-
-            for site1 in self._sitenames:
-                if tmp_name_full.startswith(site1):
-                    tmp_name = tmp_name_full.replace(site1,"")
-                    for site2 in self._sitenames:
-                        if tmp_name == site2:
-                            flag = 1
-                            break
-                    if flag == 1:
-                        break
-            if flag == 0:
-                raise ValueError("site_names should be two different sites in the list: {}. You gave: {}".format(tmp_name_full,", ".join(sitenames=self._sitenames)))
-
-            tmp_nm = param_name+"".join(site_names)
-            # Self interaction parameter
-            if len(bead_names) == 1:
-                if bead_names[0] in self.beadlibrary and tmp_nm in self.beadlibrary[bead_names[0]]:
-                    self.beadlibrary[bead_names[0]][tmp_nm] = param_value
-                else:
-                    self.beadlibrary[bead_names[0]] = {tmp_nm: param_value}
-            # Cross interaction parameter
-            elif len(bead_names) == 2:
-                if bead_names[1] in self._crosslibrary and bead_names[0] in self._crosslibrary[bead_names[1]]:
-                    self._crosslibrary[bead_names[1]][bead_names[0]][tmp_nm] = param_value
-                elif bead_names[0] in self._crosslibrary:
-                    if bead_names[1] in self._crosslibrary[bead_names[0]]:
-                        self._crosslibrary[bead_names[0]][bead_names[1]][tmp_nm] = param_value
-                    else:
-                        self._crosslibrary[bead_names[0]][bead_names[1]] = {tmp_nm: param_value}
-                else:
-                    self._crosslibrary[bead_names[0]] = {bead_names[1]: {tmp_nm: param_value}}
+                    self.eos_dict['crosslibrary'][bead_names[0]] = {bead_names[1]: {param_name: param_value}}
 
         else:
-            raise ValueError("The parameter name {} is not found in the allowed parameter types: {}".format(param_name,", ".join(param_types)))
+            raise ValueError("The parameter name {} is not found in the allowed parameter types: {}".format(param_name,", ".join(parameter_types)))
+
+        # NoteHere: update with cross library and beadlibrary
 
     def parameter_refresh(self):
         r""" 
@@ -526,10 +421,10 @@ class saft(EOStemplate):
         """
 
         # Update Non bonded matrices
-        self.eos_dict['epsilonkl'], self.eos_dict['sigmakl'], self.eos_dict['l_akl'], self.eos_dict['l_rkl'], self.eos_dict['Ckl'] = funcs.calc_interaction_matrices(self.eos_dict['beads'], self.eos_dict['beadlibrary'], crosslibrary=self._crosslibrary)
+        self.eos_dict['epsilonkl'], self.eos_dict['sigmakl'], self.eos_dict['l_akl'], self.eos_dict['l_rkl'], self.eos_dict['Ckl'] = funcs.calc_interaction_matrices(self.eos_dict['beads'], self.eos_dict['beadlibrary'], crosslibrary=self.eos_dict['crosslibrary'])
 
         # Update Association site matrices
-        self.eos_dict['epsilonHB'], self.eos_dict['Kklab'], self.eos_dict['nk'] = funcs.calc_assoc_matrices(self.eos_dict['beads'],self.eos_dict['beadlibrary'],sitenames=self._sitenames,crosslibrary=self._crosslibrary)
+        self.eos_dict['epsilonHB'], self.eos_dict['Kklab'], self.eos_dict['nk'] = funcs.calc_assoc_matrices(self.eos_dict['beads'],self.eos_dict['beadlibrary'],sitenames=self.eos_dict['sitenames'],crosslibrary=self.eos_dict['crosslibrary'])
 
         # Update temperature dependent variables
         if np.isnan(self.T) == False:

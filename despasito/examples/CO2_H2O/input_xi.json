@@ -6,7 +6,6 @@
     "calculation_type" : "phase_xiT",
     "pressure options": {"maxiter":50},
     "mole fraction options": {"maxiter":30},
-    "eos_association_site_names": ["H","e1","a1"],
     "Tlist" : [323.2],
     "xilist": [[0.01, 0.99]]
 }

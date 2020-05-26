@@ -92,13 +92,6 @@ class Aassoc():
         else:
             self.eos_dict['crosslibrary'] = kwargs['crosslibrary']
 
-        if not hasattr(self,'sitenames'):
-            if 'sitenames' not in kwargs:
-                self.eos_dict['sitenames']=["H", "e1", "e2"]
-            else:
-                self.eos_dict['sitenames']=kwargs['sitenames']
-        self.nsitesmax = len(self.eos_dict['sitenames'])
-
         if not hasattr(self, 'Vks'):
             self.eos_dict['Vks'] = tb.extract_property("Vks",self.eos_dict['beadlibrary'],self.eos_dict['beads'])
         if not hasattr(self, 'Sk'):
@@ -361,69 +354,76 @@ class Aassoc():
         """
     
         # initialize variables
+        crosslibrary = self.eos_dict['crosslibrary']
+        beads = self.eos_dict['beads']
+        crosslist = []
+        sitenames = []
+        nk = [[] for i in range(self.nbeads)]
+
+        for i, bead in enumerate(self.eos_dict['beads']):
+            nk[i] = [0 for x in sitenames]
+            for key, value in self.eos_dict['beadlibrary'][bead].items():
+                if "Nk" in key:
+                    _, site = key.split("-")  
+                    if site not in sitenames:
+                        for j in range(i):
+                            nk[j].append(0)
+                        nk[i].append(value)
+                        sitenames.append(site)
+                    else:
+                        ind = sitenames.index(site)
+                        nk[i][ind] = value
+                    logger.debug("Bead {} has {} of the association site {}".format(bead,value,site))
+
+            if bead in crosslibrary:
+                for j, bead2 in enumerate(self.eos_dict['beads']):
+                    if bead2 in crosslibrary[bead]:
+                        crosslist.append([i, j])
+
+        self.eos_dict['nk'] = np.array(nk)
+        self.eos_dict['sitenames'] = sitenames
+        self.nsitesmax = len(sitenames)
         epsilonHB = np.zeros((self.nbeads, self.nbeads, self.nsitesmax, self.nsitesmax))
         Kklab = np.zeros((self.nbeads, self.nbeads, self.nsitesmax, self.nsitesmax))
-        nk = np.zeros((self.nbeads, self.nsitesmax))
         
-        for i, bead in enumerate(self.eos_dict['beads']):
-            for j, sitename in enumerate(self.eos_dict['sitenames']):
-                Nk_tmp = "Nk"+ sitename
-                if Nk_tmp in self.eos_dict['beadlibrary'][bead]:
-                    logger.debug("Bead {} has {} of the association site     {}".format(bead,self.eos_dict['beadlibrary'][bead][Nk_tmp],Nk_tmp))
-                    nk[i, j] = self.eos_dict['beadlibrary'][bead][Nk_tmp]
+        for a in range(self.nsitesmax):
+            for b in range(self.nsitesmax):
 
-        if 'crosslibrary' in self.eos_dict and len(self.eos_dict['crosslibrary']) >0:
-            crosslibrary = self.eos_dict['crosslibrary']
-            beads = self.eos_dict['beads']
-        
-            # find any cross terms in the cross term library
-            crosslist = []
-            for (i, beadname) in enumerate(beads):
-                if beadname in crosslibrary:
-                    for (j, beadname2) in enumerate(beads):
-                        if beadname2 in crosslibrary[beadname]:
-                            crosslist.append([i, j])
-        
-            for i in range(np.size(crosslist, axis=0)):
-                for a in range(self.nsitesmax):
-                    for b in range(self.nsitesmax):
-                        if beads[crosslist[i][0]] in crosslibrary:
-                            if beads[crosslist[i][1]] in crosslibrary[beads[crosslist[i][0]]]:
-        
-                                epsilon_tmp = "epsilon"+self.eos_dict['sitenames'][a]+self.eos_dict['sitenames'][b]
-                                K_tmp = "K"+self.eos_dict['sitenames'][a]+self.eos_dict['sitenames'][b]
-                                if epsilon_tmp in crosslibrary[beads[crosslist[i][0]]][beads[crosslist[i][1]]]:
-                                    if (nk[crosslist[i][0]][a] == 0 or nk[crosslist[i][1]][b] == 0):
-                                        if 0 not in [nk[crosslist[i][0]][b],nk[crosslist[i][1]][a]]:
-                                            logger.warning("Site names were listed in wrong order for parameter definitions in cross interaction library. Changing {}_{} - {}_{} interaction to {}_{} - {}_{}".format(beads[crosslist[i][0]],self.eos_dict['sitenames'][a],beads[crosslist[i]    [1]],self.eos_dict['sitenames'][b],beads[crosslist[i][0]],self.eos_dict['sitenames'][b],beads[crosslist[i]    [1]],self.eos_dict['sitenames'][a]))
-                                            a, b = [b, a]
-                                        elif nk[crosslist[i][0]][a] == 0:
-                                            logger.warning("Cross interaction library parameters suggest a {}_{} - {}_{}   interaction, but {} doesn't have site {}.".format(beads[crosslist[i][0]],self.eos_dict['sitenames'][a],beads[crosslist[i]    [1]],self.eos_dict['sitenames'][b],beads[crosslist[i][0]],self.eos_dict['sitenames'][a]))
-                                        elif nk[crosslist[i][1]][b] == 0:
-                                            logger.warning("Cross interaction library parameters suggest a {}_{} - {}_{}   interaction, but {} doesn't have site {}.".format(beads[crosslist[i][0]],self.eos_dict['sitenames'][a],beads[crosslist[i]    [1]],self.eos_dict['sitenames'][b],beads[crosslist[i][1]],self.eos_dict['sitenames'][b]))
-        
-                                    epsilonHB[crosslist[i][0], crosslist[i][1], a, b] = \
-                                crosslibrary[beads[crosslist[i][0]]][beads[crosslist[i][1]]][epsilon_tmp]
-                                    epsilonHB[crosslist[i][1], crosslist[i][0], b, a] = epsilonHB[crosslist[i][0],     crosslist[i][1],a, b]
-        
-                                if K_tmp in crosslibrary[beads[crosslist[i][0]]][beads[crosslist[i][1]]]:
-                                    Kklab[crosslist[i][0], crosslist[i][1], a, b] = \
-                                    crosslibrary[beads[crosslist[i][0]]][beads[crosslist[i][1]]][K_tmp]
-                                    Kklab[crosslist[i][1], crosslist[i][0], b, a] = Kklab[crosslist[i][0], crosslist[i][1], a, b]
+                epsilon_tmp = "-".join(["epsilon",sitenames[a],sitenames[b]])
+                K_tmp = "-".join(["K",sitenames[a],sitenames[b]])
 
-        for i,bead in enumerate(self.eos_dict['beads']):
-            for a in range(self.nsitesmax):
-                for b in range(self.nsitesmax):
-                    tmp = ["epsilon"+self.eos_dict['sitenames'][a]+self.eos_dict['sitenames'][b], "K"+self.eos_dict['sitenames'][a]+self.eos_dict['sitenames'][b]]
-                    if all(x in self.eos_dict['beadlibrary'][bead] for x in tmp):
-                        epsilonHB[i, i, a, b] = self.eos_dict['beadlibrary'][bead]["epsilon" + self.eos_dict['sitenames'][a] + self.eos_dict['sitenames'][b]]
+                # self-interaction
+                for i,bead in enumerate(self.eos_dict['beads']):
+                    if epsilon_tmp in self.eos_dict['beadlibrary'][bead]:
+                        epsilonHB[i, i, a, b] = self.eos_dict['beadlibrary'][bead][epsilon_tmp]
                         epsilonHB[i, i, b, a] = epsilonHB[i, i, a, b]
-                        Kklab[i, i, a, b] = self.eos_dict['beadlibrary'][bead]["K" + self.eos_dict['sitenames'][a] + self.eos_dict['sitenames'][b]]
+
+                    if K_tmp in self.eos_dict['beadlibrary'][bead]:
+                        Kklab[i, i, a, b] = self.eos_dict['beadlibrary'][bead][K_tmp]
                         Kklab[i, i, b, a] = Kklab[i, i, a, b]
+
+                # cross-interaction
+                for i,j in crosslist:
+                    if beads[i] in crosslibrary:
+                        if beads[j] in crosslibrary[beads[i]]:
+                            if epsilon_tmp in crosslibrary[beads[i]][beads[j]]:
+                                if (nk[i][a] == 0 or nk[j][b] == 0):
+                                    if 0 not in [nk[i][b],nk[j][a]]:
+                                        logger.warning("Site names were listed in the wrong order for parameter definitions in cross interaction library. Changing {}_{} - {}_{} interaction to {}_{} - {}_{}".format( beads[i], sitenames[a], beads[j], sitenames[b], beads[i], sitenames[b], beads[j], sitenames[a]))
+                                        a, b = [b, a]
+                                    elif nk[i][a] == 0:
+                                        logger.warning("Cross interaction library parameters suggest a {}_{} - {}_{}   interaction, but {} doesn't have site {}.".format( beads[i], sitenames[a], beads[j], sitenames[b],beads[i], sitenames[a]))
+                                    elif nk[j][b] == 0:
+                                        logger.warning("Cross interaction library parameters suggest a {}_{} - {}_{}   interaction, but {} doesn't have site {}.".format(beads[i], sitenames[a], beads[j], sitenames[b], beads[j], sitenames[b]))
+        
+                                epsilonHB[i,j,a,b] = crosslibrary[beads[i]][beads[j]][epsilon_tmp]
+                                epsilonHB[j,i,b,a] = epsilonHB[i,j,a,b]
+        
+                                Kklab[i,j,a,b] = crosslibrary[beads[i]][beads[j]][K_tmp]
+                                Kklab[j,i,b,a] = Kklab[i,j,a,b]
 
         self.eos_dict['epsilonHB'] = epsilonHB
         self.eos_dict['Kklab'] = Kklab
-        self.eos_dict['nk'] = nk
             
     def check_assoc(self):
         r""" Check if any association sites are used in this system.
