@@ -17,20 +17,22 @@ import despasito.utils.general_toolbox as gtb
 import despasito.equations_of_state.toolbox as tb
 from despasito.equations_of_state.interface import EOStemplate
 
+from despasito.equations_of_state.saft.helmholtz import Aideal
+#from despasito.equations_of_state.saft.helmholtz import Aassoc
+
 logger = logging.getLogger(__name__)
 
 def saft_type(name):
     
     if name == "gamma_mie":
-        from despasito.equations_of_state.saft.helmholtz.Aideal import Aideal
+###################
+        from despasito.equations_of_state.saft.helmholtz import gamma_mie as saft_source
         from despasito.equations_of_state.saft.helmholtz.Amonomer_mie import Amonomer
         from despasito.equations_of_state.saft.helmholtz.Achain_mie import Achain
         from despasito.equations_of_state.saft.helmholtz.Aassoc import Aassoc
     
-    return Aideal, Amonomer, Achain, Aassoc
-
-parameter_types = ["epsilon", "epsilonHB", "sigma", "l_r", "l_a", "Sk", "K"]
-parameter_bound_extreme = {"epsilon":[0.,1000.], "sigma":[0.,9e-9], "l_r":[0.,100.], "l_a":[0.,100.], "Sk":[0.,1.], "epsilonHB":[0.,5000.], "K":[0.,10000.]}
+    return saft_source, Amonomer, Achain, Aassoc
+###################
 
 class saft(EOStemplate):
 
@@ -48,9 +50,9 @@ class saft(EOStemplate):
     beadlibrary : dict
         A dictionary where bead names are the keys to access EOS self interaction parameters:
 
+        - mass: Bead mass [kg/mol]
         - epsilon: :math:`\epsilon_{k,k}/k_B`, Energy well depth scaled by Boltzmann constant
         - sigma: :math:`\sigma_{k,k}`, Size parameter [m]
-        - mass: Bead mass [kg/mol]
         - l_r: :math:`\lambda^{r}_{k,k}`, Exponent of repulsive term between groups of type k
         - l_a: :math:`\lambda^{a}_{k,k}`, Exponent of attractive term between groups of type k\
         - Vks: :math:`V_{k,s}`, Number of groups, k, in component
@@ -72,6 +74,8 @@ class saft(EOStemplate):
         
     Attributes
     ----------
+    eos_dict : dict, default: keys = ['beadlibrary', 'beads', 'nui', 'massi']
+        Temperature value is initially defined as NaN for a placeholder until temperature dependent attributes are initialized by using a method of this class.
     T : float, default: numpy.nan
         Temperature value is initially defined as NaN for a placeholder until temperature dependent attributes are initialized by using a method of this class.
     
@@ -79,12 +83,35 @@ class saft(EOStemplate):
 
     def __init__(self, kwargs):
 
-        Aideal, Amonomer, Achain, Aassoc = saft_type(kwargs["saft_name"])
+###################
+        saft_source, Amonomer, Achain, Aassoc = saft_type(kwargs["saft_name"])
         
-        self.Aideal = Aideal(kwargs)
         self.Amonomer = Amonomer(kwargs)
         self.Achain = Achain(kwargs)
         self.Aassoc = Aassoc(kwargs)
+###################
+
+        if not hasattr(self, 'eos_dict'):
+            self.eos_dict = {}
+
+        # Extract needed variables from saft type file (e.g. gamma_mie)
+        saft_attributes = ["Aideal_method", "parameter_types", "parameter_bound_extreme"]
+        for key in saft_attributes:
+            try:
+                self.eos_dict[key] = getattr(saft_source,key)
+            except:
+                raise ValueError("SAFT type, {}, is missing the variable {}.".format(kwargs["saft_name"],key))
+
+        # Extract needed values from kwargs
+        needed_attributes = ['nui','beads','beadlibrary']
+        for key in needed_attributes:
+            if key not in kwargs:
+                raise ValueError("The one of the following inputs is missing: {}".format(", ".join(tmp)))
+            elif not hasattr(self, key):
+                self.eos_dict[key] = kwargs[key]
+
+        if not hasattr(self, 'massi'):
+            self.eos_dict['massi'] = tb.calc_massi(self.eos_dict['nui'],self.eos_dict['beadlibrary'],self.eos_dict['beads'])
 
     def residual_helmholtz_energy(self, rho, T, xi):
         r"""
@@ -151,9 +178,38 @@ class saft(EOStemplate):
         elif type(rho) != np.ndarray:
             rho = np.array(rho)
 
-        A = self.residual_helmholtz_energy(rho, T, xi) + self.Aideal.Aideal(rho, T, xi)
+        A = self.residual_helmholtz_energy(rho, T, xi) + self.Aideal(rho, T, xi, method=self.eos_dict["Aideal_method"])
 
         return A
+
+    def Aideal(self, rho, T, xi, method="Abroglie"):
+        r"""
+        Return a vector of ideal contribution of Helmholtz energy.
+    
+        :math:`\frac{A^{ideal}}{N k_{B} T}`
+    
+        Parameters
+        ----------
+        rho : numpy.ndarray
+            Number density of system [mol/m^3]
+        T : float
+            Temperature of the system [K]
+        xi : numpy.ndarray
+            Mole fraction of each component, sum(xi) should equal 1.0
+        massi : numpy.ndarray
+            Vector of component masses that correspond to the mole fractions in xi [kg/mol]
+        method : str, Optional, default: Abroglie
+            The function name of the method to calculate the ideal contribution of the helmholtz energy. To add a new one, add a function to: despasito.equations_of_state,helholtz.Aideal.py
+    
+        Returns
+        -------
+        Aideal : numpy.ndarray
+            Helmholtz energy of ideal gas for each density given.
+        """
+
+        self._check_density(rho)
+
+        return Aideal.Aideal_contribution(rho, T, xi, self.eos_dict["massi"], method=method)
 
     def pressure(self, rho, T, xi, step_size=1E-6):
         """
@@ -253,8 +309,6 @@ class saft(EOStemplate):
             An initial guess for parameter, it will be optimized throughout the process.
         """
 
-        #parameter_types = ["epsilon", "sigma", "l_r", "l_a", "Sk", "K"]
-
         if len(bead_names) > 2:
             raise ValueError("The bead names {} were given, but only a maximum of 2 are permitted.".format(", ".join(bead_names)))
         if not set(bead_names).issubset(self.eos_dict['beads']):
@@ -262,8 +316,8 @@ class saft(EOStemplate):
 
         param_name = parameter.split("-")[0]
 
-        if param_name not in parameter_types:
-            raise ValueError("The parameter name {} is not found in the allowed parameter types: {}".format(param_name,", ".join(parameter_types)))
+        if param_name not in self.eos_dict["parameter_types"]:
+            raise ValueError("The parameter name {} is not found in the allowed parameter types: {}".format(param_name,", ".join(self.eos_dict["parameter_types"])))
 
         param_value = None
         # Self interaction parameter
@@ -302,8 +356,6 @@ class saft(EOStemplate):
             A screened and possibly corrected low and a high value for the parameter, param_name
         """
         
-        #parameter_bound_extreme = {"epsilon":[0.,1000.], "sigma":[0.,9e-9], "l_r":[0.,100.], "l_a":[0.,100.], "Sk":[0.,1.], "epsilonHB":[0.,5000.], "K":[0.,10000.]}
-
         bead_names = [fit_bead]
 
         fit_params_list = param_name.split("_")
@@ -326,24 +378,24 @@ class saft(EOStemplate):
         
         bounds_new = np.zeros(2)
         # Non bonded parameters
-        if (parameter in parameter_bound_extreme):
+        if (parameter in self.eos_dict["parameter_bound_extreme"]):
             if len(bead_names) == 2:
                 param_name = "{}_{}".format(param_name,bead_names[1])
 
-            if bounds[0] < parameter_bound_extreme[parameter][0]:
-                logger.debug("Given {} lower boundary, {}, is less than what is recommended by eos object. Using value of {}.".format(param_name,bounds[0],parameter_bound_extreme[parameter][0]))
-                bounds_new[0] = parameter_bound_extreme[parameter][0]
+            if bounds[0] < self.eos_dict["parameter_bound_extreme"][parameter][0]:
+                logger.debug("Given {} lower boundary, {}, is less than what is recommended by eos object. Using value of {}.".format(param_name,bounds[0],self.eos_dict["parameter_bound_extreme"][parameter][0]))
+                bounds_new[0] = self.eos_dict["parameter_bound_extreme"][parameter][0]
             else:
                 bounds_new[0] = bounds[0]
         
-            if (bounds[1] > parameter_bound_extreme[parameter][1] or bounds[1] < np.finfo("float").eps):
-                logger.debug("Given {} upper boundary, {}, is greater than what is recommended by eos object. Using value of {}.".format(param_name,bounds[1],parameter_bound_extreme[parameter][1]))
-                bounds_new[1] = parameter_bound_extreme[parameter][1]
+            if (bounds[1] > self.eos_dict["parameter_bound_extreme"][parameter][1] or bounds[1] < np.finfo("float").eps):
+                logger.debug("Given {} upper boundary, {}, is greater than what is recommended by eos object. Using value of {}.".format(param_name,bounds[1],self.eos_dict["parameter_bound_extreme"][parameter][1]))
+                bounds_new[1] = self.eos_dict["parameter_bound_extreme"][parameter][1]
             else:
                 bounds_new[1] = bounds[1]
                         
         else:
-            raise ValueError("The parameter name {} is not found in the allowed parameter types: {}".format(param_name,", ".join(parameter_types)))
+            raise ValueError("The parameter name {} is not found in the allowed parameter types: {}".format(param_name,", ".join(self.eos_dict["parameter_types"])))
         
         return bounds_new
     
@@ -362,8 +414,6 @@ class saft(EOStemplate):
         param_value : float
             Value of parameter
         """
-
-        #parameter_types = ["epsilon", "sigma", "l_r", "l_a", "Sk", "K"]
 
         bead_names = [fit_bead]
 
@@ -389,7 +439,7 @@ class saft(EOStemplate):
         if not set(bead_names).issubset(self.eos_dict['beads']):
             raise ValueError("The bead names {} were given, but they are not in the allowed list: {}".format(", ".join(bead_names),", ".join(self.eos_dict['beads'])))
 
-        if parameter in parameter_types:
+        if parameter in self.eos_dict["parameter_types"]:
             # Self interaction parameter
             if len(bead_names) == 1:
                 if bead_names[0] in self.eos_dict['beadlibrary']:
@@ -409,7 +459,7 @@ class saft(EOStemplate):
                     self.eos_dict['crosslibrary'][bead_names[0]] = {bead_names[1]: {param_name: param_value}}
 
         else:
-            raise ValueError("The parameter name {} is not found in the allowed parameter types: {}".format(param_name,", ".join(parameter_types)))
+            raise ValueError("The parameter name {} is not found in the allowed parameter types: {}".format(param_name,", ".join(self.eos_dict["parameter_types"])))
 
         # NoteHere: update with cross library and beadlibrary
 
@@ -430,10 +480,30 @@ class saft(EOStemplate):
         if np.isnan(self.T) == False:
             self._calc_temperature_dependent_variables(T)
 
+    @staticmethod
+    def _check_density(rho):
+        r"""
+        This function checks the attritutes of
+        
+        Parameters
+        ----------
+        rho : numpy.ndarray
+        Number density of system [mol/m^3]
+        T : float
+        Temperature of the system [K]
+        xi : numpy.ndarray
+        Mole fraction of each component, sum(xi) should equal 1.0
+        """
+        if any(np.isnan(rho)):
+            raise ValueError("NaN was given as a value of density, rho")
+        elif rho.size == 0:
+            raise ValueError("No value of density, rho, was given")
+        elif any(rho < 0.):
+            raise ValueError("Density values cannot be negative.")
 
     def __str__(self):
 
-        string = "Beads:" + str(self.eos_dict['beads']) + "\n"
+        string = "Beads: {},\nMasses: {} kg/mol\n".format(self.eos_dict['beads'],self.eos_dict['massi'])
         string += "T:" + str(self.T) + "\n"
         return string
 

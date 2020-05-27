@@ -287,7 +287,7 @@ def phase_yiT(eos, sys_dict):
 
     logger.info("--- Calculation phase_yiT Complete ---")
 
-    return {"T":T_list,"yi":yi_list,"P":P_list,"xi":xi_list,"flagl":flagl_list,"flagv":flagv_list, "obj":obj_list}
+    return {"T":T_list,"xi":xi_list,"P":P_list,"yi":yi_list,"flagl":flagl_list,"flagv":flagv_list, "obj":obj_list}
 
 def _phase_yiT_wrapper(args):
 
@@ -403,7 +403,7 @@ def flash(eos, sys_dict):
 
     logger.info("--- Calculation flash Complete ---")
 
-    return {"T":T_list,"yi":yi_list,"P":P_list,"xi":xi_list,"flagl":flagl_list,"flagv":flagv_list, "obj":obj_list}
+    return {"T":T_list,"xi":xi_list,"P":P_list,"yi":yi_list,"flagl":flagl_list,"flagv":flagv_list, "obj":obj_list}
 
 def _flash_wrapper(args):
 
