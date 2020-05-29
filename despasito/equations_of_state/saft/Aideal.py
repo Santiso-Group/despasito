@@ -84,6 +84,7 @@ def Abroglie(rho, T, xi, massi):
 
     rhoi = np.outer(rho2, xi_tmp)
     Lambda = np.sqrt( (constants.h*constants.Nav * constants.m2nm) * (constants.h / constants.kb * constants.m2nm) / (2.0 * np.pi * massi_tmp * T))
+    #logger.debug("For xi: {}, broglie wavelengths are {}".format(xi, Lambda))
     log_broglie3_rho = np.log(Lambda**3*rhoi)
 
     #    if not any(np.sum(xi_tmp * np.log(Aideal_tmp), axis=1)):

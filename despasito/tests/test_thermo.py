@@ -19,22 +19,9 @@ P = np.array([4099056.163132072])
 
 beads_co2_h2o = ['CO2', 'H2O']
 nui_co2_h2o = np.array([[1., 0.],[0., 1.]])
-beadlibrary_co2_h2o = {'CO2': {'epsilon': 207.89, 'l_a': 5.055, 'l_r': 26.408, 'sigma': 3.05e-1, 'Sk': 0.8468, 'Vks': 2, 'mass': 0.04401, 'NkH': 1, 'Nka1': 1},'H2O': {'epsilon': 266.68, 'l_a': 6.0, 'l_r': 17.02, 'sigma': 3.0063e-1, 'Sk': 1.0, 'Vks': 1, 'mass': 0.018015, 'NkH': 2, 'Nke1': 2, 'epsilonHe1': 1985.4, 'KHe1': 1.0169e-1}}
-crosslibrary_co2_h2o = {'CO2': {'H2O': {'epsilon': 226.38, 'epsilonHe1': 2200.0, 'KHe1': 9.1419e-2}}}
-sitenames_co2_h2o = ['H', 'e1', 'a1'] 
-epsilonHB_co2_h2o = np.array([[[[   0.,     0.,     0. ], \
-                       [   0.,     0.,     0. ], \
-                       [   0.,     0.,     0. ]], \
-                      [[   0.,  2200.,     0. ], \
-                       [   0.,     0.,     0. ], \
-                       [   0.,     0.,     0. ]]], \
-                     [[[   0.,     0.,     0. ], \
-                       [2200.,     0.,     0. ], \
-                       [   0.,     0.,     0. ]], \
-                      [[   0.,  1985.4,    0. ], \
-                       [1985.4,    0.,     0. ], \
-                       [   0.,     0.,     0. ]]]])
-eos_co2_h2o = despasito.equations_of_state.eos(eos="saft.gamma_mie",beads=beads_co2_h2o,nui=nui_co2_h2o,beadlibrary=beadlibrary_co2_h2o,crosslibrary=crosslibrary_co2_h2o,sitenames=sitenames_co2_h2o)
+beadlibrary_co2_h2o = {'H2O': {'epsilon': 266.68, 'l_a': 6.0, 'l_r': 17.02, 'sigma': 3.0063e-1, 'Sk': 1.0, 'Vks': 1, 'mass': 0.018015, 'Nk-H': 2, 'Nk-e1': 2, 'epsilonHB-H-e1': 1985.4, 'K-H-e1': 1.0169e-1}, 'CO2': {'epsilon': 207.89, 'l_a': 5.055, 'l_r': 26.408, 'sigma': 3.05e-1, 'Sk': 0.8468, 'Vks': 2, 'mass': 0.04401, 'Nk-H': 1, 'Nk-a1': 1}}
+crosslibrary_co2_h2o = {'CO2': {'H2O': {'epsilon': 226.38, 'epsilonHB-H-e1': 2200.0, 'K-H-e1': 9.1419e-2}}}
+eos_co2_h2o = despasito.equations_of_state.eos(eos="saft.gamma_mie",beads=beads_co2_h2o,nui=nui_co2_h2o,beadlibrary=beadlibrary_co2_h2o,crosslibrary=crosslibrary_co2_h2o, jit=True)
 
 def test_thermo_import():
 #    """Sample test, will always pass so long as import statement worked"""

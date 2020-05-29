@@ -23,20 +23,19 @@ beads_co2_h2o = ['CO2', 'H2O']
 nui_co2_h2o = np.array([[1., 0.],[0., 1.]])
 beadlibrary_co2_h2o = {'H2O': {'epsilon': 266.68, 'l_a': 6.0, 'l_r': 17.02, 'sigma': 3.0063e-1, 'Sk': 1.0, 'Vks': 1, 'mass': 0.018015, 'Nk-H': 2, 'Nk-e1': 2, 'epsilonHB-H-e1': 1985.4, 'K-H-e1': 1.0169e-1}, 'CO2': {'epsilon': 207.89, 'l_a': 5.055, 'l_r': 26.408, 'sigma': 3.05e-1, 'Sk': 0.8468, 'Vks': 2, 'mass': 0.04401, 'Nk-H': 1, 'Nk-a1': 1}}
 crosslibrary_co2_h2o = {'CO2': {'H2O': {'epsilon': 226.38, 'epsilonHB-H-e1': 2200.0, 'K-H-e1': 9.1419e-2}}}
-#sitenames_co2_h2o = ['H', 'e1', 'a1'] 
-epsilonHB_co2_h2o = np.array([[[[   0.,     0.,     0. ], \
-                       [   0.,     0.,     0. ], \
-                       [   0.,     0.,     0. ]], \
-                      [[   0.,  2200.,     0. ], \
-                       [   0.,     0.,     0. ], \
-                       [   0.,     0.,     0. ]]], \
-                     [[[   0.,     0.,     0. ], \
-                       [2200.,     0.,     0. ], \
-                       [   0.,     0.,     0. ]], \
-                      [[   0.,  1985.4,    0. ], \
-                       [1985.4,    0.,     0. ], \
-                       [   0.,     0.,     0. ]]]])
-eos_co2_h2o = despasito.equations_of_state.eos(eos="saft.gamma_mie",beads=beads_co2_h2o,nui=nui_co2_h2o,beadlibrary=copy.deepcopy(beadlibrary_co2_h2o),crosslibrary=copy.deepcopy(crosslibrary_co2_h2o))
+epsilonHB_co2_h2o = np.array([[[[   0., 0., 0. ], \
+                              [   0.,  0., 0. ], \
+                              [   0.,  0., 0. ]], \
+                             [[   0.,  0., 2200. ], \
+                              [   0.,  0., 0. ], \
+                              [   0.,  0., 0. ]]], \
+                            [[[   0.,  0., 0. ], \
+                              [   0.,  0., 0. ], \
+                              [2200.,  0., 0. ]], \
+                             [[   0.,  0., 1985.4], \
+                              [   0.,  0., 0. ], \
+                              [1985.4, 0., 0. ]]]])
+eos_co2_h2o = despasito.equations_of_state.eos(eos="saft.gamma_mie",beads=beads_co2_h2o,nui=nui_co2_h2o,beadlibrary=copy.deepcopy(beadlibrary_co2_h2o),crosslibrary=copy.deepcopy(crosslibrary_co2_h2o), jit=True)
 T = 323.2 
 rho_co2_h2o = np.array([21146.16997993]) 
 P = np.array([1713500.67089664])
@@ -48,16 +47,15 @@ def test_saft_gamma_mie_imported():
 def test_saft_gamma_mie_class_noassoc(beads=beads_co2_ben,nui=nui_co2_ben,beadlibrary=beadlibrary_co2_ben):    
 #   """Test ability to create EOS object without association sites"""
     eos_class = despasito.equations_of_state.eos(eos="saft.gamma_mie",beads=beads,nui=nui,beadlibrary=copy.deepcopy(beadlibrary))
-    assert (eos_class.Amonomer.eos_dict['massi']==np.array([0.04401, 0.07811])).all()
+    assert (eos_class.eos_dict['massi']==np.array([0.04401, 0.07811])).all()
 
 def test_saft_gamma_mie_class_assoc(beads=beads_co2_h2o,nui=nui_co2_h2o,beadlibrary=beadlibrary_co2_h2o,crosslibrary=crosslibrary_co2_h2o,epsilonHB=epsilonHB_co2_h2o):
 #   """Test ability to create EOS object with association sites"""
     eos_class = despasito.equations_of_state.eos(eos="saft.gamma_mie",beads=beads,nui=nui,beadlibrary=copy.deepcopy(beadlibrary),crosslibrary=copy.deepcopy(crosslibrary))
-    assert (eos_class.Aassoc.eos_dict['epsilonHB']==epsilonHB).all()
+    assert (eos_class.eos_dict['epsilonHB']==epsilonHB).all()
 
 def test_saft_gamma_mie_class_assoc_P(T=T,xi=xi_co2_h2o,eos=eos_co2_h2o,rho=rho_co2_h2o):
 #   """Test ability to predict P with association sites"""
-    print(eos.beadlibrary)
     P = eos.pressure(rho,T,xi)[0]
     assert P == pytest.approx(15727315.77,abs=1e+3)
 

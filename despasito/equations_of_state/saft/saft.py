@@ -17,22 +17,17 @@ import despasito.utils.general_toolbox as gtb
 import despasito.equations_of_state.toolbox as tb
 from despasito.equations_of_state.interface import EOStemplate
 
-from despasito.equations_of_state.saft.helmholtz import Aideal
-#from despasito.equations_of_state.saft.helmholtz import Aassoc
+from despasito.equations_of_state.saft import Aideal
+from despasito.equations_of_state.saft import Aassoc
 
 logger = logging.getLogger(__name__)
 
 def saft_type(name):
     
     if name == "gamma_mie":
-###################
-        from despasito.equations_of_state.saft.helmholtz import gamma_mie as saft_source
-        from despasito.equations_of_state.saft.helmholtz.Amonomer_mie import Amonomer
-        from despasito.equations_of_state.saft.helmholtz.Achain_mie import Achain
-        from despasito.equations_of_state.saft.helmholtz.Aassoc import Aassoc
-    
-    return saft_source, Amonomer, Achain, Aassoc
-###################
+        from despasito.equations_of_state.saft.gamma_mie import gamma_mie as saft_source
+
+    return saft_source
 
 class saft(EOStemplate):
 
@@ -83,35 +78,44 @@ class saft(EOStemplate):
 
     def __init__(self, kwargs):
 
-###################
-        saft_source, Amonomer, Achain, Aassoc = saft_type(kwargs["saft_name"])
-        
-        self.Amonomer = Amonomer(kwargs)
-        self.Achain = Achain(kwargs)
-        self.Aassoc = Aassoc(kwargs)
-###################
+        saft_source = saft_type(kwargs["saft_name"])
+        self.saft_source = saft_source(kwargs)
 
         if not hasattr(self, 'eos_dict'):
             self.eos_dict = {}
-
+# NoteHere
         # Extract needed variables from saft type file (e.g. gamma_mie)
-        saft_attributes = ["Aideal_method", "parameter_types", "parameter_bound_extreme"]
+        saft_attributes = ["Aideal_method", "parameter_types", "parameter_bound_extreme","residual_helmholtz_contributions"]
         for key in saft_attributes:
             try:
-                self.eos_dict[key] = getattr(saft_source,key)
+                self.eos_dict[key] = getattr(self.saft_source,key)
             except:
                 raise ValueError("SAFT type, {}, is missing the variable {}.".format(kwargs["saft_name"],key))
 
+        for res in self.eos_dict["residual_helmholtz_contributions"]:
+            setattr( self, res, getattr(self.saft_source, res))
+
         # Extract needed values from kwargs
-        needed_attributes = ['nui','beads','beadlibrary']
+        needed_attributes = ['beadlibrary',"nui","beads"]
         for key in needed_attributes:
             if key not in kwargs:
                 raise ValueError("The one of the following inputs is missing: {}".format(", ".join(tmp)))
             elif not hasattr(self, key):
                 self.eos_dict[key] = kwargs[key]
+        self.nui = self.eos_dict["nui"]
+        self.beads = self.eos_dict["beads"]
+
+        if 'crosslibrary' not in kwargs:
+            self.eos_dict['crosslibrary'] = {}
+        else:
+            self.eos_dict['crosslibrary'] = kwargs['crosslibrary']
 
         if not hasattr(self, 'massi'):
-            self.eos_dict['massi'] = tb.calc_massi(self.eos_dict['nui'],self.eos_dict['beadlibrary'],self.eos_dict['beads'])
+            self.eos_dict['massi'] = tb.calc_massi(self.nui,self.eos_dict['beadlibrary'],self.beads)
+
+        # Initiate association site terms
+        self.eos_dict['sitenames'], self.eos_dict['nk'], self.eos_dict['flag_assoc'] = Aassoc.initiate_assoc_matrices(self.beads,self.eos_dict['beadlibrary'],self.nui)
+        self.eos_dict['epsilonHB'], self.eos_dict['Kklab'] = Aassoc.calc_assoc_matrices(self.beads,self.eos_dict['beadlibrary'],self.nui,sitenames=self.eos_dict['sitenames'],crosslibrary=self.eos_dict['crosslibrary'],nk=self.eos_dict['nk'])
 
     def residual_helmholtz_energy(self, rho, T, xi):
         r"""
@@ -127,6 +131,7 @@ class saft(EOStemplate):
             Temperature of the system [K]
         xi : numpy.ndarray
             Mole fraction of each component, sum(xi) should equal 1.0
+
             
         Returns
         -------
@@ -134,7 +139,7 @@ class saft(EOStemplate):
             Residual helmholtz energy for each density value given.
         """
     
-        if len(xi) != len(self.eos_dict['nui']):
+        if len(xi) != len(self.nui):
             raise ValueError("Number of components in mole fraction list doesn't match components in nui. Check bead_config.")
     
         if np.isscalar(rho):
@@ -145,10 +150,12 @@ class saft(EOStemplate):
         if any(np.array(xi) < 0.):
             raise ValueError("Mole fractions cannot be less than zero.")
 
-        Ares = self.Amonomer.Amonomer(rho, T, xi) + self.Achain.Achain(rho, T, xi)
+        Ares = np.zeros(len(rho))
+        for res in self.eos_dict["residual_helmholtz_contributions"]:
+            Ares += getattr(self.saft_source, res)(rho, T, xi)
 
-        if self.Aassoc.flag_assoc:
-            Ares += self.Aassoc.Aassoc(rho, T, xi)
+        if self.eos_dict["flag_assoc"]:
+            Ares += self.Aassoc(rho, T, xi)
 
         return Ares
 
@@ -207,9 +214,61 @@ class saft(EOStemplate):
             Helmholtz energy of ideal gas for each density given.
         """
 
+        if np.isscalar(rho):
+            rho = np.array([rho])
+        elif type(rho) != np.ndarray:
+            rho = np.array(rho)
+
         self._check_density(rho)
 
         return Aideal.Aideal_contribution(rho, T, xi, self.eos_dict["massi"], method=method)
+
+    def Aassoc(self, rho, T, xi):
+        r"""
+        Return a vector of association site contribution of Helmholtz energy.
+    
+        :math:`\frac{A^{association}}{N k_{B} T}`
+    
+        Parameters
+        ----------
+        rho : numpy.ndarray
+            Number density of system [mol/m^3]
+        T : float
+            Temperature of the system [K]
+        xi : numpy.ndarray
+            Mole fraction of each component, sum(xi) should equal 1.0
+    
+        Returns
+        -------
+        Aassoc : numpy.ndarray
+            Helmholtz energy of ideal gas for each density given.
+        """
+        if np.isscalar(rho):
+            rho = np.array([rho])
+        elif type(rho) != np.ndarray:
+            rho = np.array(rho)
+
+        self._check_density(rho)
+
+        kT = T * constants.kb
+
+        # compute F_klab    
+        Fklab = np.exp(self.eos_dict['epsilonHB'] / T) - 1.0
+        gr_assoc = self.saft_source.calc_gr_assoc(rho, T, xi)
+
+        # Compute Xika: with python with numba  {BottleNeck}
+        indices = Aassoc.assoc_site_indices(self.eos_dict['nk'], self.nui, xi=xi)
+        Xika, err_array = Aassoc.calc_Xika(indices, rho, xi, self.nui, self.eos_dict['nk'], Fklab, self.eos_dict['Kklab'], gr_assoc)
+            
+        # Compute A_assoc
+        Assoc_contribution = np.zeros(np.size(rho)) 
+        for ind, (i, k, a) in enumerate(indices):
+            if self.eos_dict['nk'][k, a] != 0.0:
+                tmp = (np.log(Xika[:, i, k, a]) + ((1.0 - Xika[:, i, k, a]) / 2.0))
+                #tmp = (np.log(Xika[:,ind]) + ((1.0 - Xika[:,ind]) / 2.0))
+                Assoc_contribution += xi[i] * self.nui[i, k] * self.eos_dict['nk'][k, a] * tmp
+
+        return Assoc_contribution
 
     def pressure(self, rho, T, xi, step_size=1E-6):
         """
@@ -287,7 +346,7 @@ class saft(EOStemplate):
             Maximum molar density [mol/m^3]
         """
 
-        maxrho = self.Amonomer.density_max(xi, T, maxpack=maxpack)
+        maxrho = self.saft_source.density_max(xi, T, maxpack=maxpack)
 
 
         return maxrho
@@ -311,8 +370,8 @@ class saft(EOStemplate):
 
         if len(bead_names) > 2:
             raise ValueError("The bead names {} were given, but only a maximum of 2 are permitted.".format(", ".join(bead_names)))
-        if not set(bead_names).issubset(self.eos_dict['beads']):
-            raise ValueError("The bead names {} were given, but they are not in the allowed list: {}".format(", ".join(bead_names),", ".join(self.eos_dict['beads'])))
+        if not set(bead_names).issubset(self.beads):
+            raise ValueError("The bead names {} were given, but they are not in the allowed list: {}".format(", ".join(bead_names),", ".join(self.beads)))
 
         param_name = parameter.split("-")[0]
 
@@ -373,8 +432,8 @@ class saft(EOStemplate):
         
         if len(bead_names) > 2:
             raise ValueError("The bead names {} were given, but only a maximum of 2 are permitted.".format(", ".join(bead_names)))
-        if not set(bead_names).issubset(self.eos_dict['beads']):
-            raise ValueError("The bead names {} were given, but they are not in the allowed list: {}".format(", ".join(bead_names),", ".join(self.eos_dict['beads'])))
+        if not set(bead_names).issubset(self.beads):
+            raise ValueError("The bead names {} were given, but they are not in the allowed list: {}".format(", ".join(bead_names),", ".join(self.beads)))
         
         bounds_new = np.zeros(2)
         # Non bonded parameters
@@ -428,16 +487,16 @@ class saft(EOStemplate):
             if len(fit_params_list) > 1:
                 bead_names.append(fit_params_list[1])
 
-        parameter_list = param_name.split("-")[0]
+        parameter_list = param_name.split("-")
         parameter = parameter_list[0]
 
-        if len(parameter_list) > 1 and len(parameter_list[1:]) != 2 or parameter_list[1]==parameter_list[2]:
-            raise ValueError("sitenames should be two different sites in the list: {}. You gave: {}".format(self.eos_dict["sitenames"],", ",join(parameter_list[1:])))
+        if (len(parameter_list) > 1 and len(parameter_list[1:]) != 2):
+            raise ValueError("Sitenames should be two different sites in the list: {}. You gave: {}".format(self.eos_dict["sitenames"],", ".join(parameter_list[1:])))
 
         if len(bead_names) > 2:
             raise ValueError("The bead names {} were given, but only a maximum of 2 are permitted.".format(", ".join(bead_names)))
-        if not set(bead_names).issubset(self.eos_dict['beads']):
-            raise ValueError("The bead names {} were given, but they are not in the allowed list: {}".format(", ".join(bead_names),", ".join(self.eos_dict['beads'])))
+        if not set(bead_names).issubset(self.beads):
+            raise ValueError("The bead names {} were given, but they are not in the allowed list: {}".format(", ".join(bead_names),", ".join(self.beads)))
 
         if parameter in self.eos_dict["parameter_types"]:
             # Self interaction parameter
@@ -470,15 +529,11 @@ class saft(EOStemplate):
         Those parameters that are dependent on _beadlibrary and _crosslibrary attributes **must** be updated by running this function after all parameters from update_parameters method have been changed.
         """
 
-        # Update Non bonded matrices
-        self.eos_dict['epsilonkl'], self.eos_dict['sigmakl'], self.eos_dict['l_akl'], self.eos_dict['l_rkl'], self.eos_dict['Ckl'] = funcs.calc_interaction_matrices(self.eos_dict['beads'], self.eos_dict['beadlibrary'], crosslibrary=self.eos_dict['crosslibrary'])
+        self.saft_source.parameter_refresh(self.eos_dict['beadlibrary'],self.eos_dict['crosslibrary'])
 
         # Update Association site matrices
-        self.eos_dict['epsilonHB'], self.eos_dict['Kklab'], self.eos_dict['nk'] = funcs.calc_assoc_matrices(self.eos_dict['beads'],self.eos_dict['beadlibrary'],sitenames=self.eos_dict['sitenames'],crosslibrary=self.eos_dict['crosslibrary'])
-
-        # Update temperature dependent variables
-        if np.isnan(self.T) == False:
-            self._calc_temperature_dependent_variables(T)
+        if self.eos_dict["flag_assoc"]: 
+            self.eos_dict['epsilonHB'], self.eos_dict['Kklab'] = Aassoc.calc_assoc_matrices(self.beads,self.eos_dict['beadlibrary'],self.nui,sitenames=self.eos_dict['sitenames'],crosslibrary=self.eos_dict['crosslibrary'], nk=self.eos_dict['nk'])
 
     @staticmethod
     def _check_density(rho):
@@ -503,7 +558,7 @@ class saft(EOStemplate):
 
     def __str__(self):
 
-        string = "Beads: {},\nMasses: {} kg/mol\n".format(self.eos_dict['beads'],self.eos_dict['massi'])
+        string = "Beads: {},\nMasses: {} kg/mol\nSitenames: {}".format(self.beads,self.eos_dict['massi'],self.eos_dict['sitenames'])
         string += "T:" + str(self.T) + "\n"
         return string
 
