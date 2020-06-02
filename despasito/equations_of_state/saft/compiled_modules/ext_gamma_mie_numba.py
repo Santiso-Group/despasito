@@ -109,7 +109,10 @@ def calc_a1s_2d(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
             tmp = np.dot(ckl_coef, np.array( (1.0, 1.0/l_kl[k, l], 1.0/l_kl[k, l]**2, 1.0/l_kl[k, l]**3), dtype=ckl_coef.dtype ))
             etakl[:, k, l] = np.dot( zetax_pow, tmp )
     a1s = - (1.0 - (etakl / 2.0)) / ((1.0 - etakl)**3) * 2.0 * np.pi * Cmol2seg * ((epsilonkl * (dkl**3 * constants.molecule_per_nm3**2)) / (l_kl - 3.0))
-    return np.transpose(np.transpose(a1s) * rho)
+
+    output = np.transpose(np.transpose(a1s) * rho)
+
+    return output
 
 @numba.njit(numba.f8[:,:](numba.f8[:], numba.f8, numba.f8[:], numba.f8[:], numba.f8[:], numba.f8[:]))
 def calc_a1s_1d(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
@@ -154,7 +157,9 @@ def calc_a1s_1d(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
 
     a1s = - (1.0 - (etakl / 2.0)) / (1.0 - etakl)**3 * 2.0 * np.pi * Cmol2seg * ((epsilonkl * (dkl**3 * constants.molecule_per_nm3**2)) / (l_kl - 3.0) )
 
-    return np.transpose(np.transpose(a1s) * rho)
+    output = np.transpose(np.transpose(a1s) * rho)
+
+    return output
 
 #@profile
 def calc_Bkl(rho, l_kl, Cmol2seg, dkl, epsilonkl, x0kl, zetax):

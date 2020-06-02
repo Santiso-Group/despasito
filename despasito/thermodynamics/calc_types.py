@@ -467,6 +467,9 @@ def sat_props(eos, sys_dict):
         if len(T_list) == 1:
             T_list = np.ones(len(xi_list))*T_list[0]
             logger.info("The same temperature, {}, was used for all mole fraction values".format(T_list[0]))
+        elif len(xi_list) == 1:
+            xi_list = [xi_list[0] for i in T_list]
+            logger.info("The same mole fraction set, {}, was used for all temperature values".format(xi_list[0]))
         else:
             raise ValueError("The number of provided temperatures and mole fraction sets are different")
 
@@ -568,11 +571,19 @@ def liquid_properties(eos, sys_dict):
         if len(T_list) == 1:
             T_list = np.ones(len(xi_list))*T_list[0]
             logger.info("The same temperature, {}, was used for all mole fraction values".format(T_list[0]))
+        elif len(xi_list) == 1:
+            xi_list = [xi_list[0] for i in T_list]
+            logger.info("The same mole fraction set, {}, was used for all temperature values".format(xi_list[0]))
         else:
             raise ValueError("The number of provided temperatures and mole fraction sets are different")
 
     if "Plist" in sys_dict:
         P_list = np.array(sys_dict['Plist'])
+        if np.size(T_list) != np.size(P_list, axis=0):
+            if len(P_list)==1:
+                P_list = P_list[0] * np.ones_like(T_list)
+            else:
+                raise ValueError("The number of provided temperatures and pressure sets are different")
         logger.info("Using Plist")
     else:
         P_list = 101325.0 * np.ones_like(T_list)
@@ -678,11 +689,19 @@ def vapor_properties(eos, sys_dict):
         if len(T_list) == 1:
             T_list = np.ones(len(yi_list))*T_list[0]
             logger.info("The same temperature, {}, was used for all mole fraction values".format(T_list[0]))
+        elif len(yi_list) == 1:
+            yi_list = [yi_list[0] for i in T_list]
+            logger.info("The same mole fraction set, {}, was used for all temperature values".format(yi_list[0]))
         else:
             raise ValueError("The number of provided temperatures and mole fraction sets are different")
 
     if "Plist" in sys_dict:
         P_list = np.array(sys_dict['Plist'])
+        if np.size(T_list) != np.size(P_list, axis=0):
+            if len(P_list)==1:
+                P_list = P_list[0] * np.ones_like(T_list)
+            else:
+                raise ValueError("The number of provided temperatures and pressure sets are different")
         logger.info("Using Plist")
     else:
         P_list = 101325.0 * np.ones_like(T_list)

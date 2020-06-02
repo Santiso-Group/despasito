@@ -183,8 +183,7 @@ def calc_composition_dependent_variables(xi, nui, beadlibrary, beads):
     xsk = np.zeros(nbeads, float)
     # compute xsk
     for k in range(nbeads):
-        xsk[k] = np.sum(xi * nui[:, k]) * beadlibrary[beads[k]]["Vks"] * \
-            beadlibrary[beads[k]]["Sk"]
+        xsk[k] = np.sum(xi * nui[:, k]) * beadlibrary[beads[k]]["Vks"] * beadlibrary[beads[k]]["Sk"]
     xsk /= Cmol2seg
 
     # calculate  xskl matrix
@@ -239,7 +238,6 @@ def calc_zetax(rho, Cmol2seg, xskl, dkl):
     zetax : numpy.ndarray
         Matrix of hypothetical packing fraction based on hard sphere diameter for groups (k,l)
     """
-    # calc zetax eq. 22
     zetax = rho * Cmol2seg * ((np.pi / 6.0) * np.sum(xskl * (dkl**3 * constants.molecule_per_nm3)))
 
     return zetax
@@ -257,190 +255,141 @@ def calc_KHS(zetax):
     KHS : numpy.ndarray
         (length of densities) isothermal compressibility of system with packing fraction zetax
     """
-    # compute KHS(rho), eq. 31
     KHS = ((1.0 - zetax)**4) / (1.0 + (4.0 * zetax) + (4.0 * (zetax**2)) - (4.0 * (zetax**3)) + (zetax**4))
 
     return KHS
 
-def calc_interaction_matrices(beads, beadlibrary, crosslibrary={}):
+def cross_interaction_from_dict(beads, beadlibrary, mixing_dict, crosslibrary={}):
     r"""
-    Computes matrices of cross interaction parameters epsilonkl, sigmakl, l_akl, or l_rkl, depending on what is given in beadlibrary
+    Computes matrices of cross interaction parameters defined as the keys in the mixing dict parameter are extracted from the beadlibrary and then the cross library.
     
     Parameters
     ----------
     beads : list[str]
         List of unique bead names used among components
     beadlibrary : dict
-        A dictionary where bead names are the keys to access EOS self interaction parameters:
-        
-        - epsilon: :math:`\epsilon_{k,k}/k_B`, Energy well depth scaled by Boltzmann constant
-        - sigma: :math:`\sigma_{k,k}`, Size parameter [m]
-        - mass: Bead mass [kg/mol]
-        - l_r: :math:`\lambda^{r}_{k,k}`, Exponent of repulsive term between groups of type k
-        - l_a: :math:`\lambda^{a}_{k,k}`, Exponent of attractive term between groups of type k
-    
+        A dictionary where bead names are the keys to access EOS self interaction parameters. Those to be calculated are defined by the keys of mixing_dict
+    mixing_dict : dict
+        This dictionary contains those bead parameters that should be placed in a matrix and the mixing rules for the cross parameters
     crosslibrary : dict, Optional, default: {}
-        Optional library of bead cross interaction parameters. As many or as few of the     desired parameters may be defined for whichever group combinations are desired. If this matrix isn't provided, the SAFT mixing rules are used.
-        
-        - epsilon: :math:`\epsilon_{k,l}/k_B`, Energy parameter scaled by Boltzmann Constant
-        - l_r: :math:`\lambda^{r}_{k,l}`, Exponent of repulsive term between groups of type k and l
+        Optional library of bead cross interaction parameters. As many or as few of the desired parameters may be defined for whichever group combinations are desired. If this matrix isn't provided, the SAFT mixing rules are used.
         
     Returns
     -------
     output : dict
-        Dictionary of outputs, the following possibilities aer calculated if all relevant beads have those properties.
-
-        - epsilonkl : numpy.ndarray, Matrix of well depths for groups (k,l)
-        - sigmakl : numpy.ndarray, Matrix of Mie diameter for groups (k,l)
-        - l_akl : numpy.ndarray, Matrix of Mie potential attractive exponents for k,l groups
-        - l_rkl : numpy.ndarray, Matrix of Mie potential attractive exponents for k,l groups
+        Dictionary of outputs, with the same keys used in mixing dict for the respective interaction matrix
 
     """
     
     nbeads = len(beads)
     
     output = {}
-    if all([True if "epsilon" in beadlibrary[bead] else False for bead in beads]):
-        output["epsilonkl"] = np.zeros((nbeads, nbeads))
-    if all([True if "sigma" in beadlibrary[bead] else False for bead in beads]):
-        output["sigmakl"] = np.zeros((nbeads, nbeads))
-    if all([True if "l_r" in beadlibrary[bead] else False for bead in beads]):
-        output["l_rkl"] = np.zeros((nbeads, nbeads))
-    if all([True if "l_a" in beadlibrary[bead] else False for bead in beads]):
-        output["l_akl"] = np.zeros((nbeads, nbeads))
+    for key in mixing_dict:
+        output[key] = np.zeros((nbeads,nbeads))
+        for k in range(nbeads):
+            for l in range(nbeads):
+                try:
+                    output[key][k,l] = mixing_rules( beadlibrary[beads[k]][key], beadlibrary[beads[l]][key], mixing_dict[key])
+                except:
+                    raise ValueError("Parameter, {}, for {}: {}, and {}: {} couldn't compute with method {}".format(key,beads[k],beadlibrary[beads[k]][key],beads[l],beadlibrary[beads[l]][key], mixing_dict[key]))
 
-    # compute default interaction parameters for beads
-    for k in range(nbeads):
-        for l in range(nbeads):
-            if "sigmakl" in output:
-                output["sigmakl"][k, l] = (beadlibrary[beads[k]]["sigma"] + beadlibrary[beads[l]]["sigma"]) / 2.0
-            else:
-                logger.warning("Not all of the beads, {}, have values for sigma".format(beads))
-
-            if "l_rkl" in output:
-                output["l_rkl"][k, l] = 3 + np.sqrt((beadlibrary[beads[k]]["l_r"] - 3.0) * (beadlibrary[beads[l]]["l_r"] - 3.0))
-            else:
-                logger.warning("Not all of the beads, {}, have values for l_r".format(beads))
-
-            if "l_akl" in output:
-                output["l_akl"][k, l] = 3 + np.sqrt((beadlibrary[beads[k]]["l_a"] - 3.0) * (beadlibrary[beads[l]]["l_a"] - 3.0))
-            else:
-                logger.warning("Not all of the beads, {}, have values for l_a".format(beads))
-
-            if "epsilonkl" in output:
-                if "sigmakl" in output:
-                    output["epsilonkl"][k, l] = np.sqrt(beadlibrary[beads[k]]["epsilon"] * beadlibrary[beads[l]]["epsilon"]) * np.sqrt((beadlibrary[beads[k]]["sigma"] ** 3) * (beadlibrary[beads[l]]["sigma"] ** 3)) / (output["sigmakl"][k, l] ** 3)
-                else:
-                    logger.warning("Size parameters are not available to weight the energy parameters".format(beads))
-                    epsilonkl[k, l] = np.sqrt(beadlibrary[beads[k]]["epsilon"] * beadlibrary[beads[l]]["epsilon"])
-            else:
-                logger.warning("Not all of the beads, {}, have values for epsilon".format(beads))
-
-    # testing if crosslibrary is empty ie not specified
-    if crosslibrary:
-        # find any cross terms in the cross term library
-        crosslist = []
-    
-        for (i, beadname) in enumerate(beads):
-            if beadname in crosslibrary:
-                for (j, beadname2) in enumerate(beads):
-                    if beadname2 in crosslibrary[beadname]:
-                        crosslist.append([i, j])
-    
-        for i in range(np.size(crosslist, axis=0)):
-            a = crosslist[i][0]
-            b = crosslist[i][1]
-            if beads[a] in crosslibrary:
-                if beads[b] in crosslibrary[beads[a]]:
-                    if "epsilonkl" in output and "epsilon" in crosslibrary[beads[a]][beads[b]]:
-                        output["epsilonkl"][a, b] = crosslibrary[beads[a]][beads[b]]["epsilon"]
-                        output["epsilonkl"][b, a] = output["epsilonkl"][a, b]
-                    if "l_rkl" in output and "l_r" in crosslibrary[beads[a]][beads[b]]:
-                        output["l_rkl"][a, b] = crosslibrary[beads[a]][beads[b]]["l_r"]
-                        output["l_rkl"][b, a] = output["l_rkl"][a, b]
-                    if "l_akl" in output and "l_a" in crosslibrary[beads[a]][beads[b]]:
-                        output["l_akl"][a, b] = crosslibrary[beads[a]][beads[b]]["l_a"]
-                        output["l_akl"][b, a] = output["l_akl"][a, b]
-                    if "sigmakl" in output and "sigma" in crosslibrary[beads[a]][beads[b]]:
-                        output["sigmakl"][a, b] = crosslibrary[beads[a]][beads[b]]["sigma"]
-                        output["sigmakl"][b, a] = output["sigmakl"][a, b]
+        # testing if crosslibrary is empty ie not specified
+        if crosslibrary:
+            # find any cross terms in the cross term library
+            crosslist = []
+        
+            for (i, beadname) in enumerate(beads):
+                if beadname in crosslibrary:
+                    for (j, beadname2) in enumerate(beads):
+                        if beadname2 in crosslibrary[beadname]:
+                            crosslist.append([i, j])
+        
+            for i in range(np.size(crosslist, axis=0)):
+                a = crosslist[i][0]
+                b = crosslist[i][1]
+                if beads[a] in crosslibrary:
+                    if beads[b] in crosslibrary[beads[a]]:
+                        for key in mixing_dict:
+                            if key in crosslibrary[beads[a]][beads[b]]:
+                                output[key][a, b] = crosslibrary[beads[a]][beads[b]][key]
+                                output[key][b, a] = output[key][a, b]
 
     return output
 
-def calc_component_averaged_properties(nui, Vks, Sk, epsilonkl=None, sigmakl=None, l_akl=None, l_rkl=None):
+def cross_interaction_from_array(input_dict, mixing_dict):
     r"""
-    
+    Computes matrices of cross interaction parameters defined as the keys in the mixing dict parameter are also given in the input_dictionary containing arrays of self-interaction parameters.
     
     Parameters
     ----------
-    nui : numpy.array
-        :math:`\nu_{i,k}/k_B`, Array of number of components by number of bead types. Defines the number of each type of group in each component.
-        Defined for eq. 11. Note that indices are flipped from definition in reference.
-    Vks : numpy.ndarray
-        :math:`V_{k,s}`, Number of groups, k, in component
-    Sk : numpy.ndarray
-        :math:`S_{k}`, Shape parameter of group k
-    epsilonkl : numpy.ndarray, Optional, default: None
-        Matrix of well depths for groups (k,l)
-    sigmakl : numpy.ndarray, Optional, default: None
-        Matrix of Mie diameter for groups (k,l)
-    l_akl : numpy.ndarray, Optional, default: None
-        Matrix of Mie potential attractive exponents for k,l groups
-    l_rkl : numpy.ndarray, Optional, default: None
-        Matrix of Mie potential attractive exponents for k,l groups
+    input_dict : dict
+        A dictionary where bead names are the keys to access EOS arrays of self-interaction parameters. Those to be calculated are defined by the key
+s of mixing_dict
+    mixing_dict : dict
+        This dictionary contains those bead parameters that should be placed in a matrix and the mixing rules for the cross parameters
         
     Returns
     -------
-    output : dict
-        Dictionary of outputs, the following possibilities aer calculated if all relevant beads have those properties.
-
-        - epsilonii_avg : numpy.ndarray, Matrix of well depths for groups (k,l)
-        - sigmaii_avg : numpy.ndarray, Matrix of Mie diameter for groups (k,l)
-        - l_aii_avg : numpy.ndarray, Matrix of Mie potential attractive exponents for k,l groups
-        - l_rii_avg : numpy.ndarray, Matrix of Mie potential attractive exponents for k,l groups
+    output_dict : dict
+        Dictionary of outputs, with the same keys used in mixing dict for the respective interaction matrix
 
     """
-    
-    ncomp, nbeads = np.shape(nui)
-    zki = np.zeros((ncomp, nbeads), float)
-    zkinorm = np.zeros(ncomp, float)
-    
+
     output = {}
-    if epsilonkl is not None:
-        output['epsilonii_avg'] = np.zeros(ncomp, float)
-
-    if sigmakl is not None:
-        output['sigmaii_avg'] = np.zeros(ncomp, float)
-
-    if l_rkl is not None:
-        output['l_rii_avg'] = np.zeros(ncomp, float)
-
-    if l_akl is not None:
-        output['l_aii_avg'] = np.zeros(ncomp, float)
-
-    #compute zki
-    for i in range(ncomp):
-        for k in range(nbeads):
-            zki[i, k] = nui[i, k] * Vks[k] * Sk[k]
-            zkinorm[i] += zki[i, k]
-
-    for i in range(ncomp):
-        for k in range(nbeads):
-            zki[i, k] = zki[i, k] / zkinorm[i]
-
-    for i in range(ncomp):
-        for k in range(nbeads):
-            for l in range(nbeads):
-                if 'sigmaii_avg' in output:
-                    output['sigmaii_avg'][i] += zki[i, k] * zki[i, l] * sigmakl[k, l]**3
-                if 'epsilonii_avg' in output:
-                    output['epsilonii_avg'][i] += zki[i, k] * zki[i, l] * epsilonkl[k, l] * constants.kb
-                if 'l_rii_avg' in output:
-                    output['l_rii_avg'][i] += zki[i, k] * zki[i, l] * l_rkl[k, l]
-                if 'l_aii_avg' in output:
-                    output['l_aii_avg'][i] += zki[i, k] * zki[i, l] * l_akl[k, l]
-        if 'sigmaii_avg' in output:
-            output['sigmaii_avg'][i] = output['sigmaii_avg'][i]**(1/3.0)
+    for key in input_dict:
+        if key not in mixing_dict:
+            logger.debug("Mixing rules for parameter, {}, have not been provided".format(key))
+        lx = len(input_dict[key])
+        output[key] = np.zeros((lx,lx))
+        for k in range(lx):
+            for l in range(k,lx):
+                    output[key][k,l] = mixing_rules( input_dict[key][k], input_dict[key][l], mixing_dict[key])
+                    output[key][l,k] = output[key][k,l]
 
     return output
+
+def mixing_rules( parameter1, parameter2, calculation):
+    r"""
+    Calculates cross interaction parameter according to the calculation method provided. 
+    
+    Parameters
+    ----------
+    parameter1 : list
+        First parameter to calculate mixed interaction
+    parameter2 : list
+        Second parameter to calculate mixed interaction
+    calculation : str
+        Mixing rule type
+
+        - mean: c = (a+b)/2
+        - mie: c = 3 + np.sqrt((a-3)*(b-3))
+        - geometric mean: c = np.sqrt(a*b)
+        - geometric mean sigma weighted: c = np.sqrt(a[0]*b[0]) * np.sqrt(a[1]**3 * b[1]**3) / ((a[1] + b[1])/2)**3
+        - mean sigma weighted: (a[0]*a[1] + b[0]*b[1]) / (a[1] + b[1])
+
+    Returns
+    -------
+    parameter12 : float
+        Mixed interaction parameter
+
+    """
+
+    if not np.shape(parameter1):
+        parameter1 = np.array([parameter1])
+
+    if not np.shape(parameter2):
+        parameter2 = np.array([parameter2])
+
+    if calculation == "mean":
+        parameter12 = (parameter1[0] + parameter2[0])/2
+    elif calculation == "mie":
+        parameter12 = 3 + np.sqrt((parameter1[0] - 3.0) * (parameter2[0] - 3.0))
+    elif calculation == "geometric mean":
+        parameter12 = np.sqrt(parameter1[0] * parameter2[0])
+#    elif calculation == "geometric mean sigma weighted":
+#        parameter12 = np.sqrt(parameter1[0] * parameter2[0]) * np.sqrt((parameter1[1] ** 3) * (parameter2[1] ** 3)) * 8 / ((parameter1[1] + parameter2[1]) ** 3)
+    else:
+        raise ValueError("Calculation, {}, is not supported.".format(calculation))
+
+    return parameter12
 

@@ -35,62 +35,11 @@ elif not disable_cython:
 else:
     from .compiled_modules.ext_Aassoc_numba import calc_Xika
 
-def Aassoc_contribution(rho, T, xi, nui, nk, epsilonHB, Kklab, epsilonii_avg, sigmaii_avg, sigmakl, xskl):
-    r"""
-    Outputs :math:`A^{association}`.
-
-    Parameters
-    ----------
-    rho : numpy.ndarray
-        Number density of system [mol/m^3]
-    T : float
-        Temperature of the system [K]
-    xi : numpy.ndarray
-        Mole fraction of each component, sum(xi) should equal 1.0
-    nui : numpy.ndarray
-        :math:`\\nu_{i,k}/k_B`. Array of number of components by number of bead types. Defines the number of each type of group in each component.
-    nk : numpy.ndarray
-        A matrix of (Nbeads x Nsites) Contains for each bead the number of each type of site
-    epsilonHB : numpy.ndarray
-        Interaction energy between each bead and association site.
-    Kklab : numpy.ndarray
-        Bonding volume between each association site
-    epsilonii_avg : numpy.ndarray
-        Array of average Mie diameters for component i
-    sigmaii_avg : numpy.ndarray
-        Array of average Mie diameters for component i
-    sigmakl : numpy.ndarray
-        Matrix of Mie diameter for groups (k,l)
-    xskl : numpy.ndarray
-        Matrix of mole fractions of bead (i.e. segment or group) k multiplied by that of bead l
-
-    Returns
-    -------
-    Aassoc : numpy.ndarray
-        Helmholtz energy of monomers for each density given.
+def calc_Xika_wrap(*args):
+    r""" This function wrapper allows difference types of compiled functions to be referenced.
     """
+    return calc_Xika(*args)
 
-    ncomp, nbeads = np.shape(nui)
-    _, nsitesmax = np.shape(nk)
-    kT = T * constants.kb
-    
-    # compute F_klab
-    Fklab = np.exp(epsilonHB / T) - 1.0
-    Iij = calc_Iij(rho, T, xi, epsilonii_avg, sigmaii_avg, sigmakl, xskl)
-
-    # Compute Xika: with python with numba  {BottleNeck}
-    indices = assoc_site_indices(nk, nui, xi=xi)
-    Xika, err_array = calc_Xika(indices, rho, xi, nui, nk, Fklab, Kklab, Iij)
-    
-    # Compute A_assoc
-    Aassoc = np.zeros(np.size(rho))
-    for i, k, a in indices:
-        if nk[k, a] != 0.0:
-            tmp = (np.log(Xika[:, i, k, a]) + ((1.0 - Xika[:, i, k, a]) / 2.0))
-            Aassoc += xi[i] * nui[i, k] * nk[k, a] * tmp
-
-    return Aassoc
-            
 def assoc_site_indices(nk, nui, xi=None):
     r"""
     Make a list of sets of indices that allow quick identification of the relevant association sights.
@@ -310,4 +259,4 @@ def calc_assoc_matrices(beads, beadlibrary, nui, crosslibrary={}, nk=None, siten
                         Kklab[j,i,b,a] = Kklab[i,j,a,b]
                     
     return epsilonHB, Kklab
-            
+

@@ -26,6 +26,10 @@ def saft_type(name):
     
     if name == "gamma_mie":
         from despasito.equations_of_state.saft.gamma_mie import gamma_mie as saft_source
+    elif name == "gamma_sw":
+        from despasito.equations_of_state.saft.gamma_sw import gamma_sw as saft_source
+    else:
+        raise ValueError("SAFT type, {}, is not supported.".format(name))
 
     return saft_source
 
@@ -46,12 +50,6 @@ class saft(EOStemplate):
         A dictionary where bead names are the keys to access EOS self interaction parameters:
 
         - mass: Bead mass [kg/mol]
-        - epsilon: :math:`\epsilon_{k,k}/k_B`, Energy well depth scaled by Boltzmann constant
-        - sigma: :math:`\sigma_{k,k}`, Size parameter [m]
-        - l_r: :math:`\lambda^{r}_{k,k}`, Exponent of repulsive term between groups of type k
-        - l_a: :math:`\lambda^{a}_{k,k}`, Exponent of attractive term between groups of type k\
-        - Vks: :math:`V_{k,s}`, Number of groups, k, in component
-        - Sk: Optional, :math:`S_{k}`, Shape parameter of group k
         - epsilon*: Optional, Interaction energy between each bead and association site. Asterisk represents string from sitenames.
         - K**: Optional, Bonding volume between each association site. Asterisk represents two strings from sitenames.
         - Nk*: Optional, The number of sites of from list sitenames. Asterisk represents string from sitenames.
@@ -59,8 +57,6 @@ class saft(EOStemplate):
     crosslibrary : dict, Optional, default: {}
         Optional library of bead cross interaction parameters. As many or as few of the desired parameters may be defined for whichever group combinations are desired.
 
-        - epsilon: :math:`\epsilon_{k,l}/k_B`, Energy parameter scaled by Boltzmann Constant
-        - l_r: :math:`\lambda^{r}_{k,l}`, Exponent of repulsive term between groups of type k and l
         - epsilon*: Optional, Interaction energy between each bead and association site. Asterisk represents string from sitenames.
         - K**: Optional, Bonding volume between each association site. Asterisk represents two strings from sitenames.
 
@@ -104,6 +100,10 @@ class saft(EOStemplate):
                 self.eos_dict[key] = kwargs[key]
         self.nui = self.eos_dict["nui"]
         self.beads = self.eos_dict["beads"]
+
+        if "mixing_rules" in kwargs:
+            for key, value in kwargs["mixing_rules"].items():
+                self.saft_source.mixing_rules[key] = value
 
         if 'crosslibrary' not in kwargs:
             self.eos_dict['crosslibrary'] = {}

@@ -75,10 +75,14 @@ def writeout_thermo_dict(output_dict,calctype,output_file="thermo_output.txt"):
         if np.size(value[0]) > 1:
             tmp_matrix = np.transpose(np.stack(value))
         else:
-            tmp_matrix = np.array(value) 
+            if len(np.shape(value[0])) == 0:
+                tmp_matrix = np.array(value) 
+            else:
+                tmp_matrix = np.concatenate(value, axis=0)
+
         if len(tmp_matrix.shape)==1:
             keys.append(key)
-            matrix.append(np.array(value))
+            matrix.append(np.array(tmp_matrix))
         else:
             for i in range(len(tmp_matrix)):
                 keys.append(key+str(i+1))

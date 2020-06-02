@@ -6,6 +6,11 @@ import os
 
 from despasito.equations_of_state import constants
 
+# For Numba, ckl_coef cannot be encapsulated
+ckl_coef = np.array([[0.81096, 1.7888, -37.578, 92.284], [1.0205, -19.341, 151.26, -463.50],
+                     [-1.9057, 22.845, -228.14, 973.92], [1.0885, -6.1962, 106.98, -677.64]])
+
+
 def prefactor(l_r, l_a):
     r"""
     Calculations C, the Mie potential prefactor, defined in eq. 2
@@ -75,11 +80,14 @@ def calc_a1s_2d(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
 
     for k in range(nbeads):
         for l in range(nbeads):
-            tmp = np.dot(constants.ckl_coef, np.array( (1.0, 1.0/l_kl[k, l], 1.0/l_kl[k, l]**2, 1.0/l_kl[k, l]**3), dtype=constants.ckl_coef.dtype ))
+            tmp = np.dot(ckl_coef, np.array( (1.0, 1.0/l_kl[k, l], 1.0/l_kl[k, l]**2, 1.0/l_kl[k, l]**3), dtype=ckl_coef.dtype ))
             etakl[:, k, l] = np.dot( zetax_pow, tmp )
 
     a1s = - (1.0 - (etakl / 2.0)) / ((1.0 - etakl)**3) * 2.0 * np.pi * Cmol2seg * ((epsilonkl * (dkl**3 * constants.molecule_per_nm3**2)) / (l_kl - 3.0))
-    return np.transpose(np.transpose(a1s) * rho)
+
+    output = np.transpose(np.transpose(a1s) * rho)
+
+    return output
 
 def calc_a1s_1d(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
     r""" 
@@ -115,19 +123,19 @@ def calc_a1s_1d(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
     etakl = np.empty((len(rho), nbeads), dtype=rho.dtype)
 
     for k in range(nbeads):
-        tmp = np.dot(constants.ckl_coef, np.array( (1.0, 1.0/l_kl[k], 1.0/l_kl[k]**2, 1.0/l_kl[k]**3), dtype=constants.ckl_coef.dtype ) )
+        tmp = np.dot(ckl_coef, np.array( (1.0, 1.0/l_kl[k], 1.0/l_kl[k]**2, 1.0/l_kl[k]**3), dtype=ckl_coef.dtype ) )
         etakl[:, k] = np.dot( zetax_pow, tmp )
 
     a1s = - (1.0 - (etakl / 2.0)) / (1.0 - etakl)**3 * 2.0 * np.pi * Cmol2seg * ((epsilonkl * (dkl**3 * constants.molecule_per_nm3**2)) / (l_kl - 3.0) )
 
-    return np.transpose(np.transpose(a1s) * rho)
+    output = np.transpose(np.transpose(a1s) * rho)
+
+    return output
 
 #@profile
 def calc_Bkl(rho, l_kl, Cmol2seg, dkl, epsilonkl, x0kl, zetax):
     r""" Wrapper function for calling 2d/3d versions of calc_Bkl (this is done for Numba)
     """
-    print("numba",np.shape(l_kl))
-
     if len(l_kl.shape) == 2:
         output = calc_Bkl_2d(rho, l_kl, Cmol2seg, dkl, epsilonkl, x0kl, zetax)
     elif len(l_kl.shape) == 1:
@@ -312,13 +320,13 @@ def calc_da1sii_drhos(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
     rhos_detakl_drhos = np.zeros((len(rho), nbeads), dtype=rho.dtype)
 
     for k in range(nbeads):
-        tmp = np.dot(constants.ckl_coef, np.array( (1.0, 1.0/l_kl[k], 1.0/l_kl[k]**2, 1.0/l_kl[k]**3), dtype=constants.ckl_coef.dtype ) )
-        tmp_dr = np.dot(constants.ckl_coef, np.array( (1.0, 1.0/l_kl[k], 1.0/l_kl[k]**2, 1.0/l_kl[k]**3), dtype=constants.ckl_coef.dtype ) )*np.array((1.0,2.0,3.0,4.0))
+        tmp = np.dot(ckl_coef, np.array( (1.0, 1.0/l_kl[k], 1.0/l_kl[k]**2, 1.0/l_kl[k]**3), dtype=ckl_coef.dtype ) )
+        tmp_dr = np.dot(ckl_coef, np.array( (1.0, 1.0/l_kl[k], 1.0/l_kl[k]**2, 1.0/l_kl[k]**3), dtype=ckl_coef.dtype ) )*np.array((1.0,2.0,3.0,4.0))
         etakl[:, k] = np.dot( zetax_pow, tmp )
         rhos_detakl_drhos[:, k] = np.dot( zetax_pow, tmp_dr )
 
     tmp1 = (1.0 - (etakl / 2.0)) / ((1.0 - etakl)**3) + (5.0-2.0*etakl)/(2.0*(1.0-etakl)**4)*rhos_detakl_drhos
-    tmp2 = - 2.0 * np.pi * ((epsilonkl * (dkl**3)) / (l_kl - 3.0))
+    tmp2 = - 2.0 * np.pi * ((epsilonkl * (dkl**3 * constants.molecule_per_nm3**2)) / (l_kl - 3.0))
     da1s_drhos = tmp1*tmp2
 
     #da1s_drhos = - 2.0 * np.pi * ((1.0 - (etakl / 2.0)) / ((1.0 - etakl)**3) + (5.0 - 2.0*etakl)/(2.0*(1.0-etakl)**4)) * rhos_detakl_drhos * ((epsilonkl * (dkl**3)) / (l_kl - 3.0))

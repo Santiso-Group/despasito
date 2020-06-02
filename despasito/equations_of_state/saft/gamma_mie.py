@@ -30,7 +30,7 @@ else:
 from .. import cython_stat
 disable_cython = cython_stat.disable_cython
 
-if disable_jit and disable_jit:
+if disable_jit and disable_cython:
     from .compiled_modules.ext_gamma_mie_python import calc_a1s, calc_a1ii, calc_Bkl, prefactor, calc_Iij, calc_da1iidrhos, calc_da2ii_1pchi_drhos
 elif not disable_cython:
     from .compiled_modules.ext_gamma_mie_cython import calc_a1s, calc_Bkl, calc_a1ii, calc_da1iidrhos, calc_da2ii_1pchi_drhos
@@ -74,6 +74,7 @@ class gamma_mie():
     def __init__(self, kwargs):
     
         self.Aideal_method = "Abroglie"
+        self.mixing_rules = {"sigma": "mean", "l_r": "mie", "l_a": "mie"}
         self.parameter_types = ["epsilon", "epsilonHB", "sigma", "l_r", "l_a", "Sk", "K"]
         self.parameter_bound_extreme = {"epsilon":[0.,1000.], "sigma":[0.,9e-9], "l_r":[0.,100.], "l_a":[0.,100.], "Sk":[0.,1.], "epsilonHB":[0.,5000.], "K":[0.,10000.]}    
         self.residual_helmholtz_contributions = ["Amonomer","Achain"]
@@ -110,16 +111,107 @@ class gamma_mie():
             self.ncomp, self.nbeads = np.shape(self.eos_dict['nui'])
 
         # Intiate cross interaction terms
-        if not all([hasattr(self, key) for key in ['epsilonkl','sigmakl','l_akl','l_rkl']]):
-            self.eos_dict.update(stb.calc_interaction_matrices(self.eos_dict['beads'],self.eos_dict['beadlibrary'],crosslibrary=self.eos_dict['crosslibrary']))
+        output = stb.cross_interaction_from_dict( self.eos_dict['beads'], self.eos_dict['beadlibrary'], self.mixing_rules, crosslibrary=self.eos_dict['crosslibrary'])
+        self.eos_dict["sigmakl"] = output["sigma"]
+        self.eos_dict["l_akl"] = output["l_a"]
+        self.eos_dict["l_rkl"] = output["l_r"]
+        self.calc_mie_cross_interaction_parameters()
 
         # Initiate average interaction terms
-        if not all([hasattr(self, key) for key in ['sigmaii_avg', 'epsilonii_avg', 'l_rii_avg', 'l_aii_avg']]):
-            self.eos_dict.update(stb.calc_component_averaged_properties(self.eos_dict['nui'], self.eos_dict['Vks'],self.eos_dict['Sk'],epsilonkl=self.eos_dict['epsilonkl'], sigmakl=self.eos_dict['sigmakl'], l_akl=self.eos_dict['l_akl'], l_rkl=self.eos_dict['l_rkl']))
+        self.calc_component_averaged_properties()
         
         # compute alphakl eq. 33
         self.eos_dict['Ckl'] = prefactor(self.eos_dict['l_rkl'], self.eos_dict['l_akl'])
         self.eos_dict['alphakl'] = self.eos_dict['Ckl'] * ((1.0 / (self.eos_dict['l_akl'] - 3.0)) - (1.0 / (self.eos_dict['l_rkl'] - 3.0)))
+
+    def calc_mie_cross_interaction_parameters(self):
+        r""" Calculate mixed energy parameter
+  
+        """
+
+        tmp = "kl"
+        lx = self.nbeads
+
+        # self-interaction
+        epsilon = np.zeros((lx,lx))
+        for k in range(lx):
+            bead1 = self.eos_dict['beads'][k]
+            epsilon[k,k] = self.eos_dict["beadlibrary"][bead1]["epsilon"]
+
+        for k in range(lx):
+            for l in range(k,lx):
+                 tmp1 = np.sqrt(self.eos_dict["sigma"+tmp][k,k]**3*self.eos_dict["sigma"+tmp][l,l]**3)
+                 epsilon[k,l] = tmp1/self.eos_dict["sigma"+tmp][k,l]**3*np.sqrt(epsilon[k,k]*epsilon[l,l])
+                 epsilon[l,k] = epsilon[k,l]
+
+        # testing if crosslibrary is empty ie not specified
+        if self.eos_dict["crosslibrary"]:
+            # find any cross terms in the cross term library
+            crosslist = []
+            beads = self.eos_dict['beads']
+            crosslibrary = self.eos_dict["crosslibrary"]
+            for (i, beadname) in enumerate(beads):
+                if beadname in crosslibrary:
+                    for (j, beadname2) in enumerate(beads):
+                        if beadname2 in crosslibrary[beadname]:
+                            crosslist.append([i, j])
+
+            for i in range(np.size(crosslist, axis=0)):
+                a = crosslist[i][0]
+                b = crosslist[i][1]
+                if beads[a] in crosslibrary:
+                    if beads[b] in crosslibrary[beads[a]]:
+                        if "epsilon" in crosslibrary[beads[a]][beads[b]]:
+                            epsilon[a, b] = crosslibrary[beads[a]][beads[b]]["epsilon"]
+                            epsilon[b, a] = epsilon[a, b]
+
+        self.eos_dict["epsilon"+tmp] = epsilon
+
+    def calc_component_averaged_properties(self):
+        r"""
+            
+        Attributes
+        ----------
+        output : dict
+            Dictionary of outputs, the following possibilities aer calculated if all relevant beads have those properties.
+    
+            - epsilonii_avg : numpy.ndarray, Matrix of well depths for groups (k,l)
+            - sigmaii_avg : numpy.ndarray, Matrix of Mie diameter for groups (k,l)
+            - l_aii_avg : numpy.ndarray, Matrix of Mie potential attractive exponents for k,l groups
+            - l_rii_avg : numpy.ndarray, Matrix of Mie potential attractive exponents for k,l groups
+    
+        """
+    
+        ncomp, nbeads = np.shape(self.eos_dict['nui'])
+        zki = np.zeros((ncomp, nbeads), float)
+        zkinorm = np.zeros(ncomp, float)
+    
+        output = {}
+        output['epsilonii_avg'] = np.zeros(ncomp, float)
+        output['sigmaii_avg'] = np.zeros(ncomp, float)
+        output['l_rii_avg'] = np.zeros(ncomp, float)
+        output['l_aii_avg'] = np.zeros(ncomp, float)
+    
+        #compute zki
+        for i in range(ncomp):
+            for k in range(nbeads):
+                zki[i, k] = self.eos_dict['nui'][i, k] * self.eos_dict['Vks'][k] * self.eos_dict['Sk'][k]
+                zkinorm[i] += zki[i, k]
+    
+        for i in range(ncomp):
+            for k in range(nbeads):
+                zki[i, k] = zki[i, k] / zkinorm[i]
+    
+        for i in range(ncomp):
+            for k in range(nbeads):
+                for l in range(nbeads):
+                    output['sigmaii_avg'][i] += zki[i, k] * zki[i, l] * self.eos_dict['sigmakl'][k, l]**3
+                    output['epsilonii_avg'][i] += zki[i, k] * zki[i, l] * self.eos_dict['epsilonkl'][k, l] * constants.kb
+                    output['l_rii_avg'][i] += zki[i, k] * zki[i, l] * self.eos_dict['l_rkl'][k, l]
+                    output['l_aii_avg'][i] += zki[i, k] * zki[i, l] * self.eos_dict['l_akl'][k, l]
+            output['sigmaii_avg'][i] = output['sigmaii_avg'][i]**(1/3.0)
+
+        self.eos_dict.update(output)
     
     def Ahard_sphere(self,rho, T, xi):
         r"""
@@ -153,6 +245,8 @@ class gamma_mie():
         tmp2 = 3.0 * eta[:, 2] / (1 - eta[:, 3]) * eta[:, 1]
         tmp3 = eta[:, 2]**3 / (eta[:, 3] * ((1.0 - eta[:, 3])**2))
         AHS = tmp*(tmp1 + tmp2 + tmp3)
+
+        #print("AHS", AHS)
 
         return AHS
     
@@ -190,6 +284,8 @@ class gamma_mie():
         # eq. 18
         a1 = np.einsum("ijk,jk->i", a1kl, self.eos_dict['xskl'])
         A1 = (self.eos_dict['Cmol2seg'] / T) * a1 # Units of K
+
+        #print("A1", A1)
 
         return A1
 
@@ -244,7 +340,7 @@ class gamma_mie():
         B_2la = calc_Bkl(rho, 2.0 * self.eos_dict['l_akl'], self.eos_dict['Cmol2seg'], self.eos_dict['dkl'], self.eos_dict['epsilonkl'], self.eos_dict['x0kl'], zetax)
         B_2lr = calc_Bkl(rho, 2.0 * self.eos_dict['l_rkl'], self.eos_dict['Cmol2seg'], self.eos_dict['dkl'], self.eos_dict['epsilonkl'], self.eos_dict['x0kl'], zetax)
         B_lalr = calc_Bkl(rho, self.eos_dict['l_akl'] + self.eos_dict['l_rkl'], self.eos_dict['Cmol2seg'], self.eos_dict['dkl'], self.eos_dict['epsilonkl'], self.eos_dict['x0kl'], zetax)
-        
+
         a2kl = (self.eos_dict['x0kl']**(2.0 * self.eos_dict['l_akl'])) * (a1s_2la + B_2la) / constants.molecule_per_nm3 - ((2.0 * self.eos_dict['x0kl']**(self.eos_dict['l_akl'] + self.eos_dict['l_rkl'])) * (a1s_lalr + B_lalr) / constants.molecule_per_nm3) + ((self.eos_dict['x0kl']**(2.0 * self.eos_dict['l_rkl'])) * (a1s_2lr + B_2lr) / constants.molecule_per_nm3)
         a2kl *= (1.0 + chikl) * self.eos_dict['epsilonkl'] * (self.eos_dict['Ckl']**2)  # *(KHS/2.0)
         a2kl = np.einsum("i,ijk->ijk", KHS / 2.0, a2kl)
@@ -252,6 +348,8 @@ class gamma_mie():
         # eq. 29
         a2 = np.einsum("ijk,jk->i", a2kl, self.eos_dict['xskl'])
         A2 = (self.eos_dict['Cmol2seg'] / (T**2)) * a2
+
+        #print("A2", A2)
 
         return A2
     
@@ -290,7 +388,7 @@ class gamma_mie():
         # eq. 37
         a3 = np.einsum("ijk,jk->i", a3kl, self.eos_dict['xskl'])
         A3 = (self.eos_dict['Cmol2seg'] / (T**3)) * a3
-                
+
         return A3
     
     def Amonomer(self,rho, T, xi):
@@ -479,7 +577,7 @@ class gamma_mie():
                    * (a1sii_2l_aii_avg + Bii_2l_aii_avg))
 
         g2 = (1.0 + gammacii) * g2MCA
-        
+
         return g2
     
     def Achain(self, rho, T, xi):
@@ -512,6 +610,8 @@ class gamma_mie():
         g2 = self.g2(rho, T, xi, zetax=zetax)
 
         gii = gdHS * np.exp((self.eos_dict['epsilonii_avg'] * g1 / (kT * gdHS)) + (((self.eos_dict['epsilonii_avg'] / kT)**2) * g2 / gdHS))
+
+        #print("gii", gii)
         
         Achain = 0.0
         for i in range(self.ncomp):
@@ -522,6 +622,8 @@ class gamma_mie():
 
         if np.any(np.isnan(Achain)):
             logger.error("Some Helmholtz values are NaN, check energy parameters.")
+
+        #print("Achain", Achain)
 
         return Achain
 
@@ -638,13 +740,21 @@ class gamma_mie():
         self.eos_dict["beadlibrary"].update(beadlibrary)
         self.eos_dict["crosslibrary"].update(crosslibrary)
 
-        # Update Non bonded matrices
-        self.eos_dict.update(stb.calc_interaction_matrices(self.eos_dict['beads'],self.eos_dict['beadlibrary'],crosslibrary=self.eos_dict['crosslibrary']))
+        # Intiate cross interaction terms
+        output = stb.cross_interaction_from_dict( self.eos_dict['beads'], self.eos_dict['beadlibrary'], self.mixing_rules, crosslibrary=self.eos_dict['crosslibrary'])
+        self.eos_dict["sigmakl"] = output["sigma"]
+        self.eos_dict["l_akl"] = output["l_a"]
+        self.eos_dict["l_rkl"] = output["l_r"]
+        self.calc_mie_cross_interaction_parameters()
 
-        # Update temperature dependent variables
-        if np.isnan(self.T) == False:
-            self._check_temerature_dependent_parameters(self.T)
-    
+        # Initiate average interaction terms
+        self.calc_component_averaged_properties()
+
+        # Update Non bonded matrices
+        self.eos_dict['dkl'], self.eos_dict['x0kl'] = stb.calc_hard_sphere_matricies(T, self.eos_dict['sigmakl'], self.eos_dict['beadlibrary'], self.eos_dict['beads'], prefactor)
+        self.eos_dict['Cmol2seg'], self.eos_dict['xskl'] = stb.calc_composition_dependent_variables(xi, self.eos_dict['nui'], self.eos_dict['beadlibrary'], self.eos_dict['beads'])
+        self._update_chain_temperature_dependent_variables(T)
+
     def _check_density(self, rho):
         r"""
         This function checks the attritutes of the density array
