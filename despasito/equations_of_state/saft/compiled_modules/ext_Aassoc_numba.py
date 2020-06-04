@@ -4,8 +4,7 @@ import numba
 
 from despasito.equations_of_state import constants
 
-#@numba.njit(numba.types.Tuple((numba.f8[:,:,:,:], numba.f8[:]))(numba.i8[:,:], numba.f8[:], numba.f8[:], numba.f8[:,:], numba.f8[:,:], numba.f8[:,:,:,:], numba.f8[:,:,:,:], numba.f8[:,:,:])) # , numba.i8, numba.f8, numba.f8
-@numba.njit()
+@numba.njit(numba.types.Tuple((numba.f8[:,:], numba.f8[:]))(numba.i8[:,:], numba.f8[:], numba.f8[:], numba.f8[:,:], numba.i8[:,:], numba.f8[:,:,:,:], numba.f8[:,:,:,:], numba.f8[:,:,:]))
 def calc_Xika(indices, rho, xi, nui, nk, Fklab, Kklab, gr_assoc): # , maxiter=500, tol=1e-12, damp=.1
     r""" 
     Calculate the fraction of molecules of component i that are not bonded at a site of type a on group k.
@@ -47,7 +46,8 @@ def calc_Xika(indices, rho, xi, nui, nk, Fklab, Kklab, gr_assoc): # , maxiter=50
     l_ind = len(indices)
 
 
-    Xika_final = np.ones((nrho,ncomp, nbeads, nsitesmax))
+#    Xika_final = np.ones((nrho,ncomp, nbeads, nsitesmax))
+    Xika_final = np.ones((nrho, len(indices)))
     err_array   = np.zeros(nrho)
 
     # Parallelize here, wrt rho!
@@ -79,9 +79,10 @@ def calc_Xika(indices, rho, xi, nui, nk, Fklab, Kklab, gr_assoc): # , maxiter=50
 
         err_array[r] = obj
 
-        for jjnd in range(l_ind):
-            i,k,a = indices[jjnd]
-            Xika_final[r,i,k,a] = Xika_elements[jjnd]
+        Xika_final[r,:] = Xika_elements
+        #for jjnd in range(l_ind):
+        #    i,k,a = indices[jjnd]
+        #    Xika_final[r,i,k,a] = Xika_elements[jjnd]
 
     return Xika_final, err_array
 

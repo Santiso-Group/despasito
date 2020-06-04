@@ -756,6 +756,9 @@ class gamma_sw():
         self.calc_sw_cross_interaction_parameters()
         self.calc_component_averaged_properties()
 
+        if not np.isnan(self.xi):
+            self.eos_dict['Cmol2seg'], self.eos_dict['xskl'] = stb.calc_composition_dependent_variables(xi, self.eos_dict['nui'], self.eos_dict['beadlibrary'], self.eos_dict['beads'])
+
     def _check_density(self, rho):
         r"""
         This function checks the attritutes of the density array

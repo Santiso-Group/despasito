@@ -116,6 +116,8 @@ class saft(EOStemplate):
         # Initiate association site terms
         self.eos_dict['sitenames'], self.eos_dict['nk'], self.eos_dict['flag_assoc'] = Aassoc.initiate_assoc_matrices(self.beads,self.eos_dict['beadlibrary'],self.nui)
         self.eos_dict['epsilonHB'], self.eos_dict['Kklab'] = Aassoc.calc_assoc_matrices(self.beads,self.eos_dict['beadlibrary'],self.nui,sitenames=self.eos_dict['sitenames'],crosslibrary=self.eos_dict['crosslibrary'],nk=self.eos_dict['nk'])
+        if np.size(np.where(self.eos_dict['epsilonHB']!=0.0))==0 or np.size(np.where(self.eos_dict['Kklab']!=0.0)) == 0:
+            self.eos_dict['flag_assoc'] = False
 
     def residual_helmholtz_energy(self, rho, T, xi):
         r"""
@@ -250,22 +252,20 @@ class saft(EOStemplate):
 
         self._check_density(rho)
 
-        kT = T * constants.kb
-
         # compute F_klab    
         Fklab = np.exp(self.eos_dict['epsilonHB'] / T) - 1.0
         gr_assoc = self.saft_source.calc_gr_assoc(rho, T, xi)
 
         # Compute Xika: with python with numba  {BottleNeck}
         indices = Aassoc.assoc_site_indices(self.eos_dict['nk'], self.nui, xi=xi)
-        Xika, err_array = Aassoc.calc_Xika(indices, rho, xi, self.nui, self.eos_dict['nk'], Fklab, self.eos_dict['Kklab'], gr_assoc)
-            
+        Xika = Aassoc.calc_Xika_wrap(indices, rho, xi, self.nui, self.eos_dict['nk'], Fklab, self.eos_dict['Kklab'], gr_assoc)
+
         # Compute A_assoc
         Assoc_contribution = np.zeros(np.size(rho)) 
         for ind, (i, k, a) in enumerate(indices):
             if self.eos_dict['nk'][k, a] != 0.0:
-                tmp = (np.log(Xika[:, i, k, a]) + ((1.0 - Xika[:, i, k, a]) / 2.0))
-                #tmp = (np.log(Xika[:,ind]) + ((1.0 - Xika[:,ind]) / 2.0))
+                #tmp = (np.log(Xika[:, i, k, a]) + ((1.0 - Xika[:, i, k, a]) / 2.0))
+                tmp = (np.log(Xika[:,ind]) + ((1.0 - Xika[:,ind]) / 2.0))
                 Assoc_contribution += xi[i] * self.nui[i, k] * self.eos_dict['nk'][k, a] * tmp
 
         return Assoc_contribution

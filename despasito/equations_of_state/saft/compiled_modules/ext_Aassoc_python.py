@@ -50,7 +50,8 @@ def calc_Xika(indices, rho, xi, nui, nk, Fklab, Kklab, gr_assoc, maxiter=500, to
     nrho = len(rho)
     l_ind = len(indices)
 
-    Xika_final = np.ones((nrho,ncomp, nbeads, nsitesmax))
+#    Xika_final = np.ones((nrho,ncomp, nbeads, nsitesmax))
+    Xika_final = np.ones((nrho, len(indices)))
     err_array   = np.zeros(nrho)
 
     # Parallelize here, with respect to rho!
@@ -82,9 +83,10 @@ def calc_Xika(indices, rho, xi, nui, nk, Fklab, Kklab, gr_assoc, maxiter=500, to
 
         err_array[r] = obj
 
-        for jjnd in range(l_ind):
-            i,k,a = indices[jjnd]
-            Xika_final[r,i,k,a] = Xika_elements[jjnd]
+        Xika_final[r,:] = Xika_elements
+        #for jjnd in range(l_ind):
+        #    i,k,a = indices[jjnd]
+        #    Xika_final[r,i,k,a] = Xika_elements[jjnd]
 
     return Xika_final, err_array
 

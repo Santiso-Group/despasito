@@ -28,17 +28,30 @@ else:
 from .. import cython_stat
 disable_cython = cython_stat.disable_cython
 
+flag_fortran = False
 if disable_jit and disable_cython:
-    from .compiled_modules.ext_Aassoc_python import calc_Xika
+    try:
+        from .compiled_modules import ext_Aassoc_fortran
+        flag_fortran = True
+    except:
+        logger.info("Fortran module failed to import, using pure python. Consider using 'jit' flag")
+        from .compiled_modules.ext_Aassoc_python import calc_Xika
 elif not disable_cython:
     from .compiled_modules.ext_Aassoc_cython import calc_Xika
 else:
     from .compiled_modules.ext_Aassoc_numba import calc_Xika
 
-def calc_Xika_wrap(*args):
+def calc_Xika_wrap(*args, maxiter=500, tol=1e-12, damp=0.1):
     r""" This function wrapper allows difference types of compiled functions to be referenced.
     """
-    return calc_Xika(*args)
+    if flag_fortran:
+        indices, rho, xi, nui, nk, Fklab, Kklab, gr_assoc = args
+        Xika_init = 0.5*np.ones(len(indices))
+        Xika = ext_Aassoc_fortran.calc_xika(indices,constants.molecule_per_nm3*rho,Xika_init,xi,nui,nk,Fklab,Kklab,gr_assoc,maxiter,tol)
+    else:
+        Xika, _ = calc_Xika(*args)
+
+    return Xika
 
 def assoc_site_indices(nk, nui, xi=None):
     r"""

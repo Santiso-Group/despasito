@@ -4,7 +4,7 @@ import numpy as np
 import multiprocessing
 import logging
 import os
-import glob
+#import glob
 
 logger = logging.getLogger(__name__)
 
@@ -41,11 +41,15 @@ class MultiprocessingJob:
         if self.flag_use_mp:
             # Remove old mp logs
             self._mp_handlers = []
-            self._remove_mp_logs()
             self._extract_root_logging()
 
             # Initiate multiprocessing
             self._pool = multiprocessing.Pool(ncores, initializer=self._initialize_mp_handler)
+
+            self.logfiles = []
+            for worker in self._pool._pool:
+                filename = 'mp-handler-{0}.log'.format(worker.pid)
+                self.logfiles.append(filename)
 
             # Reinstate root handlers
             self._swap_mp_to_root_handlers()
@@ -73,7 +77,6 @@ class MultiprocessingJob:
 
         pid = os.getpid()
         filename = 'mp-handler-{0}.log'.format(pid)
-
         handler = logging.handlers.RotatingFileHandler(filename)
         if hasattr(self, '_level'):
             handler.setLevel(self._level)
@@ -142,7 +145,7 @@ class MultiprocessingJob:
     def _consolidate_mp_logs(self):
         """ Consolidate multiprocessing logs into main log
         """
-        for i, fn in enumerate(glob.glob('./mp-handler-*.log')):
+        for i, fn in enumerate(self.logfiles):
             with open(fn) as f:
                logger.info("Log from thread {0}:\n{1}".format(i, f.read()))
             open(fn,"w").write("")
@@ -151,7 +154,7 @@ class MultiprocessingJob:
     def _remove_mp_logs(self):
         """ Ensure all previous mp logs are removed
         """
-        for i, fn in enumerate(glob.glob('./mp-handler-*.log')):
+        for i, fn in enumerate(self.logfiles):
             os.remove(fn)
 
     def _swap_root_to_mp_handlers(self):
@@ -229,6 +232,7 @@ def batch_jobs( func, inputs, ncores=1, logger=None):
 
     logging.root.handlers = root_handlers
 
+    #for i, fn in enumerate(self.logfiles):
     for i, fn in enumerate(glob.glob('./mp-handler-*.log')):
         with open(fn) as f:
            logger.info("Log from thread {0}:\n{1}".format(i, f.read()))

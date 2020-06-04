@@ -31,12 +31,12 @@ from .. import cython_stat
 disable_cython = cython_stat.disable_cython
 
 if disable_jit and disable_cython:
-    from .compiled_modules.ext_gamma_mie_python import calc_a1s, calc_a1ii, calc_Bkl, prefactor, calc_Iij, calc_da1iidrhos, calc_da2ii_1pchi_drhos
+    from .compiled_modules.ext_gamma_mie_python import calc_a1s, calc_a1ii, calc_Bkl, prefactor, calc_Iij, calc_a1s_eff, calc_Bkl_eff, calc_da1iidrhos, calc_da2ii_1pchi_drhos
 elif not disable_cython:
-    from .compiled_modules.ext_gamma_mie_cython import calc_a1s, calc_Bkl, calc_a1ii, calc_da1iidrhos, calc_da2ii_1pchi_drhos
+    from .compiled_modules.ext_gamma_mie_cython import calc_a1s, calc_Bkl, calc_a1ii, calc_a1s_eff, calc_Bkl_eff, calc_da1iidrhos, calc_da2ii_1pchi_drhos
     from .compiled_modules.ext_gamma_mie_python import prefactor, calc_Iij
 else:
-    from .compiled_modules.ext_gamma_mie_numba import calc_a1s, calc_Bkl, calc_a1ii, calc_da1iidrhos, calc_da2ii_1pchi_drhos
+    from .compiled_modules.ext_gamma_mie_numba import calc_a1s, calc_Bkl, calc_a1ii, calc_a1s_eff, calc_Bkl_eff, calc_da1iidrhos, calc_da2ii_1pchi_drhos
     from .compiled_modules.ext_gamma_mie_python import prefactor, calc_Iij
 
 class gamma_mie():
@@ -206,7 +206,7 @@ class gamma_mie():
             for k in range(nbeads):
                 for l in range(nbeads):
                     output['sigmaii_avg'][i] += zki[i, k] * zki[i, l] * self.eos_dict['sigmakl'][k, l]**3
-                    output['epsilonii_avg'][i] += zki[i, k] * zki[i, l] * self.eos_dict['epsilonkl'][k, l] * constants.kb
+                    output['epsilonii_avg'][i] += zki[i, k] * zki[i, l] * self.eos_dict['epsilonkl'][k, l]
                     output['l_rii_avg'][i] += zki[i, k] * zki[i, l] * self.eos_dict['l_rkl'][k, l]
                     output['l_aii_avg'][i] += zki[i, k] * zki[i, l] * self.eos_dict['l_akl'][k, l]
             output['sigmaii_avg'][i] = output['sigmaii_avg'][i]**(1/3.0)
@@ -497,11 +497,11 @@ class gamma_mie():
 
         da1iidrhos = calc_da1iidrhos(rho, self.eos_dict['Cmol2seg'], self.eos_dict['dii_eff'], self.eos_dict['l_aii_avg'], self.eos_dict['l_rii_avg'], self.eos_dict['x0ii'], self.eos_dict['epsilonii_avg'], zetax)
 
-        a1sii_l_aii_avg = calc_a1s(rho, self.eos_dict['Cmol2seg'], self.eos_dict['l_aii_avg'], zetax, self.eos_dict['epsilonii_avg'], self.eos_dict['dii_eff'])
-        a1sii_l_rii_avg = calc_a1s(rho, self.eos_dict['Cmol2seg'], self.eos_dict['l_rii_avg'], zetax, self.eos_dict['epsilonii_avg'], self.eos_dict['dii_eff'])
+        a1sii_l_aii_avg = calc_a1s_eff(rho, self.eos_dict['Cmol2seg'], self.eos_dict['l_aii_avg'], zetax, self.eos_dict['epsilonii_avg'], self.eos_dict['dii_eff'])
+        a1sii_l_rii_avg = calc_a1s_eff(rho, self.eos_dict['Cmol2seg'], self.eos_dict['l_rii_avg'], zetax, self.eos_dict['epsilonii_avg'], self.eos_dict['dii_eff'])
 
-        Bii_l_aii_avg = calc_Bkl(rho, self.eos_dict['l_aii_avg'], self.eos_dict['Cmol2seg'], self.eos_dict['dii_eff'], self.eos_dict['epsilonii_avg'], self.eos_dict['x0ii'], zetax)
-        Bii_l_rii_avg = calc_Bkl(rho, self.eos_dict['l_rii_avg'], self.eos_dict['Cmol2seg'], self.eos_dict['dii_eff'], self.eos_dict['epsilonii_avg'], self.eos_dict['x0ii'], zetax)
+        Bii_l_aii_avg = calc_Bkl_eff(rho, self.eos_dict['l_aii_avg'], self.eos_dict['Cmol2seg'], self.eos_dict['dii_eff'], self.eos_dict['epsilonii_avg'], self.eos_dict['x0ii'], zetax)
+        Bii_l_rii_avg = calc_Bkl_eff(rho, self.eos_dict['l_rii_avg'], self.eos_dict['Cmol2seg'], self.eos_dict['dii_eff'], self.eos_dict['epsilonii_avg'], self.eos_dict['x0ii'], zetax)
 
         Cii = prefactor(self.eos_dict['l_rii_avg'], self.eos_dict['l_aii_avg'])
 
@@ -549,7 +549,7 @@ class gamma_mie():
         
         phi7 = np.array([10.0, 10.0, 0.57, -6.7, -8.0])
         alphaii = Cii * ((1.0 / (self.eos_dict['l_aii_avg'] - 3.0)) - (1.0 / (self.eos_dict['l_rii_avg'] - 3.0)))
-        theta = np.exp(self.eos_dict['epsilonii_avg'] / constants.kb / T) - 1.0
+        theta = np.exp(self.eos_dict['epsilonii_avg'] / T) - 1.0
         
         gammacii = np.zeros((np.size(rho), np.size(xi)))
         for i in range(self.ncomp):
@@ -557,13 +557,13 @@ class gamma_mie():
 
         da2iidrhos = calc_da2ii_1pchi_drhos(rho, self.eos_dict['Cmol2seg'], self.eos_dict['epsilonii_avg'], self.eos_dict['dii_eff'], self.eos_dict['x0ii'], self.eos_dict['l_rii_avg'], self.eos_dict['l_aii_avg'], zetax)
 
-        a1sii_2l_aii_avg = calc_a1s(rho, self.eos_dict['Cmol2seg'], 2.0 * self.eos_dict['l_aii_avg'], zetax, self.eos_dict['epsilonii_avg'], self.eos_dict['dii_eff'])
-        a1sii_2l_rii_avg = calc_a1s(rho, self.eos_dict['Cmol2seg'], 2.0 * self.eos_dict['l_rii_avg'], zetax, self.eos_dict['epsilonii_avg'], self.eos_dict['dii_eff'])
-        a1sii_l_rii_avgl_aii_avg = calc_a1s(rho, self.eos_dict['Cmol2seg'], self.eos_dict['l_aii_avg'] + self.eos_dict['l_rii_avg'], zetax, self.eos_dict['epsilonii_avg'], self.eos_dict['dii_eff'])
+        a1sii_2l_aii_avg = calc_a1s_eff(rho, self.eos_dict['Cmol2seg'], 2.0 * self.eos_dict['l_aii_avg'], zetax, self.eos_dict['epsilonii_avg'], self.eos_dict['dii_eff'])
+        a1sii_2l_rii_avg = calc_a1s_eff(rho, self.eos_dict['Cmol2seg'], 2.0 * self.eos_dict['l_rii_avg'], zetax, self.eos_dict['epsilonii_avg'], self.eos_dict['dii_eff'])
+        a1sii_l_rii_avgl_aii_avg = calc_a1s_eff(rho, self.eos_dict['Cmol2seg'], self.eos_dict['l_aii_avg'] + self.eos_dict['l_rii_avg'], zetax, self.eos_dict['epsilonii_avg'], self.eos_dict['dii_eff'])
         
-        Bii_2l_aii_avg = calc_Bkl(rho, 2.0 * self.eos_dict['l_aii_avg'], self.eos_dict['Cmol2seg'], self.eos_dict['dii_eff'], self.eos_dict['epsilonii_avg'], self.eos_dict['x0ii'], zetax)
-        Bii_2l_rii_avg = calc_Bkl(rho, 2.0 * self.eos_dict['l_rii_avg'], self.eos_dict['Cmol2seg'], self.eos_dict['dii_eff'], self.eos_dict['epsilonii_avg'], self.eos_dict['x0ii'], zetax)
-        Bii_l_aii_avgl_rii_avg = calc_Bkl(rho, self.eos_dict['l_aii_avg'] + self.eos_dict['l_rii_avg'], self.eos_dict['Cmol2seg'], self.eos_dict['dii_eff'], self.eos_dict['epsilonii_avg'], self.eos_dict['x0ii'], zetax)
+        Bii_2l_aii_avg = calc_Bkl_eff(rho, 2.0 * self.eos_dict['l_aii_avg'], self.eos_dict['Cmol2seg'], self.eos_dict['dii_eff'], self.eos_dict['epsilonii_avg'], self.eos_dict['x0ii'], zetax)
+        Bii_2l_rii_avg = calc_Bkl_eff(rho, 2.0 * self.eos_dict['l_rii_avg'], self.eos_dict['Cmol2seg'], self.eos_dict['dii_eff'], self.eos_dict['epsilonii_avg'], self.eos_dict['x0ii'], zetax)
+        Bii_l_aii_avgl_rii_avg = calc_Bkl_eff(rho, self.eos_dict['l_aii_avg'] + self.eos_dict['l_rii_avg'], self.eos_dict['Cmol2seg'], self.eos_dict['dii_eff'], self.eos_dict['epsilonii_avg'], self.eos_dict['x0ii'], zetax)
 
         eKC2 = np.einsum("i,j->ij", KHS / rho / self.eos_dict['Cmol2seg'], self.eos_dict['epsilonii_avg'] * (Cii**2))
         
@@ -602,14 +602,13 @@ class gamma_mie():
         self._check_density(rho)
         self._check_temerature_dependent_parameters(T)
         self._check_composition_dependent_parameters(xi)
-        kT = T * constants.kb
 
         zetax = stb.calc_zetax(rho, self.eos_dict['Cmol2seg'], self.eos_dict['xskl'], self.eos_dict['dkl'])
         gdHS = self.gdHS(rho, T, xi, zetax=zetax)
         g1 = self.g1(rho, T, xi, zetax=zetax)
         g2 = self.g2(rho, T, xi, zetax=zetax)
 
-        gii = gdHS * np.exp((self.eos_dict['epsilonii_avg'] * g1 / (kT * gdHS)) + (((self.eos_dict['epsilonii_avg'] / kT)**2) * g2 / gdHS))
+        gii = gdHS * np.exp((self.eos_dict['epsilonii_avg'] * g1 / (T * gdHS)) + (((self.eos_dict['epsilonii_avg'] / T)**2) * g2 / gdHS))
 
         #print("gii", gii)
         
@@ -751,9 +750,12 @@ class gamma_mie():
         self.calc_component_averaged_properties()
 
         # Update Non bonded matrices
-        self.eos_dict['dkl'], self.eos_dict['x0kl'] = stb.calc_hard_sphere_matricies(T, self.eos_dict['sigmakl'], self.eos_dict['beadlibrary'], self.eos_dict['beads'], prefactor)
-        self.eos_dict['Cmol2seg'], self.eos_dict['xskl'] = stb.calc_composition_dependent_variables(xi, self.eos_dict['nui'], self.eos_dict['beadlibrary'], self.eos_dict['beads'])
-        self._update_chain_temperature_dependent_variables(T)
+        if not np.isnan(self.T):
+            self.eos_dict['dkl'], self.eos_dict['x0kl'] = stb.calc_hard_sphere_matricies(self.T, self.eos_dict['sigmakl'], self.eos_dict['beadlibrary'], self.eos_dict['beads'], prefactor)
+            self._update_chain_temperature_dependent_variables(self.T)
+
+        if not np.isnan(self.xi):
+            self.eos_dict['Cmol2seg'], self.eos_dict['xskl'] = stb.calc_composition_dependent_variables(self.xi, self.eos_dict['nui'], self.eos_dict['beadlibrary'], self.eos_dict['beads'])
 
     def _check_density(self, rho):
         r"""
