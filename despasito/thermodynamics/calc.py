@@ -2466,7 +2466,19 @@ def calc_flash(P, T, eos, rhodict={}, maxiter=200, tol=1e-9):
         ind = np.where(Kiprev == min(Kiprev[Kiprev>0]))[0]
         err = np.abs(Ki[ind] - Kiprev[ind]) / Kiprev[ind]
         logger.warning('    More than {} iterations needed. Remaining error, {}.'.format(maxiter,err))
-        
+
+    flag_switch = False
+    if flagl in [0, 4] or flagv == 1:
+        if flagl == 1 or flagv in [0, 4]:
+            if xi[0] > yi[0]:
+                flag_switch = True
+        else:
+            flag_switch = True
+
+    if flag_switch:
+        zi, flag = xi, flagl
+        xi, flagl = yi, flagv
+        yi, flagv = zi, flag
 
     logger.info("Final Output: Obj {}, xi {} flagl {}, yi {} flagv {}".format(err,xi,flagl,yi,flagv))
 

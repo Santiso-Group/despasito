@@ -13,8 +13,7 @@ from despasito.equations_of_state.interface import EOStemplate
 logger = logging.getLogger(__name__)
 
 class cubic_peng_robinson(EOStemplate):
-
-    """
+    r"""
     EOS object for the Peng-Robinson EOS. 
 
     All input and calculated parameters are defined as hidden attributes.
@@ -192,8 +191,7 @@ class cubic_peng_robinson(EOStemplate):
         return P
 
     def fugacity_coefficient(self, P, rho, xi, T):
-
-        """
+        r"""
         Compute fugacity coefficient
       
         Parameters

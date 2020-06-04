@@ -3,6 +3,7 @@ import sys
 import numpy as np
 import multiprocessing
 import logging
+import logging.handlers
 import os
 #import glob
 
@@ -39,34 +40,33 @@ class MultiprocessingJob:
             raise ValueError("Number of cores cannot be zero or negative.")
 
         if self.flag_use_mp:
+
             # Remove old mp logs
-            self._mp_handlers = []
             self._extract_root_logging()
 
             # Initiate multiprocessing
-            self._pool = multiprocessing.Pool(ncores, initializer=self._initialize_mp_handler)
+            ctx = multiprocessing.get_context("spawn")
+            self._pool = ctx.Pool(ncores, initializer=self._initialize_mp_handler, initargs=(self._level,self._logformat))
 
             self.logfiles = []
             for worker in self._pool._pool:
                 filename = 'mp-handler-{0}.log'.format(worker.pid)
                 self.logfiles.append(filename)
 
-            # Reinstate root handlers
-            self._swap_mp_to_root_handlers()
-
     def _extract_root_logging(self):
         """ Swap root handlers defined in despasito.__main__ with process specific log handlers
         """
-        self._root_handlers = logging.root.handlers
-
-        for handler in self._root_handlers:
+        for handler in logging.root.handlers:
             if "baseFilename" in handler.__dict__:
                 self._logformat = handler.formatter._fmt
                 self._level = handler.level
+       
+        if not hasattr(self,"_logformat"):
+            self._logformat = None
+            self._level = None
 
-        logging.root.handlers = []
-
-    def _initialize_mp_handler(self):
+    @staticmethod
+    def _initialize_mp_handler(level,logformat):
         """Wraps the handlers in the given Logger with an MultiProcessingHandler.
 
         :param logger: whose handlers to wrap. By default, the root logger.
@@ -78,10 +78,11 @@ class MultiprocessingJob:
         pid = os.getpid()
         filename = 'mp-handler-{0}.log'.format(pid)
         handler = logging.handlers.RotatingFileHandler(filename)
-        if hasattr(self, '_level'):
-            handler.setLevel(self._level)
-        if hasattr(self, '_logformat'):
-            handler.setFormatter( logging.Formatter(self._logformat) )
+        if level is not None:
+            logger.setLevel(level)
+            handler.setLevel(level)
+        if logformat is not None:
+            handler.setFormatter( logging.Formatter(logformat) )
 
         logger.addHandler(handler)
 
@@ -104,11 +105,7 @@ class MultiprocessingJob:
         """
 
         if self.flag_use_mp:
-            self._swap_root_to_mp_handlers()
-
             output = zip(*self._pool.map(func, inputs))
-
-            self._swap_mp_to_root_handlers()
             self._consolidate_mp_logs()
         else:
             logger.info("Performing task serially")
@@ -156,16 +153,6 @@ class MultiprocessingJob:
         """
         for i, fn in enumerate(self.logfiles):
             os.remove(fn)
-
-    def _swap_root_to_mp_handlers(self):
-        """ Swap root handlers defined in despasito.__main__ with process specific log handlers
-        """
-        logging.root.handlers = self._mp_handlers
-
-    def _swap_mp_to_root_handlers(self):
-        """ Swap root handlers defined in despasito.__main__ with process specific log handlers
-        """
-        logging.root.handlers = self._root_handlers
 
     def end_pool(self):
         """ Close multiprocessing pool
