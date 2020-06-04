@@ -6,6 +6,6 @@
     "calculation_type" : "verify_eos",
     "pressure options": {"maxiter":15},
     "Tlist" : [320.0],
-    "xilist": [[0.4, 0.6]],
-    "Plist" : [1e+5]
+    "Plist" : [1e+5],
+    "xilist": [[0.4, 0.6]]
 }

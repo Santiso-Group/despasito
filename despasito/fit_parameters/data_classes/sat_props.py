@@ -134,7 +134,7 @@ class Data(ExpDataTemplate):
 
         # Check bead type
         if 'xilist' not in self._thermodict:
-            if len(self.eos.eos_dict['nui']) > 1:
+            if len(self.eos.nui) > 1:
                 raise ValueError("Ambiguous instructions. Include xi to define intended component to obtain saturation properties")
             else:
                 self._thermodict['xilist'] = np.array([[1.0] for x in range(len(self._thermodict['Tlist']))])

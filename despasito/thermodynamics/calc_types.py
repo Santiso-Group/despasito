@@ -269,13 +269,14 @@ def phase_yiT(eos, sys_dict):
         inputs = [(T_list[i], yi_list[i], eos, opts) for i in range(len(T_list))]
 
     if flag_use_mp_object:
-        P_list, xi_list, flagv_list, flagl_list, obj_list = mpObj.pool_job(__phase_yiT_wrapper, inputs)
+        P_list, xi_list, flagv_list, flagl_list, obj_list = mpObj.pool_job(_phase_yiT_wrapper, inputs)
     else:
-        P_list, xi_list, flagv_list, flagl_list, obj_list = MultiprocessingJob.serial_job(__phase_yiT_wrapper, inputs)
+        P_list, xi_list, flagv_list, flagl_list, obj_list = MultiprocessingJob.serial_job(_phase_yiT_wrapper, inputs)
+    #P_list, xi_list, flagv_list, flagl_list, obj_list = batch_jobs( _phase_yiT_wrapper, inputs, ncores=ncores, logger=logger)
 
     logger.info("--- Calculation phase_yiT Complete ---")
 
-    return {"T":T_list,"yi":yi_list,"P":P_list,"xi":xi_list,"flagl":flagl_list,"flagv":flagv_list, "obj":obj_list}
+    return {"T":T_list,"xi":xi_list,"P":P_list,"yi":yi_list,"flagl":flagl_list,"flagv":flagv_list, "obj":obj_list}
 
 def _phase_yiT_wrapper(args):
 
@@ -370,7 +371,7 @@ def flash(eos, sys_dict):
         opts["rhodict"] = sys_dict["rhodict"]
 
     # Initialize Variables
-    l_c = len(eos.eos_dict['nui'])
+    l_c = len(eos.nui)
     if l_c != 2:
         raise ValueError("Only binary systems are currently supported for flash calculations, {} were given.".format(l_c))
     l_x = np.array(T_list).shape[0]
@@ -385,7 +386,7 @@ def flash(eos, sys_dict):
 
     logger.info("--- Calculation flash Complete ---")
 
-    return {"T":T_list,"yi":yi_list,"P":P_list,"xi":xi_list,"flagl":flagl_list,"flagv":flagv_list, "obj":obj_list}
+    return {"T":T_list,"xi":xi_list,"P":P_list,"yi":yi_list,"flagl":flagl_list,"flagv":flagv_list, "obj":obj_list}
 
 def _flash_wrapper(args):
 
@@ -449,6 +450,9 @@ def sat_props(eos, sys_dict):
         if len(T_list) == 1:
             T_list = np.ones(len(xi_list))*T_list[0]
             logger.info("The same temperature, {}, was used for all mole fraction values".format(T_list[0]))
+        elif len(xi_list) == 1:
+            xi_list = [xi_list[0] for i in T_list]
+            logger.info("The same mole fraction set, {}, was used for all temperature values".format(xi_list[0]))
         else:
             raise ValueError("The number of provided temperatures and mole fraction sets are different")
 
@@ -549,11 +553,19 @@ def liquid_properties(eos, sys_dict):
         if len(T_list) == 1:
             T_list = np.ones(len(xi_list))*T_list[0]
             logger.info("The same temperature, {}, was used for all mole fraction values".format(T_list[0]))
+        elif len(xi_list) == 1:
+            xi_list = [xi_list[0] for i in T_list]
+            logger.info("The same mole fraction set, {}, was used for all temperature values".format(xi_list[0]))
         else:
             raise ValueError("The number of provided temperatures and mole fraction sets are different")
 
     if "Plist" in sys_dict:
         P_list = np.array(sys_dict['Plist'])
+        if np.size(T_list) != np.size(P_list, axis=0):
+            if len(P_list)==1:
+                P_list = P_list[0] * np.ones_like(T_list)
+            else:
+                raise ValueError("The number of provided temperatures and pressure sets are different")
         logger.info("Using Plist")
     else:
         P_list = 101325.0 * np.ones_like(T_list)
@@ -652,11 +664,19 @@ def vapor_properties(eos, sys_dict):
         if len(T_list) == 1:
             T_list = np.ones(len(yi_list))*T_list[0]
             logger.info("The same temperature, {}, was used for all mole fraction values".format(T_list[0]))
+        elif len(yi_list) == 1:
+            yi_list = [yi_list[0] for i in T_list]
+            logger.info("The same mole fraction set, {}, was used for all temperature values".format(yi_list[0]))
         else:
             raise ValueError("The number of provided temperatures and mole fraction sets are different")
 
     if "Plist" in sys_dict:
         P_list = np.array(sys_dict['Plist'])
+        if np.size(T_list) != np.size(P_list, axis=0):
+            if len(P_list)==1:
+                P_list = P_list[0] * np.ones_like(T_list)
+            else:
+                raise ValueError("The number of provided temperatures and pressure sets are different")
         logger.info("Using Plist")
     else:
         P_list = 101325.0 * np.ones_like(T_list)
@@ -856,7 +876,7 @@ def verify_eos(eos, sys_dict):
 
     ## Extract and check input data
 
-    ncomp = len(eos.eos_dict['nui'])
+    ncomp = len(eos.nui)
     if "xilist" in sys_dict:
         xi_list = np.array(sys_dict['xilist'])
         logger.info("Using xilist")

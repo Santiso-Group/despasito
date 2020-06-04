@@ -16,7 +16,7 @@ class cython_stat:
 
 logger = logging.getLogger(__name__)
 
-def eos(**kwargs):
+def eos(**input_dict):
     """
     Interface between the user and our library of equations of state (EOS).
 
@@ -24,7 +24,7 @@ def eos(**kwargs):
 
     Parameters
     ----------
-        kwargs : dict, Optional
+        input_dict : dict, Optional
             A dictionary of inputs for the desired EOS. See specific EOS documentation for required inputs.
 
             - eos : str - Input should be in the form EOSfamily.EOSname (e.g. saft.gamme_mie). Note that the name of the class is EOSfamily_EOSname.
@@ -35,38 +35,45 @@ def eos(**kwargs):
             An instance of the defined EOS class to be used in thermodynamic computations.
     """
 
+    factory_families = ["saft"] # eos families in this list have a general object with a factory to import relevent modules
 
-    if "eos" not in kwargs:
+    if "eos" not in input_dict:
         eos_type = "saft.gamma_mie"
         logger.info("Trying default EOS, {}".format(eos_type))
     else:
-        eos_type = kwargs["eos"]  
-        del kwargs["eos"]
+        eos_type = input_dict["eos"]  
+        del input_dict["eos"]
         logger.info("Trying user defined EOS, {}".format(eos_type))
 
-    if 'jit' not in kwargs:
+    if 'jit' not in input_dict:
         jit_stat.disable_jit = True
     else:
-        jit_stat.disable_jit = not kwargs['jit']
+        jit_stat.disable_jit = not input_dict['jit']
 
-    if 'cython' not in kwargs:
+    if 'cython' not in input_dict:
         cython_stat.disable_cython = True
     else:
-        cython_stat.disable_cython = not kwargs['cython']
+        cython_stat.disable_cython = not input_dict['cython']
 
     try:
         eos_fam, eos = eos_type.split('.')
     except:
         raise Exception("Input should be in the form EOSfamily.EOSname (e.g. saft.gamme_mie).")
 
+    class_name = "_".join([eos_fam, eos])
     try:
-        eos_module = import_module('.' + eos, package="despasito.equations_of_state." + eos_fam)
-        class_name = "_".join([eos_fam, eos])
-        eos_class = getattr(eos_module, class_name)
-        instance = eos_class(kwargs)
+        if eos_fam in factory_families:
+            eos_module = import_module('.' + eos_fam, package="despasito.equations_of_state." + eos_fam)
+            eos_class = getattr(eos_module, eos_fam)
+            input_dict['saft_name'] = eos
+        
+        else:
+            eos_module = import_module('.' + eos, package="despasito.equations_of_state." + eos_fam)
+            eos_class = getattr(eos_module, class_name)
     except (AttributeError):
-        raise ImportError(
-            "Based on your input, '{}', we expect the class, {}, in a module, {}, found in the package, {}, which indicates the EOS family.".format(eos_type, class_name, eos, eos_fam))
+        raise ImportError("Based on your input, '{}', we expect the class, {}, in a module, {}, found in the package, {}, which indicates the EOS family.".format(eos_type, class_name, eos, eos_fam))
+    instance = eos_class(input_dict)
+
     logger.info("Created {} eos object".format(eos_type))
 
     return instance

@@ -1,0 +1,17 @@
+{
+    "beadconfig": [[["aCH", 5],["aCCH2",1],["CH3",1]]],
+    "eos": "saft.gamma_sw",
+    "EOSgroup": "../library/SWgroup.json",
+    "EOScross": "../library/SWcross.json",
+    "opt_params": {
+        "fit_bead" : "aCCH2",
+        "fit_params": ["epsilon"],
+        "epsilon_bounds" : [150.0, 400.0],
+        "beadparams0" : [300.0]
+    },
+    "Yaws": {
+        "datatype": "liquid_density",
+        "calctype": "liquid_properties",
+        "file": "ethylbenzene_rhol.csv"
+    }
+}

@@ -9,9 +9,10 @@ import versioneer
 from numpy.distutils.core import Extension, setup
 from numpy.distutils.fcompiler import available_fcompilers_for_platform
 import numpy as np
+import glob
 
 short_description = __doc__.split("\n")
-fpath = os.path.join("despasito","equations_of_state","saft")
+fpath = os.path.join("despasito","equations_of_state","saft","compiled_modules")
 extensions = []
 
 if sys.version_info.major < 3:
@@ -19,12 +20,15 @@ if sys.version_info.major < 3:
 if sys.version_info.minor > 7:
     raise ValueError("DESPASITO cannot run on python versions greater than 3.7 due to incompadibilities between python 3.8 and numpy.")
 
-try:
-    from Cython.Build import cythonize
-    cy_ext_1 = Extension(name="c_exts",sources=[os.path.join(fpath,'c_exts.pyx')],include_dirs=[fpath])
-    extensions.extend(cythonize([cy_ext_1]))
-except:
-    print('Cython not available on your system. Proceeding without C-extentions.')
+#try:
+from Cython.Build import cythonize
+cython_list = glob.glob(os.path.join(fpath,"*.pyx"))
+for cyext in cython_list:
+    name = os.path.split(cyext)[-1].split(".")[-2]
+    cy_ext_1 = Extension(name=name,sources=[cyext],include_dirs=[fpath])
+    extensions.extend(cythonize([cy_ext_1], annotate=True))
+#except:
+#    print('Cython not available on your system. Proceeding without C-extentions.')
 
 # from https://github.com/pytest-dev/pytest-runner#conditional-requirement
 needs_pytest = {'pytest', 'test', 'ptr'}.intersection(sys.argv)
@@ -37,10 +41,13 @@ except:
     long_description = "\n".join(short_description[2:])
 
 if len(available_fcompilers_for_platform()) != 0:
-    ext1 = Extension(name="solv_assoc",sources=[os.path.join(fpath,"solv_assoc.f90")],include_dirs=[fpath])
-    extensions.append(ext1)
+    fortran_list = glob.glob(os.path.join(fpath,"*.f90"))
+    for fext in fortran_list:
+        name = os.path.split(fext)[-1].split(".")[-2]
+        ext1 = Extension(name=name,sources=[fext],include_dirs=[fpath])
+        extensions.append(ext1)
 else:
-    print("Fortran compiler is not found, default will use Numba")
+    print("Fortran compiler is not found, default will use pure python")
 
 # try Extension and compile
 # !!!! Note that we have fortran modules that need to be compiled with "f2py3 -m solv_assoc -c solve_assoc.f90" and the same with solve_assoc_matrix.f90

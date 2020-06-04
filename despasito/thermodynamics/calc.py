@@ -12,7 +12,7 @@ import copy
 #import matplotlib.pyplot as plt
 import logging
 
-import despasito.utils.optimization as opt
+import despasito.utils.general_toolbox as gtb
 from . import fund_constants as constants
 
 logger = logging.getLogger(__name__)
@@ -377,7 +377,7 @@ def calc_Psat(T, xi, eos, rhodict={}):
             raise ValueError("Multiple components have compositions greater than 10%, check code for source")
         else:
             ind = np.where((xi>0.1)==True)[0]
-            raise ValueError("Multiple components have compositions greater than 0. Do you mean to obtain the saturation pressure of {} with a mole fraction of {}?".format(eos.eos_dict['beads'][ind],xi[ind]))
+            raise ValueError("Multiple components have compositions greater than 0. Do you mean to obtain the saturation pressure of {} with a mole fraction of {}?".format(eos.beads[ind],xi[ind]))
 
     vlist, Plist = PvsRho(T, xi, eos, **rhodict)
     Pvspline, roots, extrema = PvsV_spline(vlist, Plist)
@@ -501,7 +501,7 @@ def calc_rhov(P, T, xi, eos, rhodict={}):
     Plist = Plist-P
     Pvspline, roots, extrema = PvsV_spline(vlist, Plist)
 
-    logger.info("    Find rhov: P {} Pa, roots {} m^3/mol".format(P,roots))
+    logger.debug("    Find rhov: P {} Pa, roots {} m^3/mol".format(P,roots))
 
     flag_NoOpt = False
     l_roots = len(roots)
@@ -1285,7 +1285,7 @@ def calc_Prange_yi(T, xi, yi, eos, rhodict={}, zi_opts={}):
 #                       Solve Yi for xi and T                        #
 #                                                                    #
 ######################################################################
-def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxiter=30, tol=1e-7):
+def solve_yi_xiT(yi, xi, phil, P, T, eos, rhodict={}, maxiter=30, tol=1e-6):
     r"""
     Find vapor mole fraction given pressure, liquid mole fraction, and temperature.
 
@@ -1694,6 +1694,7 @@ def bracket_bounding_yi(P, T, phil, xi, eos, bounds=(0.01, 0.99), maxiter=50, to
         logger.error("    Both mole fractions have flag, {}, continue seeking convergence".format(flag_bounds[0]))
         y1 = bounds[1]
         flagv = flag_bounds[1]
+        i = maxiter - 1
 
     else:
         flag_high_vapor = False
@@ -2069,19 +2070,19 @@ def setPsat(ind, eos):
         Bead name of the component that is above it's critical point
     """
 
-    for j in range(np.size(eos.eos_dict['nui'][ind])):
-        if eos.eos_dict['nui'][ind][j] > 0.0 and eos.eos_dict['beads'][j] == "CO2":
+    for j in range(np.size(eos.nui[ind])):
+        if eos.nui[ind][j] > 0.0 and eos.beads[j] == "CO2":
             Psat = 10377000.0
-        elif eos.eos_dict['nui'][ind][j] > 0.0 and eos.eos_dict['beads'][j] == "N2":
+        elif eos.nui[ind][j] > 0.0 and eos.beads[j] == "N2":
             Psat = 7377000.0
-        elif eos.eos_dict['nui'][ind][j] > 0.0 and ("CH4" in eos.eos_dict['beads'][j]):
+        elif eos.nui[ind][j] > 0.0 and ("CH4" in eos.beads[j]):
             Psat = 6377000.0
-        elif eos.eos_dict['nui'][ind][j] > 0.0 and ("CH3CH3" in eos.eos_dict['beads'][j]):
+        elif eos.nui[ind][j] > 0.0 and ("CH3CH3" in eos.beads[j]):
             Psat = 7377000.0
-        elif eos.eos_dict['nui'][ind][j] > 0.0:
+        elif eos.nui[ind][j] > 0.0:
             #Psat = np.nan
             Psat = 7377000.0
-            NaNbead = eos.eos_dict['beads'][j]
+            NaNbead = eos.beads[j]
             logger.warning("Bead, {}, is above its critical point. Psat is assumed to be {}. To add an exception go to thermodynamics.calc.setPsat".format(NaNbead,Psat))
 
     if "NaNbead" not in list(locals().keys()):
@@ -2161,7 +2162,7 @@ def calc_yT_phase(yi, T, eos, rhodict={}, zi_opts={}, Pguess=-1, meth="hybr", pr
     Prange, Pguess = calc_Prange_yi(T, xi, yi, eos, rhodict, zi_opts=zi_opts)
     P = Pguess
 
-    P = opt.solve_root(solve_P_yiT, args=(yi, T, eos, rhodict, zi_opts), x0=P, method=meth, bounds=Prange, options=pressure_opts)
+    P = gtb.solve_root(solve_P_yiT, args=(yi, T, eos, rhodict, zi_opts), x0=P, method=meth, bounds=Prange, options=pressure_opts)
 
     #find vapor density and fugacity
     phiv, rhov, flagv = calc_phiv(P, T, yi, eos, rhodict=rhodict)
@@ -2249,7 +2250,7 @@ def calc_xT_phase(xi, T, eos, rhodict={}, zi_opts={}, Pguess=-1, meth="bisect", 
     else:
         P = Pguess
 
-    P = opt.solve_root(solve_P_xiT, args=(xi, T, eos, rhodict, zi_opts), x0=P, method=meth, bounds=Prange, options=pressure_opts)
+    P = gtb.solve_root(solve_P_xiT, args=(xi, T, eos, rhodict, zi_opts), x0=P, method=meth, bounds=Prange, options=pressure_opts)
 
     #find liquid density and fugacity
     phil, rhol, flagl = calc_phil(P, T, xi, eos, rhodict=rhodict)
@@ -2323,7 +2324,7 @@ def hildebrand_solubility(rhol, xi, T, eos, dT=.1, tol=1e-4, rhodict={}):
         U_res += -RT*integrand_list[-1]*(xroot-vlist[-1])/2
 
     if (U_res) > 0.:
-        logger.error("The solubility parameter can not be imaginary")
+        raise ValueError("The solubility parameter can not be imaginary")
     else:
         delta = np.sqrt(-(U_res)*rhol)
         logger.info("When T={}, xi={}, delta={}".format(T,xi,delta))
@@ -2369,7 +2370,7 @@ def calc_flash(P, T, eos, rhodict={}, maxiter=200, tol=1e-9):
     """
 
     # Initialize Variables
-    lx = len(eos.eos_dict['nui'])
+    lx = len(eos.nui)
 
     if lx != 2:
         raise ValueError("Only binary systems are currently supported for flash calculations, {} were given.".format(lx))
@@ -2600,7 +2601,7 @@ def fugacity_test_1(P, T, xi, rho, eos, step_size=1e-5):
 #                          EOS Fugacity Test 2                       #
 #                                                                    #
 ######################################################################
-def fugacity_test_2(P, T, xi, rho, eos, step_size=1e-5):
+def fugacity_test_2(P, T, xi, rho, eos, fractional_change=1e-1):
     r"""
     
     Parameters
@@ -2627,9 +2628,9 @@ def fugacity_test_2(P, T, xi, rho, eos, step_size=1e-5):
         rho = np.array([rho])
 
 #    drho = rho * step_size
-#    log_phi_1 = np.sum(xi*np.log(eos.fugacity_coefficient(P, rho+drho, xi, T)))
-#    log_phi_2 = np.sum(xi*np.log(eos.fugacity_coefficient(P, rho-drho, xi, T)))
-#    residual = (log_phi_1-log_phi_2)/(2*drho)
+#    log_phi_1 = np.log(eos.fugacity_coefficient(P, rho+drho, xi, T))
+#    log_phi_2 = np.log(eos.fugacity_coefficient(P, rho-drho, xi, T))
+#    residual = np.sum(xi*(log_phi_1-log_phi_2)/(2*drho))
 
     ind = np.where(xi>np.finfo("float").eps)[0]
     if len(ind) == 1:
@@ -2637,59 +2638,57 @@ def fugacity_test_2(P, T, xi, rho, eos, step_size=1e-5):
     elif len(ind) != ncomp:
         logger.info("There is not a significant amount of components {} in solution".format(np.setdiff1d(range(ncomp),ind)))
 
-    dy = step_size
-    dphi = np.zeros((2,ncomp))
-    for j, delta in enumerate((dy, -dy)):
-        y_tmp = np.copy(xi)
-        y_tmp[ind[0]] += delta
-        y_tmp[ind[-1]] -= delta
-        dphi[j,:] = eos.fugacity_coefficient(P, rho, y_tmp, T)
-    dphidx = (dphi[0] - dphi[1]) / (2.0 * dy)
+#    dy = step_size
+#    dphi = np.zeros((2,ncomp))
+#    for j, delta in enumerate((dy, -dy)):
+#        y_tmp = np.copy(xi)
+#        y_tmp[ind[0]] += delta
+#        y_tmp[ind[-1]] -= delta
+#        dphi[j,:] = np.log(eos.fugacity_coefficient(P, rho, y_tmp, T))
+#    dphidx = (dphi[0] - dphi[1]) / (2.0 * dy)
+
+    log_phi = np.zeros((2,ncomp))
+    for i,factor in enumerate([1.0, (1-fractional_change)]):
+        log_phi[i,:] = np.log(eos.fugacity_coefficient(P*factor, rho, xi, T))
+    dphidx = log_phi[0] - log_phi[1]
 
     residual = np.sum(xi*dphidx)
 
-#    dphidx = np.zeros(ncomp)
-#    dy = step_size
-#    y = np.log(rho*np.array(xi,float))
-#    for i in range(ncomp):
-#        if xi[i] != 0.0:
-#            dphi = np.zeros(2)
-#            for j, delta in enumerate((dy, -dy)):
-#                y_temp = np.copy(y)
-#                y_temp[i] += delta
-#                dphi[j] = _fugacity_test_wrapper(P, T, np.exp(y_temp), eos)[i]
-#            dphidx[i] = rho/np.exp(y[i])*(dphi[0] - dphi[1]) / (2.0 * dy)
-#        else:
-#            dphidx[i] = 1e-32 # This should be zero, but to prevent the thermo calculation from complaining about diving by zero we give it a value, the mole fraction is zero though, so it'll go away.
-#    residual = np.sum(xi*dphidx)
-    
     return residual
 
-def _fugacity_test_wrapper(P, T, rhoi, eos):
-    """
-    Compute derivative of log fugacity coefficient wrt to density.
-  
+######################################################################
+#                                                                    #
+#                  Activity Coefficient                              #
+#                                                                    #
+######################################################################
+def activity_coefficient(P, T, xi, yi, eos, step_size=1e-2):
+    r"""
+    
     Parameters
     ----------
     P : float
         Pressure of the system [Pa]
     T : float
         Temperature of the system [K]
-    rhoi : float
-        Molar density of each component, add up to the total density [mol/m^3]
+    xi : numpy.ndarray
+        Liquid mole fraction of each component, sum(xi) should equal 1.0
+    rho : float
+        Density array. Length depends on values in rhodict [mol/:math:`m^3`]
     eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
 
     Returns
     -------
-    phi : float
-        Helmholtz energy give number of moles, length of array rho
+    Residual : float
+        
     """
+    ncomp = len(xi)
+    Psat = np.zeros(ncomp)
+    for i in range(ncomp):
+        tmp = np.zeros(ncomp)
+        tmp[i] = 1.
+        Psat[i], _, _ = calc_Psat(T, tmp, eos, **opts)
 
-    # Calculate new xi values
-    rho = np.array([np.sum(rhoi)])
-    xi = rhoi/rho
-    phi = eos.fugacity_coefficient(P, rho, xi, T)
+    activity_coefficient = yi*P/(Psat*xi)
 
-    return phi
-
+    return activity_coefficient, Psat

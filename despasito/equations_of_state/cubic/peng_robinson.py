@@ -50,7 +50,7 @@ class cubic_peng_robinson(EOStemplate):
         # Self interaction parameters
         self._beads = kwargs['beads']
         self._beadlibrary = kwargs['beadlibrary']
-        self._nui = np.identity(len(self._beads))
+        self.nui = np.identity(len(self._beads))
 
         self._Tc = np.zeros(len(self._beads))
         self._Pc = np.zeros(len(self._beads))
