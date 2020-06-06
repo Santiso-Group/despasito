@@ -511,31 +511,30 @@ def calc_rhov(P, T, xi, eos, rhodict={}):
         logger.warning("    Flag 3: The T and yi, {} {}, won't produce a fluid (vapor or liquid) at this pressure".format(T,xi))
     elif l_roots == 0:
         if Pvspline(1/vlist[-1]) < 0:
-            if not len(extrema):
-                flag = 2
-                logger.debug("    Flag 2: The T and yi, {} {}, combination produces a critical fluid at this pressure".format(T,xi))
-            else:
-                flag = 1
-                logger.debug("    Flag 1: The T and yi, {} {}, combination produces a liquid at this pressure".format(T,xi))
             try:
-                rho_tmp = spo.minimize(Pdiff, 1/vlist[0], args=(P, T, xi, eos), method='TNC', bounds=[(1e-28, eos.density_max(xi, T)*.99)])
+                rho_tmp = spo.least_squares(Pdiff, 1/vlist[0], args=(P, T, xi, eos), bounds=(np.finfo("float").eps, eos.density_max(xi, T, maxpack=0.99)))
                 rho_tmp = rho_tmp.x
+                if not len(extrema):
+                    flag = 2
+                    logger.debug("    Flag 2: The T and yi, {} {}, combination produces a critical fluid at this pressure".format(T,xi))
+                else:
+                    flag = 1
+                    logger.debug("    Flag 1: The T and yi, {} {}, combination produces a liquid at this pressure".format(T,xi))
             except:
-                rho_tmp = 1/vlist[0]
+                rho_tmp = np.nan
+                flag = 3
+                logger.warning("    Flag 3: The T and xi, {} {}, won't produce a fluid (vapor or liquid) at this pressure, without density greater than max, {}".format(T,xi,eos.density_max(xi, T, maxpack=0.99)))
             flag_NoOpt = True
         elif min(Plist)+P > 0:
             slope, yroot = np.polyfit(vlist[-4:], Plist[-4:], 1)
             vroot = -yroot/slope
             try:
-                rho_tmp = spo.minimize(Pdiff, 1.0/vroot, args=(P, T, xi, eos), method='TNC', bounds=[(np.finfo("float").eps, 1.0/(1.1*roots[-1]))])
+                rho_tmp = spo.least_squares(Pdiff, 1/vroot, args=(P, T, xi, eos), bounds=(np.finfo("float").eps, 1.0/(1.1*roots[-1])))
                 rho_tmp = rho_tmp.x
+                flag = 0
             except:
                 rho_tmp = np.nan
-
-            if np.isnan(rho_tmp):
                 flag = 4
-            else:
-                flag = 0
 
             if not len(extrema):
                 logger.debug("    Flag 2: The T and yi, {} {}, combination produces a critical fluid at this pressure".format(T,xi))
@@ -544,7 +543,6 @@ def calc_rhov(P, T, xi, eos, rhodict={}):
         else:
             logger.warning("    Flag 3: The T and yi, {} {}, won't produce a fluid (vapor or liquid) at this pressure".format(T,xi))
             flag = 3
-            #PvsV_plot(vlist, Plist, Pvspline, markers=extrema)
             rho_tmp = np.nan
     elif l_roots == 1:
         if not len(extrema):
@@ -565,12 +563,20 @@ def calc_rhov(P, T, xi, eos, rhodict={}):
             rho_tmp = 1.0 / roots[0]
             logger.debug("    Flag 1: This T and yi, {} {}, combination produces a liquid under tension at this pressure".format(T,xi))
         else:
-            flag = 0
             slope, yroot = np.polyfit(vlist[-4:], Plist[-4:], 1)
             vroot = -yroot/slope
-            rho_tmp = spo.minimize(Pdiff, 1.0/vroot, args=(P, T, xi, eos), method='TNC', bounds=[(np.finfo("float").eps, 1.0/(1.1*roots[-1]))])
-            rho_tmp = rho_tmp.x
-            logger.debug("    Flag 0: This T and yi, {} {}, combination produces a vapor at this pressure. Warning! approaching critical fluid".format(T,xi))
+            try:
+                rho_tmp = spo.least_squares(Pdiff, 1/vroot, args=(P, T, xi, eos), bounds=(np.finfo("float").eps, 1.0/(1.1*roots[-1])))
+                rho_tmp = rho_tmp.x
+                flag = 0
+            except:
+                rho_tmp = np.nan
+                flag = 4
+
+            if not len(extrema):
+                logger.debug("    Flag 2: The T and yi, {} {}, combination produces a critical fluid at this pressure".format(T,xi))
+            else:
+                logger.debug("    Flag 0: This T and yi, {} {}, combination produces a vapor at this pressure. Warning! approaching critical fluid".format(T,xi))
     else: # 3 roots
         logger.debug("    Flag 0: This T and yi, {} {}, combination produces a vapor at this pressure.".format(T,xi))
         rho_tmp = 1.0 / roots[2]
@@ -578,8 +584,8 @@ def calc_rhov(P, T, xi, eos, rhodict={}):
 
     if flag in [0,2]: # vapor or critical fluid
         tmp = [rho_tmp*.99, rho_tmp*1.01]
-        if (rho_tmp*1.01 > eos.density_max(xi, T)*.9999):
-            tmp[1] = eos.density_max(xi, T)*.9999
+        if (rho_tmp*1.01 > eos.density_max(xi, T, maxpack=0.99)):
+            tmp[1] = eos.density_max(xi, T, maxpack=0.99)
 
         if (Pdiff(tmp[0],P, T, xi, eos)*Pdiff(tmp[1],P, T, xi, eos))<0:
             rho_tmp = spo.brentq(Pdiff, tmp[0], tmp[1], args=(P, T, xi, eos), rtol=0.0000001)
@@ -587,7 +593,7 @@ def calc_rhov(P, T, xi, eos, rhodict={}):
             if Plist[0] < 0:
                 logger.warning("Density value could not be bounded with (rhomin,rhomax), {}. Using approximate density value".format(tmp))
             elif not flag_NoOpt:
-                rho_tmp = spo.minimize(Pdiff, rho_tmp, args=(P, T, xi, eos), method='TNC', bounds=[(np.finfo("float").eps, eos.density_max(xi, T)*.99)])
+                rho_tmp = spo.least_squares(Pdiff, rho_tmp, args=(P, T, xi, eos), bounds=(np.finfo("float").eps, eos.density_max(xi, T, maxpack=0.99)))
                 rho_tmp = rho_tmp.x
 
     logger.info("    Vapor Density: {} mol/m^3, flag {}".format(rho_tmp,flag))
@@ -646,33 +652,31 @@ def calc_rhol(P, T, xi, eos, rhodict={}):
         logger.warning("    Flag 3: The T and xi, {} {}, won't produce a fluid (vapor or liquid) at this pressure".format(T,xi))
     elif l_roots == 0:
         if Pvspline(1/vlist[-1]):
-            if not len(extrema):
-                flag = 2
-                logger.debug("    Flag 2: The T and xi, {} {}, combination produces a critical fluid at this pressure".format(T,xi))
-            else:
-                flag = 1
-                logger.debug("    Flag 1: The T and xi, {} {}, combination produces a liquid at this pressure".format(T,xi))
-
             try:
-                rho_tmp = spo.minimize(Pdiff, 1/vlist[0], args=(P, T, xi, eos), method='TNC', bounds=[(np.finfo("float").eps, eos.density_max(xi, T)*.99)])
+                bounds = (1/vlist[0], eos.density_max(xi, T, maxpack=0.99))
+                rho_tmp = spo.least_squares(Pdiff, np.mean(bounds), args=(P, T, xi, eos), bounds=bounds)
                 rho_tmp = rho_tmp.x
+                if not len(extrema):
+                    flag = 2
+                    logger.debug("    Flag 2: The T and xi, {} {}, combination produces a critical fluid at this pressure".format(T,xi))
+                else:
+                    flag = 1
+                    logger.debug("    Flag 1: The T and xi, {} {}, combination produces a liquid at this pressure".format(T,xi))
             except:
-                rho_tmp = 1/vlist[0]
-            #rho_tmp = 1/vlist[1]
+                rho_tmp = np.nan
+                flag = 3
+                logger.warning("    Flag 3: The T and xi, {} {}, won't produce a fluid (vapor or liquid) at this pressure, without density greater than max, {}".format(T,xi,eos.density_max(xi, T, maxpack=0.99)))
             flag_NoOpt = True
         elif min(Plist)+P > 0:
             slope, yroot = np.polyfit(vlist[-4:], Plist[-4:], 1)
             vroot = -yroot/slope
             try:
-                rho_tmp = spo.minimize(Pdiff, 1.0/vroot, args=(P, T, xi, eos), method='TNC', bounds=[(np.finfo("float").eps, 1.0/(1.1*roots[-1]))])
+                rho_tmp = spo.least_squares(Pdiff, 1.0/vroot, args=(P, T, xi, eos), bounds=(np.finfo("float").eps, 1.0/(1.1*roots[-1])))
                 rho_tmp = rho_tmp.x
+                flag = 0
             except:
                 rho_tmp = np.nan
-
-            if np.isnan(rho_tmp):
                 flag = 4
-            else:
-                flag = 0
 
             if not len(extrema):
                 logger.debug("    Flag 2: The T and xi, {} {}, combination produces a critical fluid at this pressure".format(T,xi))
@@ -694,7 +698,8 @@ def calc_rhol(P, T, xi, eos, rhodict={}):
     elif l_roots == 1: # 1 root
         if not len(extrema):
             flag = 2
-            rho_tmp = 1.0 / interp_vroot(roots[0], vlist, Plist)
+# NoteHere
+            rho_tmp = 1.0 / roots[0]
             logger.debug("    Flag 2: The T and xi, {} {}, combination produces a critical fluid at this pressure".format(T,xi))
         elif (Pvspline(roots[0])+P) > (Pvspline(max(extrema))+P):
             flag = 1
@@ -707,16 +712,18 @@ def calc_rhol(P, T, xi, eos, rhodict={}):
     else: # 3 roots
         rho_tmp = 1.0 / roots[0]
         flag = 1
+        logger.debug("    Flag 1: The T and xi, {} {}, combination produces a liquid at this pressure".format(T,xi))
 
     if flag in [1,2]: # liquid or critical fluid
         tmp = [rho_tmp*.99, rho_tmp*1.01]
-        if (Pdiff(tmp[0],P, T, xi, eos)*Pdiff(tmp[1],P, T, xi, eos))<0:
-            rho_tmp = spo.brentq(Pdiff, tmp[0], tmp[1], args=(P, T, xi, eos), rtol=0.0000001)
+        P_tmp = [Pdiff(tmp[0],P, T, xi, eos), Pdiff(tmp[1],P, T, xi, eos)]
+        if (P_tmp[0]*P_tmp[1])<0:
+            rho_tmp = spo.brentq(Pdiff, tmp[0], tmp[1], args=(P, T, xi, eos), rtol=1e-7)
         else:
-            if Plist[0] < 0:
+            if P_tmp[0] < 0:
                 logger.warning("Density value could not be bounded with (rhomin,rhomax), {}. Using approximate density value".format(tmp))
             elif not flag_NoOpt:
-                rho_tmp = spo.minimize(Pdiff, [rho_tmp], args=(P, T, xi, eos), method='TNC', bounds=[(np.finfo("float").eps, eos.density_max(xi, T)*.99)])
+                rho_tmp = spo.least_squares(Pdiff, rho_tmp, args=(P, T, xi, eos), bounds=(np.finfo("float").eps, eos.density_max(xi, T, maxpack=0.99)))
                 rho_tmp = rho_tmp.x[0]
     logger.info("    Liquid Density: {} mol/m^3, flag {}".format(rho_tmp,flag))
 
@@ -1065,7 +1072,13 @@ def calc_Prange_xi(T, xi, yi, eos, rhodict={}, Pmin=10000, zi_opts={}):
 
         phil, rhol, flagl = calc_phil(p, T, xi, eos, rhodict=rhodict)
         if any(np.isnan(phil)):
-            raise ValueError("Fugacity coefficient should not be NaN, pressure could be too high.")
+            logger.info("Liquid fugacity coefficient should not be NaN, pressure could be too high.")
+            flag_liqu = True
+            Prange[1] = p
+            ObjRange[1] = obj
+            p = (Prange[1]-Prange[0])/2.0 + Prange[0]
+            continue
+            
         yi_range, phiv_max, flagv_max = solve_yi_xiT(yi_range, xi, phil, p, T, eos, rhodict=rhodict, **zi_opts)
         obj = np.nansum(xi * phil / phiv_max) - 1.0
 
@@ -1629,19 +1642,25 @@ def find_new_yi(P, T, phil, xi, eos, bounds=(0.01, 0.99), npoints=30, rhodict={}
         # A value of 0 is vapor, 1 is liquid, 2 mean a critical fluid, 3 means that neither is true, 4 means we should assume ideal gas
         ind = [i for i in range(len(flag_tmp)) if flag_tmp[i] not in [1,3]]
         if ind:
-            obj_tmp = [obj_tmp[i] for i in ind]
-            yi_tmp = [yi_tmp[i] for i in ind]
+            obj_tmp2 = [obj_tmp[i] for i in ind]
+            yi_tmp2 = [yi_tmp[i] for i in ind]
 
         # Choose values with lowest objective function
+        ind = np.where(np.abs(obj_tmp2)==min(np.abs(obj_tmp2)))[0][0]
+        obj_final = obj_tmp2[ind]
+        yi_final = yi_tmp2[ind]
+
+        # Check minimum vapor/critical value against minimum liquid value
         ind = np.where(np.abs(obj_tmp)==min(np.abs(obj_tmp)))[0][0]
-        obj_tmp = obj_tmp[ind]
-        yi_tmp = yi_tmp[ind]
+        if obj_final*1e-5 > obj_tmp[ind]: # If the liquid solution is 5 orders of magnitude lower in obj. value
+            obj_final = obj_tmp[ind]
+            yi_final = yi_tmp[ind]
 
-    logger.info("    Found new guess in yi: {}, Obj: {}".format(yi_tmp,obj_tmp))
-    if type(yi_tmp) not in [list,np.ndarray]:
-        yi_tmp = np.array([yi_tmp, 1-yi_tmp])
+    logger.info("    Found new guess in yi: {}, Obj: {}".format(yi_final,obj_final))
+    if type(yi_final) not in [list,np.ndarray]:
+        yi_final = np.array([yi_final, 1-yi_final])
 
-    return yi_tmp
+    return yi_final
 
 ######################################################################
 #                                                                    #

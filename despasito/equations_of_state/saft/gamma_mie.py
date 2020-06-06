@@ -238,7 +238,7 @@ class gamma_mie():
             Helmholtz energy of monomers for each density given.
         """
 
-        self._check_density(rho)
+        rho = self._check_density(rho)
         self._check_temerature_dependent_parameters(T)
         self._check_composition_dependent_parameters(xi)
 
@@ -277,7 +277,7 @@ class gamma_mie():
             Helmholtz energy of monomers for each density given.
         """
 
-        self._check_density(rho)
+        rho = self._check_density(rho)
         self._check_temerature_dependent_parameters(T)
         self._check_composition_dependent_parameters(xi)
 
@@ -320,7 +320,7 @@ class gamma_mie():
             Helmholtz energy of monomers for each density given.
         """
         
-        self._check_density(rho)
+        rho = self._check_density(rho)
         self._check_temerature_dependent_parameters(T)
         self._check_composition_dependent_parameters(xi)
 
@@ -380,7 +380,7 @@ class gamma_mie():
             Helmholtz energy of monomers for each density given.
         """
 
-        self._check_density(rho)
+        rho = self._check_density(rho)
         self._check_composition_dependent_parameters(xi)
 
         if zetaxstar is None:
@@ -418,16 +418,15 @@ class gamma_mie():
             Helmholtz energy of monomers for each density given.
         """
 
-        if np.all(rho > self.density_max(xi, T)):
+        if np.all(rho >= self.density_max(xi, T, maxpack=1.0)):
             raise ValueError("Density values should not all be greater than {}, or calc_Amono will fail in log calculation.".format(self.density_max(xi, T)))
 
-        self._check_density(rho)
+        rho = self._check_density(rho)
         self._check_temerature_dependent_parameters(T)
         self._check_composition_dependent_parameters(xi)
 
         zetax = stb.calc_zetax(rho, self.eos_dict['Cmol2seg'], self.eos_dict['xskl'], self.eos_dict['dkl'])
         zetaxstar = stb.calc_zetaxstar(rho, self.eos_dict['Cmol2seg'], self.eos_dict['xskl'], self.eos_dict['sigmakl'])
-        
         Amonomer = self.Ahard_sphere(rho, T, xi) + self.Afirst_order(rho, T, xi, zetax=zetax) + self.Asecond_order(rho, T, xi, zetax=zetax, zetaxstar=zetaxstar) + self.Athird_order(rho, T, xi, zetaxstar=zetaxstar)
 
         return Amonomer
@@ -453,7 +452,7 @@ class gamma_mie():
             Helmholtz energy of monomers for each density given.
         """
 
-        self._check_density(rho)
+        rho = self._check_density(rho)
         self._check_temerature_dependent_parameters(T)
         self._check_composition_dependent_parameters(xi)
 
@@ -494,7 +493,7 @@ class gamma_mie():
             Helmholtz energy of monomers for each density given.
         """
 
-        self._check_density(rho)
+        rho = self._check_density(rho)
         self._check_temerature_dependent_parameters(T)
         self._check_composition_dependent_parameters(xi)
 
@@ -542,7 +541,7 @@ class gamma_mie():
             Helmholtz energy of monomers for each density given.
         """
 
-        self._check_density(rho)
+        rho = self._check_density(rho)
         self._check_temerature_dependent_parameters(T)
         self._check_composition_dependent_parameters(xi)
  
@@ -605,7 +604,7 @@ class gamma_mie():
             Helmholtz energy of monomers for each density given.
         """
 
-        self._check_density(rho)
+        rho = self._check_density(rho)
         self._check_temerature_dependent_parameters(T)
         self._check_composition_dependent_parameters(xi)
 
@@ -723,12 +722,8 @@ class gamma_mie():
         Iij : numpy.ndarray
             A temperature-density polynomial correlation of the association integral for a Lennard−Jones monomer. This matrix is (len(rho) x Ncomp x Ncomp)
         """
-        if np.isscalar(rho):
-            rho = np.array([rho])
-        elif type(rho) != np.ndarray:
-            rho = np.array(rho)
-    
-        self._check_density(rho)
+
+        rho = self._check_density(rho)
         self._check_composition_dependent_parameters(xi)
     
         Iij = calc_Iij(rho, T, xi, self.eos_dict['epsilonii_avg'], self.eos_dict['sigmaii_avg'], self.eos_dict['sigmakl'], self.eos_dict['xskl'])
@@ -772,12 +767,22 @@ class gamma_mie():
         rho : numpy.ndarray
             Number density of system [mol/m^3]
         """
+
+        if np.isscalar(rho):
+            rho = np.array([rho])
+        elif type(rho) != np.ndarray:
+            rho = np.array(rho)
+        if len(np.shape(rho)) == 2:
+            rho = rho[0]
+
         if any(np.isnan(rho)):
             raise ValueError("NaN was given as a value of density, rho")
         elif rho.size == 0:
                 raise ValueError("No value of density, rho, was given")
         elif any(rho < 0.):
             raise ValueError("Density values cannot be negative.")
+
+        return rho
 
     def _check_temerature_dependent_parameters(self, T):
         r"""

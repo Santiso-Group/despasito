@@ -140,14 +140,11 @@ class saft(EOStemplate):
         Ares : numpy.ndarray
             Residual helmholtz energy for each density value given.
         """
-    
+
         if len(xi) != len(self.nui):
             raise ValueError("Number of components in mole fraction list doesn't match components in nui. Check bead_config.")
     
-        if np.isscalar(rho):
-            rho = np.array([rho])
-        elif type(rho) != np.ndarray:
-            rho = np.array(rho)
+        rho = self._check_density(rho)
 
         if any(np.array(xi) < 0.):
             raise ValueError("Mole fractions cannot be less than zero.")
@@ -181,11 +178,7 @@ class saft(EOStemplate):
         A : numpy.ndarray
             Total helmholtz energy for each density value given.
         """
-
-        if np.isscalar(rho):
-            rho = np.array([rho])
-        elif type(rho) != np.ndarray:
-            rho = np.array(rho)
+        rho = self._check_density(rho)
 
         A = self.residual_helmholtz_energy(rho, T, xi) + self.Aideal(rho, T, xi, method=self.eos_dict["Aideal_method"])
 
@@ -216,12 +209,7 @@ class saft(EOStemplate):
             Helmholtz energy of ideal gas for each density given.
         """
 
-        if np.isscalar(rho):
-            rho = np.array([rho])
-        elif type(rho) != np.ndarray:
-            rho = np.array(rho)
-
-        self._check_density(rho)
+        rho = self._check_density(rho)
 
         return Aideal.Aideal_contribution(rho, T, xi, self.eos_dict["massi"], method=method)
 
@@ -245,12 +233,7 @@ class saft(EOStemplate):
         Aassoc : numpy.ndarray
             Helmholtz energy of ideal gas for each density given.
         """
-        if np.isscalar(rho):
-            rho = np.array([rho])
-        elif type(rho) != np.ndarray:
-            rho = np.array(rho)
-
-        self._check_density(rho)
+        rho = self._check_density(rho)
 
         # compute F_klab    
         Fklab = np.exp(self.eos_dict['epsilonHB'] / T) - 1.0
@@ -289,6 +272,7 @@ class saft(EOStemplate):
             Array of pressure values [Pa] associated with each density and so equal in length
         """
 
+        rho = self._check_density(rho)
         P_tmp = gtb.central_difference(rho, self.helmholtz_energy, args=(T, xi), step_size=step_size)
         pressure = P_tmp*T*constants.R*rho**2
 
@@ -317,7 +301,7 @@ class saft(EOStemplate):
         mui : numpy.ndarray
             Array of chemical potential values for each component
         """
-
+        rho = self._check_density(rho)
         logZ = np.log(P / (rho * T * constants.R))
         Ares = self.residual_helmholtz_energy(rho, T, xi)
         dAresdrho = tb.partial_density_central_difference(xi, rho, T, self.residual_helmholtz_energy, step_size=dy, log_method=True)
@@ -535,26 +519,31 @@ class saft(EOStemplate):
         if self.eos_dict["flag_assoc"]: 
             self.eos_dict['epsilonHB'], self.eos_dict['Kklab'] = Aassoc.calc_assoc_matrices(self.beads,self.eos_dict['beadlibrary'],self.nui,sitenames=self.eos_dict['sitenames'],crosslibrary=self.eos_dict['crosslibrary'], nk=self.eos_dict['nk'])
 
-    @staticmethod
-    def _check_density(rho):
+    def _check_density(self,rho):
         r"""
-        This function checks the attritutes of
+        This function checks the attritutes of the density array
         
         Parameters
         ----------
         rho : numpy.ndarray
-        Number density of system [mol/m^3]
-        T : float
-        Temperature of the system [K]
-        xi : numpy.ndarray
-        Mole fraction of each component, sum(xi) should equal 1.0
+            Number density of system [mol/m^3]
         """
+
+        if np.isscalar(rho):
+            rho = np.array([rho])
+        elif type(rho) != np.ndarray:
+            rho = np.array(rho)
+        if len(np.shape(rho)) == 2:
+            rho = rho[0]
+
         if any(np.isnan(rho)):
             raise ValueError("NaN was given as a value of density, rho")
         elif rho.size == 0:
-            raise ValueError("No value of density, rho, was given")
+                raise ValueError("No value of density, rho, was given")
         elif any(rho < 0.):
             raise ValueError("Density values cannot be negative.")
+
+        return rho
 
     def __str__(self):
 

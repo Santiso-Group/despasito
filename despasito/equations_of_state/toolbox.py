@@ -64,9 +64,8 @@ def partial_density_central_difference(xi, rho, T, func, step_size=1E-2, log_met
 
     if log_method: # Central Difference Method with log(y) transform
 
-        y = np.log(rho*np.array(xi,float))
-
         dy = step_size
+        y = np.log(rho*np.array(xi,float))
         for i in range(np.size(dAdrho)):
             if xi[i] != 0.0:
                 Ares = np.zeros(2)

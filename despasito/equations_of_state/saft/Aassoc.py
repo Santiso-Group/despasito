@@ -134,7 +134,12 @@ def initiate_assoc_matrices(beads, beadlibrary, nui):
         nk[i] = [0 for x in sitenames]
         for key, value in beadlibrary[bead].items():
             if "Nk" in key:
-                _, site = key.split("-")  
+                tmp = key.split("-")
+                if len(tmp) < 2:
+                    raise ValueError("Association site names should be defined with hyphens (e.g. Nk-H)")
+                else:
+                    _, site = tmp  
+
                 if site not in sitenames:
                     for j in range(i):
                         nk[j].append(0)

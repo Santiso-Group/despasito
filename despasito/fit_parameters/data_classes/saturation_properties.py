@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 class Data(ExpDataTemplate):
 
     r"""
-    Object for saturation data. This data is evaluated with "sat_props". 
+    Object for saturation data. This data is evaluated with "saturation_properties". 
 
     Parameters
     ----------
@@ -27,7 +27,7 @@ class Data(ExpDataTemplate):
         Dictionary of exp data of saturation properties.
 
         * name : str, data type, in this case SatProps
-        * calctype : str, Optional, default: 'sat_props
+        * calctype : str, Optional, default: 'saturation_properties
         * T : list, List of temperature values for calculation
         * xi : list, List of liquid mole fractions used in saturation properties calculations, should be 1 for the molecule of focus and 0 for the rest.
         * weights : dict, A dictionary where each key is the header used in the exp. data file. The value associated with a header can be a list as long as the number of data points to multiply by the objective value associated with each point, or a float to multiply the objective value of this data set.
@@ -37,7 +37,7 @@ class Data(ExpDataTemplate):
     ----------
     name : str
         Data type, in this case SatProps
-    calctype : str, Optional, default: 'sat_props'
+    calctype : str, Optional, default: 'saturation_properties'
         Thermodynamic calculation type
     T : list
         List of temperature values for calculation
@@ -54,8 +54,8 @@ class Data(ExpDataTemplate):
             self._thermodict["calculation_type"] = data_dict["calctype"]
             self.calctype = data_dict["calctype"]
         else:
-            self.calctype = "sat_props"
-            self._thermodict["calculation_type"] = "sat_props"
+            self.calctype = "saturation_properties"
+            self._thermodict["calculation_type"] = "saturation_properties"
 
         try:
             self.weights = data_dict["weights"]
@@ -111,7 +111,7 @@ class Data(ExpDataTemplate):
                 if key != 'calculation_type':
                     self.weights[key] = 1.0
 
-        logger.info("Data type 'sat_props' initiated with calctype, {}, and data types: {}.\nWeight data by: {}".format(self.calctype,", ".join(self._thermodict.keys()),self.weights))
+        logger.info("Data type 'saturation_properties' initiated with calctype, {}, and data types: {}.\nWeight data by: {}".format(self.calctype,", ".join(self._thermodict.keys()),self.weights))
 
         if 'rhodict' in data_dict:
             self._thermodict["rhodict"] = data_dict["rhodict"]

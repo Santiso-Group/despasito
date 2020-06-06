@@ -6,8 +6,8 @@
         "fit_params": ["epsilon"]
     },
     "H2O-ethane": {
-        "datatype": "sat_props",
-        "calctype": "sat_props",
-        "file": "ethane_sat_props.csv"
+        "datatype": "saturation_properties",
+        "calctype": "saturation_properties",
+        "file": "ethane_saturation_properties.csv"
     }        
 }

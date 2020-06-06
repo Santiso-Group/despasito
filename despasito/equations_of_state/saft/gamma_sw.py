@@ -397,7 +397,7 @@ class gamma_sw():
             Helmholtz energy of monomers for each density given.
         """
 
-        self._check_density(rho)
+        rho = self._check_density(rho)
         self._check_composition_dependent_parameters(xi)
 
         zeta = self.reduced_density(rho, xi)
@@ -433,7 +433,7 @@ class gamma_sw():
             Helmholtz energy of monomers for each density given.
         """
 
-        self._check_density(rho)
+        rho = self._check_density(rho)
         self._check_composition_dependent_parameters(xi)
 
         if zetax is None:
@@ -470,7 +470,7 @@ class gamma_sw():
             Helmholtz energy of monomers for each density given.
         """
         
-        self._check_density(rho)
+        rho = self._check_density(rho)
         self._check_composition_dependent_parameters(xi)
 
         if zetax is None:
@@ -522,7 +522,7 @@ class gamma_sw():
         if np.all(rho > self.density_max(xi, T)):
             raise ValueError("Density values should not all be greater than {}, or calc_Amono will fail in log calculation.".format(self.density_max(xi, T)))
 
-        self._check_density(rho)
+        rho = self._check_density(rho)
         self._check_composition_dependent_parameters(xi)
 
         zetax = self.reduced_density(rho, xi)[:,3]
@@ -552,7 +552,7 @@ class gamma_sw():
             The contact value of the pair correlation function of a hypothetical pure fluid
         """
 
-        self._check_density(rho)
+        rho = self._check_density(rho)
         self._check_composition_dependent_parameters(xi)
 
         if zetax is None:
@@ -583,7 +583,7 @@ class gamma_sw():
             Helmholtz energy of monomers for each density given.
         """
 
-        self._check_density(rho)
+        rho = self._check_density(rho)
         self._check_composition_dependent_parameters(xi)
 
         zetam = self.reduced_density(rho, xi)
@@ -621,12 +621,7 @@ class gamma_sw():
             Helmholtz energy of monomers for each density given.
         """
 
-        if np.isscalar(rho):
-            rho = np.array([rho])
-        elif type(rho) != np.ndarray:
-            rho = np.array(rho)
-
-        self._check_density(rho)
+        rho = self._check_density(rho)
         self._check_composition_dependent_parameters(xi)
         kT = T * constants.kb
 
@@ -673,6 +668,8 @@ class gamma_sw():
             Helmholtz energy of monomers for each density given.
         """
 
+        rho = self._check_density(rho)
+
         gii = self.calc_gSW(rho, T, xi)
    
         #print("gii", gii)
@@ -711,6 +708,7 @@ class gamma_sw():
             Maximum molar density [mol/m^3]
         """
 
+        rho = self._check_density(rho)
         self._check_composition_dependent_parameters(xi)
 
         # estimate the maximum density based on the hard sphere packing fraction
@@ -738,11 +736,8 @@ class gamma_sw():
         Iij : numpy.ndarray
             A temperature-density polynomial correlation of the association integral for a Lennard−Jones monomer. This matrix is (len(rho) x Ncomp x Ncomp)
         """
-        if np.isscalar(rho):
-            rho = np.array([rho])
-        elif type(rho) != np.ndarray:
-            rho = np.array(rho)
     
+        rho = self._check_density(rho)
         gSW = self.calc_gSW(rho, T, xi)
 
         return gSW
@@ -775,12 +770,22 @@ class gamma_sw():
         rho : numpy.ndarray
             Number density of system [mol/m^3]
         """
+
+        if np.isscalar(rho):
+            rho = np.array([rho])
+        elif type(rho) != np.ndarray:
+            rho = np.array(rho)
+        if len(np.shape(rho)) == 2:
+            rho = rho[0]
+
         if any(np.isnan(rho)):
             raise ValueError("NaN was given as a value of density, rho")
         elif rho.size == 0:
                 raise ValueError("No value of density, rho, was given")
         elif any(rho < 0.):
             raise ValueError("Density values cannot be negative.")
+
+        return rho
 
     def _check_composition_dependent_parameters(self, xi):
         r"""

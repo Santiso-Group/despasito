@@ -38,9 +38,9 @@ def test_phase_xiT(eos=eos_co2_h2o,Tlist=Tlist,xilist=xilist):
 #    output = thermo.thermo(eos,{"calculation_type":"phase_yiT","Tlist":Tlist,"yilist":yilist})
 #    assert output["P"][0]==pytest.approx(1174228.60,abs=1e+1) and output["xi"][0]==pytest.approx([0.04803023, 0.95196977],abs=1e-4)
 
-def test_sat_props(eos=eos_co2_h2o,Tlist=Tlist):
+def test_saturation_properties(eos=eos_co2_h2o,Tlist=Tlist):
 
-    output = thermo.thermo(eos,{"calculation_type":"sat_props","Tlist":Tlist,"xilist":[np.array([0.0, 1.0])]})
+    output = thermo.thermo(eos,{"calculation_type":"saturation_properties","Tlist":Tlist,"xilist":[np.array([0.0, 1.0])]})
 
     assert output["Psat"][0]==pytest.approx(12314.30,abs=1e+1) and output["rhol"][0]==pytest.approx(54700.25,abs=1e-1), output["rhol"][0]==pytest.approx(2371.38970066,abs=1e-1)
 

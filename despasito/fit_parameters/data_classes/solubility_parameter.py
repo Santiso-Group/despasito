@@ -29,7 +29,7 @@ class Data(ExpDataTemplate):
         Dictionary of exp data of saturation properties.
 
         * name : str, data type, in this case SatProps
-        * calctype : str, Optional, default: 'sat_props
+        * calctype : str, Optional, default: 'saturation_properties
         * T : list, List of temperature values for calculation
         * P : list, List of pressure values used in calculations
         * xi : list, List of liquid mole fractions used in calculations.

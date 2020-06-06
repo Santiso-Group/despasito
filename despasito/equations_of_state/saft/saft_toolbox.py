@@ -293,26 +293,26 @@ def cross_interaction_from_dict(beads, beadlibrary, mixing_dict, crosslibrary={}
                 except:
                     raise ValueError("Parameter, {}, for {}: {}, and {}: {} couldn't compute with method {}".format(key,beads[k],beadlibrary[beads[k]][key],beads[l],beadlibrary[beads[l]][key], mixing_dict[key]))
 
-        # testing if crosslibrary is empty ie not specified
-        if crosslibrary:
-            # find any cross terms in the cross term library
-            crosslist = []
-        
-            for (i, beadname) in enumerate(beads):
-                if beadname in crosslibrary:
-                    for (j, beadname2) in enumerate(beads):
-                        if beadname2 in crosslibrary[beadname]:
-                            crosslist.append([i, j])
-        
-            for i in range(np.size(crosslist, axis=0)):
-                a = crosslist[i][0]
-                b = crosslist[i][1]
-                if beads[a] in crosslibrary:
-                    if beads[b] in crosslibrary[beads[a]]:
-                        for key in mixing_dict:
-                            if key in crosslibrary[beads[a]][beads[b]]:
-                                output[key][a, b] = crosslibrary[beads[a]][beads[b]][key]
-                                output[key][b, a] = output[key][a, b]
+    # testing if crosslibrary is empty ie not specified
+    if crosslibrary:
+        # find any cross terms in the cross term library
+        crosslist = []
+    
+        for (i, beadname) in enumerate(beads):
+            if beadname in crosslibrary:
+                for (j, beadname2) in enumerate(beads):
+                    if beadname2 in crosslibrary[beadname]:
+                        crosslist.append([i, j])
+    
+        for i in range(np.size(crosslist, axis=0)):
+            a = crosslist[i][0]
+            b = crosslist[i][1]
+            if beads[a] in crosslibrary:
+                if beads[b] in crosslibrary[beads[a]]:
+                    for key in mixing_dict:
+                        if key in crosslibrary[beads[a]][beads[b]]:
+                            output[key][a, b] = crosslibrary[beads[a]][beads[b]][key]
+                            output[key][b, a] = output[key][a, b]
 
     return output
 

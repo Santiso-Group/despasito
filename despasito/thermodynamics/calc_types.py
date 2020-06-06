@@ -409,7 +409,7 @@ def _flash_wrapper(args):
 #                Saturation calc for 1 Component                     #
 #                                                                    #
 ######################################################################
-def sat_props(eos, sys_dict):
+def saturation_properties(eos, sys_dict):
 
     r"""
     Computes the saturated pressure, liquid, and gas density a one component phase at a temperature.
@@ -482,15 +482,15 @@ def sat_props(eos, sys_dict):
 
     inputs = [(T_list[i], xi_list[i], eos, opts) for i in range(len(T_list))]
     if flag_use_mp_object:
-        Psat, rholsat, rhovsat = mpObj.pool_job(_sat_props_wrapper, inputs)
+        Psat, rholsat, rhovsat = mpObj.pool_job(_saturation_properties_wrapper, inputs)
     else:
-        Psat, rholsat, rhovsat = MultiprocessingJob.serial_job(_sat_props_wrapper, inputs)
+        Psat, rholsat, rhovsat = MultiprocessingJob.serial_job(_saturation_properties_wrapper, inputs)
 
-    logger.info("--- Calculation sat_props Complete ---")
+    logger.info("--- Calculation saturation_properties Complete ---")
 
     return {"T":T_list,"Psat":Psat,"rhol":rholsat,"rhov":rhovsat}
 
-def _sat_props_wrapper(args):
+def _saturation_properties_wrapper(args):
 
     T, xi, eos, opts = args
 

@@ -10,13 +10,13 @@
         "epsilon_bounds" : [150.0, 400.0]
     },
     "Wiley": {
-        "datatype": "sat_props",
-        "calctype": "sat_props",
+        "datatype": "saturation_properties",
+        "calctype": "saturation_properties",
         "file": "test_methanol_saturation.csv"
     },
     "Gibbard": {
-        "datatype": "sat_props",
-        "calctype": "sat_props",
+        "datatype": "saturation_properties",
+        "calctype": "saturation_properties",
         "file": "test_methanol_Psat_1.csv"
     }
 }
