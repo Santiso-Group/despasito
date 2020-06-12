@@ -54,6 +54,8 @@ def writeout_thermo_dict(output_dict,calctype,output_file="thermo_output.txt"):
     ----------
     output_dict : dict
         Dictionary of given and calculated information from thermodynamic module
+    calculation_type : str
+        Thermodynamic calculation type used
     output_file : str, Optional, default: thermo_output.txt
         Name of output file
 

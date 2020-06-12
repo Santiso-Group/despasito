@@ -113,8 +113,6 @@ def extract_calc_data(input_fname, path='.', **args):
         if key.split("_")[0] == "eos":
             if len(key.split("_")) == 1:
                 eos_dict['eos'] = input_dict["eos"]
-            elif "_".join(key.split("_")[1:]) == 'association_site_names':
-                eos_dict['sitenames'] = input_dict[key]
             else:
                 new_key = "_".join(key.split("_")[1:])
                 eos_dict[new_key] = input_dict[key]
@@ -268,14 +266,14 @@ def process_param_fit_inputs(thermo_dict):
 
             - fit_bead (str) - Name of bead whose parameters are being fit, should be in bead list of beadconfig
             - fit_params (list[str]) - This list of contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
-            - *_bounds (list[float]), Optional - This list contains the minimum and maximum of the parameter from a parameter listed in fit_params, represented in place of the asterisk. See input file instructions for more information.
+            - \*_bounds (list[float]), Optional - This list contains the minimum and maximum of the parameter from a parameter listed in fit_params, represented in place of the asterisk. See input file instructions for more information.
             - beadparams0 (list[float]), Optional - Initial guess in parameters being fit. Should be the same length at fit_params and contain a reasonable guess for each parameter. If this is not provided, a guess is made based on the type of parameter from eos object.
 
         - *name* (dict) - Dictionary of a data set that the parameters are fit to. Each dictionary is added to the exp_data dictionary before being passed to the fitting algorithm. Each *name* is used as the key in exp_data. *name* is an arbitrary string used to identify the data set and used later in reporting objective function values during the fitting process. See data type objects for more details.
 
-            - file (str) - 
+            - file (str) - File of experimental data 
             - datatype (str) - One of the supported data type objects to fit parameters
-            - calctype (str) - One of the supported thermo calculation types that would be associated with the chosen datatype
+            - calculation_type (str) - One of the supported thermo calculation types that would be associated with the chosen datatype
 
     Returns
     -------
@@ -286,7 +284,7 @@ def process_param_fit_inputs(thermo_dict):
 
             - fit_bead (str) - Name of bead whose parameters are being fit, should be in bead list of beadconfig
             - fit_params (list[str]) - This list of contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
-            - bounds (numpy.ndarray) - List of lists of length two, of length equal to fit_params. If no bounds were given then the default parameter boundaries are [0,1e+4], else bounds given as *_bounds in input file are used.
+            - bounds (numpy.ndarray) - List of lists of length two, of length equal to fit_params. If no bounds were given then the default parameter boundaries are [0,1e+4], else bounds given as \*_bounds in input file are used.
             - beadparams0 (list[float]), Optional - Initial guess in parameter. If one is not provided, a guess is made based on the type of parameter from eos object.
 
         - exp_data (dict) - This dictionary is made up of a dictionary for each data set that the parameters are fit to. Each key is an arbitrary string used to identify the data set and used later in reporting objective function values during the fitting process. See data type objects for more details.
@@ -303,13 +301,7 @@ def process_param_fit_inputs(thermo_dict):
             keys_del = []
             new_opt_params["bounds"] = [[0,1e+4] for x in range(len(value["fit_params"]))]
             for key2, value2 in value.items():
-                if key2 == "fit_bead":
-                    new_opt_params["fit_bead"] = value["fit_bead"]
-                elif key2 == "fit_params":
-                    new_opt_params["fit_params"] = value["fit_params"]
-                elif key2 == "beadparams0":
-                    new_opt_params["beadparams0"] = value["beadparams0"]
-                elif "bounds" in key2:
+                if "bounds" in key2:
                     tmp  = key2.replace("_bounds","")
                     if tmp in value["fit_params"]:
                         ind = value["fit_params"].index(tmp)
@@ -317,6 +309,7 @@ def process_param_fit_inputs(thermo_dict):
                     else:
                         logger.warning("Bounds for parameter type '{}' were given, but this parameter is not defined to be fit.".format(tmp))
                 else:
+                    new_opt_params[key2] = value2
                     continue
                 keys_del.append(key2)
             for key2 in keys_del:

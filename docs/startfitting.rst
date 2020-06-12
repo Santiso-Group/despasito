@@ -1,3 +1,4 @@
+.. _startfitting-label:
 
 Get Started Fitting Parameters
 ======================================

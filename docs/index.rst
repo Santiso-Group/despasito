@@ -20,6 +20,7 @@ The second facet is parameterization, not only of the equation of state (EOS) bu
 
    getting_started
    api
+   faqs
 
 .. toctree::
    :maxdepth: 2

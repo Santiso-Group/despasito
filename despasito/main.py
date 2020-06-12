@@ -48,7 +48,7 @@ def run(filename="input.json", path=".", **kwargs):
     logger.debug("EOS dict:", eos_dict)
     logger.debug("Thermo dict:", thermo_dict)
     logger.info("Finish processing input file: {}".format(filename))
-    
+
     # Run either parametrization or thermodynamic calculation
     if "opt_params" in list(thermo_dict.keys()):
         for key,exp_dict in thermo_dict["exp_data"].items():
@@ -57,13 +57,14 @@ def run(filename="input.json", path=".", **kwargs):
                 thermo_dict["exp_data"][key].pop("eos_dict", None)
                 thermo_dict["exp_data"][key]["eos_obj"] = eos_mod(**eos_dict)
         logger.info("Initializing parametrization procedure")
-        output_dict = fit(thermo_dict)
+
+        output_dict = fit(thermo_dict.copy())
         logger.info("Finished parametrization")
         write_output.writeout_fit_dict(output_dict,**file_dict)
     else:
         eos = eos_mod(**eos_dict)
         logger.info("Initializing thermodynamic calculation")
-        output_dict = thermo(eos, thermo_dict)
+        output_dict = thermo(eos, thermo_dict.copy())
         logger.info("Finished thermodynamic calculation")
         write_output.writeout_thermo_dict(output_dict,thermo_dict["calculation_type"],**file_dict)
 

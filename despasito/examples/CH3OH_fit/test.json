@@ -11,12 +11,12 @@
     },
     "Wiley": {
         "datatype": "saturation_properties",
-        "calctype": "saturation_properties",
+        "calculation_type": "saturation_properties",
         "file": "test_methanol_saturation.csv"
     },
     "Gibbard": {
         "datatype": "saturation_properties",
-        "calctype": "saturation_properties",
+        "calculation_type": "saturation_properties",
         "file": "test_methanol_Psat_1.csv"
     }
 }

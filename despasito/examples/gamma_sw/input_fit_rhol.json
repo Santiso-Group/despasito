@@ -11,7 +11,7 @@
     },
     "Yaws": {
         "datatype": "liquid_density",
-        "calctype": "liquid_properties",
+        "calculation_type": "liquid_properties",
         "file": "ethylbenzene_rhol.csv"
     }
 }

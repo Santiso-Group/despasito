@@ -60,14 +60,9 @@ class saft(EOStemplate):
         - epsilon*: Optional, Interaction energy between each bead and association site. Asterisk represents string from sitenames.
         - K**: Optional, Bonding volume between each association site. Asterisk represents two strings from sitenames.
 
-    sitenames : list[str], Optional, default: ["H", "e1", "e2"]
-        List of unique association sites used among components
-        
     Attributes
     ----------
     eos_dict : dict, default: keys = ['beadlibrary', 'beads', 'nui', 'massi']
-        Temperature value is initially defined as NaN for a placeholder until temperature dependent attributes are initialized by using a method of this class.
-    T : float, default: numpy.nan
         Temperature value is initially defined as NaN for a placeholder until temperature dependent attributes are initialized by using a method of this class.
     
     """
@@ -271,7 +266,7 @@ class saft(EOStemplate):
         P : numpy.ndarray
             Array of pressure values [Pa] associated with each density and so equal in length
         """
-
+        # derivative of Aideal_broglie here wrt to rho is 1/rho
         rho = self._check_density(rho)
         P_tmp = gtb.central_difference(rho, self.helmholtz_energy, args=(T, xi), step_size=step_size)
         pressure = P_tmp*T*constants.R*rho**2
@@ -548,7 +543,6 @@ class saft(EOStemplate):
     def __str__(self):
 
         string = "Beads: {},\nMasses: {} kg/mol\nSitenames: {}".format(self.beads,self.eos_dict['massi'],self.eos_dict['sitenames'])
-        string += "T:" + str(self.T) + "\n"
         return string
 
 

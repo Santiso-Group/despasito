@@ -10,7 +10,7 @@
     "Knovel": {
         "beadconfig": [[["CH3", 2],["CH2", 4]]],
         "datatype": "liquid_density",
-        "calctype": "liquid_properties",
+        "calculation_type": "liquid_properties",
         "file": "butane_solubility.csv"
     }
 }

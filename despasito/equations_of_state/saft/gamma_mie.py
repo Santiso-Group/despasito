@@ -35,6 +35,8 @@ if disable_jit and disable_cython:
 elif not disable_cython:
     from .compiled_modules.ext_gamma_mie_cython import calc_a1s, calc_Bkl, calc_a1ii, calc_a1s_eff, calc_Bkl_eff, calc_da1iidrhos, calc_da2ii_1pchi_drhos
     from .compiled_modules.ext_gamma_mie_python import prefactor, calc_Iij
+    #logger.info("Cython modules are not available for saft.gamma_mie")
+    #from .compiled_modules.ext_gamma_mie_python import calc_a1s, calc_a1ii, calc_Bkl, prefactor, calc_Iij, calc_a1s_eff, calc_Bkl_eff, calc_da1iidrhos, calc_da2ii_1pchi_drhos
 else:
     from .compiled_modules.ext_gamma_mie_numba import calc_a1s, calc_Bkl, calc_a1ii, calc_a1s_eff, calc_Bkl_eff, calc_da1iidrhos, calc_da2ii_1pchi_drhos
     from .compiled_modules.ext_gamma_mie_python import prefactor, calc_Iij

@@ -9,7 +9,7 @@
     },
     "Knovel": {
         "datatype": "solubility_parameter",
-        "calctype": "solubility_parameter",
+        "calculation_type": "solubility_parameter",
         "file": "butane_solubility.csv",
         "weights": { "delta" : [0.75, 0.75, 0.75], "rhol" : 0.25 
         }

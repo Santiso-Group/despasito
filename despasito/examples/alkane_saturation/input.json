@@ -7,7 +7,7 @@
     },
     "H2O-ethane": {
         "datatype": "saturation_properties",
-        "calctype": "saturation_properties",
+        "calculation_type": "saturation_properties",
         "file": "ethane_saturation_properties.csv"
     }        
 }

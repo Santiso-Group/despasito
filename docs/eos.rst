@@ -15,7 +15,7 @@ Available EOS
 .. toctree::
    :maxdepth: 1
 
-   saft_gamma_mie
+   saft
    peng-robinson
 
 

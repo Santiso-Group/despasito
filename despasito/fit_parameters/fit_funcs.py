@@ -242,6 +242,8 @@ class BasinBounds(object):
         feasible1 = np.abs(kwargs["f_new"]) < np.inf
         feasible2 = not np.isnan(kwargs["f_new"])
 
+        logger.info("Reject parameters: {}, with obj. function: {}".format(x,kwargs["f_new"]))
+
         return tmax and tmin and feasible1 and feasible2
 
 
@@ -289,6 +291,7 @@ def global_minimization(global_method, beadparams0, bounds, fit_bead, fit_params
 
     # !!!!!!!!! If another methods is added to the if statement below, please also add it here and update the documentation above. !!!!!!!!
     methods = ["basinhopping", "differential_evolution", "brute"]
+    logger.info("Using global optimization method: {}".format(global_method))
 
     if global_method == "basinhopping":
 
@@ -322,7 +325,7 @@ def global_minimization(global_method, beadparams0, bounds, fit_bead, fit_params
         except:
         	raise TypeError("Could not initialize BasinStep and/or BasinBounds")
 
-        result = spo.basinhopping(compute_obj, beadparams0, **global_dict, accept_test=custombounds, disp=True, minimizer_kwargs={"args": (fit_bead, fit_params, exp_dict),**minimizer_dict})
+        result = spo.basinhopping(compute_obj, beadparams0, **global_dict, accept_test=custombounds, disp=True, minimizer_kwargs={"args": (fit_bead, fit_params, exp_dict, bounds),**minimizer_dict})
 
     elif global_method == "differential_evolution":
 
@@ -333,7 +336,7 @@ def global_minimization(global_method, beadparams0, bounds, fit_bead, fit_params
                 new_global_dict[key] = value
         global_dict = new_global_dict
 
-        result = spo.differential_evolution(compute_obj, bounds, args=(fit_bead, fit_params, exp_dict), **global_dict)
+        result = spo.differential_evolution(compute_obj, bounds, args=(fit_bead, fit_params, exp_dict, bounds), **global_dict)
 
     elif global_method == "brute":
 
@@ -344,7 +347,7 @@ def global_minimization(global_method, beadparams0, bounds, fit_bead, fit_params
                 new_global_dict[key] = value
         global_dict = new_global_dict
 
-        result = spo.brute(compute_obj, bounds, args=(fit_bead, fit_params, exp_dict), **global_dict)
+        result = spo.brute(compute_obj, bounds, args=(fit_bead, fit_params, exp_dict, bounds), **global_dict)
 
     else:
         raise ValueError("Global optimization method, {}, is not currently supported. Try: {}".format(global_method,", ".join(methods)))
@@ -352,7 +355,7 @@ def global_minimization(global_method, beadparams0, bounds, fit_bead, fit_params
     return result
 
 
-def compute_obj(beadparams, fit_bead, fit_params, exp_dict):
+def compute_obj(beadparams, fit_bead, fit_params, exp_dict, bounds):
     r"""
     Fit defined parameters for equation of state object with given experimental data. 
 
@@ -367,6 +370,8 @@ def compute_obj(beadparams, fit_bead, fit_params, exp_dict):
         Name of bead whose parameters are being fit, should be in bead list of beadconfig
     fit_params : list[str]
         This list of contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
+    bounds : list[tuple]
+        List of length equal to fit_params with lists of pairs for minimum and maximum bounds of parameter being fit. Defaults are broad, recommend specification.
 
     exp_dict : dict
         Dictionary of experimental data objects.
@@ -397,6 +402,13 @@ def compute_obj(beadparams, fit_bead, fit_params, exp_dict):
     obj_total = np.nansum(obj_function)
     if obj_total == 0. and np.isnan(np.sum(obj_function)):
         obj_total = np.inf
+
+    # Add penalty for being out of bounds for the sake of inner minimization
+    for i, param in enumerate(beadparams):
+        if param <= bounds[i][0]:
+            obj_total += (1e+3*(param- bounds[i][0]))**8
+        elif param >= bounds[i][1]:
+            obj_total += (1e+3*(param- bounds[i][1]))**8
 
     # Write out parameters and objective functions for each dataset
     logger.info("\nParameters: {}\nValues: {}\nExp. Data: {}\nObj. Values: {}\nTotal Obj. Value: {}".format(fit_params,beadparams,list(exp_dict.keys()),obj_function,obj_total))

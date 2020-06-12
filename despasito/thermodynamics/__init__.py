@@ -15,7 +15,7 @@ from . import calc_types
 
 def thermo(eos, thermo_dict):
     """
-    Use factory design pattern to search for matching calctype with those supported in this module.
+    Use factory design pattern to search for matching calculation_type with those supported in this module.
     
     To add a new calculation type, add a function to thermo.py in the thermodynamics module..
 

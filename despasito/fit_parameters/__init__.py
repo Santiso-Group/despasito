@@ -36,7 +36,6 @@ def fit(thermo_dict):
             - fit_bead (str) - Name of bead whose parameters are being fit, should be in bead list of beadconfig
             - fit_params (list[str]) - This list of contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
             - beadparams0 (list[float]), Optional - Initial guess in parameter. If one is not provided, a guess is made based on the type of parameter from eos object.
-            - global_method (str), Optional - default: 'basinhopping', Global optimization method used to fit parameters. See :func:`~despasito.fit_parameters.fit_funcs.global_minimization`.
 
         - bounds (numpy.ndarray) - List of length equal to fit_params with lists of pairs for minimum and maximum bounds of parameter being fit. Defaults are broad, recommend specification.
         - exp_data (dict) - This dictionary is made up of a dictionary for each data set that the parameters are fit to. Each dictionary is converted into an object and saved back to this structure before parameter fitting begins. Each key is an arbitrary string used to identify the data set and used later in reporting objective function values during the fitting process. See data type objects for more details.
@@ -46,6 +45,7 @@ def fit(thermo_dict):
 
         - global_dict (dict), Optional - kwargs used in global optimization method. See :func:`~despasito.fit_parameters.fit_funcs.global_minimization`.
 
+            - method (str), Optional - default: 'basinhopping', Global optimization method used to fit parameters. See :func:`~despasito.fit_parameters.fit_funcs.global_minimization`.
             - niter (int) - default: 10, Number of basin hopping iterations
             - T (float) - default: 0.5, Temperature parameter, should be comparable to separation between local minima (i.e. the “height” of the walls separating values).
             - niter_success (int) - default: 3, Stop run if minimum stays the same for this many iterations
@@ -64,30 +64,47 @@ def fit(thermo_dict):
     # Extract relevant quantities from thermo_dict
     dicts = {}
 
-    keys_del = []
-    for key, value in thermo_dict.items():
-        # Extract inputs
-        if key == "opt_params":
-            opt_params  = value
-        elif key == "exp_data":
-            exp_data = value
-            if "mpObj" in thermo_dict:
-                for k2 in list(exp_data.keys()):
-                    exp_data[k2]["mpObj"] = thermo_dict["mpObj"]
-                keys_del.append("mpObj")
-        # Optional inputs
-        elif key == "bounds":
-            bounds = value
-        elif key == "minimizer_dict":
-            dicts['minimizer_dict'] = value
-        elif key == "global_dict":
-            dicts['global_dict'] = value
-        else:
-            continue
-        keys_del.append(key)
+    # Extract inputs
+    if "opt_params" in thermo_dict:
+        opt_params  = thermo_dict["opt_params"]
+        del thermo_dict['opt_params']
+    else:
+        raise ValueError("Required input, opt_params, is missing.")
 
-    for key in keys_del:
-        thermo_dict.pop(key,None)
+    if "exp_data" in thermo_dict:
+        exp_data = thermo_dict["exp_data"]
+        del thermo_dict['exp_data']
+        if "mpObj" in thermo_dict:
+            for k2 in list(exp_data.keys()):
+                exp_data[k2]["mpObj"] = thermo_dict["mpObj"]
+    else:
+        raise ValueError("Required input, exp_data, is missing.")
+
+    # Optional inputs
+    if "bounds" in thermo_dict:
+        bounds = thermo_dict["bounds"]
+        del thermo_dict['bounds']
+    else:
+        bounds = np.zeros((len(opt_params["fit_params"]),2))
+    eos = exp_data[list(exp_data.keys())[0]]["eos_obj"] # since all exp data sets use the same eos, it doesn't really matter
+    bounds = ff.check_parameter_bounds(opt_params, eos, bounds)
+
+    if "minimizer_dict" in thermo_dict:
+        dicts['minimizer_dict'] =  thermo_dict['minimizer_dict']
+        del thermo_dict['minimizer_dict']
+
+    if "global_dict" in thermo_dict:
+        dicts['global_dict'] = thermo_dict['global_dict']
+        del thermo_dict['global_dict']
+    else:
+        dicts['global_dict'] = {}
+
+    # Generate initial guess for parameters if none was given
+    if "beadparams0" in opt_params:
+        beadparams0 = opt_params["beadparams0"]
+    else:
+        beadparams0 = ff.initial_guess(opt_params, eos)
+    logger.info("Initial guess in parameters: {}".format(beadparams0))
 
     if list(thermo_dict.keys()):
         logger.info("Note: thermo_dict keys: {}, were not used.".format(", ".join(list(thermo_dict.keys()))))
@@ -119,22 +136,10 @@ def fit(thermo_dict):
         except:
             raise AttributeError("Data set, {}, did not properly initiate object".format(key))
 
-    # Generate initial guess for parameters if none was given
-
-    if "bounds" not in locals():
-        bounds = np.zeros((len(opt_params["fit_params"]),2))
-    eos = exp_dict[list(exp_dict.keys())[0]].eos # since all eos objects use the same eos, it doesn't really matter
-    bounds = ff.check_parameter_bounds(opt_params, eos, bounds)
-
-    if "beadparams0" in opt_params:
-        beadparams0 = opt_params["beadparams0"]
-    else:
-        beadparams0 = ff.initial_guess(opt_params, eos)
-    logger.info("Initial guess in parameters: {}".format(beadparams0))
-
     # Check global optimization method
-    if "global_method" in opt_params:
-        global_method = opt_params["global_method"]
+    if "method" in dicts['global_dict']:
+        global_method = dicts['global_dict']["method"]
+        del dicts['global_dict']["method"]
     else:
         global_method = "basinhopping"
 

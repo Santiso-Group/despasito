@@ -9,7 +9,7 @@
     },
     "CO2-ethanol": {
         "datatype": "TLVE",
-        "calctype": "phase_xiT",
+        "calculation_type": "phase_xiT",
         "file": "CO2-ethanol_TLVE.csv"
     }        
 }

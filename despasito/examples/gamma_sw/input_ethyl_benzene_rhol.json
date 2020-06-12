@@ -5,7 +5,7 @@
     "EOScross": "../library/SWcross.json",
     "output_file": "out_rhol.txt",
     "calculation_type" : "liquid_properties",
-    "pressure options": {"maxiter":15},
+    "pressure_options": {"maxiter":15},
     "Tlist" : [200.0, 300.0, 400.0, 500.0, 600.0, 700.0],
     "Plist" : [101325.0],
     "xilist": [[1.0]]

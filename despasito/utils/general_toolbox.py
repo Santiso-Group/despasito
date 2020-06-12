@@ -13,7 +13,7 @@ def solve_root( func, args=None, method="bisect", x0=None, bounds=None, options=
     Parameters
     ----------
     func : function
-        Function used in job
+        Function used in job. Can be any of the following scipy methods: "brent", "least_squares", "TNC", "L-BFGS-B", "SLSQP", 'hybr', 'lm', 'linearmixing', 'diagbroyden', 'excitingmixing', 'krylov', 'df-sane', 'anderson', 'hybr_broyden1', 'hybr_broyden2', 'broyden1', 'broyden2', 'bisect'.
     args : list, Optional, default: None
         Each entry of this list contains the input arguements for each job
     method : str, Optional, default: "bisect"

@@ -29,18 +29,18 @@ class Data(ExpDataTemplate):
         Dictionary of exp data of saturation properties.
 
         * name : str, data type, in this case SatProps
-        * calctype : str, Optional, default: 'saturation_properties
+        * calculation_type : str, Optional, default: 'saturation_properties
         * T : list, List of temperature values for calculation
         * P : list, List of pressure values used in calculations
         * xi : list, List of liquid mole fractions used in calculations.
         * weights : dict, A dictionary where each key is the header used in the exp. data file. The value associated with a header can be a list as long as the number of data points to multiply by the objective value associated with each point, or a float to multiply the objective value of this data set.
-        * rhodict : dict, Optional, default: {"minrhofrac":(1.0 / 60000.0), "rhoinc":10.0, "vspacemax":1.0E-4}, Dictionary of options used in calculating pressure vs. mole fraction curves.
+        * density_dict : dict, Optional, default: {"minrhofrac":(1.0 / 60000.0), "rhoinc":10.0, "vspacemax":1.0E-4}, Dictionary of options used in calculating pressure vs. mole fraction curves.
 
     Attributes
     ----------
     name : str
         Data type, in this case SolubilityParam
-    calctype : str, Optional, default: 'solubility_parameter'
+    calculation_type : str, Optional, default: 'solubility_parameter'
         Thermodynamic calculation type
     T : list
         List of temperature values for calculation
@@ -55,11 +55,11 @@ class Data(ExpDataTemplate):
         # Self interaction parameters
         self.name = data_dict["name"]
         self._thermodict = {}
-        if "calctype" in data_dict:
-            self._thermodict["calculation_type"] = data_dict["calctype"]
-            self.calctype = data_dict["calctype"]
+        if "calculation_type" in data_dict:
+            self._thermodict["calculation_type"] = data_dict["calculation_type"]
+            self.calculation_type = data_dict["calculation_type"]
         else:
-            self.calctype = "solubility_parameter"
+            self.calculation_type = "solubility_parameter"
             self._thermodict["calculation_type"] = "solubility_parameter"
 
         try:
@@ -105,10 +105,10 @@ class Data(ExpDataTemplate):
                 if key != 'calculation_type':
                     self.weights[key] = 1.0
 
-        logger.info("Data type 'solubility parameter' initiated with calctype, {}, and data types: {}.\nWeight data by: {}".format(self.calctype,", ".join(self._thermodict.keys()),self.weights))
+        logger.info("Data type 'solubility parameter' initiated with calculation_type, {}, and data types: {}.\nWeight data by: {}".format(self.calculation_type,", ".join(self._thermodict.keys()),self.weights))
 
-        if 'rhodict' in data_dict:
-            self._thermodict["rhodict"] = data_dict["rhodict"]
+        if 'density_dict' in data_dict:
+            self._thermodict["density_dict"] = data_dict["density_dict"]
 
         if "mpObj" in data_dict:
             self._thermodict["mpObj"] = data_dict["mpObj"]
@@ -176,6 +176,6 @@ class Data(ExpDataTemplate):
 
     def __str__(self):
 
-        string = "Data Set Object\nname: %s\ncalctype:%s\nNdatapts:%g" % {self.name, self.calctype, len(self._thermodict['T'])}
+        string = "Data Set Object\nname: %s\ncalculation_type:%s\nNdatapts:%g" % {self.name, self.calculation_type, len(self._thermodict['T'])}
         return string
         

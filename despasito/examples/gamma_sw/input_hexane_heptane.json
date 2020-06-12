@@ -5,7 +5,7 @@
     "EOScross": "../library/SWcross.json",
     "output_file": "out_hexane_heptane.txt",
     "calculation_type" : "liquid_properties",
-    "pressure options": {"maxiter":15},
+    "pressure_options": {"maxiter":15},
     "Tlist" : [320.0],
     "Plist" : [1e+5],
     "xilist": [[0.4, 0.6]]

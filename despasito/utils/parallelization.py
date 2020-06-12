@@ -52,6 +52,7 @@ class MultiprocessingJob:
             for worker in self._pool._pool:
                 filename = 'mp-handler-{0}.log'.format(worker.pid)
                 self.logfiles.append(filename)
+            logger.info("MP log files: {}".format(", ".join(self.logfiles)))
 
     def _extract_root_logging(self):
         """ Swap root handlers defined in despasito.__main__ with process specific log handlers

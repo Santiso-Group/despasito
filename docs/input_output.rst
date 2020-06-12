@@ -11,9 +11,13 @@ Inputs are .json files containing instructions for thermodynamic calculations an
    :toctree: _autosummary
 
    read_input
-   write_output
 
 Package Outputs
 ---------------
 Outputs are files saved to the current working directory containing thermodynamic calculations. Default file names are used, but can be defined in the input.json file for command line use or thermodynamics dictionary for imported use.
+
+.. autosummary::
+   :toctree: _autosummary
+
+   write_output
 

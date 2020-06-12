@@ -19,7 +19,7 @@ Available Data Types
 .. autosummary::
    :toctree: _autosummary
 
-   sat_props.Data
+   saturation_properties.Data
    TLVE.Data
    liquid_density.Data
    solubility_parameter.Data

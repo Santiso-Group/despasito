@@ -9,7 +9,7 @@
     },
     "Knovel": {
         "datatype": "liquid_density",
-        "calctype": "liquid_properties",
+        "calculation_type": "liquid_properties",
         "file": "butane_solubility.csv",
         "weights": { "delta" : [0.75, 0.75, 0.75], "rhol" : 0.25 
         }

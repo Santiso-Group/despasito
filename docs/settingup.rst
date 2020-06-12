@@ -1,3 +1,4 @@
+.. _settingup-label:
 
 Setting-up a Thermodynamic Calculation
 ======================================

@@ -12,6 +12,7 @@ import numpy as np
 import logging
 import scipy.optimize as spo
 import os
+import sys
 
 import despasito.equations_of_state.toolbox as tb
 from despasito.equations_of_state import constants
@@ -37,6 +38,7 @@ if disable_jit and disable_cython:
         logger.info("Fortran module failed to import, using pure python. Consider using 'jit' flag")
         from .compiled_modules.ext_Aassoc_python import calc_Xika
 elif not disable_cython:
+    #from .compiled_modules.ext_Aassoc_cython_2 import calc_Xika
     from .compiled_modules.ext_Aassoc_cython import calc_Xika
 else:
     from .compiled_modules.ext_Aassoc_numba import calc_Xika
@@ -50,6 +52,8 @@ def calc_Xika_wrap(*args, maxiter=500, tol=1e-12, damp=0.1):
         Xika = ext_Aassoc_fortran.calc_xika(indices,constants.molecule_per_nm3*rho,Xika_init,xi,nui,nk,Fklab,Kklab,gr_assoc,maxiter,tol)
     else:
         Xika, _ = calc_Xika(*args)
+
+    print("hey!",np.shape(Xika),Xika)
 
     return Xika
 
@@ -94,7 +98,7 @@ def assoc_site_indices(nk, nui, xi=None):
                     for k in bead_sites[j]:
                         indices.append([i,j,k])
 
-    indices = np.array([np.array(x) for x in indices])
+    indices = np.array([np.array(x) for x in indices], dtype=np.int)
 
     return indices
 
@@ -138,7 +142,7 @@ def initiate_assoc_matrices(beads, beadlibrary, nui):
                 if len(tmp) < 2:
                     raise ValueError("Association site names should be defined with hyphens (e.g. Nk-H)")
                 else:
-                    _, site = tmp  
+                    _, site = tmp 
 
                 if site not in sitenames:
                     for j in range(i):
