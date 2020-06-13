@@ -19,29 +19,23 @@ from despasito.equations_of_state import constants
 
 logger = logging.getLogger(__name__)
 
-# Check for Numba
-if 'NUMBA_DISABLE_JIT' in os.environ:
-    disable_jit = os.environ['NUMBA_DISABLE_JIT']
-else:
-    from .. import jit_stat
-    disable_jit = jit_stat.disable_jit
-# Check for cython
-from .. import cython_stat
-disable_cython = cython_stat.disable_cython
+from despasito.main import method_stat
 
 flag_fortran = False
-if disable_jit and disable_cython:
+if method_stat.disable_cython and method_stat.disable_numba and method_stat.disable_python:
     try:
         from .compiled_modules import ext_Aassoc_fortran
         flag_fortran = True
     except:
-        logger.info("Fortran module failed to import, using pure python. Consider using 'jit' flag")
+        logger.info("Fortran module failed to import, using pure python. Consider using 'numba' flag")
         from .compiled_modules.ext_Aassoc_python import calc_Xika
-elif not disable_cython:
-    #from .compiled_modules.ext_Aassoc_cython_2 import calc_Xika
+elif not method_stat.disable_cython:
     from .compiled_modules.ext_Aassoc_cython import calc_Xika
-else:
+elif not method_stat.disable_numba:
     from .compiled_modules.ext_Aassoc_numba import calc_Xika
+elif not method_stat.disable_python:
+    logger.info("Using pure python. Consider using 'numba' flag")
+    from .compiled_modules.ext_Aassoc_python import calc_Xika
 
 def calc_Xika_wrap(*args, maxiter=500, tol=1e-12, damp=0.1):
     r""" This function wrapper allows difference types of compiled functions to be referenced.
@@ -52,8 +46,6 @@ def calc_Xika_wrap(*args, maxiter=500, tol=1e-12, damp=0.1):
         Xika = ext_Aassoc_fortran.calc_xika(indices,constants.molecule_per_nm3*rho,Xika_init,xi,nui,nk,Fklab,Kklab,gr_assoc,maxiter,tol)
     else:
         Xika, _ = calc_Xika(*args)
-
-    print("hey!",np.shape(Xika),Xika)
 
     return Xika
 

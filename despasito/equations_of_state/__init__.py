@@ -8,12 +8,6 @@ Create an EOS class from options taken from factory design pattern.
 from importlib import import_module
 import logging
 
-class jit_stat:
-    disable_jit = True
-
-class cython_stat:
-    disable_cython = True
-
 logger = logging.getLogger(__name__)
 
 def eos(**input_dict):
@@ -44,16 +38,6 @@ def eos(**input_dict):
         eos_type = input_dict["eos"]  
         del input_dict["eos"]
         logger.info("Trying user defined EOS, {}".format(eos_type))
-
-    if 'jit' not in input_dict:
-        jit_stat.disable_jit = True
-    else:
-        jit_stat.disable_jit = not input_dict['jit']
-
-    if 'cython' not in input_dict:
-        cython_stat.disable_cython = True
-    else:
-        cython_stat.disable_cython = not input_dict['cython']
 
     try:
         eos_fam, eos = eos_type.split('.')

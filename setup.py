@@ -26,7 +26,7 @@ cython_list = glob.glob(os.path.join(fpath,"*.pyx"))
 for cyext in cython_list:
     name = os.path.split(cyext)[-1].split(".")[-2]
     cy_ext_1 = Extension(name=name,sources=[cyext],include_dirs=[fpath])
-    extensions.extend(cythonize([cy_ext_1], annotate=True))
+    extensions.extend(cythonize([cy_ext_1]))
 #except:
 #    print('Cython not available on your system. Proceeding without C-extentions.')
 

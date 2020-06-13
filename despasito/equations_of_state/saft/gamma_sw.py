@@ -20,6 +20,14 @@ import despasito.equations_of_state.saft.saft_toolbox as stb
 
 logger = logging.getLogger(__name__)
 
+from despasito.main import method_stat
+if method_stat.disable_cython and method_stat.disable_numba:
+    pass
+elif not method_stat.disable_cython:
+    logger.warning("saft.gamma_sw does not use cython.")
+elif not method_stat.disable_numba:
+    logger.warning("saft.gamma_sw does not use numba.")
+
 ckl_coef = np.array([[2.25855, -1.50349, 0.249434], [-0.669270, 1.40049, -0.827739], [10.1576, -15.0427, 5.30827]])
 
 class gamma_sw():
@@ -708,7 +716,6 @@ class gamma_sw():
             Maximum molar density [mol/m^3]
         """
 
-        rho = self._check_density(rho)
         self._check_composition_dependent_parameters(xi)
 
         # estimate the maximum density based on the hard sphere packing fraction

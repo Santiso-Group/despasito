@@ -14,6 +14,11 @@ from .equations_of_state import eos as eos_mod
 from .thermodynamics import thermo
 from .fit_parameters import fit
 
+class method_stat:
+    disable_numba = True
+    disable_cython = True
+    disable_python = True
+
 logger = logging.getLogger(__name__)
 
 def commandline_parser():
@@ -24,10 +29,16 @@ def commandline_parser():
     parser.add_argument("--log", nargs='?', dest="logFile", default="despasito.log", help="Output a log file. The default name is despasito.log.")
     parser.add_argument("-n", "--ncores", dest="ncores", type=int, help="Set the number of cores used. A value of -1 will request all possible resources.",default=1)
     parser.add_argument("-p", "--path", default=".", help="Set the location of the data/library files (e.g. SAFTcross, etc.) for despasito to look for")
-    parser.add_argument("--jit", action='store_true', default=0, help="Turn on Numba's JIT compilation for accelerated computation")
-    parser.add_argument("--cython", action='store_true', default=0, help="Turn on Cython for accelerated computation")
+    parser.add_argument("--numba", action='store_true', help="Turn on Numba's JIT compilation for accelerated computation")
+    parser.add_argument("--python", action='store_true', help="Remove default fortran module for association site calculations.")
+    parser.add_argument("--cython", action='store_true', help="Turn on Cython for accelerated computation")
 
-    return parser
+    args = parser.parse_args()
+    method_stat.disable_numba = not args.numba
+    method_stat.disable_cython = not args.cython
+    method_stat.disable_python = not args.python
+
+    return args
 
 def run(filename="input.json", path=".", **kwargs):
 

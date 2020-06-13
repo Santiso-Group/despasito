@@ -8,12 +8,10 @@ import os
 import logging
 import logging.handlers
 
-parser = commandline_parser()
+quiet = False
+args = commandline_parser()
 
 ## Extract arguments
-quiet = False
-args = parser.parse_args()
-
 if args.verbose == 0:
     quiet = True
     args.verbose = 20
@@ -23,7 +21,6 @@ else:
     args.verbose = 10
 
 # Logging
-
 logger = logging.getLogger()
 logger.setLevel(args.verbose)
 
@@ -43,8 +40,11 @@ if quiet == False:
     logger.addHandler(console_handler)
 
 logging.info("Input args: {}".format(args))
-logging.info("JIT compilation: {}".format(args.jit))
+
+# Update flags for optimization methods 
+logging.info("Use Numba JIT: {}".format(args.numba))
 logging.info("Use Cython: {}".format(args.cython))
+logging.info("Pure Python (no fortran): {}".format(args.python))
 
 # Run program
 if args.input:
@@ -55,7 +55,5 @@ else:
 kwargs["mpObj"] = MultiprocessingJob(ncores=args.ncores)
 kwargs["ncores"] = args.ncores
 kwargs["path"] = args.path
-kwargs["jit" ] = args.jit
-kwargs["cython" ] = args.cython
 
 run(**kwargs)

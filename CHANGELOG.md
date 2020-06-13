@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - SAFT-gamma-mie and peng-robinson equations of state
  - Support for fitting with: TVLE, saturation, and liquid property data to binary systems
 
-## [0.1.1] - 2020-02-10
+## [0.0.1] - 2020-02-10
 ### Added
  - docs updated with parameter fitting tutorial
  - thermodynamic modules now supports calculation of hildebrand solubility parameters
@@ -29,3 +29,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - updated rhov calculation
  - updated method of weighting experimental data in parameter fitting to use dictionaries
 
+## [0.0.1] - 2020-06-13
+ - Refactored SAFT EOS. Now general SAFT class contains association site contribution, and calculates ideal contribution from factory method. This SAFT class has generalized method to update parameters. Other helmholtz contributions may now be specified and initiated by this general class.
+ - gamm_mie and gamma_sw are classes for specific SAFT EOS types, each handling their required parameters to calculation monomer and chain contributions to the helmholtz energy.
+ - Input files now used nanometers as a length scale instead of meters.
+ - Density and energy parameters are now scaled so that all calculations are within precision limits, removing precision loss in association site calculations.
+ - Newer calc_Xika algorithm is implemented in fortran, improving performance.
+ - python flag is added to command line to allow pure python implementation, this is not recommended in practice for associaiton site calculations.

@@ -13,31 +13,21 @@ import os
 import sys
 #np.set_printoptions(threshold=sys.maxsize)
 
-
 import despasito.equations_of_state.toolbox as tb
 from despasito.equations_of_state import constants
 import despasito.equations_of_state.saft.saft_toolbox as stb
 
 logger = logging.getLogger(__name__)
 
-# Check for Numba
-if 'NUMBA_DISABLE_JIT' in os.environ:
-    disable_jit = os.environ['NUMBA_DISABLE_JIT']
-else:
-    from .. import jit_stat
-    disable_jit = jit_stat.disable_jit
-# Check for cython
-from .. import cython_stat
-disable_cython = cython_stat.disable_cython
-
-if disable_jit and disable_cython:
+from despasito.main import method_stat
+if method_stat.disable_cython and method_stat.disable_numba:
     from .compiled_modules.ext_gamma_mie_python import calc_a1s, calc_a1ii, calc_Bkl, prefactor, calc_Iij, calc_a1s_eff, calc_Bkl_eff, calc_da1iidrhos, calc_da2ii_1pchi_drhos
-elif not disable_cython:
+
+elif not method_stat.disable_cython:
     from .compiled_modules.ext_gamma_mie_cython import calc_a1s, calc_Bkl, calc_a1ii, calc_a1s_eff, calc_Bkl_eff, calc_da1iidrhos, calc_da2ii_1pchi_drhos
     from .compiled_modules.ext_gamma_mie_python import prefactor, calc_Iij
-    #logger.info("Cython modules are not available for saft.gamma_mie")
-    #from .compiled_modules.ext_gamma_mie_python import calc_a1s, calc_a1ii, calc_Bkl, prefactor, calc_Iij, calc_a1s_eff, calc_Bkl_eff, calc_da1iidrhos, calc_da2ii_1pchi_drhos
-else:
+
+elif not method_stat.disable_numba:
     from .compiled_modules.ext_gamma_mie_numba import calc_a1s, calc_Bkl, calc_a1ii, calc_a1s_eff, calc_Bkl_eff, calc_da1iidrhos, calc_da2ii_1pchi_drhos
     from .compiled_modules.ext_gamma_mie_python import prefactor, calc_Iij
 
