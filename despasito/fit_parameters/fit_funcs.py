@@ -242,10 +242,33 @@ class BasinBounds(object):
         feasible1 = np.abs(kwargs["f_new"]) < np.inf
         feasible2 = not np.isnan(kwargs["f_new"])
 
-        logger.info("Reject parameters: {}, with obj. function: {}".format(x,kwargs["f_new"]))
+        if (tmax and tmin and feasible1 and feasible2):
+            logger.info("Accept parameters: {}, with obj. function: {}".format(x,kwargs["f_new"]))
+        else:
+            logger.info("Reject parameters: {}, with obj. function: {}".format(x,kwargs["f_new"]))
 
         return tmax and tmin and feasible1 and feasible2
 
+def del_Data_mpObj(dictionary):
+    r""" A dictionary of fitting objects will remove mpObj attributes so that the multiprocessing pool can be used by the fitting algorithm.
+
+    Parameters
+    ----------
+    dictionary : dict
+        Dictionary of fitting objects
+
+    Returns
+    -------
+    new_dictionary : dict
+        Updated fitting objects
+    """
+
+    new_dictionary = dictionary.copy()
+    for key in new_dictionary:
+        if "mpObj" in new_dictionary[key]._thermodict:
+            del new_dictionary[key]._thermodict["mpObj"]
+
+    return new_dictionary
 
 def global_minimization(global_method, beadparams0, bounds, fit_bead, fit_params, exp_dict, global_dict={}, minimizer_dict={}):
     r"""
@@ -299,7 +322,8 @@ def global_minimization(global_method, beadparams0, bounds, fit_bead, fit_params
         new_global_dict = {"niter": 10, "T": 0.5, "niter_success": 3}
         if global_dict:
             for key, value in global_dict.items():
-                new_global_dict[key] = value
+                if key is not "mpObj":
+                    new_global_dict[key] = value
         global_dict = new_global_dict
     
         # Set up options for minimizer in basin hopping
@@ -325,7 +349,7 @@ def global_minimization(global_method, beadparams0, bounds, fit_bead, fit_params
         except:
         	raise TypeError("Could not initialize BasinStep and/or BasinBounds")
 
-        result = spo.basinhopping(compute_obj, beadparams0, **global_dict, accept_test=custombounds, disp=True, minimizer_kwargs={"args": (fit_bead, fit_params, exp_dict, bounds),**minimizer_dict})
+        result = spo.basinhopping(compute_obj, beadparams0, **global_dict, accept_test=custombounds, minimizer_kwargs={"args": (fit_bead, fit_params, exp_dict, bounds),**minimizer_dict})
 
     elif global_method == "differential_evolution":
 
@@ -333,9 +357,14 @@ def global_minimization(global_method, beadparams0, bounds, fit_bead, fit_params
         new_global_dict = {}
         if global_dict:
             for key, value in global_dict.items():
-                new_global_dict[key] = value
+                if key is "mpObj":
+                    if value.ncores > 1:
+                        logger.info("Differential Evolution algoirithm is using {} workers.".format(value.ncores))
+                        new_global_dict["workers"] = value._pool.map
+                        exp_dict = del_Data_mpObj(exp_dict)
+                else:
+                    new_global_dict[key] = value
         global_dict = new_global_dict
-
         result = spo.differential_evolution(compute_obj, bounds, args=(fit_bead, fit_params, exp_dict, bounds), **global_dict)
 
     elif global_method == "brute":
@@ -344,7 +373,13 @@ def global_minimization(global_method, beadparams0, bounds, fit_bead, fit_params
         new_global_dict = {}
         if global_dict:
             for key, value in global_dict.items():
-                new_global_dict[key] = value
+                if key is "mpObj":
+                    if value.ncores > 1:
+                        logger.info("Brute algoirithm is using {} workers.".format(value.ncores))
+                        new_global_dict["workers"] = value._pool.map
+                        exp_dict = del_Data_mpObj(exp_dict)
+                else:
+                    new_global_dict[key] = value
         global_dict = new_global_dict
 
         result = spo.brute(compute_obj, bounds, args=(fit_bead, fit_params, exp_dict, bounds), **global_dict)

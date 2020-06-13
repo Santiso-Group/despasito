@@ -39,6 +39,8 @@ class MultiprocessingJob:
         else:
             raise ValueError("Number of cores cannot be zero or negative.")
 
+        self.ncores = ncores
+
         if self.flag_use_mp:
 
             # Remove old mp logs

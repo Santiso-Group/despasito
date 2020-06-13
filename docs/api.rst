@@ -61,7 +61,7 @@ During parameter fitting, **calculation_type** and **beadconfig** are optional a
 
  * **global_dict**: (dict), Optional - Specify details of global optimization method.
 
-      * **method**: (str), default: 'basinhopping', Global optimization method used to fit parameters. See :func:`~despasito.fit_parameters.fit_funcs.global_minimization`.
+      * **method**: (str), default: 'differential_evolution', Global optimization method used to fit parameters. See :func:`~despasito.fit_parameters.fit_funcs.global_minimization`.
       * **\***: any keyword used by the defined global optimization method.
 
  * minimizer_dict: (dict), Optional - Dictionary used to define minimization type used by the global optimization method

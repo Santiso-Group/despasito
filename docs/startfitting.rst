@@ -62,23 +62,6 @@ It's that easy!
 
 .. note:: Try the --jit option to speed it up.
 
-How to Tune the Fitting Algorithm
-##################################
-
-DESPASITO uses global optimization methods from `scipy.optimize <https://docs.scipy.org/doc/scipy/reference/optimize.html>`_ for parameter fitting. The optional dictionary, ``global_dict`` may then be included for options specific to the function. Currently, brute, differential_evolution, and basinhopping are available. Our preference is to use the basinhopping method so we will elaborate here.
-
-The basinhopping method options can be found in the scipy documentation, but we will reiterate them here with our custom default values. Unlike the other methods, this algoirthm also allows us to provide a `minimizer_dict` to define the minimizing function and the associated options.
-
-* global_dict (dict), Optional - kwargs used in scipy.optimize.basinhopping
-
-    - niter (int) - default: 10, Number of basin hopping iterations
-    - T (float) - default: 0.5, Temperature parameter, should be comparable to separation between local minima (i.e. the “height” of the walls separating values).
-    - niter_success (int) - default: 3, Stop run if minimum stays the same for this many iterations
-    - stepsize (float) - default: 0.1, Maximum step size for use in the random displacement. We use this value to define an object for the `take_step` option that includes a custom routine that produces attribute stepsizes for each parameter.
-
-* minimizer_dict (dict), Optional - Dictionary used to define minimization type and the associated options.
-
-    - method (str) - default: 'nelder-mead', Method available to scipy.optimize.minimize
-    - options (dict) - This dictionary contains the kwargs available to the chosen `minimize function <https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html#scipy.optimize.minimize>`_ method 
+DESPASITO uses global optimization methods from `scipy.optimize <https://docs.scipy.org/doc/scipy/reference/optimize.html>`_ for parameter fitting. The optional dictionary, ``global_dict`` may then be included for options specific to the function. Currently, brute, differential_evolution, and basinhopping are available. Our preference is to use the differential evolution method so we will elaborate here.
 
 

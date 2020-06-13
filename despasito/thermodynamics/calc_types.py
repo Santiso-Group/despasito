@@ -648,18 +648,14 @@ def _liquid_properties_wrapper(args):
 
     logger.info("T (K), P (Pa), xi: {} {} {}, Let's Begin!".format(T, P, xi))
 
-    rhol, flagl = calc.calc_rhol(P, T, xi, eos, **opts)
-    phil = eos.fugacity_coefficient(P, np.array([rhol]), xi, T)
-    logger.info("P {} Pa, T {} K, xi {}, rhol {}, phil {}, flagl {}".format(P, T, xi, rhol, phil, flagl))
-
-    #try:
-    #    rhol, flagl = calc.calc_rhol(P, T, xi, eos, **opts)
-    #    phil = eos.fugacity_coefficient(P, np.array([rhol]), xi, T)
-    #    logger.info("P {} Pa, T {} K, xi {}, rhol {}, phil {}, flagl {}".format(P, T, xi, rhol, phil, flagl))
-    #except:
-    #    logger.warning('Failed to calculate rhol at {} K and {} Pa'.format(T,P))
-    #    rhol, flagl = np.nan, 3
-    #    phil = np.nan*np.ones(len(eos.eos_dict["nui"]))
+    try:
+        rhol, flagl = calc.calc_rhol(P, T, xi, eos, **opts)
+        phil = eos.fugacity_coefficient(P, np.array([rhol]), xi, T)
+        logger.info("P {} Pa, T {} K, xi {}, rhol {}, phil {}, flagl {}".format(P, T, xi, rhol, phil, flagl))
+    except:
+        logger.warning('Failed to calculate rhol at {} K and {} Pa'.format(T,P))
+        rhol, flagl = np.nan, 3
+        phil = np.nan*np.ones(len(eos.eos_dict["nui"]))
 
     return rhol, phil, flagl
 
@@ -760,17 +756,14 @@ def _vapor_properties_wrapper(args):
 
     logger.info("T (K), P (Pa), yi: {} {} {}, Let's Begin!".format(T, P, yi))
 
-    rhov, flagv = calc.calc_rhov(P, T, yi, eos, **opts)
-    phiv = eos.fugacity_coefficient(P, np.array([rhov]), yi, T)
-    logger.info("P {} Pa, T {} K, yi {}, rhov {}, phiv {}, flagv {}".format(P, T, yi, rhov, phiv, flagv))
-  #  try:
-  #      rhov, flagv = calc.calc_rhov(P, T, yi, eos, **opts)
-  #      phiv = eos.fugacity_coefficient(P, np.array([rhov]), yi, T)
-  #      logger.info("P {} Pa, T {} K, yi {}, rhov {}, phiv {}, flagv {}".format(P, T, yi, rhov, phiv, flagv))
-  #  except:
-  #      logger.warning('Failed to calculate rhov at {} K and {} Pa'.format(T,P))
-  #      rhov, flagv = np.nan, 3
-  #      phiv = np.nan*np.ones(len(eos.eos_dict["nui"]))
+    try:
+        rhov, flagv = calc.calc_rhov(P, T, yi, eos, **opts)
+        phiv = eos.fugacity_coefficient(P, np.array([rhov]), yi, T)
+        logger.info("P {} Pa, T {} K, yi {}, rhov {}, phiv {}, flagv {}".format(P, T, yi, rhov, phiv, flagv))
+    except:
+        logger.warning('Failed to calculate rhov at {} K and {} Pa'.format(T,P))
+        rhov, flagv = np.nan, 3
+        phiv = np.nan*np.ones(len(eos.eos_dict["nui"]))
 
     return rhov, phiv, flagv
 
@@ -884,14 +877,13 @@ def _solubility_parameter_wrapper(args):
 
     logger.info("T (K), P (Pa), xi: {} {} {}, Let's Begin!".format(T, P, xi))
 
-    rhol, flagl = calc.calc_rhol(P, T, xi, eos, **opts)
-
-    if flagl not in [1,2]:
-        logger.warning('Failed to calculate rhov at {} K and {} Pa'.format(T,P))
-        delta = np.nan
-    else:
+    try:
+        rhol, flagl = calc.calc_rhol(P, T, xi, eos, **opts)
         delta = calc.hildebrand_solubility(rhol, xi, T, eos, **opts)
         logger.info("P {} Pa, T {} K, xi {}, rhol {}, flagl {}, delta {}".format(P, T, xi, rhol, flagl, delta))
+    except:
+        logger.warning('Failed to calculate rhov at {} K and {} Pa'.format(T,P))
+        rhol, flagl, delta = np.nan, 3, np.nan
 
     return rhol, flagl, delta
 

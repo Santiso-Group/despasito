@@ -45,7 +45,7 @@ def fit(thermo_dict):
 
         - global_dict (dict), Optional - kwargs used in global optimization method. See :func:`~despasito.fit_parameters.fit_funcs.global_minimization`.
 
-            - method (str), Optional - default: 'basinhopping', Global optimization method used to fit parameters. See :func:`~despasito.fit_parameters.fit_funcs.global_minimization`.
+            - method (str), Optional - default: 'differential_evolution', Global optimization method used to fit parameters. See :func:`~despasito.fit_parameters.fit_funcs.global_minimization`.
             - niter (int) - default: 10, Number of basin hopping iterations
             - T (float) - default: 0.5, Temperature parameter, should be comparable to separation between local minima (i.e. the “height” of the walls separating values).
             - niter_success (int) - default: 3, Stop run if minimum stays the same for this many iterations
@@ -77,6 +77,7 @@ def fit(thermo_dict):
         if "mpObj" in thermo_dict:
             for k2 in list(exp_data.keys()):
                 exp_data[k2]["mpObj"] = thermo_dict["mpObj"]
+            dicts["mpObj"] = thermo_dict["mpObj"]
     else:
         raise ValueError("Required input, exp_data, is missing.")
 
@@ -98,6 +99,10 @@ def fit(thermo_dict):
         del thermo_dict['global_dict']
     else:
         dicts['global_dict'] = {}
+
+    if "mpObj" in dicts:
+        dicts['global_dict']["mpObj"] = dicts["mpObj"]
+        del dicts["mpObj"]
 
     # Generate initial guess for parameters if none was given
     if "beadparams0" in opt_params:
@@ -141,7 +146,7 @@ def fit(thermo_dict):
         global_method = dicts['global_dict']["method"]
         del dicts['global_dict']["method"]
     else:
-        global_method = "basinhopping"
+        global_method = "differential_evolution"
 
     # Run Parameter Fitting
     try:
