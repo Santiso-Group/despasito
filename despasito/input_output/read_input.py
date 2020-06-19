@@ -35,7 +35,7 @@ def append_data_file_path(input_dict, path='.'):
       input_dict['EOScross'] = os.path.join(path, input_dict['EOScross'])
 
    for key, val in input_dict.items():
-      if 'file' in val:
+      if type(val) is dict and 'file' in val:
          input_dict[key]['file'] = os.path.join(path, input_dict[key]['file'])
 
 ######################################################################

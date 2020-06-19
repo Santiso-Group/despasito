@@ -9,6 +9,7 @@ import logging
 import logging.handlers
 
 quiet = False
+
 args = commandline_parser()
 
 ## Extract arguments

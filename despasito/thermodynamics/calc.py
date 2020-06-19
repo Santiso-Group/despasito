@@ -7,7 +7,6 @@ import sys
 import numpy as np
 from scipy import interpolate
 import scipy.optimize as spo
-from scipy.interpolate import UnivariateSpline
 from scipy.ndimage.filters import gaussian_filter1d
 import copy
 #import matplotlib.pyplot as plt
@@ -183,13 +182,16 @@ def PvsRho(T, xi, eos, minrhofrac=(1.0 / 500000.0), rhoinc=5.0, vspacemax=1.0E-4
         maxrho = eos.density_max(xi, T, **kwargs)
     elif type(maxrho) in [list, np.ndarray]:
         logger.error("Maxrho should be type float. Given value: {}".format(maxrho))
+  
+    if maxrho > 1e+5:
+        raise ValueError("Max density of {} mol/m^3 is not feasible, check parameters.".format(maxrho))
 
     #min rho is a fraction of max rho, such that minrho << rhogassat
     minrho = maxrho * minrhofrac
     #list of densities for P,rho and P,v
     if (maxrho-minrho) < rhoinc:
         raise ValueError("Density range, {}, is less than incement, {}. Check parameters used in eos.density_max().".format((maxrho-minrho),rhoinc))
-
+ 
     rholist = np.arange(minrho, maxrho, rhoinc)
     #check rholist to see when the spacing
     vspace = (1.0 / rholist[:-1]) - (1.0 / rholist[1:])
@@ -1089,7 +1091,7 @@ def calc_Prange_xi(T, xi, yi, eos, density_dict={}, Pmin=10000, mole_fraction_op
             ObjRange[1] = obj
             logger.info("New Max Pressure: {} isn't vapor, flag={}, Obj Func: {}, Range {}".format(Prange[1],flagv_max,ObjRange[1],Prange))
             p = (Prange[1]-Prange[0])/2.0 + Prange[0]
-        elif np.sum(np.abs(xi-yi_range)/xi) < 0.02: # If less than 2%
+        elif np.sum(np.abs(xi-yi_range)/xi) < 0.01: # If less than 2%
             flag_liqu = True
             ObjRange[1] = obj
             Prange[1] = p
@@ -1306,7 +1308,7 @@ def calc_Prange_yi(T, xi, yi, eos, density_dict={}, mole_fraction_options={}):
 #                       Solve Yi for xi and T                        #
 #                                                                    #
 ######################################################################
-def solve_yi_xiT(yi, xi, phil, P, T, eos, density_dict={}, maxiter=30, tol=1e-6):
+def solve_yi_xiT(yi, xi, phil, P, T, eos, density_dict={}, maxiter=50, tol=1e-6):
     r"""
     Find vapor mole fraction given pressure, liquid mole fraction, and temperature.
 
@@ -1373,7 +1375,7 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, density_dict={}, maxiter=30, tol=1e-6)
             else:
                 logger.info("    Composition doesn't produce a vapor, we need a function to search compositions for more than two components.")
                 yinew = yi
-        elif (np.sum(np.abs(xi-yi_tmp)) < 1e-5 and flag_trivial_sol):
+        elif (np.sum(np.abs(xi-yi_tmp)/xi) < 0.05 and flag_trivial_sol):
             flag_trivial_sol = False
             if (all(yi_tmp != 0.) and len(yi_tmp)==2):
                 logger.info("    Composition produces trivial solution, let's find a different one!")
@@ -1420,7 +1422,7 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, density_dict={}, maxiter=30, tol=1e-6)
             ind_tmp = np.where(yi_tmp == min(yi_tmp[yi_tmp>0]))[0] 
             if np.abs(yi2[ind_tmp] - yi_tmp[ind_tmp]) / yi_tmp[ind_tmp] < tol:
                 yi_global = yi2
-                logger.info("    Inner Loop Final yi: {}, Final Error on Smallest Fraction: {}".format(yi2,np.abs(yi2[ind_tmp] - yi_tmp[ind_tmp]) / yi_tmp[ind_tmp]*100))
+                logger.info("    Inner Loop Final yi: {}, Final Error on Smallest Fraction: {}%".format(yi2,np.abs(yi2[ind_tmp] - yi_tmp[ind_tmp]) / yi_tmp[ind_tmp]*100))
                 break
 
         if z < maxiter-1:
@@ -1437,15 +1439,16 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, density_dict={}, maxiter=30, tol=1e-6)
     elif z == maxiter - 1:
         yi2 = yinew/np.sum(yinew)
         tmp = (np.abs(yi2[ind_tmp] - yi_tmp[ind_tmp]) / yi_tmp[ind_tmp])
-        logger.warning('    More than {} iterations needed. Error in Smallest Fraction: {} %%'.format(maxiter, tmp*100))
+        logger.warning('    More than {} iterations needed. Error in Smallest Fraction: {}%'.format(maxiter, tmp*100))
         if tmp > .1: # If difference is greater than 10%
             yinew = find_new_yi(P, T, phil, xi, eos, density_dict=density_dict)
+            yi2 = yinew/np.sum(yinew)
         y1 = spo.least_squares(obj_yi, yi2[0], bounds=(0.,1.), args=(P, T, phil, xi, eos, density_dict))
         yi = y1.x[0]
-        yi = np.array([yi,1-yi])
-        phiv, rhov, flagv = calc_phiv(P, T, yi, eos, density_dict=density_dict)
-        obj = obj_yi(yi, P, T, phil, xi, eos, density_dict=density_dict)
-        logger.warning('    Find yi with root algorithm, yi {}, obj {}'.format(yi,obj))
+        yi2 = np.array([yi,1-yi])
+        phiv, rhov, flagv = calc_phiv(P, T, yi2, eos, density_dict=density_dict)
+        obj = obj_yi(yi2, P, T, phil, xi, eos, density_dict=density_dict)
+        logger.warning('    Find yi with root algorithm, yi {}, obj {}'.format(yi2,obj))
         if obj > tol:
             logger.error("Could not converge mole fraction")
             phiv = np.full(len(yi_tmp),np.nan)
@@ -1620,28 +1623,36 @@ def find_new_yi(P, T, phil, xi, eos, bounds=(0.01, 0.99), npoints=30, density_di
  
         # Assess vapor values
         # A value of 0 is vapor, 1 is liquid, 2 mean a critical fluid, 3 means that neither is true, 4 means we should assume ideal gas
-        ind = [i for i in range(len(flag_tmp)) if flag_tmp[i] not in [1,3]]
-        if ind:
-            obj_tmp2 = [obj_tmp[i] for i in ind]
-            yi_tmp2 = [yi_tmp[i] for i in ind]
+        #ind = [i for i in range(len(flag_tmp)) if flag_tmp[i] not in [1,3]]
+        #if ind:
+        #    obj_tmp = [obj_tmp[i] for i in ind]
+        #    yi_tmp = [yi_tmp[i] for i in ind]
 
         # Fit spline
-        spline = UnivariateSpline(yi_tmp2, obj_tmp2, k=4, s=0)
+        spline = interpolate.UnivariateSpline(yi_tmp, obj_tmp, k=4, s=0)
         yi_min = spline.derivative().roots()
         if len(yi_min) > 1:
             yi_concav = spline.derivative(n=2)(yi_min)
             yi_min = [yi_min[i] for i in range(len(yi_min)) if yi_concav[i]>0.0]
-            if len(yi_min) > 1:
-                yi_min = [x for x in yi_min if np.abs(x-xi[0])/xi[0] > 0.05]
+            if len(yi_min) == 1:
+                if obj_tmp[0] < obj_tmp[-1]:
+                    yi_min.append(yi_tmp[0])
+                else:
+                    yi_min.append(yi_tmp[-1])
+            yi_min = np.array(yi_min)
+            obj_trivial = np.abs(yi_min-xi[0])/xi[0]
+            ind = np.where(obj_trivial==min(obj_trivial))[0][0]
+            logger.debug('    Found multiple minima: {}, discard {} as trivial solution'.format(yi_min, yi_min[ind]))
+            yi_min = np.array([yi_min[ii] for ii in range(len(yi_min)) if ii != ind])
             if len(yi_min) > 1:
                 obj = spline(yi_min)
-                yi_min = [yi_min[obj.index(obj)]]
+                yi_min = [yi_min[np.where(obj==min(obj))[0][0]]]
 
         if not len(yi_min):
             # Choose values with lowest objective function
             ind = np.where(np.abs(obj_tmp2)==min(np.abs(obj_tmp2)))[0][0]
-            obj_final = obj_tmp2[ind]
-            yi_final = yi_tmp2[ind]
+            obj_final = obj_tmp[ind]
+            yi_final = yi_tmp[ind]
         else:
             yi_final = yi_min[0]
             obj_final = spline(yi_min[0])
@@ -2407,14 +2418,15 @@ def calc_flash(P, T, eos, density_dict={}, maxiter=200, tol=1e-9):
                 logger.error("Component, {}, is beyond it's critical point. Add an exception to setPsat, otherwise assumed 1".format(NaNbead))
         Ki0[i] = Psat[i]/P
 
-    if Ki0[0] < 1.0:
-        Ki0[0] = 1e+6
+    tmp = Ki0 - 1.0
+    if np.abs(np.sum(tmp)) == np.sum(np.abs(tmp)):
+        if tmp[0] > 0:
+            Ki0[0] = np.sqrt(np.finfo(float).eps)
+        else:
+            Ki0[0] = Ki0[0] + 1.0
 
-    if Ki0[1] > 1.0:
-        Ki0[1] = 1e-6
-        
-    err = 1
     Ki = np.copy(Ki0)
+    err = 1
     flag_critical = 0
     for i in np.arange(maxiter):
         
@@ -2430,6 +2442,11 @@ def calc_flash(P, T, eos, density_dict={}, maxiter=200, tol=1e-9):
                 xi[0] = 1-xi[1]
        
         yi = Ki*xi
+        if np.sum(yi) != 1.0:
+            if np.abs(np.sum(yi) != 1.0) < np.sqrt(np.finfo(float).eps):
+                raise ValueError("Vapor mole fractions do not add up to 1. Ki {}, xi {} produces {} = {}".format(Ki, xi, yi, np.sum(yi)))
+            else:
+                yi /= np.sum(yi)
 
         # Fugacity Coefficients and New Ki values
         phil, rhol, flagl = calc_phil(P, T, xi, eos, density_dict=density_dict)
@@ -2438,22 +2455,25 @@ def calc_flash(P, T, eos, density_dict={}, maxiter=200, tol=1e-9):
         logger.info("        yi: {}, phiv: {}".format(yi,phiv))
         Kinew = phil/phiv
 
-        if np.abs(err-abs(np.sum(Kinew-Ki))) < tol:
-            logger.info("    Found Ki")
-            break
-
-        err = abs(np.sum(Kinew-Ki))
-        logger.info("  Guess Ki: {}, New Ki: {}, Error: {}".format(Ki,Kinew,err))
+        err = np.sum(np.abs(Kinew-Ki))
+        logger.info("  Guess {} Ki: {}, New Ki: {}, Error: {}".format(i,Ki,Kinew,err))
 
         # Check Objective function
         if np.all(np.abs(Ki-1.0) < 1e-6) and flag_critical < 2:
-            Ki = np.ones(2)/np.sqrt(np.finfo(float).eps)
-            Ki[1-flag_critical] = np.sqrt(np.finfo(float).eps)
+            eps = np.sqrt(np.finfo(float).eps)
+            ind = 1-flag_critical
+            if flag_critical == 0:
+                Ki[ind] = eps
+                Ki[flag_critical] = 1/eps
+            else:
+                Ki[ind] = 1/eps
+                Ki[flag_critical] = eps
             flag_critical += 1
             logger.info("    Liquid and vapor mole fractions are equal, let search from Ki = {}".format(Ki))
         elif err < tol:
-            ind = np.where(Ki == min(Ki[Ki>0]))[0]
+            ind = np.where(Ki == min(Ki[Ki>0]))[0][0]
             err = np.abs(Kinew[ind] - Ki[ind]) / Ki[ind]
+            logger.info("    Percent Error on smallest Ki value: {}".format(err))
             if err < tol:
                 logger.info("    Found Ki")
                 break
@@ -2464,7 +2484,7 @@ def calc_flash(P, T, eos, density_dict={}, maxiter=200, tol=1e-9):
             Ki = Kinew
 
     if i == maxiter - 1:
-        ind = np.where(Kiprev == min(Kiprev[Kiprev>0]))[0]
+        ind = np.where(Kiprev == min(Kiprev[Kiprev>0]))[0][0]
         err = np.abs(Ki[ind] - Kiprev[ind]) / Kiprev[ind]
         logger.warning('    More than {} iterations needed. Remaining error, {}.'.format(maxiter,err))
 

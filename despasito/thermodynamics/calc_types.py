@@ -401,17 +401,19 @@ def flash(eos, sys_dict):
     else:
         flag_use_mp_object = False
 
-    # Extract pressure optimization dict
-    if "mole_fraction_options" in sys_dict:
-        logger.info("Accepted options for mole fraction optimization")
-        opts.update(sys_dict["mole_fraction_options"])
-    else:
-        opts = {}
-
-    # Extract rho dict
+    opts = {}
     if "density_dict" in sys_dict:
         logger.info("Accepted options for P vs. density curve")
         opts["density_dict"] = sys_dict["density_dict"]
+
+    # Extract pressure optimization dict
+    if "tol" in sys_dict:
+        logger.info("Accepted convergence tolerance for flash calculation")
+        opts["tol"] = sys_dict["tol"]
+
+    if "maxiter" in sys_dict:
+        logger.info("Accepted maximum number of iterations for flash calculation loop.")
+        opts["maxiter"] = sys_dict["maxiter"]
 
     # Initialize Variables
     l_c = len(eos.nui)

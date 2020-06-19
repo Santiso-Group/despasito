@@ -404,7 +404,7 @@ def compute_obj(beadparams, fit_bead, fit_params, exp_dict, bounds):
     fit_bead : str
         Name of bead whose parameters are being fit, should be in bead list of beadconfig
     fit_params : list[str]
-        This list of contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
+        This list contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
     bounds : list[tuple]
         List of length equal to fit_params with lists of pairs for minimum and maximum bounds of parameter being fit. Defaults are broad, recommend specification.
 
@@ -422,6 +422,8 @@ def compute_obj(beadparams, fit_bead, fit_params, exp_dict, bounds):
 
     if len(beadparams) != len(fit_params):
         raise ValueError("The length of initial guess vector should be the same number of parameters to be fit.")    
+
+    logger.info((' {}: {},' * len(fit_params)).format(*[val for pair in zip(fit_params, beadparams) for val in pair]))
 
     # Compute obj_function
     obj_function = []

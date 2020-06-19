@@ -20,6 +20,7 @@ import despasito.equations_of_state.saft.saft_toolbox as stb
 logger = logging.getLogger(__name__)
 
 from despasito.main import method_stat
+
 if method_stat.disable_cython and method_stat.disable_numba:
     from .compiled_modules.ext_gamma_mie_python import calc_a1s, calc_a1ii, calc_Bkl, prefactor, calc_Iij, calc_a1s_eff, calc_Bkl_eff, calc_da1iidrhos, calc_da2ii_1pchi_drhos
 

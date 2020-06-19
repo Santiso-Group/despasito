@@ -77,7 +77,10 @@ def run(filename="input.json", path=".", **kwargs):
         logger.info("Initializing thermodynamic calculation")
         output_dict = thermo(eos, thermo_dict.copy())
         logger.info("Finished thermodynamic calculation")
-        write_output.writeout_thermo_dict(output_dict,thermo_dict["calculation_type"],**file_dict)
+        try:
+            write_output.writeout_thermo_dict(output_dict,thermo_dict["calculation_type"],**file_dict)
+        except:
+            logger.info("Final Output: {}".format(output_dict))
 
     if thermo_dict['mpObj'].flag_use_mp:
         thermo_dict['mpObj'].end_pool()
