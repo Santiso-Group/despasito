@@ -21,7 +21,8 @@ class method_stat:
 
 logger = logging.getLogger(__name__)
 
-def commandline_parser():
+def get_parser():
+
     ## Define parser functions and arguments
     parser = argparse.ArgumentParser(description="DESPASITO: Determining Equilibrium State and Parametrization: Application for SAFT, Intended for Thermodynamic Output.  This is an open-source application for thermodynamic calculations and parameter fitting for the Statistical Associating Fluid Theory (SAFT) EOS and SAFT-𝛾-Mie coarse-grained simulations.")
     parser.add_argument("-i", "--input", dest="input", help="Input .json file with calculation instructions and path(s) to equation of state parameters. See documentation for explicit explanation. Compile docs or visit https://despasito.readthedocs.io")
@@ -33,12 +34,19 @@ def commandline_parser():
     parser.add_argument("--python", action='store_true', help="Remove default fortran module for association site calculations.")
     parser.add_argument("--cython", action='store_true', help="Turn on Cython for accelerated computation")
 
+    return parser
+
+def commandline_parser():
+    """ Dummy function that separates the parser definition (get_parser()) from the parsing (purpose: generating api.rst for sphinx-build)"""
+
+    parser = get_parser()
     args = parser.parse_args()
+
     method_stat.disable_numba = not args.numba
     method_stat.disable_cython = not args.cython
     method_stat.disable_python = not args.python
 
-    return args
+    return parser
 
 def run(filename="input.json", path=".", **kwargs):
 
