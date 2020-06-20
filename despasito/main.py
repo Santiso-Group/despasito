@@ -46,7 +46,7 @@ def commandline_parser():
     method_stat.disable_cython = not args.cython
     method_stat.disable_python = not args.python
 
-    return parser
+    return args
 
 def run(filename="input.json", path=".", **kwargs):
 
