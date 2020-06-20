@@ -9,7 +9,7 @@ See examples directory or Input/Output documentation for input file structures.
 Command Line
 ------------
 .. argparse::
-   :ref: despasito.main.commandline_parser
+   :ref: despasito.main.get_parser
    :prog: python -m despasito
 
 Imported Package
