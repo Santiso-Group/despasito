@@ -423,11 +423,17 @@ class saft(EOStemplate):
             if bounds[0] < self.eos_dict["parameter_bound_extreme"][parameter][0]:
                 logger.debug("Given {} lower boundary, {}, is less than what is recommended by eos object. Using value of {}.".format(param_name,bounds[0],self.eos_dict["parameter_bound_extreme"][parameter][0]))
                 bounds_new[0] = self.eos_dict["parameter_bound_extreme"][parameter][0]
+            elif bounds[0] > self.eos_dict["parameter_bound_extreme"][parameter][1]:
+                logger.debug("Given {} lower boundary, {}, is greater than what is recommended by eos object. Using value of {}.".format(param_name,bounds[0],self.eos_dict["parameter_bound_extreme"][parameter][0]))
+                bounds_new[0] = self.eos_dict["parameter_bound_extreme"][parameter][0]
             else:
                 bounds_new[0] = bounds[0]
         
-            if (bounds[1] > self.eos_dict["parameter_bound_extreme"][parameter][1] or bounds[1] < np.finfo("float").eps):
+            if (bounds[1] > self.eos_dict["parameter_bound_extreme"][parameter][1]):
                 logger.debug("Given {} upper boundary, {}, is greater than what is recommended by eos object. Using value of {}.".format(param_name,bounds[1],self.eos_dict["parameter_bound_extreme"][parameter][1]))
+                bounds_new[1] = self.eos_dict["parameter_bound_extreme"][parameter][1]
+            elif (bounds[1] < self.eos_dict["parameter_bound_extreme"][parameter][0]):
+                logger.debug("Given {} upper boundary, {}, is less than what is recommended by eos object. Using value of {}.".format(param_name,bounds[1],self.eos_dict["parameter_bound_extreme"][parameter][1]))
                 bounds_new[1] = self.eos_dict["parameter_bound_extreme"][parameter][1]
             else:
                 bounds_new[1] = bounds[1]

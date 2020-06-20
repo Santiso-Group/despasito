@@ -69,7 +69,7 @@ class gamma_mie():
         self.Aideal_method = "Abroglie"
         self.mixing_rules = {"sigma": "mean", "l_r": "mie", "l_a": "mie"}
         self.parameter_types = ["epsilon", "epsilonHB", "sigma", "l_r", "l_a", "Sk", "K"]
-        self.parameter_bound_extreme = {"epsilon":[0.,1000.], "sigma":[0.,9e-9], "l_r":[0.,100.], "l_a":[0.,100.], "Sk":[0.,1.], "epsilonHB":[0.,5000.], "K":[0.,10000.]}    
+        self.parameter_bound_extreme = {"epsilon":[0.,1000.], "sigma":[0.,1.0], "l_r":[0.,100.], "l_a":[0.,100.], "Sk":[0.,1.], "epsilonHB":[0.,5000.], "K":[0.,10000.]}    
         self.residual_helmholtz_contributions = ["Amonomer","Achain"]
     
         if not hasattr(self, 'eos_dict'):
