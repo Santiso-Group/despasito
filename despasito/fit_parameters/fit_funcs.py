@@ -1,4 +1,5 @@
 
+import os
 import numpy as np
 import logging
 import scipy.optimize as spo
@@ -249,6 +250,70 @@ class BasinBounds(object):
 
         return tmax and tmin and feasible1 and feasible2
 
+class WriteParameterResults(object):
+    r"""
+    Object used by scipy.optimize.basinhopping to set bounds of parameters.
+    """
+
+    def __init__(self, beadnames, obj_cut=None, filename=None):
+        r"""
+            
+        Attributes
+        ----------
+        beadnames : list[str]
+            List of bead names for filename header
+        obj_cut : float, Optional, default: np.inf
+            Cut-off objective value to write the parameters
+        filename : str, Optional, default: parameters.txt
+            File to which parameters are written
+            
+        """
+
+        if obj_cut is None:
+            self.obj_cut = np.inf
+        else:
+            self.obj_cut = obj_cut
+
+        if filename is None:
+            filename = "parameters.txt"
+
+        if os.path.isfile(filename):
+            old_fname = filename
+            for i in range(20):
+                filename = "{}_{}".format(i,old_fname)
+                if not os.path.isfile(filename):
+                    logger.info("File '{}' already exists, using {}.".format(old_fname,filename))
+                    break
+        self.filename = filename
+        self.ninit = 0
+
+        with open(filename, 'w') as f:
+            f.write("# n, obj, "+", ".join(beadnames)+"\n")
+
+    def __call__(self, x_new, convergence=0):
+        r"""
+            
+        Parameters
+        ----------
+        x_new : numpy.ndarray
+            Guess in parameters values
+
+        Returns
+        -------
+        value : bool
+            A true or false value that says whether the guess in parameter value is within bounds
+            
+        """
+        
+        if convergence < self.obj_cut:
+            with open(self.filename, 'a') as f:
+                tmp = [self.ninit, convergence]+[x for x in x_new]
+                f.write(("{}, "*len(tmp)).format(*tmp)+"\n")
+
+        self.ninit += 1
+
+        return False
+
 def del_Data_mpObj(dictionary):
     r""" A dictionary of fitting objects will remove mpObj attributes so that the multiprocessing pool can be used by the fitting algorithm.
 
@@ -349,12 +414,23 @@ def global_minimization(global_method, beadparams0, bounds, fit_bead, fit_params
         except:
         	raise TypeError("Could not initialize BasinStep and/or BasinBounds")
 
+        logger.info("Basin Hopping Options: {}".format(global_dict))
         result = spo.basinhopping(compute_obj, beadparams0, **global_dict, accept_test=custombounds, minimizer_kwargs={"args": (fit_bead, fit_params, exp_dict, bounds),**minimizer_dict})
 
     elif global_method == "differential_evolution":
 
+        obj_kwargs = ["obj_cut", "filename"]
+        if "obj_cut" in global_dict:
+            obj_cut = global_dict["obj_cut"]
+        else:
+            obj_cut = None
+
+        if "filename" in global_dict:
+            filename = global_dict["filename"]
+        else:
+            filename = None
         # Options for differential evolution, set defaults in new_global_dict
-        new_global_dict = {}
+        new_global_dict = {"init": "random"}
         if global_dict:
             for key, value in global_dict.items():
                 if key is "mpObj":
@@ -362,10 +438,13 @@ def global_minimization(global_method, beadparams0, bounds, fit_bead, fit_params
                         logger.info("Differential Evolution algoirithm is using {} workers.".format(value.ncores))
                         new_global_dict["workers"] = value._pool.map
                         exp_dict = del_Data_mpObj(exp_dict)
-                else:
+                elif key not in obj_kwargs:
                     new_global_dict[key] = value
         global_dict = new_global_dict
-        result = spo.differential_evolution(compute_obj, bounds, args=(fit_bead, fit_params, exp_dict, bounds), **global_dict)
+        logger.info("Differential Evolution Options: {}".format(global_dict))
+
+        obj = WriteParameterResults(fit_params, obj_cut=obj_cut, filename=filename)
+        result = spo.differential_evolution(compute_obj, bounds, callback=obj, args=(fit_bead, fit_params, exp_dict, bounds), **global_dict)
 
     elif global_method == "brute":
 
@@ -382,6 +461,7 @@ def global_minimization(global_method, beadparams0, bounds, fit_bead, fit_params
                     new_global_dict[key] = value
         global_dict = new_global_dict
 
+        logger.info("Brute Options: {}".format(global_dict))
         result = spo.brute(compute_obj, bounds, args=(fit_bead, fit_params, exp_dict, bounds), **global_dict)
 
     else:

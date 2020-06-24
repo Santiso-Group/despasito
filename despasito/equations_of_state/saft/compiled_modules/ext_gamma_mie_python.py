@@ -497,7 +497,7 @@ def calc_Iij(rho, T, xi, epsilonii_avg, sigmaii_avg, sigmakl, xskl):
     Returns
     -------
     Iij : numpy.ndarray
-        A temperature-density polynomial correlation of the association integral for a Lennard−Jones monomer. This matrix is (len(rho) x Ncomp x Ncomp)
+        A temperature-density polynomial correlation of the association integral for a Lennard-Jones monomer. This matrix is (len(rho) x Ncomp x Ncomp)
     
     """
     

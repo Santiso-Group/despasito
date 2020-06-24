@@ -713,7 +713,7 @@ class gamma_mie():
         Returns
         -------
         Iij : numpy.ndarray
-            A temperature-density polynomial correlation of the association integral for a Lennard−Jones monomer. This matrix is (len(rho) x Ncomp x Ncomp)
+            A temperature-density polynomial correlation of the association integral for a Lennard-Jones monomer. This matrix is (len(rho) x Ncomp x Ncomp)
         """
 
         rho = self._check_density(rho)

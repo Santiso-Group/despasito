@@ -411,6 +411,7 @@ def flash(eos, sys_dict):
         logger.info("Accepted convergence tolerance for flash calculation")
         opts["tol"] = sys_dict["tol"]
 
+    print(sys_dict)
     if "maxiter" in sys_dict:
         logger.info("Accepted maximum number of iterations for flash calculation loop.")
         opts["maxiter"] = sys_dict["maxiter"]
