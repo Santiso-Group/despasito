@@ -86,6 +86,10 @@ class saft(EOStemplate):
         for res in self.eos_dict["residual_helmholtz_contributions"]:
             setattr( self, res, getattr(self.saft_source, res))
 
+        if "Aideal_method" in kwargs:
+            logger.info("Switching Aideal method from {} to {}.".format(self.eos_dict["Aideal_method"],kwargs["Aideal_method"]))
+            self.eos_dict["Aideal_method"] = kwargs["Aideal_method"]
+
         # Extract needed values from kwargs
         needed_attributes = ['beadlibrary',"nui","beads"]
         for key in needed_attributes:

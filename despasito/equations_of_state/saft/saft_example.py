@@ -28,33 +28,19 @@ elif not method_stat.disable_cython:
 elif not method_stat.disable_numba:
     logger.warning("saft.gamma_sw does not use numba.")
 
-ckl_coef = np.array([[2.25855, -1.50349, 0.249434], [-0.669270, 1.40049, -0.827739], [10.1576, -15.0427, 5.30827]])
-
-class gamma_sw():
+class saft_example():
 
     r"""
-    
+    This heavily annotated, nonfunctional version of the SAFT-gamma-SW class can be used as a template for a new SAFT EOS version. Note, you must add it to the factory in saft.py before it can be used.
     
     Parameters
     ----------
     beads : list[str]
         List of unique bead names used among components
     beadlibrary : dict
-        A dictionary where bead names are the keys to access EOS self interaction parameters:
-    
-        - epsilon: :math:`\epsilon_{k,k}/k_B`, Energy well depth scaled by Boltzmann constant
-        - sigma: :math:`\sigma_{k,k}`, Size parameter [m]
-        - mass: Bead mass [kg/mol]
-        - l_r: :math:`\lambda^{r}_{k,k}`, Exponent of repulsive term between groups of type k
-        - l_a: :math:`\lambda^{a}_{k,k}`, Exponent of attractive term between groups of type k
-
+        A dictionary where bead names are the keys to access EOS self interaction parameters
     crosslibrary : dict, Optional, default: {}
         Optional library of bead cross interaction parameters. As many or as few of the desired parameters may be defined for whichever group combinations are desired. If this matrix isn't provided, the SAFT mixing rules are used.
-        
-        - epsilon: :math:`\epsilon_{k,l}/k_B`, Energy parameter scaled by Boltzmann Constant
-        - sigma: :math:`\sigma_{k,k}`, Size parameter [m]
-        - l_r: :math:`\lambda^{r}_{k,l}`, Exponent of repulsive term between groups of type k and l
-        - l_a: :math:`\lambda^{a}_{k,l}`, Exponent of attractive term between groups of type k and l
         
     Attributes
     ----------
@@ -64,16 +50,32 @@ class gamma_sw():
     """
 
     def __init__(self, kwargs):
+
+        ####### The Following lines are *MANDATORY* but can be edited as needed
+
+        # Standard attributes of the EOStemplate are 'density_max' and 'parameter_refresh', while all saft version require 'calc_gr_assoc' for calculating association sites
     
+        # This keyword is used by the saft.py class and subsequently the `Aideal_contribution` function. If a user desired a different default method of calulating the ideal contribution, add a new function to Aideal.py
         self.Aideal_method = "Abroglie"
+
+        # This list of strings are the bead types that the parameter update method can expect.
+        # The bead library should use these same parameter names.
+        # Parameter names should not contain '-' or '_'
         self.parameter_types = ["epsilon", "epsilonHB", "sigma", "Sk", "K"]
+
+        # This dictionary will contain the feasible bounds of the parameters listed in 'parameter_types'. Bounds are necessary for each type.
         self.parameter_bound_extreme = {"epsilon":[0.,1000.], "sigma":[0.,1.0], "Sk":[0.,1.], "epsilonHB":[0.,5000.], "K":[0.,10000.]}    
-        self.mixing_rules = {"sigma": "mean"}
+
+        # This list contained the Helmholtz energy contributions contained in this class below. The class in saft.py will add these as as it's own attributes to calculate the total helmholtz energy. 
         self.residual_helmholtz_contributions = ["Amonomer","Achain"]
+        # Note that these strings must represent methods below, but if the method is too verbose or repeditive, other methods may be added to this object. If a function is to be optimized with Cython or Numba, an extentions library can be added to the 'compiled_modules' directory. A python version with the same function names should also be present aswell. The import "if-structure" at the top is then used to import the desired form, see gamma-mie.py for an example.
+        # When deciding whether to include an additional function as a class method, or if it should simply be imported from a library. Think about whether accessing that function would be nice when handling an EOS object in a python script. For instance, the 'reduced density', 'effiective packing fraction', 'Ahard_sphere', 'A1'... methods would be nice to have as attributes.
+
+        # When calculating the cross-interaction term between two beads, the parameter name and the mixing type should be listed here. The mixing rule keyword can be any that are supported in saft_toolbox.mixing_rules. As of right now, mixing rules that use other parameters are not supported by this function, so a custom mixing rule method is added as a method in this class. Even if all your mixing rules are handled internally, this attribute must exist.
+        self.mixing_rules = {"sigma": "mean"}
     
-        if not hasattr(self, 'eos_dict'):
-            self.eos_dict = {}
-        
+        # Now we start processing the given variables. The following three attributes are always needs for the saft.py class. If other inputs are needed for the specific SAFT type at hand, feel free to add them to this list.
+        self.eos_dict = {}
         needed_attributes = ['nui','beads','beadlibrary']
         for key in needed_attributes:
             if key not in kwargs:
@@ -86,24 +88,32 @@ class gamma_sw():
         else:
             self.eos_dict['crosslibrary'] = kwargs['crosslibrary']
 
+        ###### The following lines are *OPTIONAL* and are completely for internal use for this specific SAFT type and aren't mandatory 
+
+        # This is an optional line that processes the mass of beads for the Aideal method, Abroglie
         if not hasattr(self, 'massi'):
             self.eos_dict['massi'] = tb.calc_massi(self.eos_dict['nui'],self.eos_dict['beadlibrary'],self.eos_dict['beads'])
+
+        # The following terms are used by SAFT-gamma variations 
         if not hasattr(self, 'Vks'):
             self.eos_dict['Vks'] = tb.extract_property("Vks",self.eos_dict['beadlibrary'],self.eos_dict['beads'])
         if not hasattr(self, 'Sk'):
             self.eos_dict['Sk'] = tb.extract_property("Sk",self.eos_dict['beadlibrary'],self.eos_dict['beads'])
 
-        # Initialize temperature attribute
+        # Initialize composition attribute. This is for composition dependent properties. By recording this, we can avoid recalculating those parameters unnecessarily. In saft-gamma-mie we also have temperature dependent parameters and so self.T is included.
         if not hasattr(self, 'xi'):
             self.xi = np.nan
 
+        # These are initialized for loops used in some of the methods below. Depending on how you choose to break things up, these might not be needed.
         if not hasattr(self, 'nbeads'):
             self.ncomp, self.nbeads = np.shape(self.eos_dict['nui'])
-        # Intiate cross interaction terms
+
+        # Intiate cross interaction terms, as mentioned above, some mixing rules use a particular combination of parameters and these are handled here.
         output = stb.cross_interaction_from_dict( self.eos_dict['beads'], self.eos_dict['beadlibrary'], self.mixing_rules, crosslibrary=self.eos_dict['crosslibrary'])
         self.eos_dict["sigma_kl"] = output["sigma"]
         self.calc_sw_cross_interaction_parameters()
 
+        # This optional keyword can be passed in an input file as "eos_num_rings". If your chosen version of SAFT needs special keyward passed that don't fall under a catagory above. Make a note in the doc string to pass it as "eos_somekeyword"
         if "num_rings" in kwargs:
             self.eos_dict['num_rings'] = kwargs['num_rings']
             logger.info("Accepted component ring structure: {}".format(kwargs["num_rings"]))
@@ -114,8 +124,8 @@ class gamma_sw():
         self.calc_component_averaged_properties()
         self.alphakl = 2.0*np.pi/3.0*self.eos_dict['epsilon_kl']*self.eos_dict['sigma_kl']**3*(self.eos_dict['lambda_kl']**3 - 1.0)
 
-    def calc_sw_cross_interaction_parameters(self, mode="normal"):
-        r""" Calculate mixed energy parameter
+    def calc_sw_cross_interaction_parameters(self, mode="normal"): # Defined above as *MANDATORY*
+        r""" Calculate mixed energy parameter. This optional method was added to handle specific mixing rules that require multiple parameters.
   
         Parameters
         ----------
@@ -123,150 +133,13 @@ class gamma_sw():
             This indicates whether group or effective component parameters are used. Options include: "normal" and "effective"
         """
 
-        if mode == "normal":
-            tmp = "_kl"
-            lx = self.nbeads
-        elif mode == "effective":
-            tmp = "_ij"
-            lx = self.ncomp
-        else:
-            raise ValueError("The input, {}, is not a supported mode for cross interaction calculations".format(mode))
-
-        # self-interaction
-        if mode == "normal":
-            epsilon = np.zeros((lx,lx))
-            lambda_tmp = np.zeros((lx,lx))
-            for k in range(lx):
-                bead1 = self.eos_dict['beads'][k]
-                epsilon[k,k] = self.eos_dict["beadlibrary"][bead1]["epsilon"]
-                lambda_tmp[k,k] = self.eos_dict["beadlibrary"][bead1]["lambda"]
-        elif mode == "effective":
-            epsilon = self.eos_dict["epsilon_ij"]
-            lambda_tmp = self.eos_dict["lambda_ij"]
-     
-        for k in range(lx):
-            for l in range(k,lx):
-                 tmp1 = self.eos_dict["sigma"+tmp][k,k]*lambda_tmp[k,k] + self.eos_dict["sigma"+tmp][l,l]*lambda_tmp[l,l]
-                 tmp2 = (self.eos_dict["sigma"+tmp][k,k] + self.eos_dict["sigma"+tmp][l,l])
-                 lambda_tmp[k,l] = tmp1/tmp2
-                 lambda_tmp[l,k] = lambda_tmp[k,l]
-
-                 tmp1 = self.eos_dict["sigma"+tmp][k,k]**3*(lambda_tmp[k,k]**3 - 1.0)*epsilon[k,k]
-                 tmp2 = self.eos_dict["sigma"+tmp][l,l]**3*(lambda_tmp[l,l]**3 - 1.0)*epsilon[l,l]
-                 tmp3 = self.eos_dict["sigma"+tmp][k,l]**3*(lambda_tmp[k,l]**3 - 1.0)
-                 epsilon[k,l] = np.sqrt(tmp1*tmp2)/tmp3
-                 epsilon[l,k] = epsilon[k,l]
-
-        # testing if crosslibrary is empty ie not specified
-        if mode == "normal" and self.eos_dict["crosslibrary"]:
-            # find any cross terms in the cross term library
-            crosslist = []
-            beads = self.eos_dict['beads']
-            crosslibrary = self.eos_dict["crosslibrary"]
-            for (i, beadname) in enumerate(beads):
-                if beadname in crosslibrary:
-                    for (j, beadname2) in enumerate(beads):
-                        if beadname2 in crosslibrary[beadname]:
-                            crosslist.append([i, j])
-
-            for i in range(np.size(crosslist, axis=0)):
-                a = crosslist[i][0]
-                b = crosslist[i][1]
-                if beads[a] in crosslibrary:
-                    if beads[b] in crosslibrary[beads[a]]:
-                        if "epsilon" in crosslibrary[beads[a]][beads[b]]:
-                            epsilon[a, b] = crosslibrary[beads[a]][beads[b]]["epsilon"]
-                            epsilon[b, a] = epsilon[a, b]
-                        if "lambda" in crosslibrary[beads[a]][beads[b]]:
-                            lambda_tmp[a, b] = crosslibrary[beads[a]][beads[b]]["lambda"]
-                            lambda_tmp[b, a] = epsilon[a, b]
-
-        self.eos_dict["epsilon"+tmp] = epsilon 
-        self.eos_dict["lambda"+tmp] = lambda_tmp
-
-    def calc_component_averaged_properties(self):
-        r"""
-        
-        Attributes
-        ----------
-        output : dict
-            Dictionary of outputs, the following possibilities aer calculated if all relevant beads have those properties.
-    
-            - epsilon_ij : numpy.ndarray, Matrix of well depths for groups (k,l)
-            - sigma_ij : numpy.ndarray, Matrix of Mie diameter for groups (k,l)
-            - lambda_ij : numpy.ndarray, Matrix of Mie potential attractive exponents for k,l groups
-    
-        """
-    
-        ncomp, nbeads = np.shape(self.eos_dict['nui'])
-        zki = np.zeros((ncomp, nbeads), float)
-        zkinorm = np.zeros(ncomp, float)
-    
-        epsilonii = np.zeros(ncomp, float)
-        sigmaii = np.zeros(ncomp, float)
-        lambdaii = np.zeros(ncomp, float)
-    
-        #compute zki
-        for i in range(ncomp):
-            for k in range(nbeads):
-                zki[i, k] = self.eos_dict['nui'][i, k] * self.eos_dict['Vks'][k] * self.eos_dict['Sk'][k]
-                zkinorm[i] += zki[i, k]
-    
-        for i in range(ncomp):
-            for k in range(nbeads):
-                zki[i, k] = zki[i, k] / zkinorm[i]
-    
-        for i in range(ncomp):
-            for k in range(nbeads):
-                sigmaii[i] += zki[i, k] * self.eos_dict['sigma_kl'][k, k]**3
-                for l in range(nbeads):
-
-                    epsilonii[i] += zki[i, k] * zki[i, l] * self.eos_dict['epsilon_kl'][k, l]
-                    lambdaii[i] += zki[i, k] * zki[i, l] * self.eos_dict['lambda_kl'][k, l]
-            sigmaii[i] = sigmaii[i]**(1.0/3.0)
-
-        input_dict = {"sigma": sigmaii}
-        output_dict = stb.cross_interaction_from_array( input_dict, self.mixing_rules)
-        self.eos_dict["sigma_ij"] = output_dict['sigma']
+        # The guts of this function are irrelevant to our purpose. See gamma_sw.py for more detail
 
         self.eos_dict["lambda_ij"] = np.diagflat(lambdaii)
         self.eos_dict["epsilon_ij"] = np.diagflat(epsilonii)
         self.calc_sw_cross_interaction_parameters(mode="effective")
 
-    def calc_Kklab(self, r_klab, ratio=0.25):
-        r"""
-        Calculate available bonding site volume from the square-well cut-off distance.
- 
-        Parameters
-        ----------
-        r_ij_klab : numpy.ndarray
-            Matrix of cutt-off values (ncomp x ncomp x nbeads x nbeads)
-        ratio : float, Optional, default: 0.25
-            This sets the reduced density of the sites, r_d/sigma_ij (effective sigma)
-
-        Returns
-        -------
-        Kklab : numpy.ndarray
-            Bonding volume for association sites. (ncomp x ncomp x nbeads x nbeads) 
-        """
-
-    #    sigma = self.eos_dict['sigma_ij']
-    #    Kklab = np.zeros((self.ncomp,self.ncomp,self.nbeads,self.nbeads))
-    #    for i in range(self.ncomp):
-    #        for j in range(self.ncomp):
-    #            r_d = ratio*sigma[i,j]
-    #            for k in range(self.nbeads):
-    #                for l in range(self.nbeads):
-    #                    tmp = 4*np.pi*sigma[i,j]**2/(72.0*r_d**2)
-    #                    tmp11 = np.log(r_klab[i,j,k,l])
-    #                    tmp12 = 
-    #                    tmp21 = 
-    #                    tmp22 = 
-    #                    Kklab[i,j,k,l] = tmp*(tmp11*tmp12+tmp21*tmp22)
-
-    #    return Kklab
-
-    def reduced_density(self, rho, xi):
+    def reduced_density(self, rho, xi): # *OPTIONAL*
         r"""
         Reduced density matrix where the segment number density is reduced by powers of the size parameter, sigma.
         
@@ -286,15 +159,12 @@ class gamma_sw():
         self._check_density(rho)
         self._check_composition_dependent_parameters(xi)
 
-        rho2 = rho * constants.molecule_per_nm3 * self.eos_dict['Cmol2seg']
+        # The guts of this function are irrelevant to our purpose. See gamma_sw.py for more detail
 
-        reduced_density = np.zeros((np.size(rho), 4))
-        for m in range(4):
-            reduced_density[:, m] = rho2 * (np.sum(np.sqrt(np.diag(self.eos_dict['xskl'])) * (np.diag(self.eos_dict['sigma_kl'])**m)) * (np.pi / 6.0))
 
         return reduced_density
 
-    def effective_packing_fraction(self, rho, xi, zetax=None, mode="normal"):
+    def effective_packing_fraction(self, rho, xi, zetax=None, mode="normal"): # *OPTIONAL*
         r"""
         Effective packing fraction for SAFT-gamma with a square-wave potential
         
@@ -318,30 +188,11 @@ class gamma_sw():
         self._check_density(rho)
         self._check_composition_dependent_parameters(xi)
 
-        if mode == "normal":
-            lambdakl = self.eos_dict["lambda_kl"]
-        elif mode == "effective":
-            lambdakl = self.eos_dict["lambda_ij"]
-        lx = len(lambdakl) # lx is nbeads for normal and ncomp for effective
-
-        if zetax is None:
-            zetax = self.reduced_density(rho, xi)[:,3]
-
-        zetax_pow = np.zeros((np.size(rho), 3))
-        zetax_pow[:, 0] = zetax
-        for i in range(1, 3):
-            zetax_pow[:, i] = zetax_pow[:, i - 1] * zetax_pow[:, 0]
-
-        zetakl = np.zeros((np.size(rho), lx, lx))
-        for k in range(lx):
-            for l in range(lx):
-                if lambdakl[k, l] != 0.0:
-                    cikl = np.dot(ckl_coef, np.array( (1.0, lambdakl[k, l], lambdakl[k, l]**2), dtype=ckl_coef.dtype ))
-                    zetakl[:, k, l] = np.dot( zetax_pow, cikl)
+        # The guts of this function are irrelevant to our purpose. See gamma_sw.py for more detail
 
         return zetakl
 
-    def _dzetaeff_dzetax(self, rho, xi, zetax=None, mode="normal"):
+    def _dzetaeff_dzetax(self, rho, xi, zetax=None, mode="normal"): # *OPTIONAL*
         r"""
         Effective packing fraction for SAFT-gamma with a square-wave potential
         
@@ -365,29 +216,12 @@ class gamma_sw():
         self._check_density(rho)
         self._check_composition_dependent_parameters(xi)
 
-        if mode == "normal":
-            lambdakl = self.eos_dict["lambda_kl"]
-        elif mode == "effective":
-            lambdakl = self.eos_dict["lambda_ij"]
-        lx = len(lambdakl) # lx is nbeads for normal and ncomp for effective
-
-        if zetax is None:
-            zetax = self.reduced_density(rho, xi)[:,3]
-
-        zetax_pow = np.transpose(np.array([np.ones(len(rho)), 2*zetax, 3*zetax**2]))
-
-        # check if you have more than 1 bead types
-        dzetakl = np.zeros((np.size(rho), lx, lx))
-        for k in range(lx):
-            for l in range(lx):
-                if lambdakl[k, l] != 0.0:
-                    cikl = np.dot(ckl_coef, np.array( (1.0, lambdakl[k, l], lambdakl[k, l]**2), dtype=ckl_coef.dtype ))
-                    dzetakl[:, k, l] = np.dot( zetax_pow, cikl)
+        # The guts of this function are irrelevant to our purpose. See gamma_sw.py for more detail
 
         return dzetakl
 
         
-    def Ahard_sphere(self,rho, T, xi):
+    def Ahard_sphere(self,rho, T, xi): # *OPTIONAL*
         r"""
         Outputs :math:`A^{HS}`.
         
@@ -411,17 +245,11 @@ class gamma_sw():
 
         zeta = self.reduced_density(rho, xi)
 
-        tmp = (6.0 / (np.pi * rho * constants.molecule_per_nm3))
-        tmp1 = np.log1p(-zeta[:, 3]) * (zeta[:, 2]**3 / (zeta[:, 3]**2) - zeta[:, 0])
-        tmp2 = 3.0 * zeta[:, 2] / (1 - zeta[:, 3]) * zeta[:, 1]
-        tmp3 = zeta[:, 2]**3 / (zeta[:, 3] * ((1.0 - zeta[:, 3])**2))
-        AHS = tmp*(tmp1 + tmp2 + tmp3)
-
-        #print("AHS",AHS)
+        # The guts of this function are irrelevant to our purpose. See gamma_sw.py for more detail
 
         return AHS
     
-    def Afirst_order(self,rho, T, xi, zetax=None):
+    def Afirst_order(self,rho, T, xi, zetax=None):  # *OPTIONAL*
         r"""
         Outputs :math:`A^{1st order}`. This is the first order term in the high-temperature perturbation expansion
         
@@ -456,7 +284,7 @@ class gamma_sw():
 
         return A1
 
-    def Asecond_order(self, rho, T, xi, zetax=None, KHS=None):
+    def Asecond_order(self, rho, T, xi, zetax=None, KHS=None):  # *OPTIONAL*
         r"""
         Outputs :math:`A^{2nd order}`. This is the second order term in the high-temperature perturbation expansion
         
@@ -507,7 +335,7 @@ class gamma_sw():
 
         return A2
     
-    def Amonomer(self,rho, T, xi):
+    def Amonomer(self,rho, T, xi): # Defined above as *MANDATORY*
         r"""
         Outputs :math:`A^{mono.}`. This is composed
         
@@ -540,7 +368,7 @@ class gamma_sw():
 
         return Amonomer
 
-    def calc_g0HS(self, rho, xi, zetax=None, mode="normal"):
+    def calc_g0HS(self, rho, xi, zetax=None, mode="normal"):  # *OPTIONAL*
         r"""
         The contact value of the pair correlation function of a hypothetical pure fluid of diameter sigmax evaluated at an effective packing fraction, zeta_eff.
         
@@ -573,7 +401,7 @@ class gamma_sw():
 
         return g0HS
 
-    def calc_gHS(self, rho, xi):
+    def calc_gHS(self, rho, xi):  # *OPTIONAL*
         r"""
         
         
@@ -609,7 +437,7 @@ class gamma_sw():
 
         return gHS
 
-    def calc_gSW(self, rho, T, xi, zetax=None):
+    def calc_gSW(self, rho, T, xi, zetax=None):  # *OPTIONAL*
         r"""
         
         
@@ -658,7 +486,7 @@ class gamma_sw():
 
         return gSW
 
-    def Achain(self, rho, T, xi):
+    def Achain(self, rho, T, xi): # Defined above as *MANDATORY*
         r"""
         Outputs :math:`A^{chain}`.
     
@@ -697,7 +525,7 @@ class gamma_sw():
 
         return Achain
 
-    def density_max(self, xi, T, maxpack=0.65):
+    def density_max(self, xi, T, maxpack=0.65): ############## *MANDATORY*
 
         """
         Estimate the maximum density based on the hard sphere packing fraction.
@@ -725,7 +553,7 @@ class gamma_sw():
 
         return maxrho
 
-    def calc_gr_assoc(self, rho, T, xi):
+    def calc_gr_assoc(self, rho, T, xi): ############## *MANDATORY*
         r"""
             
         Reference fluid pair correlation function used in calculating association sites
@@ -750,7 +578,7 @@ class gamma_sw():
 
         return gSW
 
-    def parameter_refresh(self, beadlibrary, crosslibrary):
+    def parameter_refresh(self, beadlibrary, crosslibrary): ############## *MANDATORY*
         r""" 
         To refresh dependent parameters
         
@@ -769,7 +597,7 @@ class gamma_sw():
         if not np.isnan(self.xi):
             self.eos_dict['Cmol2seg'], self.eos_dict['xskl'] = stb.calc_composition_dependent_variables(xi, self.eos_dict['nui'], self.eos_dict['beadlibrary'], self.eos_dict['beads'])
 
-    def _check_density(self, rho):
+    def _check_density(self, rho): # *OPTIONAL*
         r"""
         This function checks the attritutes of the density array
         
@@ -795,7 +623,7 @@ class gamma_sw():
 
         return rho
 
-    def _check_composition_dependent_parameters(self, xi):
+    def _check_composition_dependent_parameters(self, xi): # *OPTIONAL*
         r"""
         This function checks the attritutes of
         
