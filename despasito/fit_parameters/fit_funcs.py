@@ -3,6 +3,7 @@ import os
 import numpy as np
 import logging
 import scipy.optimize as spo
+from despasito.utils.parallelization import MultiprocessingJob
 
 logger = logging.getLogger(__name__)
 
@@ -288,7 +289,7 @@ class WriteParameterResults(object):
         self.ninit = 0
 
         with open(filename, 'w') as f:
-            f.write("# n, obj, "+", ".join(beadnames)+"\n")
+            f.write("# n, convergence, "+", ".join(beadnames)+"\n")
 
     def __call__(self, x_new, convergence=0):
         r"""
@@ -381,7 +382,7 @@ def global_minimization(global_method, beadparams0, bounds, fit_bead, fit_params
     methods = ["basinhopping", "differential_evolution", "brute"]
     logger.info("Using global optimization method: {}".format(global_method))
 
-    if global_method == "basinhopping":
+    if global_method == "basinhopping":  #__________________________________________________________________
 
         # Options for basin hopping
         new_global_dict = {"niter": 10, "T": 0.5, "niter_success": 3}
@@ -417,7 +418,7 @@ def global_minimization(global_method, beadparams0, bounds, fit_bead, fit_params
         logger.info("Basin Hopping Options: {}".format(global_dict))
         result = spo.basinhopping(compute_obj, beadparams0, **global_dict, accept_test=custombounds, minimizer_kwargs={"args": (fit_bead, fit_params, exp_dict, bounds),**minimizer_dict})
 
-    elif global_method == "differential_evolution":
+    elif global_method == "differential_evolution":  #______________________________________________________
 
         obj_kwargs = ["obj_cut", "filename"]
         if "obj_cut" in global_dict:
@@ -443,13 +444,16 @@ def global_minimization(global_method, beadparams0, bounds, fit_bead, fit_params
         global_dict = new_global_dict
         logger.info("Differential Evolution Options: {}".format(global_dict))
 
+        if minimizer_dict:
+            logger.warning("Minimization options were given but aren't used in this method.")
+
         obj = WriteParameterResults(fit_params, obj_cut=obj_cut, filename=filename)
         result = spo.differential_evolution(compute_obj, bounds, callback=obj, args=(fit_bead, fit_params, exp_dict, bounds), **global_dict)
 
-    elif global_method == "brute":
+    elif global_method == "brute": #__________________________________________________________________________
 
         # Options for brute, set defaults in new_global_dict
-        new_global_dict = {}
+        new_global_dict = {"Ns": 5, "finish":spo.minimize}
         if global_dict:
             for key, value in global_dict.items():
                 if key is "mpObj":
@@ -460,14 +464,99 @@ def global_minimization(global_method, beadparams0, bounds, fit_bead, fit_params
                 else:
                     new_global_dict[key] = value
         global_dict = new_global_dict
+        global_dict["full_output"] = True
+
+        if minimizer_dict:
+            logger.warning("Minimization options were given but aren't used in this method. Specify minimization method as 'finish' function in global_dict")
 
         logger.info("Brute Options: {}".format(global_dict))
-        result = spo.brute(compute_obj, bounds, args=(fit_bead, fit_params, exp_dict, bounds), **global_dict)
+        x0, fval, grid, Jount = spo.brute(compute_obj, bounds, args=(fit_bead, fit_params, exp_dict, bounds), **global_dict)
+        result = spo.OptimizeResult(x=x0,
+                                    fun=fval,
+                                    success=True,
+                                    nit=len(x0)*global_dict["Ns"],
+                                    message="Termination successful with {} grid points and the minimum value minimized. Note that parameters may be outside of the given bounds because of the minimizing function.".format(len(x0)*global_dict["Ns"]))
 
-    else:
+    elif global_method == "grid_minimization":  #___________________________________________________________________
+
+        # Options for brute, set defaults in new_global_dict
+        flag_use_mp_object = False
+        new_global_dict = {"Ns": 5, "finish":spo.minimize}
+        if global_dict:
+            for key, value in global_dict.items():
+                if key is "mpObj":
+                    if value.ncores > 1:
+                        logger.info("Grid minimization algoirithm is using {} workers.".format(value.ncores))
+                        new_global_dict["mpObj"] = value
+                        flag_use_mp_object = True
+                        exp_dict = del_Data_mpObj(exp_dict)
+                else:
+                    new_global_dict[key] = value
+        global_dict = new_global_dict
+        logger.info("Grid Minimization Options: {}".format(global_dict))
+
+        # Set up options for minimizer
+        new_minimizer_dict = {"method": 'L-BFGS-B'}
+        if minimizer_dict:
+            for key, value in minimizer_dict.items():
+                if key == "method":
+                    new_minimizer_dict[key] = value
+                elif key == "options":
+                    for key2, value2 in value.items():
+                        new_minimizer_dict[key][key2] = value2
+        minimizer_dict = new_minimizer_dict
+        logger.info("    Minimizer Options: {}".format( minimizer_dict))
+
+        args = args=(fit_bead, fit_params, exp_dict, bounds)    
+
+        # Set up inputs
+        if "initial_guesses" in global_dict:
+            x0_array = global_dict["initial_guesses"]
+        else:
+            # Initialization taken from scipy.optimize.brute
+            N = len(bounds)
+            lrange = list(bounds)
+            for k in range(N):
+                if type(lrange[k]) is not type(slice(None)):
+                    if len(lrange[k]) < 3:
+                        lrange[k] = tuple(lrange[k]) + (complex(global_dict["Ns"]),)
+                    lrange[k] = slice(*lrange[k])
+            if (N == 1):
+                lrange = lrange[0]
+            x0_array = np.mgrid[lrange]
+            inpt_shape = x0_array.shape
+            if (N > 1):
+                x0_array = np.reshape(x0_array, (inpt_shape[0], np.prod(inpt_shape[1:]))).T 
+         
+        inputs = [(x0, args, minimizer_dict) for x0 in x0_array]
+
+        # Start computation
+        if flag_use_mp_object:
+            x0, results = global_dict["mpObj"].pool_job(_grid_minimization_wrapper, inputs)
+        else:
+            x0, results = MultiprocessingJob.serial_job(_grid_minimization_wrapper, inputs)
+
+        # Choose final output
+        result = [np.inf, None]
+        logger.info("For bead: {} and parameters {}".format(fit_bead,fit_params))
+        for i in range(len(x0_array)):
+            tmp_result = results[i]
+            logger.info("x0: {}, xf: {}, obj: {}".format(x0_array[i], tmp_result.x, tmp_result.fun))
+            if result[0] > tmp_result.fun:
+                result = [tmp_result.fun, tmp_result]
+        result = result[1]
+    else: #________________________________________________________________________________________
+
         raise ValueError("Global optimization method, {}, is not currently supported. Try: {}".format(global_method,", ".join(methods)))
 
     return result
+
+def _grid_minimization_wrapper(args):
+
+    x0, obj_args, opts = args
+    result = spo.minimize(compute_obj, x0, args=obj_args, **opts)
+
+    return x0, result
 
 
 def compute_obj(beadparams, fit_bead, fit_params, exp_dict, bounds):

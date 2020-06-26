@@ -3,7 +3,7 @@
     "EOSgroup": "../library/SAFTgroup.json",
     "opt_params": {
         "fit_bead" : "CH3",
-        "fit_params": ["epsilon_CH2", "sigma"],
+        "fit_params": ["epsilon_CH2"],
         "epsilon_bounds" : [150.0, 400.0],
         "beadparams0" : [300.0, 0.35]
     },
@@ -14,7 +14,7 @@
         "file": "butane_solubility.csv"
     },
     "global_dict": {
-        "method": "brute",
-        "Ns": 2
+        "method": "grid_minimization",
+        "Ns": 3
     }
 }
