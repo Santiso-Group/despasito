@@ -1,10 +1,10 @@
 {
     "beadconfig": [[["cCH2", 6]],[["CH3", 2],["CH2" , 2],["COO", 1]]],
-    "EOSgroup": "../propylacetate_cyclohexane/SAFTgroup.json",
-    "EOScross": "../propylacetate_cyclohexane/SAFTcross_paper.json",
+    "EOSgroup": "SAFTgroup.json",
+    "EOScross": "SAFTcross_paper.json",
     "output_file": "out_propylacetate_cyclohexane_335_paper.txt",
     "calculation_type" : "phase_xiT",
-    "method": "hybr",
+    "pressure_options": {"method": "least_squares", "maxiter":50},
     "Tlist" : [335],
     "xilist": [[0.1185, 0.8815]]
 }

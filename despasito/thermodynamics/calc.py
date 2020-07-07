@@ -1005,13 +1005,18 @@ def calc_Prange_xi(T, xi, yi, eos, density_dict={}, Pmin=10000, mole_fraction_op
     yi_range = yi
 
     maxiter = 200
+    flag_min = False
     p = Prange[0]
     for z in range(maxiter):
         # Find Obj Function for Min pressure above
         phil, rhol, flagl = calc_phil(p, T, xi, eos, density_dict=density_dict)
         if any(np.isnan(phil)):
             logger.error("Estimated minimum pressure is too low.")
-            Prange[0] += Pmin
+            flag_liqu = False
+            flag_min=True
+            ObjRange[0] = np.inf
+            Prange[0] = Pmin
+            p = 2*Pmin
             continue
 
         if flagl in [1,2]:
@@ -1023,34 +1028,53 @@ def calc_Prange_xi(T, xi, yi, eos, density_dict={}, Pmin=10000, mole_fraction_op
                 Prange[1] = p
                 ObjRange[1] = obj
                 p = (Prange[1]-Prange[0])/2.0 + Prange[0]
-            elif np.sum(np.abs(xi-yi_range)/xi) < 0.02: # If within 2% of smallest value
-                flag_liqu = True
-                ObjRange[1] = obj
-                Prange[1] = p
-                phiv_max, flagv_max = phiv_min, flagv_min
-                logger.info("Estimated Minimum Pressure Reproduces xi: {},  Obj. Func: {}".format(p,obj))
-                p = 0.75*p
+            elif (np.sum(np.abs(xi-yi_range)/xi) < 0.02 and flagv_min==2): # If within 2% of liquid mole fraction
+                logger.info("Estimated Minimum Pressure Reproduces xi: {},  Obj. Func: {}, Range {}".format(p,obj,Prange))
+                if p < 5: # Less than a Pa
+                    flag_liqu = False
+                    flag_min=True
+                    ObjRange[0] = np.inf
+                    Prange[0] = Pmin
+                    p = 2*Pmin
+                elif flag_min:
+                    ObjRange[0] = obj
+                    Prange[0] = p
+                    p = 2*p
+                else:
+                    flag_liqu = True
+                    ObjRange[1] = obj
+                    Prange[1] = p
+                    phiv_max, flagv_max = phiv_min, flagv_min
+                    p = p/2
             elif obj > 0:
                 Prange[0] = p
                 ObjRange[0] = obj
-                logger.info("Estimated Minimum Pressure: {},  Obj. Func: {}".format(p,obj))
+                logger.info("Estimated Minimum Pressure: {},  Obj. Func: {}, Range {}".format(p,obj,Prange))
                 break
-            elif ObjRange[0] < 0:
-                logger.info("Estimated Minimum Pressure too High: {},  Obj. Func: {}".format(p,obj))
+            elif obj < 0:
+                flag_liqu = True
+                logger.info("Estimated Minimum Pressure too High: {},  Obj. Func: {}, Range {}".format(p,obj,Prange))
                 ObjRange[1] = obj
                 Prange[1] = p
                 phiv_max, flagv_max = phiv_min, flagv_min
                 p /= 2
+            else:
+                logger.info("Estimated Minimum Pressure Produced Vapor: {}, Range {}".format(p,Prange))
+                Prange[0] = p
+                ObjRange[0] = obj
+                p = 2*Prange[0]
         else:
-            logger.info("Estimated Minimum Pressure Produced Vapor: {}".format(p))
+            logger.info("Estimated Minimum Pressure Produced Vapor: {}, Range {}".format(p,Prange))
             Prange[0] = p
+            ObjRange[0] = np.nan
             p = 2*Prange[0]
 
         if Prange[0] > Prange[1]:
-            Prange[0] = Prange[1]
-            ObjRange[0] = ObjRange[1]
+            Prange[1] = 2*Prange[0]
+            ObjRange[1] = ObjRange[0]
 
-        if (p < Prange[0] and Prange[0] != Prange[1]) or (flag_liqu and p > Prange[1]):
+        if (flag_min and flag_liqu and p not in range(Prange[0],Prange[1])):
+        #if (p < Prange[0] and Prange[0] != Prange[1]) or (flag_liqu and p > Prange[1]):
             p = (Prange[1]-Prange[0])*np.random.rand(1)[0] + Prange[0]
 
         if p <= 0.:
@@ -1133,9 +1157,27 @@ def calc_Prange_xi(T, xi, yi, eos, density_dict={}, Pmin=10000, mole_fraction_op
 
                         ind = np.where(np.logical_and(Prange[0]<=Parray, Parray<=Prange[1]))[0]
                         if np.size(ind) > 3:
-
-                            p = spo.brentq(solve_P_xiT, Prange[0], Prange[1], args=(xi, T, eos, density_dict))
-                            obj = solve_P_xiT(p, xi, T, eos, density_dict=density_dict)
+                            logger.info("Pressure Obj starts to increase, let's find a lower bound.") 
+                            p_array = np.linspace(Prange[0],Prange[1],10)
+                            obj_array = np.zeros(len(p_array))
+                            print(p_array)
+                            print(obj_array)
+                            for ii in range(len(p_array)):
+                                obj_array[ii] = solve_P_xiT(p_array[ii], xi, T, eos, density_dict=density_dict)
+                            spline = interpolate.UnivariateSpline(p_array, obj_array, k=4, s=0)
+                            p_min = spline.derivative().roots()
+                            if len(p_min) > 1:
+                                p_min = p_min[0]
+                            obj  = solve_P_xiT(p_min, xi, T, eos, density_dict=density_dict)
+                            Prange[1] = p_min
+                            ObjRange[1] = obj 
+                            logger.info("New Max Pressure: {}, Obj Func: {}, Range {}".format(Prange[1],ObjRange[1],Prange))
+                            if obj < 0:
+                                logger.info("Got the pressure range!")
+                                slope = (ObjRange[1] - ObjRange[0]) / (Prange[1] - Prange[0])
+                                intercept = ObjRange[1] - slope * Prange[1]
+                                Pguess = -intercept / slope
+                                flag_min = False
                             break
 
                             #x, y = _clean_plot_data([Parray[i] for i in ind], [ObjArray[i] for i in ind])
@@ -1365,12 +1407,14 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, density_dict={}, maxiter=50, tol=1e-6)
             flag_check_vapor = False
             if (all(yi_tmp != 0.) and len(yi_tmp)==2):
                 logger.info("    Composition doesn't produce a vapor, let's find one!")
-                yi2 = find_new_yi(P, T, phil, xi, eos, density_dict=density_dict)
-                if np.any(np.isnan(yi2)):
+                yi_tmp = find_new_yi(P, T, phil, xi, eos, density_dict=density_dict)
+                flag_trivial_sol = False
+                if np.any(np.isnan(yi_tmp)):
                     phiv, rhov, flagv = [np.nan, np.nan, 3]
+                    yinew = yi_tmp
                     break
                 else:
-                    phiv, rhov, flagv = calc_phiv(P, T, yi2, eos, density_dict=density_dict)
+                    phiv, rhov, flagv = calc_phiv(P, T, yi_tmp, eos, density_dict=density_dict)
                     yinew = xi * phil / phiv
             else:
                 logger.info("    Composition doesn't produce a vapor, we need a function to search compositions for more than two components.")
@@ -1379,17 +1423,19 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, density_dict={}, maxiter=50, tol=1e-6)
             flag_trivial_sol = False
             if (all(yi_tmp != 0.) and len(yi_tmp)==2):
                 logger.info("    Composition produces trivial solution, let's find a different one!")
-                yi2 = find_new_yi(P, T, phil, xi, eos, density_dict=density_dict)
+                yi_tmp = find_new_yi(P, T, phil, xi, eos, density_dict=density_dict)
+                flag_check_vapor = False
             else:
                 logger.info("    Composition produces trivial solution, using random guess to reset")
-                yi2 = np.random.rand(len(yi_tmp))
-                yi2 /= np.sum(yi2)
+                yi_tmp = np.random.rand(len(yi_tmp))
+                yi_tmp /= np.sum(yi_tmp)
 
-            if np.any(np.isnan(yi2)):
+            if np.any(np.isnan(yi_tmp)):
                 phiv, rhov, flagv = [np.nan, np.nan, 3]
+                yinew = yi_tmp
                 break
             else:
-                phiv, rhov, flagv = calc_phiv(P, T, yi2, eos, density_dict=density_dict)
+                phiv, rhov, flagv = calc_phiv(P, T, yi_tmp, eos, density_dict=density_dict)
                 yinew = xi * phil / phiv
         else:
             yinew = xi * phil / phiv
@@ -1631,13 +1677,14 @@ def find_new_yi(P, T, phil, xi, eos, bounds=(0.01, 0.99), npoints=30, density_di
         # Fit spline
         spline = interpolate.UnivariateSpline(yi_tmp, obj_tmp, k=4, s=0)
         yi_min = spline.derivative().roots()
+
         if len(yi_min) > 1:
             yi_concav = spline.derivative(n=2)(yi_min)
             yi_min = [yi_min[i] for i in range(len(yi_min)) if yi_concav[i]>0.0]
-            if len(yi_min) == 1:
+            if len(yi_tmp) > 1:
                 if obj_tmp[0] < obj_tmp[-1]:
-                    yi_min.append(yi_tmp[0])
-                else:
+                    yi_min.insert(0,yi_tmp[0])
+                elif obj_tmp[-1] < obj_tmp[-2]:
                     yi_min.append(yi_tmp[-1])
             yi_min = np.array(yi_min)
             obj_trivial = np.abs(yi_min-xi[0])/xi[0]
@@ -1645,12 +1692,21 @@ def find_new_yi(P, T, phil, xi, eos, bounds=(0.01, 0.99), npoints=30, density_di
             logger.debug('    Found multiple minima: {}, discard {} as trivial solution'.format(yi_min, yi_min[ind]))
             yi_min = np.array([yi_min[ii] for ii in range(len(yi_min)) if ii != ind])
             if len(yi_min) > 1:
-                obj = spline(yi_min)
-                yi_min = [yi_min[np.where(obj==min(obj))[0][0]]]
+                lyi = len(yi_min)
+                obj_tmp2 = np.zeros(lyi)
+                flagv_tmp2 = np.zeros(lyi)
+                for ii in range(lyi):
+                    obj_tmp2[ii], flagv_tmp2[ii] = obj_yi(yi_min[ii], P, T, phil, xi, eos, density_dict=density_dict, return_flag=True)
+                yi_tmp2 = [yi_min[ii] for ii in range(len(yi_min)) if flagv_tmp2 [ii] != 1]
+                if len(yi_tmp2):
+                    obj_tmp2 =  [obj_tmp2[ii] for ii in range(len(obj_tmp2)) if flagv_tmp2 [ii] != 1]
+                    yi_min = [yi_tmp2[np.where(obj_tmp2==min(obj_tmp2))[0][0]]]
+                else:
+                    yi_min = [yi_min[np.where(obj_tmp2==min(obj_tmp2))[0][0]]]
 
         if not len(yi_min):
             # Choose values with lowest objective function
-            ind = np.where(np.abs(obj_tmp2)==min(np.abs(obj_tmp2)))[0][0]
+            ind = np.where(np.abs(obj_tmp)==min(np.abs(obj_tmp)))[0][0]
             obj_final = obj_tmp[ind]
             yi_final = yi_tmp[ind]
         else:
@@ -2269,7 +2325,6 @@ def calc_xT_phase(xi, T, eos, density_dict={}, mole_fraction_options={}, Pguess=
     Prange, Pestimate = calc_Prange_xi(T, xi, yi, eos, density_dict, mole_fraction_options=mole_fraction_options, Pmin=Pmin)
     if np.any(np.isnan(Prange)):
         raise ValueError("Neither a suitable pressure range, or guess in pressure could be found nor was given.")
-        P = gtb.solve_root(solve_P_xiT, args=(xi, T, eos, density_dict, mole_fraction_options), x0=P, method=method, options=pressure_options)
     else:
         if Pguess is not None:
             if Pguess > Prange[1] or Pguess < Prange[0]:

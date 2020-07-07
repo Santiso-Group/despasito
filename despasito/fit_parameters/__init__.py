@@ -107,6 +107,8 @@ def fit(thermo_dict):
     # Generate initial guess for parameters if none was given
     if "beadparams0" in opt_params:
         beadparams0 = opt_params["beadparams0"]
+        if len(beadparams0) != len(opt_params["fit_params"]):
+            raise ValueError("The number of initial parameters given isn't the same number of parameters to be fit.")
     else:
         beadparams0 = ff.initial_guess(opt_params, eos)
     logger.info("Initial guess in parameters: {}".format(beadparams0))

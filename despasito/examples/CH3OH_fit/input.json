@@ -3,9 +3,9 @@
     "EOSgroup": "SAFTgroup.json",
     "opt_params": {
         "fit_bead" : "CH3OH",
-        "fit_params": ["epsilon"],
+        "fit_params": ["epsilon","sigma"],
         "epsilon_bounds" : [150.0, 400.0],
-        "beadparams0" : [375.0]
+        "sigma_bounds" : [0.5, 1.0]
     },
     "Wiley": {
         "datatype": "saturation_properties",
@@ -17,7 +17,6 @@
         "calculation_type": "saturation_properties",
         "file": "methanol_Psat_1.csv"
     },
-    "basin_dict": {
-        "stepsize": 10.0
-    }
+    "global_dict": {"method": "grid_minimization"},
+    "minimizer_dict": {"method":"L-BFGS-B"}
 }

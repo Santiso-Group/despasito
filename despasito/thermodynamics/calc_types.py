@@ -178,6 +178,9 @@ def _phase_xiT_wrapper(args):
             P, _, _ = calc.calc_Psat(T, xi, eos, **opt_tmp)
             yi, flagv, flagl, obj = xi, 0, 1, 0.0
         else:
+            if "pressure_options" in opts and "method" in opts["pressure_options"]:
+                opts['method'] = opts["pressure_options"]["method"]
+                del opts["pressure_options"]["method"]
             P, yi, flagv, flagl, obj = calc.calc_xT_phase(xi, T, eos, **opts)
     except:
         logger.warning("T (K), xi: {} {}, calculation did not produce a valid result.".format(T, xi))
@@ -332,6 +335,9 @@ def _phase_yiT_wrapper(args):
             P, _, _ = calc.calc_Psat(T, yi, eos, **opt_tmp)
             xi, flagv, flagl, obj = yi, 0, 1, 0.0
         else:
+            if "pressure_options" in opts and "method" in opts["pressure_options"]:
+                opts['method'] = opts["pressure_options"]["method"]
+                del opts["pressure_options"]["method"]
             P, xi, flagl, flagv, obj = calc.calc_yT_phase(yi, T, eos, **opts)
     except:
         logger.warning("T (K), yi: {} {}, calculation did not produce a valid result.".format(T, yi))

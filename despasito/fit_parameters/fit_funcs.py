@@ -3,7 +3,9 @@ import os
 import numpy as np
 import logging
 import scipy.optimize as spo
+
 from despasito.utils.parallelization import MultiprocessingJob
+import despasito.utils.general_toolbox as gtb
 
 logger = logging.getLogger(__name__)
 
@@ -496,7 +498,8 @@ def global_minimization(global_method, beadparams0, bounds, fit_bead, fit_params
         logger.info("Grid Minimization Options: {}".format(global_dict))
 
         # Set up options for minimizer
-        new_minimizer_dict = {"method": 'L-BFGS-B'}
+        new_minimizer_dict = {"method": 'lm'}
+        #new_minimizer_dict = {"method": 'L-BFGS-B'}
         if minimizer_dict:
             for key, value in minimizer_dict.items():
                 if key == "method":
@@ -507,7 +510,7 @@ def global_minimization(global_method, beadparams0, bounds, fit_bead, fit_params
         minimizer_dict = new_minimizer_dict
         logger.info("    Minimizer Options: {}".format( minimizer_dict))
 
-        args = args=(fit_bead, fit_params, exp_dict, bounds)    
+        args = (fit_bead, fit_params, exp_dict, bounds)    
 
         # Set up inputs
         if "initial_guesses" in global_dict:
@@ -528,7 +531,7 @@ def global_minimization(global_method, beadparams0, bounds, fit_bead, fit_params
             if (N > 1):
                 x0_array = np.reshape(x0_array, (inpt_shape[0], np.prod(inpt_shape[1:]))).T 
          
-        inputs = [(x0, args, minimizer_dict) for x0 in x0_array]
+        inputs = [(x0, args, bounds, minimizer_dict) for x0 in x0_array]
 
         # Start computation
         if flag_use_mp_object:
@@ -553,8 +556,23 @@ def global_minimization(global_method, beadparams0, bounds, fit_bead, fit_params
 
 def _grid_minimization_wrapper(args):
 
-    x0, obj_args, opts = args
-    result = spo.minimize(compute_obj, x0, args=obj_args, **opts)
+    x0, obj_args, bounds, opts = args
+
+    if "method" in opts:
+        method = opts["method"]
+        del opts["method"]
+    else:
+        method = "least_squares"
+
+    try:
+        result = gtb.solve_root( compute_obj, args=obj_args, method=method, x0=x0, bounds=bounds, options=opts)
+    except:
+        result = np.nan*np.ones(len(x0))
+
+    if np.sum(np.abs(result-x0)) < 1e-6:
+        result = np.nan*np.ones(len(x0))
+
+    logger.info("Starting parameters: {}, converged to: {}".format(x0,result))
 
     return x0, result
 
