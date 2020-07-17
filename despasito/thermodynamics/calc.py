@@ -1137,12 +1137,7 @@ def calc_Prange_xi(T, xi, yi, eos, density_dict={}, Pmin=10000, mole_fraction_op
         else:
             Parray.append(p)
             ObjArray.append(obj)
-            if flag_liqu:
-                Prange[0] = p
-                ObjRange[0] = obj
-                p = (Prange[1]-Prange[0])/2.0 + Prange[0]
-                logger.info("New Min Pressure: {},  Obj. Func: {}, Range {}".format(Prange[0],ObjRange[0],Prange))
-            elif (z > 0 and ObjArray[-1] > 1.1*ObjArray[-2]) or flag_min:
+            if (z > 0 and ObjArray[-1] > 1.1*ObjArray[-2]) or flag_min:
                 if not flag_min:
                     flag_min = True
 
@@ -1160,8 +1155,6 @@ def calc_Prange_xi(T, xi, yi, eos, density_dict={}, Pmin=10000, mole_fraction_op
                             logger.info("Pressure Obj starts to increase, let's find a lower bound.") 
                             p_array = np.linspace(Prange[0],Prange[1],10)
                             obj_array = np.zeros(len(p_array))
-                            print(p_array)
-                            print(obj_array)
                             for ii in range(len(p_array)):
                                 obj_array[ii] = solve_P_xiT(p_array[ii], xi, T, eos, density_dict=density_dict)
                             spline = interpolate.UnivariateSpline(p_array, obj_array, k=4, s=0)
@@ -1192,6 +1185,11 @@ def calc_Prange_xi(T, xi, yi, eos, density_dict={}, Pmin=10000, mole_fraction_op
                     logger.info("New Max Pressure: (increases obj) {},  Obj. Func: {}, Range {}".format(Prange[1],obj,Prange))
                     if p < Prange[0]:
                         p = (Prange[1]-Prange[0])*np.random.rand(1)[0] + Prange[0]
+            elif flag_liqu:
+                Prange[0] = p
+                ObjRange[0] = obj
+                p = (Prange[1]-Prange[0])/2.0 + Prange[0]
+                logger.info("New Min Pressure: {},  Obj. Func: {}, Range {}".format(Prange[0],ObjRange[0],Prange))
             else:
                 if Prange[1] < p:
                     Prange[0] = Prange[1]
