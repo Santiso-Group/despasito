@@ -10,7 +10,37 @@
         "Nk-b": 1,
         "epsilonHB-a-b": 2583.781,
         "epsilonHB-a-a": 0.0,
-        "epsilonHB-b-b": 0.0
+        "epsilonHB-b-b": 0.0,
+        "rc-a-b": 0.2358,
+        "rc-a-a": 0.0,
+        "rc-b-b": 0.0
+    },
+    "C=O": {
+        "epsilon": 386.833,
+        "lambda": 1.782,
+        "sigma": 2.787e-1,
+        "Sk": 0.482,
+        "Vks": 2,
+        "Nk-a": 2,
+        "epsilonHB-a-a": 0.0,
+        "rc-a-a": 0.0,
+        "mass": 0.02801
+    },
+    "COOH": {
+        "epsilon": 269.285,
+        "lambda": 1.538,
+        "sigma": 2.806e-1,
+        "Sk": 0.644,
+        "Vks": 3,
+        "Nk-a": 2,
+        "Nk-b": 1,
+        "epsilonHB-b-b": 3594.295,
+        "epsilonHB-a-b": 0.0,
+        "epsilonHB-a-a": 0.0,
+        "rc-b-b": 0.2244,
+        "rc-a-a": 0.0,
+        "rc-a-b": 0.0,
+        "mass": 0.045018
     },
     "CH3": {
         "epsilon": 252.601, 

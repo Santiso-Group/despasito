@@ -1,8 +1,8 @@
 {
     "beadconfig": [[["aCH", 5],["aCCH2",1],["CH3",1]]], 
     "eos": "saft.gamma_sw",
-    "EOSgroup": "../library/SWgroup.json",
-    "EOScross": "../library/SWcross.json",
+    "EOSgroup": "../../library/SWgroup.json",
+    "EOScross": "../../library/SWcross.json",
     "output_file": "out_rhol.txt",
     "calculation_type" : "liquid_properties",
     "pressure_options": {"maxiter":15},

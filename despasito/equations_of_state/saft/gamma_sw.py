@@ -17,6 +17,7 @@ import sys
 import despasito.equations_of_state.toolbox as tb
 from despasito.equations_of_state import constants
 import despasito.equations_of_state.saft.saft_toolbox as stb
+from despasito.equations_of_state.saft import Aassoc
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +67,7 @@ class gamma_sw():
     def __init__(self, kwargs):
     
         self.Aideal_method = "Abroglie"
-        self.parameter_types = ["epsilon", "epsilonHB", "sigma", "Sk", "K"]
+        self.parameter_types = ["epsilon", "epsilonHB", "sigma", "Sk", "K", "rc", "rd"]
         self.parameter_bound_extreme = {"epsilon":[0.,1000.], "sigma":[0.,1.0], "Sk":[0.,1.], "epsilonHB":[0.,5000.], "K":[0.,10000.]}    
         self.mixing_rules = {"sigma": "mean"}
         self.residual_helmholtz_contributions = ["Amonomer","Achain"]
@@ -232,39 +233,6 @@ class gamma_sw():
         self.eos_dict["lambda_ij"] = np.diagflat(lambdaii)
         self.eos_dict["epsilon_ij"] = np.diagflat(epsilonii)
         self.calc_sw_cross_interaction_parameters(mode="effective")
-
-    def calc_Kklab(self, r_klab, ratio=0.25):
-        r"""
-        Calculate available bonding site volume from the square-well cut-off distance.
- 
-        Parameters
-        ----------
-        r_ij_klab : numpy.ndarray
-            Matrix of cutt-off values (ncomp x ncomp x nbeads x nbeads)
-        ratio : float, Optional, default: 0.25
-            This sets the reduced density of the sites, r_d/sigma_ij (effective sigma)
-
-        Returns
-        -------
-        Kklab : numpy.ndarray
-            Bonding volume for association sites. (ncomp x ncomp x nbeads x nbeads) 
-        """
-
-    #    sigma = self.eos_dict['sigma_ij']
-    #    Kklab = np.zeros((self.ncomp,self.ncomp,self.nbeads,self.nbeads))
-    #    for i in range(self.ncomp):
-    #        for j in range(self.ncomp):
-    #            r_d = ratio*sigma[i,j]
-    #            for k in range(self.nbeads):
-    #                for l in range(self.nbeads):
-    #                    tmp = 4*np.pi*sigma[i,j]**2/(72.0*r_d**2)
-    #                    tmp11 = np.log(r_klab[i,j,k,l])
-    #                    tmp12 = 
-    #                    tmp21 = 
-    #                    tmp22 = 
-    #                    Kklab[i,j,k,l] = tmp*(tmp11*tmp12+tmp21*tmp22)
-
-    #    return Kklab
 
     def reduced_density(self, rho, xi):
         r"""
@@ -725,7 +693,7 @@ class gamma_sw():
 
         return maxrho
 
-    def calc_gr_assoc(self, rho, T, xi):
+    def calc_gr_assoc(self, rho, T, xi, Ktype="ijklab"):
         r"""
             
         Reference fluid pair correlation function used in calculating association sites
@@ -738,10 +706,12 @@ class gamma_sw():
             Temperature of the system [K]
         xi : numpy.ndarray
             Mole fraction of each component, sum(xi) should equal 1.0
+        Ktype : str, Optional, default='ijklab'
+            Indicates which radial distribution function to return. The only option is 'ijklab': The bonding volume was calculated from self.calc_Kijklab, return gHS_dij)
     
         Returns
         -------
-        Iij : numpy.ndarray
+        gr : numpy.ndarray
             A temperature-density polynomial correlation of the association integral for a Lennard-Jones monomer. This matrix is (len(rho) x Ncomp x Ncomp)
         """
     
@@ -749,6 +719,33 @@ class gamma_sw():
         gSW = self.calc_gSW(rho, T, xi)
 
         return gSW
+
+    def calc_Kijklab(self, T, rc_klab, rd_klab=None, reduction_ratio=0.25):
+        r"""
+            
+        Calculation of association site bonding volume, dependent on molecule in addition to group
+
+        Lymperiadis Fluid Phase Equilibria 274 (2008) 85–104
+        
+        Parameters
+        ----------
+        T : float
+            Temperature of the system [K], Note used in this version of saft, but included to allow saft.py to be general
+    
+        Returns
+        -------
+        gr : numpy.ndarray
+            This matrix is (len(rho) x Ncomp x Ncomp)
+        """
+
+        dij_bar = np.zeros((self.ncomp,self.ncomp))
+        for i in range(self.ncomp):
+            for j in range(self.ncomp):
+                dij_bar[i,j] = np.mean([self.eos_dict['sigma_ij'][i],self.eos_dict['sigma_ij'][j]])
+
+        Kijklab = Aassoc.calc_bonding_volume(rc_klab, dij_bar, rd_klab=rd_klab, reduction_ratio=reduction_ratio)
+
+        return Kijklab
 
     def parameter_refresh(self, beadlibrary, crosslibrary):
         r""" 

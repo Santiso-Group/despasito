@@ -40,12 +40,19 @@ elif not method_stat.disable_python:
 def calc_Xika_wrap(*args, maxiter=500, tol=1e-12, damp=0.1):
     r""" This function wrapper allows difference types of compiled functions to be referenced.
     """
-    if flag_fortran:
-        indices, rho, xi, nui, nk, Fklab, Kklab, gr_assoc = args
-        Xika_init = 0.5*np.ones(len(indices))
-        Xika = ext_Aassoc_fortran.calc_xika(indices,constants.molecule_per_nm3*rho,Xika_init,xi,nui,nk,Fklab,Kklab,gr_assoc,maxiter,tol)
-    else:
-        Xika, _ = calc_Xika(*args)
+    indices, rho, xi, nui, nk, Fklab, Kklab, gr_assoc = args
+    if len(np.shape(Kklab)) == 4:
+        if flag_fortran:
+            Xika_init = 0.5*np.ones(len(indices))
+            Xika = ext_Aassoc_fortran.calc_xika_4(indices,constants.molecule_per_nm3*rho,Xika_init,xi,nui,nk,Fklab,Kklab,gr_assoc,maxiter,tol)
+        else:
+            Xika, _ = calc_Xika(*args)
+    elif len(np.shape(Kklab)) == 6:
+        if flag_fortran:
+            Xika_init = 0.5*np.ones(len(indices))
+            Xika = ext_Aassoc_fortran.calc_xika_6(indices,constants.molecule_per_nm3*rho,Xika_init,xi,nui,nk,Fklab,Kklab,gr_assoc,maxiter,tol)
+        else:
+            Xika, _ = calc_Xika(*args)
 
     return Xika
 
@@ -176,8 +183,10 @@ def calc_assoc_matrices(beads, beadlibrary, nui, crosslibrary={}, nk=None, siten
         A dictionary where bead names are the keys to access EOS self interaction parameters:
 
         - epsilon*: Optional, Interaction energy between each bead and association site. Asterisk represents string from sitenames.
-        - K**: Optional, Bonding volume between each association site. Asterisk represents two strings from sitenames.
-        - Nk*: Optional, The number of sites of from list sitenames. Asterisk represents string from sitenames.
+        - K-*-*: Optional, Bonding volume between each association site. Asterisk represents two strings from sitenames.
+        - rc-*-*: Optional, Cutoff distance for association sites. Asterisk represents two strings from sitenames.
+        - rd-*-*: Optional, Site position. Asterisk represents two strings from sitenames.
+        - Nk-*: Optional, The number of sites of from list sitenames. Asterisk represents string from sitenames.
 
     nui : numpy.ndarray
         :math:`\\nu_{i,k}/k_B`. Array of number of components by number of bead types. Defines the number of each type of group in each component.
@@ -186,6 +195,8 @@ def calc_assoc_matrices(beads, beadlibrary, nui, crosslibrary={}, nk=None, siten
 
         - epsilon*: Optional, Interaction energy between each bead and association site. Asterisk represents string from sitenames.
         - K**: Optional, Bonding volume between each association site. Asterisk represents two strings from sitenames.
+        - rc-*-*: Optional, Cutoff distance for association sites. Asterisk represents two strings from sitenames.
+        - rd-*-*: Optional, Site position. Asterisk represents two strings from sitenames.
         - Nk*: Optional, The number of sites of from list sitenames. Asterisk represents string from sitenames.
 
     nk : numpy.ndarray
@@ -195,10 +206,13 @@ def calc_assoc_matrices(beads, beadlibrary, nui, crosslibrary={}, nk=None, siten
     
     Returns
     -------
-    epsilonHB : numpy.ndarray
-        Interaction energy between each bead and association site.
-    Kklab : numpy.ndarray
-        Bonding volume between each association site
+    output_dict : dict
+        This dictionary contains parameters relevant to calculating association site contributions. The following matrices may be inside, each of the size (ngroups, ngroups, nsites, nsites).
+
+        - epsilonHB: Interaction energy between each bead and association site.
+        - Kklab, Optional: Bonding volume between each association site
+        - rc_klab, Optional: Cutoff distance for association sites
+        - rd_klab, Optional: Association site position
     """
 
     nbeads = len(beads)
@@ -208,7 +222,12 @@ def calc_assoc_matrices(beads, beadlibrary, nui, crosslibrary={}, nk=None, siten
         nsitesmax = len(sitenames)
     epsilonHB = np.zeros((nbeads, nbeads, nsitesmax, nsitesmax))
     Kklab = np.zeros((nbeads, nbeads, nsitesmax, nsitesmax))
+    rc_klab = np.zeros((nbeads, nbeads, nsitesmax, nsitesmax))
+    rd_klab = np.zeros((nbeads, nbeads, nsitesmax, nsitesmax))
 
+    flag_Kklab = False
+    flag_rc_klab = False
+    flag_rd_klab = False
     # self-interaction
     for i, nk1 in enumerate(nk):
         bead1 = beads[i]
@@ -222,14 +241,36 @@ def calc_assoc_matrices(beads, beadlibrary, nui, crosslibrary={}, nk=None, siten
                 if nk1[b] != 0:
                     epsilon_tmp = "-".join(["epsilonHB",site1,site2])
                     K_tmp = "-".join(["K",site1,site2])
+                    rc_tmp = "-".join(["rc",site1,site2])
+                    rd_tmp = "-".join(["rd",site1,site2])
+
+                    if epsilon_tmp in beadlibrary[bead1] and (K_tmp not in beadlibrary[bead1] and rc_tmp not in beadlibrary[bead1]):
+                        raise ValueError("An association site energy parameter for {} was given for bead {}, but not the bonding information. Kklab or rc_klab must be given.".format("{}-{}".format(site1,site2),bead1))
+                    elif K_tmp in beadlibrary[bead1] and rc_tmp in beadlibrary[bead1]:
+                        raise ValueError("Both association site bonding volumes and cutoff distances were provided for bead {}. This is redundant.".format(bead1))
+                    elif epsilon_tmp not in beadlibrary[bead1] and (K_tmp in beadlibrary[bead1] or rc_tmp in beadlibrary[bead1]):
+                        raise ValueError("An association site bonding information for {} was given for bead {}, but not the energy parameter. epsilonHB must be given.".format("{}-{}".format(site1,site2),bead1))
                     
                     if epsilon_tmp in beadlibrary[bead1]:
                         epsilonHB[i, i, a, b] = beadlibrary[bead1][epsilon_tmp]
                         epsilonHB[i, i, b, a] = epsilonHB[i, i, a, b]
+                    else:
+                        continue
 
                     if K_tmp in beadlibrary[bead1]:
+                        flag_Kklab = True
                         Kklab[i, i, a, b] = beadlibrary[bead1][K_tmp]
                         Kklab[i, i, b, a] = Kklab[i, i, a, b]
+
+                    if rc_tmp in beadlibrary[bead1]:
+                        flag_rc_klab = True
+                        rc_klab[i, i, a, b] = beadlibrary[bead1][rc_tmp]
+                        rc_klab[i, i, b, a] = rc_klab[i, i, a, b]
+
+                    if rd_tmp in beadlibrary[bead1]:
+                        flag_rd_klab = True
+                        rd_klab[i, i, a, b] = beadlibrary[bead1][rd_tmp]
+                        rd_klab[i, i, b, a] = rd_klab[i, i, a, b]
 
     # cross-interaction
     for i, nk1 in enumerate(nk):
@@ -262,15 +303,76 @@ def calc_assoc_matrices(beads, beadlibrary, nui, crosslibrary={}, nk=None, siten
                             epsilonHB[i,j,a,b] = crosslibrary[bead1][bead2][epsilon_tmp]
                             epsilonHB[j,i,b,a] = epsilonHB[i,j,a,b]
     
-                            Kklab[i,j,a,b] = crosslibrary[bead1][bead2][K_tmp]
-                            Kklab[j,i,b,a] = Kklab[i,j,a,b]
+                            if flag_Kklab:
+                                Kklab[i,j,a,b] = crosslibrary[bead1][bead2][K_tmp]
+                                Kklab[j,i,b,a] = Kklab[i,j,a,b]
 
                     if not flag_update and nk[j][b] != 0 and epsilonHB[j,i,b,a] == 0.0:
                         epsilonHB[i,j,a,b] = np.sqrt(epsilonHB[i,i,a,a]*epsilonHB[j,j,b,b])
                         epsilonHB[j,i,b,a] = epsilonHB[i,j,a,b]
+                        if flag_Kklab:
+                            Kklab[i,j,a,b] = (((Kklab[i,i,a,a])**(1.0/3.0)+(Kklab[j,j,b,b])**(1.0/3.0))/2.0)**3
+                            Kklab[j,i,b,a] = Kklab[i,j,a,b]
 
-                        Kklab[i,j,a,b] = (((Kklab[i,i,a,a])**(1.0/3.0)+(Kklab[j,j,b,b])**(1.0/3.0))/2.0)**3
-                        Kklab[j,i,b,a] = Kklab[i,j,a,b]
+    output = {"epsilonHB": epsilonHB}
+    if flag_Kklab:
+        output["Kklab"] = Kklab
+    elif flag_rc_klab:
+        output["rc_klab"] = rc_klab
+    elif flag_rd_klab:
+        output["rd_klab"] = rd_klab
+
+    if flag_Kklab and flag_rc_klab:
+        raise ValueError("Both association site bonding volumes and cutoff distances were provided. This is redundant.")
+    elif flag_rd_klab and not flag_rc_klab:
+        raise ValueError("Association site position were provided, but not cutoff distances.")
                     
-    return epsilonHB, Kklab
+    return output
+
+def calc_bonding_volume(rc_klab, dij_bar, rd_klab=None, reduction_ratio=0.25):
+    """
+    Calculate the association site bonding volume matrix (ncomp, ncomp, nbeads, nbeads, nsite, nsite)
+
+    Parameters
+    ----------
+    rc_klab : numpy.ndarray
+        This matrix of cutoff distances for association sites for each site type in each group type
+    dij_bar : numpy.ndarray
+        Component averaged hard sphere diameter
+    rd_klab : numpy.ndarray, Optional, default=None
+        Position of association site in each group (nbead, nbead, nsite, nsite)
+    reduction_ratio : float, Optional, default=0.25
+        Reduced distance of the sites from the center of the sphere of interaction. This value is used when site position, rd_klab is None
+
+    Returns
+    -------
+    Kijklab : numpy.ndarray
+        Matrix of binding volumes
+    """
+
+    ncomp = len(dij_bar)
+    nbead, _, nsite, _ = np.shape(rc_klab)
+    Kijklab = np.zeros((ncomp,ncomp,nbead,nbead,nsite,nsite))
+
+    for i in range(ncomp):
+        for j in range(ncomp):
+            for k in range(nbead):
+                for l in range(nbead):
+                    for a in range(nsite):
+                        for b in range(nsite):
+                            if rc_klab[k,l,a,b] != 0:
+                                if rd_klab is None:
+                                    rd = reduction_ratio*dij_bar[i,j]
+                                else:
+                                    rd = rd_klab[k,l,a,b]
+
+                                tmp0 = np.pi*dij_bar[i,j]**2/(18*rd**2)
+                                tmp11 = np.log((rc_klab[k,l,a,b]+2*rd)/dij_bar[i,j])
+                                tmp12 = 6*rc_klab[k,l,a,b]**3 + 18*rc_klab[k,l,a,b]**2*rd - 24*rd**3
+                                tmp21 = rc_klab[k,l,a,b] + 2*rd - dij_bar[i,j]
+                                tmp22 = 22*rd**2 - 5*rd*rc_klab[k,l,a,b] - 7*rd*dij_bar[i,j] - 8*rc_klab[k,l,a,b]**2 + rc_klab[k,l,a,b]*dij_bar[i,j] + dij_bar[i,j]**2
+
+                                Kijklab[i,j,k,l,a,b] = tmp0*(tmp11*tmp12 + tmp21*tmp22)
+
+    return Kijklab
 

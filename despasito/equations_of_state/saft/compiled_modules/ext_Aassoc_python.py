@@ -26,8 +26,6 @@ def calc_Xika(indices, rho, xi, nui, nk, Fklab, Kklab, gr_assoc, maxiter=500, to
         For each bead the number of each type of site
     Fklab : numpy.ndarray
         The association strength between a site of type a on a group of type k of component i and a site of type b on a group of type l of component j., known as the Mayer f-function.
-    Kklab : numpy.ndarray
-        Bonding volume between each association site
     gr_assoc : numpy.ndarray
         Reference fluid pair correlation function used in calculating association sites, (len(rho) x Ncomp x Ncomp)
     maxiter : int, Optional, default: 500
@@ -49,6 +47,7 @@ def calc_Xika(indices, rho, xi, nui, nk, Fklab, Kklab, gr_assoc, maxiter=500, to
     #nsitesmax = np.shape(nk)[1]
     nrho = len(rho)
     l_ind = len(indices)
+    l_K = len(np.shape(Kklab))
 
 #    Xika_final = np.ones((nrho,ncomp, nbeads, nsitesmax))
     Xika_final = np.ones((nrho, len(indices)))
@@ -63,7 +62,10 @@ def calc_Xika(indices, rho, xi, nui, nk, Fklab, Kklab, gr_assoc, maxiter=500, to
                 i, k, a = indices[ind]
                 for jnd in range(l_ind):
                     j, l, b = indices[jnd]
-                    delta = Fklab[k, l, a, b] * Kklab[k, l, a, b] * gr_assoc[r,i, j]
+                    if l_K == 4:
+                        delta = Fklab[k, l, a, b] * Kklab[k, l, a, b] * gr_assoc[r,i, j]
+                    elif l_K == 6:
+                        delta = Fklab[k, l, a, b] * Kklab[i, j, k, l, a, b] * gr_assoc[r,i, j]
                     Xika_elements_new[ind] += constants.molecule_per_nm3 * rho[r] * xi[j] * nui[j,l] * nk[l,b] * Xika_elements_old[jnd] * delta
             Xika_elements_new = 1./Xika_elements_new
             obj = np.sum(np.abs(Xika_elements_new - Xika_elements_old))

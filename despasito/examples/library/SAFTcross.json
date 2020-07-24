@@ -1,6 +1,7 @@
 {
     "CH3": {
         "CH2": {"epsilon" : 350.77},      
+        "COO": {"epsilon" : 402.75},
         "CO2": {"epsilon":205.70},
         "CH2OH": {"epsilon":311.807745},
         "CH2OCH2": {"epsilon":311.302031},
@@ -8,6 +9,7 @@
     },
     "CH2": {
         "CO2": {"epsilon":276.45},
+        "COO": {"epsilon" : 498.86},
         "H2O": {"epsilon":284.53},
         "CH2OH": {"epsilon":428.692807}    
     },

@@ -16,6 +16,7 @@ import sys
 import despasito.equations_of_state.toolbox as tb
 from despasito.equations_of_state import constants
 import despasito.equations_of_state.saft.saft_toolbox as stb
+from despasito.equations_of_state.saft import Aassoc
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +69,7 @@ class gamma_mie():
     
         self.Aideal_method = "Abroglie"
         self.mixing_rules = {"sigma": "mean", "l_r": "mie", "l_a": "mie"}
-        self.parameter_types = ["epsilon", "epsilonHB", "sigma", "l_r", "l_a", "Sk", "K"]
+        self.parameter_types = ["epsilon", "sigma", "l_r", "l_a", "Sk", "rc", "rd", "epsilonHB", "K"]
         self.parameter_bound_extreme = {"epsilon":[0.,1000.], "sigma":[0.,1.0], "l_r":[0.,100.], "l_a":[0.,100.], "Sk":[0.,1.], "epsilonHB":[0.,5000.], "K":[0.,10000.]}    
         self.residual_helmholtz_contributions = ["Amonomer","Achain"]
     
@@ -696,7 +697,7 @@ class gamma_mie():
     
         return fmlist
 
-    def calc_gr_assoc(self, rho, T, xi):
+    def calc_gr_assoc(self, rho, T, xi, Ktype="ijklab"):
         r"""
             
         Reference fluid pair correlation function used in calculating association sites
@@ -709,6 +710,11 @@ class gamma_mie():
             Temperature of the system [K]
         xi : numpy.ndarray
             Mole fraction of each component, sum(xi) should equal 1.0
+        Ktype : str, Optional, default='ijklab'
+            Indicates which radial distribution function to return
+
+            - 'ijklab': The bonding volume was calculated from self.calc_Kijklab, return gHS_dij)
+            - 'klab': The bonding volume was provided to saft.py so use temperature-density polynomial correlation
     
         Returns
         -------
@@ -719,9 +725,84 @@ class gamma_mie():
         rho = self._check_density(rho)
         self._check_composition_dependent_parameters(xi)
     
-        Iij = calc_Iij(rho, T, xi, self.eos_dict['epsilonii_avg'], self.eos_dict['sigmaii_avg'], self.eos_dict['sigmakl'], self.eos_dict['xskl'])
+        if Ktype == "klab":
+            gr = calc_Iij(rho, T, xi, self.eos_dict['epsilonii_avg'], self.eos_dict['sigmaii_avg'], self.eos_dict['sigmakl'], self.eos_dict['xskl'])
+        elif Ktype == "ijklab":
+            gr = self.calc_gdHS_assoc(rho, T, xi)
+        else:
+            raise ValueError("Ktype does not indicate a known gr_assoc for this saft type.")
     
-        return Iij
+        return gr
+
+    def calc_gdHS_assoc(self, rho, T, xi):
+        r"""
+            
+        Radial distribution frunction at contact.
+
+        Papaioannou J. Chem. Phys. 140, 054107 (2014)
+        
+        Parameters
+        ----------
+        rho : numpy.ndarray
+            Number density of system [mol/m^3]
+        T : float
+            Temperature of the system [K]
+        xi : numpy.ndarray
+            Mole fraction of each component, sum(xi) should equal 1.0
+    
+        Returns
+        -------
+        gr : numpy.ndarray
+            This matrix is (len(rho) x Ncomp x Ncomp)
+        """
+
+        rho = self._check_density(rho)
+        self._check_temerature_dependent_parameters(T)
+        self._check_composition_dependent_parameters(xi)
+
+        eta = np.zeros((np.size(rho), 2))
+        for m in range(2,4):
+            eta[:, m] = rho * constants.molecule_per_nm3 * self.eos_dict['Cmol2seg'] * (np.sum(np.sqrt(np.diag(self.eos_dict['xskl'])) * (np.diag(self.eos_dict['dkl'])**m)) * (np.pi / 6.0))
+
+        gr = np.zeros((len(rho),self.ncomp, self.ncomp))
+        tmp0 = 1/(1-eta[:,1])
+        tmp1 = eta[:,0]/(1-eta[:,1])**2
+        tmp2 = eta[:,0]**2/(1-eta[:,1])**3
+        for i in range(ncomp):
+            for j in range(ncomp):
+                tmp = self.eos_dict['dii_eff'][i]*self.eos_dict['dii_eff'][j]/(self.eos_dict['dii_eff'][i]+self.eos_dict['dii_eff'][j])
+                gr[:,i,j] = tmp0 + 3*tmp*tmp1 + 2*tmp**2*tmp2
+                
+        return gr
+
+    def calc_Kijklab(self, T, rc_klab, rd_klab=None, reduction_ratio=0.25):
+        r"""
+            
+        Calculation of association site bonding volume, dependent on molecule in addition to group
+
+        Papaioannou J. Chem. Phys. 140, 054107 (2014)
+        
+        Parameters
+        ----------
+        T : float
+            Temperature of the system [K]
+    
+        Returns
+        -------
+        gr : numpy.ndarray
+            This matrix is (len(rho) x Ncomp x Ncomp)
+        """
+
+        self._check_temerature_dependent_parameters(T)
+
+        dij_bar = np.zeros((self.ncomp,self.ncomp))
+        for i in range(self.ncomp):
+            for j in range(self.ncomp):
+                dij_bar[i,j] = np.mean([self.eos_dict['dii_eff'][i],self.eos_dict['dii_eff'][j]])
+
+        Kijklab = Aassoc.calc_bonding_volume(rc_klab, dij_bar, rd_klab=rd_klab, reduction_ratio=reduction_ratio)
+
+        return Kijklab
 
     def parameter_refresh(self, beadlibrary, crosslibrary):
         r""" 

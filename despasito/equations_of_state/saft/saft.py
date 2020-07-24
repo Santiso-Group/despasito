@@ -29,7 +29,7 @@ def saft_type(name):
     elif name == "gamma_sw":
         from despasito.equations_of_state.saft.gamma_sw import gamma_sw as saft_source
     else:
-        raise ValueError("SAFT type, {}, is not supported.".format(name))
+        raise ValueError("SAFT type, {}, is not supported. Be sure the class is added to the factory function 'saft_type'".format(name))
 
     return saft_source
 
@@ -112,10 +112,15 @@ class saft(EOStemplate):
         if not hasattr(self, 'massi'):
             self.eos_dict['massi'] = tb.calc_massi(self.nui,self.eos_dict['beadlibrary'],self.beads)
 
+        if "reduction_ratio" in kwargs:
+            self.eos_dict['reduction_ratio'] = kwargs["reduction_ratio"]
+            
+
         # Initiate association site terms
         self.eos_dict['sitenames'], self.eos_dict['nk'], self.eos_dict['flag_assoc'] = Aassoc.initiate_assoc_matrices(self.beads,self.eos_dict['beadlibrary'],self.nui)
-        self.eos_dict['epsilonHB'], self.eos_dict['Kklab'] = Aassoc.calc_assoc_matrices(self.beads,self.eos_dict['beadlibrary'],self.nui,sitenames=self.eos_dict['sitenames'],crosslibrary=self.eos_dict['crosslibrary'],nk=self.eos_dict['nk'])
-        if np.size(np.where(self.eos_dict['epsilonHB']!=0.0))==0 or np.size(np.where(self.eos_dict['Kklab']!=0.0)) == 0:
+        assoc_output = Aassoc.calc_assoc_matrices(self.beads,self.eos_dict['beadlibrary'],self.nui,sitenames=self.eos_dict['sitenames'],crosslibrary=self.eos_dict['crosslibrary'],nk=self.eos_dict['nk'])
+        self.eos_dict.update(assoc_output)
+        if np.size(np.where(self.eos_dict['epsilonHB']!=0.0))==0:
             self.eos_dict['flag_assoc'] = False
 
     def residual_helmholtz_energy(self, rho, T, xi):
@@ -236,11 +241,24 @@ class saft(EOStemplate):
 
         # compute F_klab    
         Fklab = np.exp(self.eos_dict['epsilonHB'] / T) - 1.0
-        gr_assoc = self.saft_source.calc_gr_assoc(rho, T, xi)
+        if 'rc_klab' in self.eos_dict:
+            if 'rd_klab' in self.eos_dict:
+                opts = {"rd_klab": self.eos_dict["rd_klab"]}
+            elif "reduction_ratio" in self.eos_dict:
+                opts = {"reduction_ratio": self.eos_dict['reduction_ratio']}
+            else:
+                opts = {}
+            Kklab = self.saft_source.calc_Kijklab(T, self.eos_dict["rc_klab"], **opts)
+            Ktype = "ijklab"
+        else:
+            Kklab = self.eos_dict['Kklab']
+            Ktype = "klab"
+
+        gr_assoc = self.saft_source.calc_gr_assoc(rho, T, xi, Ktype=Ktype)
 
         # Compute Xika: with python with numba  {BottleNeck}
         indices = Aassoc.assoc_site_indices(self.eos_dict['nk'], self.nui, xi=xi)
-        Xika = Aassoc.calc_Xika_wrap(indices, rho, xi, self.nui, self.eos_dict['nk'], Fklab, self.eos_dict['Kklab'], gr_assoc)
+        Xika = Aassoc.calc_Xika_wrap(indices, rho, xi, self.nui, self.eos_dict['nk'], Fklab, Kklab, gr_assoc)
 
         # Compute A_assoc
         Assoc_contribution = np.zeros(np.size(rho)) 

@@ -10,6 +10,14 @@
         "aCCH2": {"epsilon" : 156.222},
         "OH": {"epsilon": 306.818}    
     },
+    "C=O": {
+        "CH3": {"epsilon" : 294.07},
+        "CH2": {"epsilon": 207.512}
+    },
+    "COOH": {
+        "CH3": {"epsilon" : 257.515},
+        "CH2": {"epsilon": 283.497}
+    },
     "aCH": {
         "aCCH2": {"epsilon" : 238.038}
     }
