@@ -76,7 +76,7 @@ class saft(EOStemplate):
             self.eos_dict = {}
 # NoteHere
         # Extract needed variables from saft type file (e.g. gamma_mie)
-        saft_attributes = ["Aideal_method", "parameter_types", "parameter_bound_extreme","residual_helmholtz_contributions"]
+        saft_attributes = ["Aideal_method", "mixing_rules", "parameter_types", "parameter_bound_extreme","residual_helmholtz_contributions"]
         for key in saft_attributes:
             try:
                 self.eos_dict[key] = getattr(self.saft_source,key)
@@ -101,8 +101,7 @@ class saft(EOStemplate):
         self.beads = self.eos_dict["beads"]
 
         if "mixing_rules" in kwargs:
-            for key, value in kwargs["mixing_rules"].items():
-                self.saft_source.mixing_rules[key] = value
+            self.mixing_rules.update(kwargs["mixing_rules"])
 
         if 'crosslibrary' not in kwargs:
             self.eos_dict['crosslibrary'] = {}
@@ -540,7 +539,8 @@ class saft(EOStemplate):
 
         # Update Association site matrices
         if self.eos_dict["flag_assoc"]: 
-            self.eos_dict['epsilonHB'], self.eos_dict['Kklab'] = Aassoc.calc_assoc_matrices(self.beads,self.eos_dict['beadlibrary'],self.nui,sitenames=self.eos_dict['sitenames'],crosslibrary=self.eos_dict['crosslibrary'], nk=self.eos_dict['nk'])
+            assoc_output = Aassoc.calc_assoc_matrices(self.beads,self.eos_dict['beadlibrary'],self.nui,sitenames=self.eos_dict['sitenames'],crosslibrary=self.eos_dict['crosslibrary'],nk=self.eos_dict['nk'])
+            self.eos_dict.update(assoc_output)
 
     def _check_density(self,rho):
         r"""

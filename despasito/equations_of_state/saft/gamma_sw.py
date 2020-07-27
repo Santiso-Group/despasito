@@ -67,10 +67,13 @@ class gamma_sw():
     def __init__(self, kwargs):
     
         self.Aideal_method = "Abroglie"
-        self.parameter_types = ["epsilon", "epsilonHB", "sigma", "Sk", "K", "rc", "rd"]
-        self.parameter_bound_extreme = {"epsilon":[0.,1000.], "sigma":[0.,1.0], "Sk":[0.,1.], "epsilonHB":[0.,5000.], "K":[0.,10000.]}    
-        self.mixing_rules = {"sigma": "mean"}
         self.residual_helmholtz_contributions = ["Amonomer","Achain"]
+        self.parameter_types = ["epsilon", "lambda", "epsilonHB", "sigma", "Sk", "K", "rc", "rd"]
+        self.parameter_bound_extreme = {"epsilon":[0.,1000.], "lambda":[1.0,10.0], "sigma":[0.,10.0], "Sk":[0.,1.], "epsilonHB":[0.,5000.], "K":[0.,10000.]}    
+        self.mixing_rules = {"sigma": {"function": "mean"},
+                             "lambda": {"function": "weighted_mean", "weighting_parameters": ["sigma"]},
+                             "epsilon": {"function": "square_well_berthelot", "weighting_parameters": ["sigma", "lambda"]}
+                            } # Note in this EOS object, the mixing rules for the group parameters are also used for their corresponding molecular averaged parameters.
     
         if not hasattr(self, 'eos_dict'):
             self.eos_dict = {}
@@ -94,16 +97,17 @@ class gamma_sw():
         if not hasattr(self, 'Sk'):
             self.eos_dict['Sk'] = tb.extract_property("Sk",self.eos_dict['beadlibrary'],self.eos_dict['beads'])
 
-        # Initialize temperature attribute
+        # Initialize component attribute
         if not hasattr(self, 'xi'):
             self.xi = np.nan
-
         if not hasattr(self, 'nbeads'):
             self.ncomp, self.nbeads = np.shape(self.eos_dict['nui'])
+
         # Intiate cross interaction terms
-        output = stb.cross_interaction_from_dict( self.eos_dict['beads'], self.eos_dict['beadlibrary'], self.mixing_rules, crosslibrary=self.eos_dict['crosslibrary'])
+        output = tb.cross_interaction_from_dict( self.eos_dict['beads'], self.eos_dict['beadlibrary'], self.mixing_rules, crosslibrary=self.eos_dict['crosslibrary'])
         self.eos_dict["sigma_kl"] = output["sigma"]
-        self.calc_sw_cross_interaction_parameters()
+        self.eos_dict["epsilon_kl"] = output["epsilon"]
+        self.eos_dict["lambda_kl"] = output["lambda"]
 
         if "num_rings" in kwargs:
             self.eos_dict['num_rings'] = kwargs['num_rings']
@@ -114,76 +118,6 @@ class gamma_sw():
         # Initiate average interaction terms
         self.calc_component_averaged_properties()
         self.alphakl = 2.0*np.pi/3.0*self.eos_dict['epsilon_kl']*self.eos_dict['sigma_kl']**3*(self.eos_dict['lambda_kl']**3 - 1.0)
-
-    def calc_sw_cross_interaction_parameters(self, mode="normal"):
-        r""" Calculate mixed energy parameter
-  
-        Parameters
-        ----------
-        mode : str, Optional, default: "normal"
-            This indicates whether group or effective component parameters are used. Options include: "normal" and "effective"
-        """
-
-        if mode == "normal":
-            tmp = "_kl"
-            lx = self.nbeads
-        elif mode == "effective":
-            tmp = "_ij"
-            lx = self.ncomp
-        else:
-            raise ValueError("The input, {}, is not a supported mode for cross interaction calculations".format(mode))
-
-        # self-interaction
-        if mode == "normal":
-            epsilon = np.zeros((lx,lx))
-            lambda_tmp = np.zeros((lx,lx))
-            for k in range(lx):
-                bead1 = self.eos_dict['beads'][k]
-                epsilon[k,k] = self.eos_dict["beadlibrary"][bead1]["epsilon"]
-                lambda_tmp[k,k] = self.eos_dict["beadlibrary"][bead1]["lambda"]
-        elif mode == "effective":
-            epsilon = self.eos_dict["epsilon_ij"]
-            lambda_tmp = self.eos_dict["lambda_ij"]
-     
-        for k in range(lx):
-            for l in range(k,lx):
-                 tmp1 = self.eos_dict["sigma"+tmp][k,k]*lambda_tmp[k,k] + self.eos_dict["sigma"+tmp][l,l]*lambda_tmp[l,l]
-                 tmp2 = (self.eos_dict["sigma"+tmp][k,k] + self.eos_dict["sigma"+tmp][l,l])
-                 lambda_tmp[k,l] = tmp1/tmp2
-                 lambda_tmp[l,k] = lambda_tmp[k,l]
-
-                 tmp1 = self.eos_dict["sigma"+tmp][k,k]**3*(lambda_tmp[k,k]**3 - 1.0)*epsilon[k,k]
-                 tmp2 = self.eos_dict["sigma"+tmp][l,l]**3*(lambda_tmp[l,l]**3 - 1.0)*epsilon[l,l]
-                 tmp3 = self.eos_dict["sigma"+tmp][k,l]**3*(lambda_tmp[k,l]**3 - 1.0)
-                 epsilon[k,l] = np.sqrt(tmp1*tmp2)/tmp3
-                 epsilon[l,k] = epsilon[k,l]
-
-        # testing if crosslibrary is empty ie not specified
-        if mode == "normal" and self.eos_dict["crosslibrary"]:
-            # find any cross terms in the cross term library
-            crosslist = []
-            beads = self.eos_dict['beads']
-            crosslibrary = self.eos_dict["crosslibrary"]
-            for (i, beadname) in enumerate(beads):
-                if beadname in crosslibrary:
-                    for (j, beadname2) in enumerate(beads):
-                        if beadname2 in crosslibrary[beadname]:
-                            crosslist.append([i, j])
-
-            for i in range(np.size(crosslist, axis=0)):
-                a = crosslist[i][0]
-                b = crosslist[i][1]
-                if beads[a] in crosslibrary:
-                    if beads[b] in crosslibrary[beads[a]]:
-                        if "epsilon" in crosslibrary[beads[a]][beads[b]]:
-                            epsilon[a, b] = crosslibrary[beads[a]][beads[b]]["epsilon"]
-                            epsilon[b, a] = epsilon[a, b]
-                        if "lambda" in crosslibrary[beads[a]][beads[b]]:
-                            lambda_tmp[a, b] = crosslibrary[beads[a]][beads[b]]["lambda"]
-                            lambda_tmp[b, a] = epsilon[a, b]
-
-        self.eos_dict["epsilon"+tmp] = epsilon 
-        self.eos_dict["lambda"+tmp] = lambda_tmp
 
     def calc_component_averaged_properties(self):
         r"""
@@ -226,13 +160,12 @@ class gamma_sw():
                     lambdaii[i] += zki[i, k] * zki[i, l] * self.eos_dict['lambda_kl'][k, l]
             sigmaii[i] = sigmaii[i]**(1.0/3.0)
 
-        input_dict = {"sigma": sigmaii}
-        output_dict = stb.cross_interaction_from_array( input_dict, self.mixing_rules)
+        input_dict = {"sigma": sigmaii, "lambda": lambdaii, "epsilon": epsilonii}
+        dummy_dict, dummy_labels = tb.construct_dummy_beadlibrary(input_dict)
+        output_dict = tb.cross_interaction_from_dict(dummy_labels, dummy_dict, self.mixing_rules)
         self.eos_dict["sigma_ij"] = output_dict['sigma']
-
-        self.eos_dict["lambda_ij"] = np.diagflat(lambdaii)
-        self.eos_dict["epsilon_ij"] = np.diagflat(epsilonii)
-        self.calc_sw_cross_interaction_parameters(mode="effective")
+        self.eos_dict["lambda_ij"] = output_dict['lambda']
+        self.eos_dict["epsilon_ij"] = output_dict['epsilon']
 
     def reduced_density(self, rho, xi):
         r"""
@@ -758,9 +691,10 @@ class gamma_sw():
         self.eos_dict["crosslibrary"].update(crosslibrary)
 
         # Update Non bonded matrices
-        output = stb.cross_interaction_from_dict( self.eos_dict['beads'], self.eos_dict['beadlibrary'], self.mixing_rules, crosslibrary=self.eos_dict['crosslibrary'])
+        output = tb.cross_interaction_from_dict( self.eos_dict['beads'], self.eos_dict['beadlibrary'], self.mixing_rules, crosslibrary=self.eos_dict['crosslibrary'])
         self.eos_dict["sigma_kl"] = output["sigma"]
-        self.calc_sw_cross_interaction_parameters()
+        self.eos_dict["epsilon_kl"] = output["epsilon"]
+        self.eos_dict["lambda_kl"] = output["lambda"]
         self.calc_component_averaged_properties()
 
         if not np.isnan(self.xi):

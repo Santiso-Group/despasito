@@ -109,7 +109,7 @@ class saft_example():
             self.ncomp, self.nbeads = np.shape(self.eos_dict['nui'])
 
         # Intiate cross interaction terms, as mentioned above, some mixing rules use a particular combination of parameters and these are handled here.
-        output = stb.cross_interaction_from_dict( self.eos_dict['beads'], self.eos_dict['beadlibrary'], self.mixing_rules, crosslibrary=self.eos_dict['crosslibrary'])
+        output = tb.cross_interaction_from_dict( self.eos_dict['beads'], self.eos_dict['beadlibrary'], self.mixing_rules, crosslibrary=self.eos_dict['crosslibrary'])
         self.eos_dict["sigma_kl"] = output["sigma"]
         self.calc_sw_cross_interaction_parameters()
 
@@ -589,7 +589,7 @@ class saft_example():
         self.eos_dict["crosslibrary"].update(crosslibrary)
 
         # Update Non bonded matrices
-        output = stb.cross_interaction_from_dict( self.eos_dict['beads'], self.eos_dict['beadlibrary'], self.mixing_rules, crosslibrary=self.eos_dict['crosslibrary'])
+        output = tb.cross_interaction_from_dict( self.eos_dict['beads'], self.eos_dict['beadlibrary'], self.mixing_rules, crosslibrary=self.eos_dict['crosslibrary'])
         self.eos_dict["sigma_kl"] = output["sigma"]
         self.calc_sw_cross_interaction_parameters()
         self.calc_component_averaged_properties()

@@ -1,6 +1,9 @@
 
 import numpy as np
 import logging
+from inspect import getmembers, isfunction
+
+from . import mixing_rule_types
 
 logger = logging.getLogger(__name__)
 
@@ -180,4 +183,119 @@ def extract_property(prop, beadlibrary, beads):
 
     return prop_array
 
+def cross_interaction_from_dict(beads, beadlibrary, mixing_dict, crosslibrary={}):
+    r"""
+    Computes matrices of cross interaction parameters defined as the keys in the mixing dict parameter are extracted from the beadlibrary and then the cross library.
+        
+    Parameters
+    ----------
+    beads : list[str]
+        List of unique bead names used among components
+    beadlibrary : dict
+        A dictionary where bead names are the keys to access EOS self interaction parameters. Those to be calculated are defined by the keys of mixing_dict
+    mixing_dict : dict
+        This dictionary contains those bead parameters that should be placed in a matrix and the mixing rules for the cross parameters
+    crosslibrary : dict, Optional, default: {}
+        Optional library of bead cross interaction parameters. As many or as few of the desired parameters may be defined for whichever group combinations are desired. If this matrix isn't provided, the SAFT mixing rules are used.
+        
+    Returns
+    -------
+    output : dict
+        Dictionary of outputs, with the same keys used in mixing dict for the respective interaction matrix
+        
+    """
+    
+    nbeads = len(beads)
+    
+    # Set-up output dictionaries
+    output = {}
+    for key in mixing_dict:
+        output[key] = np.zeros((nbeads,nbeads))
+        for k in range(nbeads):
+            output[key][k,k] = beadlibrary[beads[k]][key]
+
+    # Put Crosslibrary in output matrices 
+    for (i, beadname) in enumerate(beads):
+        for (j, beadname2) in enumerate(beads):
+            if beadname != beadname2:
+                for key in mixing_dict:
+                    if crosslibrary.get(beadname, {}).get(beadname2, {}).get(key, None) is not None:
+                        output[key][i, j] = crosslibrary[beadname][beadname2][key]
+                    elif crosslibrary.get(beadname2, {}).get(beadname, {}).get(key, None) is not None:
+                        output[key][i, j] = crosslibrary[beadname2][beadname][key]
+                    else:
+                        output[key][i, j] = mixing_rules( beadlibrary[beadname], beadlibrary[beadname2], key, **mixing_dict[key])
+                    output[key][j, i] = output[key][i, j]
+    
+    return output
+
+def construct_dummy_beadlibrary(input_dict, keys=None):
+    r"""
+    Using arrays of values, a dictionary is populated like a beadlibrary. If keys are included, they are used, otherwise, integers are used.
+        
+    Parameters
+    ----------
+    input_dict : dict
+        A dictionary where parameter names are the keys to access EOS arrays of self-interaction parameters.
+    keys : list[str], Optional, default=None
+        List must be the same length as the lists in `input_dict`. These are used as labels.
+        
+    Returns
+    -------
+    output_dict : dict
+        Dictionary of outputs, with the same keys used in mixing dict for the respective interaction matrix
+        
+    """
+    
+    output = {}
+    flag = False
+    for parameter in input_dict:
+        if keys == None:
+            keys = [str(x) for x in range(len(input_dict[parameter]))]
+            flag = True
+        if len(keys) != len(input_dict[parameter]):
+            raise ValueError("Number of keys is not equal to the number of quantities given")
+
+        for i, bead in enumerate(keys):
+            if bead not in output:
+                output[bead] = {}
+            output[bead][parameter] = input_dict[parameter][i]
+
+    if flag:
+        return output, keys
+    else:
+        return output
+
+def mixing_rules( beadA, beadB, parameter, function="mean", **kwargs):
+    r"""
+    Calculates cross interaction parameter according to the calculation method provided.
+    
+    Parameters
+    ----------
+    beadA : dict
+        Dictionary of parameters used to describe a bead
+    beadB : dict
+        Dictionary of parameters used to describe a bead
+    parameter : str
+        Name of parameter for which a mixed value is needed
+    function : str, Optional, default=mean
+        Mixing rule function found in `despasito.equations_of_state.mixing_rule_types.py`
+    kwargs : dict, Optional, default={}
+        Keyword arguements used in other averaging function
+        
+    Returns
+    -------
+    parameter12 : float
+        Mixed interaction parameter
+    """
+    
+    calc_list = [o[0] for o in getmembers(mixing_rule_types) if isfunction(o[1])]
+    try:
+        func = getattr(mixing_rule_types, function)
+    except:
+        raise ImportError("The mixing rule type, '{}', was not found\nThe following calculation types are supported: {}".format(function,", ".join(calc_list)))
+
+    parameter12 = func(beadA, beadB, parameter, **kwargs)
+    
+    return parameter12
 

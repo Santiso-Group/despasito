@@ -68,10 +68,14 @@ class gamma_mie():
     def __init__(self, kwargs):
     
         self.Aideal_method = "Abroglie"
-        self.mixing_rules = {"sigma": "mean", "l_r": "mie", "l_a": "mie"}
         self.parameter_types = ["epsilon", "sigma", "l_r", "l_a", "Sk", "rc", "rd", "epsilonHB", "K"]
         self.parameter_bound_extreme = {"epsilon":[0.,1000.], "sigma":[0.,1.0], "l_r":[0.,100.], "l_a":[0.,100.], "Sk":[0.,1.], "epsilonHB":[0.,5000.], "K":[0.,10000.]}    
         self.residual_helmholtz_contributions = ["Amonomer","Achain"]
+        self.mixing_rules = {"sigma": {"function": "mean"},
+                             "l_r": {"function": "mie_exponent"},
+                             "l_a": {"function": "mie_exponent"},
+                             "epsilon": {"function": "volumetric_geometric_mean", "weighting_parameters": ["sigma"]}
+                            } # Note in this EOS object, the mixing rules for the group parameters are also used for their corresponding molecular averaged parameters.
     
         if not hasattr(self, 'eos_dict'):
             self.eos_dict = {}
@@ -105,11 +109,11 @@ class gamma_mie():
             self.ncomp, self.nbeads = np.shape(self.eos_dict['nui'])
 
         # Intiate cross interaction terms
-        output = stb.cross_interaction_from_dict( self.eos_dict['beads'], self.eos_dict['beadlibrary'], self.mixing_rules, crosslibrary=self.eos_dict['crosslibrary'])
+        output = tb.cross_interaction_from_dict( self.eos_dict['beads'], self.eos_dict['beadlibrary'], self.mixing_rules, crosslibrary=self.eos_dict['crosslibrary'])
         self.eos_dict["sigmakl"] = output["sigma"]
+        self.eos_dict["epsilonkl"] = output["epsilon"]
         self.eos_dict["l_akl"] = output["l_a"]
         self.eos_dict["l_rkl"] = output["l_r"]
-        self.calc_mie_cross_interaction_parameters()
 
         # Initiate average interaction terms
         self.calc_component_averaged_properties()
@@ -123,49 +127,6 @@ class gamma_mie():
         # compute alphakl eq. 33
         self.eos_dict['Ckl'] = prefactor(self.eos_dict['l_rkl'], self.eos_dict['l_akl'])
         self.eos_dict['alphakl'] = self.eos_dict['Ckl'] * ((1.0 / (self.eos_dict['l_akl'] - 3.0)) - (1.0 / (self.eos_dict['l_rkl'] - 3.0)))
-
-    def calc_mie_cross_interaction_parameters(self):
-        r""" Calculate mixed energy parameter
-  
-        """
-
-        tmp = "kl"
-        lx = self.nbeads
-
-        # self-interaction
-        epsilon = np.zeros((lx,lx))
-        for k in range(lx):
-            bead1 = self.eos_dict['beads'][k]
-            epsilon[k,k] = self.eos_dict["beadlibrary"][bead1]["epsilon"]
-
-        for k in range(lx):
-            for l in range(k,lx):
-                 tmp1 = np.sqrt(self.eos_dict["sigma"+tmp][k,k]**3*self.eos_dict["sigma"+tmp][l,l]**3)
-                 epsilon[k,l] = tmp1/self.eos_dict["sigma"+tmp][k,l]**3*np.sqrt(epsilon[k,k]*epsilon[l,l])
-                 epsilon[l,k] = epsilon[k,l]
-
-        # testing if crosslibrary is empty ie not specified
-        if self.eos_dict["crosslibrary"]:
-            # find any cross terms in the cross term library
-            crosslist = []
-            beads = self.eos_dict['beads']
-            crosslibrary = self.eos_dict["crosslibrary"]
-            for (i, beadname) in enumerate(beads):
-                if beadname in crosslibrary:
-                    for (j, beadname2) in enumerate(beads):
-                        if beadname2 in crosslibrary[beadname]:
-                            crosslist.append([i, j])
-
-            for i in range(np.size(crosslist, axis=0)):
-                a = crosslist[i][0]
-                b = crosslist[i][1]
-                if beads[a] in crosslibrary:
-                    if beads[b] in crosslibrary[beads[a]]:
-                        if "epsilon" in crosslibrary[beads[a]][beads[b]]:
-                            epsilon[a, b] = crosslibrary[beads[a]][beads[b]]["epsilon"]
-                            epsilon[b, a] = epsilon[a, b]
-
-        self.eos_dict["epsilon"+tmp] = epsilon
 
     def calc_component_averaged_properties(self):
         r"""
@@ -815,11 +776,11 @@ class gamma_mie():
         self.eos_dict["crosslibrary"].update(crosslibrary)
 
         # Intiate cross interaction terms
-        output = stb.cross_interaction_from_dict( self.eos_dict['beads'], self.eos_dict['beadlibrary'], self.mixing_rules, crosslibrary=self.eos_dict['crosslibrary'])
+        output = tb.cross_interaction_from_dict( self.eos_dict['beads'], self.eos_dict['beadlibrary'], self.mixing_rules, crosslibrary=self.eos_dict['crosslibrary'])
         self.eos_dict["sigmakl"] = output["sigma"]
+        self.eos_dict["epsilonkl"] = output["epsilon"]
         self.eos_dict["l_akl"] = output["l_a"]
         self.eos_dict["l_rkl"] = output["l_r"]
-        self.calc_mie_cross_interaction_parameters()
 
         # Initiate average interaction terms
         self.calc_component_averaged_properties()
