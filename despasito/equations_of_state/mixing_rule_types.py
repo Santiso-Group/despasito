@@ -1,5 +1,10 @@
 
 import numpy as np
+import logging
+
+from . import tmp_mixingrules as mr
+
+logger = logging.getLogger(__name__)
 
 def mean( beadA, beadB, parameter):
     r"""
@@ -148,7 +153,7 @@ def square_well_berthelot(beadA, beadB, parameter, weighting_parameters=[]):
 
     return tmp1*tmp2*tmp3
 
-def multipole(beadA, beadB, parameter, temperature=None):
+def multipole(beadA, beadB, parameter, temperature=None, additional_outputs=[]):
     r"""
     Calculates cross interaction parameter according to the calculation method provided.
     square_well berthelot geometric mean: c = np.sqrt(a[0]*b[0]) * np.sqrt(a[1]**3 * b[1]**3) / ((a[1] + b[1])/2)**3 * np.sqrt(()*())/(a[])
@@ -166,8 +171,15 @@ def multipole(beadA, beadB, parameter, temperature=None):
 1.
     Returns
     -------
-    parameter12 : float
+    output : dict
         Mixed interaction parameter
     """
 
-    return epsilon, lambda_r, lambda_a
+    if temperature is not None:
+        tmp = {"beadA": beadA, "beadB": beadB}
+        dict_cross, _ = mr.extended_mixing_rules_fitting(tmp, temperature)
+        output = dict_cross["beadA"]["beadB"]
+    else:
+        output = {parameter: geometric_mean( beadA, beadB, parameter)}
+
+    return output

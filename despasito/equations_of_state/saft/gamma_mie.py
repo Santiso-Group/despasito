@@ -75,8 +75,10 @@ class gamma_mie():
                              "l_r": {"function": "mie_exponent"},
                              "l_a": {"function": "mie_exponent"},
                              "epsilon": {"function": "volumetric_geometric_mean", "weighting_parameters": ["sigma"]}
-                            } # Note in this EOS object, the mixing rules for the group parameters are also used for their corresponding molecular averaged parameters.
-    
+                            }
+
+        self.mixing_temp_dependence = None
+
         if not hasattr(self, 'eos_dict'):
             self.eos_dict = {}
         
@@ -194,7 +196,7 @@ class gamma_mie():
         """
 
         rho = self._check_density(rho)
-        self._check_temerature_dependent_parameters(T)
+        self._check_temperature_dependent_parameters(T)
         self._check_composition_dependent_parameters(xi)
 
         eta = np.zeros((np.size(rho), 4))
@@ -233,7 +235,7 @@ class gamma_mie():
         """
 
         rho = self._check_density(rho)
-        self._check_temerature_dependent_parameters(T)
+        self._check_temperature_dependent_parameters(T)
         self._check_composition_dependent_parameters(xi)
 
         if zetax is None:
@@ -276,7 +278,7 @@ class gamma_mie():
         """
         
         rho = self._check_density(rho)
-        self._check_temerature_dependent_parameters(T)
+        self._check_temperature_dependent_parameters(T)
         self._check_composition_dependent_parameters(xi)
 
         if zetax is None:
@@ -377,7 +379,7 @@ class gamma_mie():
             raise ValueError("Density values should not all be greater than {}, or calc_Amono will fail in log calculation.".format(self.density_max(xi, T)))
 
         rho = self._check_density(rho)
-        self._check_temerature_dependent_parameters(T)
+        self._check_temperature_dependent_parameters(T)
         self._check_composition_dependent_parameters(xi)
 
         zetax = stb.calc_zetax(rho, self.eos_dict['Cmol2seg'], self.eos_dict['xskl'], self.eos_dict['dkl'])
@@ -408,7 +410,7 @@ class gamma_mie():
         """
 
         rho = self._check_density(rho)
-        self._check_temerature_dependent_parameters(T)
+        self._check_temperature_dependent_parameters(T)
         self._check_composition_dependent_parameters(xi)
 
         if zetax is None:
@@ -449,7 +451,7 @@ class gamma_mie():
         """
 
         rho = self._check_density(rho)
-        self._check_temerature_dependent_parameters(T)
+        self._check_temperature_dependent_parameters(T)
         self._check_composition_dependent_parameters(xi)
 
         if zetax is None:
@@ -497,7 +499,7 @@ class gamma_mie():
         """
 
         rho = self._check_density(rho)
-        self._check_temerature_dependent_parameters(T)
+        self._check_temperature_dependent_parameters(T)
         self._check_composition_dependent_parameters(xi)
  
         if zetax is None:
@@ -560,7 +562,7 @@ class gamma_mie():
         """
 
         rho = self._check_density(rho)
-        self._check_temerature_dependent_parameters(T)
+        self._check_temperature_dependent_parameters(T)
         self._check_composition_dependent_parameters(xi)
 
         zetax = stb.calc_zetax(rho, self.eos_dict['Cmol2seg'], self.eos_dict['xskl'], self.eos_dict['dkl'])
@@ -606,7 +608,7 @@ class gamma_mie():
             Maximum molar density [mol/m^3]
         """
 
-        self._check_temerature_dependent_parameters(T)
+        self._check_temperature_dependent_parameters(T)
         self._check_composition_dependent_parameters(xi)
 
         # estimate the maximum density based on the hard sphere packing fraction
@@ -718,7 +720,7 @@ class gamma_mie():
         """
 
         rho = self._check_density(rho)
-        self._check_temerature_dependent_parameters(T)
+        self._check_temperature_dependent_parameters(T)
         self._check_composition_dependent_parameters(xi)
 
         eta = np.zeros((np.size(rho), 2))
@@ -754,7 +756,7 @@ class gamma_mie():
             This matrix is (len(rho) x Ncomp x Ncomp)
         """
 
-        self._check_temerature_dependent_parameters(T)
+        self._check_temperature_dependent_parameters(T)
 
         dij_bar = np.zeros((self.ncomp,self.ncomp))
         for i in range(self.ncomp):
@@ -775,23 +777,20 @@ class gamma_mie():
         self.eos_dict["beadlibrary"].update(beadlibrary)
         self.eos_dict["crosslibrary"].update(crosslibrary)
 
-        # Intiate cross interaction terms
-        output = tb.cross_interaction_from_dict( self.eos_dict['beads'], self.eos_dict['beadlibrary'], self.mixing_rules, crosslibrary=self.eos_dict['crosslibrary'])
-        self.eos_dict["sigmakl"] = output["sigma"]
-        self.eos_dict["epsilonkl"] = output["epsilon"]
-        self.eos_dict["l_akl"] = output["l_a"]
-        self.eos_dict["l_rkl"] = output["l_r"]
+        # Update Non bonded matrices
+        if not np.isnan(self.T):
+            self._check_temperature_dependent_parameters(T)
+        else:
+            self._check_temperature_dependent_parameters(298)
 
         # Initiate average interaction terms
         self.calc_component_averaged_properties()
 
-        # Update Non bonded matrices
-        if not np.isnan(self.T):
-            self.eos_dict['dkl'], self.eos_dict['x0kl'] = stb.calc_hard_sphere_matricies(self.T, self.eos_dict['sigmakl'], self.eos_dict['beadlibrary'], self.eos_dict['beads'], prefactor)
-            self._update_chain_temperature_dependent_variables(self.T)
-
         if not np.isnan(self.xi):
             self.eos_dict['Cmol2seg'], self.eos_dict['xskl'] = stb.calc_composition_dependent_variables(self.xi, self.eos_dict['nui'], self.eos_dict['beadlibrary'], self.eos_dict['beads'])
+
+        self.eos_dict['Ckl'] = prefactor(self.eos_dict['l_rkl'], self.eos_dict['l_akl'])
+        self.eos_dict['alphakl'] = self.eos_dict['Ckl'] * ((1.0 / (self.eos_dict['l_akl'] - 3.0)) - (1.0 / (self.eos_dict['l_rkl'] - 3.0)))
 
     def _check_density(self, rho):
         r"""
@@ -819,7 +818,7 @@ class gamma_mie():
 
         return rho
 
-    def _check_temerature_dependent_parameters(self, T):
+    def _check_temperature_dependent_parameters(self, T):
         r"""
         This function checks the attritutes of
         
@@ -834,6 +833,25 @@ class gamma_mie():
             The following entries are updated: dkl, x0kl
         """
         if self.T != T:
+            # Check for temperature dependent mixing rule
+            if self.mixing_temp_dependence is None or self.mixing_temp_dependence is None :
+                self.mixing_temp_dependence = False
+                for key, value in self.mixing_rules.items():
+                    if "temperature" in value:
+                        self.mixing_temp_dependence = True
+                        if "additional_outputs" in value:
+                            for params in value["additional_outputs"]:
+                                self.mixing_rules[params]["function"] = "None"
+                        self.mixing_rules[key]["temperature"] = T
+
+            if self.mixing_temp_dependence:
+                output = tb.cross_interaction_from_dict( self.eos_dict['beads'], self.eos_dict['beadlibrary'], self.mixing_rules, crosslibrary=self.eos_dict['crosslibrary'])
+                self.eos_dict["sigmakl"] = output["sigma"]
+                self.eos_dict["epsilonkl"] = output["epsilon"]
+                self.eos_dict["l_akl"] = output["l_a"]
+                self.eos_dict["l_rkl"] = output["l_r"]
+                self.calc_component_averaged_properties()
+
             self.eos_dict['dkl'], self.eos_dict['x0kl'] = stb.calc_hard_sphere_matricies(T, self.eos_dict['sigmakl'], self.eos_dict['beadlibrary'], self.eos_dict['beads'], prefactor)
             self._update_chain_temperature_dependent_variables(T)
             self.T = T

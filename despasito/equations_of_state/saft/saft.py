@@ -76,7 +76,7 @@ class saft(EOStemplate):
             self.eos_dict = {}
 # NoteHere
         # Extract needed variables from saft type file (e.g. gamma_mie)
-        saft_attributes = ["Aideal_method", "mixing_rules", "parameter_types", "parameter_bound_extreme","residual_helmholtz_contributions"]
+        saft_attributes = ["Aideal_method", "parameter_types", "parameter_bound_extreme","residual_helmholtz_contributions"]
         for key in saft_attributes:
             try:
                 self.eos_dict[key] = getattr(self.saft_source,key)
@@ -101,7 +101,8 @@ class saft(EOStemplate):
         self.beads = self.eos_dict["beads"]
 
         if "mixing_rules" in kwargs:
-            self.mixing_rules.update(kwargs["mixing_rules"])
+            logger.info("Accepted new mixing rule definitions")
+            self.saft_source.mixing_rules.update(kwargs["mixing_rules"])
 
         if 'crosslibrary' not in kwargs:
             self.eos_dict['crosslibrary'] = {}

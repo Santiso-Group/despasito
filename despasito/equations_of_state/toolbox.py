@@ -206,7 +206,7 @@ def cross_interaction_from_dict(beads, beadlibrary, mixing_dict, crosslibrary={}
     """
     
     nbeads = len(beads)
-    
+
     # Set-up output dictionaries
     output = {}
     for key in mixing_dict:
@@ -224,9 +224,13 @@ def cross_interaction_from_dict(beads, beadlibrary, mixing_dict, crosslibrary={}
                     elif crosslibrary.get(beadname2, {}).get(beadname, {}).get(key, None) is not None:
                         output[key][i, j] = crosslibrary[beadname2][beadname][key]
                     else:
-                        output[key][i, j] = mixing_rules( beadlibrary[beadname], beadlibrary[beadname2], key, **mixing_dict[key])
+                        tmp =  mixing_rules( beadlibrary[beadname], beadlibrary[beadname2], key, **mixing_dict[key])
+                        print(key, tmp) # NoteHere
+                        for k2, v2 in tmp.items():
+                            output[k2][i, j] = v2
+                            output[k2][j, i] = v2
                     output[key][j, i] = output[key][i, j]
-    
+
     return output
 
 def construct_dummy_beadlibrary(input_dict, keys=None):
@@ -285,17 +289,24 @@ def mixing_rules( beadA, beadB, parameter, function="mean", **kwargs):
         
     Returns
     -------
-    parameter12 : float
-        Mixed interaction parameter
+    output_dict : dict
+        Dictionary with keyword of parameter and Mixed interaction parameter. If mixing rule type outputs more than one updated variable, it will also be included
     """
     
     calc_list = [o[0] for o in getmembers(mixing_rule_types) if isfunction(o[1])]
     try:
-        func = getattr(mixing_rule_types, function)
+        if function is not "None":
+            func = getattr(mixing_rule_types, function)
     except:
         raise ImportError("The mixing rule type, '{}', was not found\nThe following calculation types are supported: {}".format(function,", ".join(calc_list)))
 
-    parameter12 = func(beadA, beadB, parameter, **kwargs)
+    if function is not "None":
+        output = func(beadA, beadB, parameter, **kwargs)
+        if type(output) is not dict:
+            tmp = {parameter: output}
+            output = tmp
+    else:
+        output = {}
     
-    return parameter12
+    return output
 
