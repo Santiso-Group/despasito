@@ -225,7 +225,6 @@ def cross_interaction_from_dict(beads, beadlibrary, mixing_dict, crosslibrary={}
                         output[key][i, j] = crosslibrary[beadname2][beadname][key]
                     else:
                         tmp =  mixing_rules( beadlibrary[beadname], beadlibrary[beadname2], key, **mixing_dict[key])
-                        print(key, tmp) # NoteHere
                         for k2, v2 in tmp.items():
                             output[k2][i, j] = v2
                             output[k2][j, i] = v2

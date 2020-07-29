@@ -25,12 +25,14 @@ beadlibrary = {'CH3OH': {'epsilon': 375.01, 'l_a': 6.0, 'l_r': 16.352, 'sigma': 
 eos = despasito.equations_of_state.eos(eos="saft.gamma_mie",beads=beads,nui=nui,beadlibrary=beadlibrary)
 
 ## Exp Data dict
-exp_data = {'Wiley': {'name': 'saturation_properties', "eos_obj":eos, 'calctype': 'saturation_properties', 'T': np.array([200.]), 'Psat': np.array([6.1000e+01]), 'rhol': np.array([27474.40699]), 'rhov': np.array([3.12109900e-03])}, 'Gibbard': {'name': 'saturation_properties', "eos_obj":eos, 'calctype': 'saturation_properties', 'T': np.array([288.1506]), 'Psat': np.array([ 9884.4])}}
+exp_data = {'Wiley': {'name': 'saturation_properties', "eos_obj":eos, 'calctype': 'saturation_properties', 'T': np.array([200.]), 'Psat': np.array([6.1000e+01]), 'rhol': np.array([27474.40699]), 'rhov': np.array([3.12109900e-03])}, 
+            'Gibbard': {'name': 'saturation_properties', "eos_obj":eos, 'calctype': 'saturation_properties', 'T': np.array([288.1506]), 'Psat': np.array([ 9884.4])}}
 
 ## Optimization options
 opt_params = {"fit_bead" : "CH3OH", "fit_params": ["epsilon"], "epsilon_bounds" : [150.0, 400.0]}
 
-thermo_dict = {"opt_params": opt_params, "exp_data": exp_data, "basin_dict": {"niter": 1, "niter_success": 1}, "beadparams0": [384.0], "minimizer_dict": {"tol": 1e-1, "maxiter": 25}}
+#thermo_dict = {"opt_params": opt_params, "exp_data": exp_data, "global_dict": {"method": "basinhopping", "niter": 1, "niter_success": 1}, "beadparams0": [384.0], "minimizer_dict": {"tol": 1e-1, "maxiter": 25}}
+thermo_dict = {"opt_params": opt_params, "exp_data": exp_data, "beadparams0": [384.0]}
 
 
 def test_fit_import():
@@ -41,6 +43,8 @@ def test_fit_1comp(eos=eos,thermo_dict=thermo_dict):
 
     thermo_dict = ri.process_param_fit_inputs(thermo_dict)
     output = fit.fit(thermo_dict)
+
+    print(output)
         
-    assert output["final_parameters"][0]==pytest.approx(386.0,abs=1.0) and output["objective_value"]<1.1
+    assert output["final_parameters"][0]==pytest.approx(150.0,abs=1.0) and output["objective_value"]<1.1
 

@@ -43,7 +43,8 @@ def calc_distance_array(bead_dict, tol=0.01, max_factor=2, lower_bound="rmin"):
         rm = bead_dict["sigma"]
     elif lower_bound == "tolerance":
         rm = bead_dict["sigma"]*(1/tol)**(1/(bead_dict["l_r"]-bead_dict["l_a"]))
-    r_array    = np.linspace(rm,max_factor*rm,num=10000)
+
+    r_array = np.linspace(rm,max_factor*rm,num=10000)
 
     return r_array
 
@@ -1402,9 +1403,9 @@ def float_dimensions(parameter, parameter_type, temperature, dimensions=True, co
         - sigma (float) Nondimensionalize size parameter in [angstroms], :math:`\sigma'=\sigma (4 \pi epsilon_{0}) 3k_{B}T \emph{e}^{-2}`
         - l_r (float) Repulsive exponent
         - l_a (float) Attractive exponent
-        - polarizability (float) Nondimensionalize polarizability of bead in [angstroms^3]. math:`\alpha'=\alpha (4 \pi \epsilon_{0}) 3k_{B}T  \emph{e}^{-6}`
-        - charge (float) Nondimensionalize charge of bead in [C]. :math:`q'=q/\emph{e}`
-        - dipole (float) Nondimensionalize dipole of bead in [C*angstroms]. :math:`\mu'=\mu (4 \pi epsilon_{0}) 3k_{B}T \emph{e}^{-3}`
+        - polarizability (float) Nondimensionalize polarizability of bead in [angstroms^3]. math:`\alpha'=\alpha (4 \pi \epsilon_{0}) 3k_{B}T  \emph{e}^{-6}`, where the dimensionalized version is the polarizability volume
+        - charge (float) Nondimensionalize charge of bead in [e]. :math:`q'=q/\emph{e}`
+        - dipole (float) Nondimensionalize dipole of bead in [Debye]. :math:`\mu'=\mu (4 \pi epsilon_{0}) 3k_{B}T \emph{e}^{-3}`
         - quadrupole (float) Nondimensionalize quadrupole of bead in [Debye*angstrom]. :math:`Q'=Q (4 \pi epsilon_{0})^{2} (3k_{B}T)^{2} \emph{e}^{-5}`
         - ionization_energy (float) Nondimensionalize ionization_energy of bead in [kcal/mol]. :math:`\emph{I}'=\emph{I}/(3k_{B}T)`
     
@@ -1437,7 +1438,7 @@ def float_dimensions(parameter, parameter_type, temperature, dimensions=True, co
             "sigma": np.sqrt(perm)*K/C_eV**2, \
             "dipole": C_D*np.sqrt(perm)*K/C_eV**3, \
             "quadrupole": C_D*perm*K**2/C_eV**5, \
-            "charge":1/C_eV, \
+            "charge":1, \
             "polarizability": 4*np.pi*e0*perm*K**3/C_eV**6}
 
     for key, value in conv_custom.items():

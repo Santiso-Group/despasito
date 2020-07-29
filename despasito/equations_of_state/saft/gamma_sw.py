@@ -69,7 +69,7 @@ class gamma_sw():
         self.Aideal_method = "Abroglie"
         self.residual_helmholtz_contributions = ["Amonomer","Achain"]
         self.parameter_types = ["epsilon", "lambda", "epsilonHB", "sigma", "Sk", "K", "rc", "rd"]
-        self.parameter_bound_extreme = {"epsilon":[0.,1000.], "lambda":[1.0,10.0], "sigma":[0.,10.0], "Sk":[0.,1.], "epsilonHB":[0.,5000.], "K":[0.,10000.]}    
+        self.parameter_bound_extreme = {"epsilon":[10.,1000.], "lambda":[1.0,10.0], "sigma":[0.1,10.0], "Sk":[0.1,1.], "epsilonHB":[100.,5000.], "K":[1e-5,10000.]}    
         self.mixing_rules = {"sigma": {"function": "mean"},
                              "lambda": {"function": "weighted_mean", "weighting_parameters": ["sigma"]},
                              "epsilon": {"function": "square_well_berthelot", "weighting_parameters": ["sigma", "lambda"]}

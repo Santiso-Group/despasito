@@ -69,7 +69,7 @@ class gamma_mie():
     
         self.Aideal_method = "Abroglie"
         self.parameter_types = ["epsilon", "sigma", "l_r", "l_a", "Sk", "rc", "rd", "epsilonHB", "K"]
-        self.parameter_bound_extreme = {"epsilon":[0.,1000.], "sigma":[0.,1.0], "l_r":[0.,100.], "l_a":[0.,100.], "Sk":[0.,1.], "epsilonHB":[0.,5000.], "K":[0.,10000.]}    
+        self.parameter_bound_extreme = {"epsilon":[100.0,1000.], "sigma":[0.1,1.0], "l_r":[6.0,100.], "l_a":[3.0,100.], "Sk":[0.1,1.], "epsilonHB":[100.0,5000.], "K":[1e-5,10000.]}    
         self.residual_helmholtz_contributions = ["Amonomer","Achain"]
         self.mixing_rules = {"sigma": {"function": "mean"},
                              "l_r": {"function": "mie_exponent"},
@@ -338,6 +338,7 @@ class gamma_mie():
         """
 
         rho = self._check_density(rho)
+        self._check_temperature_dependent_parameters(self.T)
         self._check_composition_dependent_parameters(xi)
 
         if zetaxstar is None:
@@ -686,6 +687,7 @@ class gamma_mie():
         """
 
         rho = self._check_density(rho)
+        self._check_temperature_dependent_parameters(self.T)
         self._check_composition_dependent_parameters(xi)
     
         if Ktype == "klab":
@@ -778,8 +780,8 @@ class gamma_mie():
         self.eos_dict["crosslibrary"].update(crosslibrary)
 
         # Update Non bonded matrices
-        if not np.isnan(self.T):
-            self._check_temperature_dependent_parameters(T)
+        if not np.isnan(self.T) and self.T is not None:
+            self._check_temperature_dependent_parameters(self.T)
         else:
             self._check_temperature_dependent_parameters(298)
 
@@ -842,6 +844,10 @@ class gamma_mie():
                         if "additional_outputs" in value:
                             for params in value["additional_outputs"]:
                                 self.mixing_rules[params]["function"] = "None"
+                        self.mixing_rules[key]["temperature"] = T
+            else:
+                for key, value in self.mixing_rules.items():
+                    if "temperature" in value:
                         self.mixing_rules[key]["temperature"] = T
 
             if self.mixing_temp_dependence:

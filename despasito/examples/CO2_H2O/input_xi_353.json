@@ -1,0 +1,9 @@
+{
+    "beadconfig": [[["CO2m", 1]], [["H2O353", 1]]],
+    "EOSgroup": "../library/SAFTgroup.json",
+    "EOScross": "../library/SAFTcross.json",
+    "output_file": "out_353.txt",
+    "calculation_type" : "phase_xiT",
+    "Tlist" : [353],
+    "xilist": [[0.002064,0.997935]]
+}

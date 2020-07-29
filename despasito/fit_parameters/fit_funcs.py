@@ -2,10 +2,11 @@
 import os
 import numpy as np
 import logging
-import scipy.optimize as spo
+from inspect import getmembers, isfunction
+from scipy.optimize import NonlinearConstraint, LinearConstraint
 
-from despasito.utils.parallelization import MultiprocessingJob
-import despasito.utils.general_toolbox as gtb
+from . import constraint_types as constraints_mod
+from . import global_methods as global_methods_mod
 
 logger = logging.getLogger(__name__)
 
@@ -137,208 +138,7 @@ def reformat_ouput(cluster):
 
     return matrix, len_cluster
 
-class BasinStep(object):
-    r"""
-    Custom basin step used by scipy.optimize.basinhopping function.
-    
-    """
-
-    def __init__(self, stepmag, stepsize=0.05):
-        r"""
-            
-        Parameters
-        ----------
-        stepmag : list
-            List of step magnitudes
-        stepsize : float
-            default 0.05
-
-        Attributes
-        ----------
-        stepmag : list
-            List of step magnitudes
-        stepsize : float
-            default 0.05
-            
-        """
-
-        self._stepsize = stepsize
-        self._stepmag = stepmag
-
-    def __call__(self, x):
-
-        r"""
-            
-        Parameters
-        ----------
-        x : numpy.ndarray
-            Guess in parameters values
-
-        Returns
-        -------
-        basinstep : numpy.ndarray
-            Suggested basin step used in scipy.optimize.basinhopping algorithm
-            
-        """
-
-        # Save intital guess in array
-        xold = np.copy(x)
-
-        # Loop for number of times to start over
-        for j in range(1000):
-            # reset array x
-            x = np.copy(xold)
-            breakloop = True
-            # Iterate through array of step magnitudes
-            for i, mag in enumerate(self._stepmag):
-                # Add or subtract a random number within distribution of +- mag*stepsize
-                x[i] += np.random.uniform(-mag * self._stepsize, mag * self._stepsize)
-                # If a value of x is negative, don't  break the cycle
-                if x[i] < 0.0:
-                    breakloop = False
-            if breakloop: break
-            logger.info("Basin Step after {} iterations:\n    {}".format(j,x))
-        return x
-
-class BasinBounds(object):
-    r"""
-    Object used by scipy.optimize.basinhopping to set bounds of parameters.
-    """
-
-    def __init__(self, bounds):
-        r"""
-            
-        Parameters
-        ----------
-        bounds : numpy.ndarray
-            Bounds on parameters
-    
-        Attributes
-        ----------
-        xmin : numpy.ndarray
-            Array of minimun values for each parameter
-        xman : numpy.ndarray
-            Array of maximum values for each parameter
-            
-        """
-        bounds = np.transpose(np.array(bounds))
-        self.xmin = bounds[0]
-        self.xmax = bounds[1]
-
-    def __call__(self, **kwargs):
-        r"""
-            
-        Parameters
-        ----------
-        x_new : numpy.ndarray
-            Guess in parameters values
-
-        Returns
-        -------
-        value : bool
-            A true or false value that says whether the guess in parameter value is within bounds
-            
-        """
-        x = kwargs["x_new"]
-        tmax = bool(np.all(x <= self.xmax))
-        tmin = bool(np.all(x >= self.xmin))
-
-        feasible1 = np.abs(kwargs["f_new"]) < np.inf
-        feasible2 = not np.isnan(kwargs["f_new"])
-
-        if (tmax and tmin and feasible1 and feasible2):
-            logger.info("Accept parameters: {}, with obj. function: {}".format(x,kwargs["f_new"]))
-        else:
-            logger.info("Reject parameters: {}, with obj. function: {}".format(x,kwargs["f_new"]))
-
-        return tmax and tmin and feasible1 and feasible2
-
-class WriteParameterResults(object):
-    r"""
-    Object used by scipy.optimize.basinhopping to set bounds of parameters.
-    """
-
-    def __init__(self, beadnames, obj_cut=None, filename=None):
-        r"""
-            
-        Attributes
-        ----------
-        beadnames : list[str]
-            List of bead names for filename header
-        obj_cut : float, Optional, default: np.inf
-            Cut-off objective value to write the parameters
-        filename : str, Optional, default: parameters.txt
-            File to which parameters are written
-            
-        """
-
-        if obj_cut is None:
-            self.obj_cut = np.inf
-        else:
-            self.obj_cut = obj_cut
-
-        if filename is None:
-            filename = "parameters.txt"
-
-        if os.path.isfile(filename):
-            old_fname = filename
-            for i in range(20):
-                filename = "{}_{}".format(i,old_fname)
-                if not os.path.isfile(filename):
-                    logger.info("File '{}' already exists, using {}.".format(old_fname,filename))
-                    break
-        self.filename = filename
-        self.ninit = 0
-
-        with open(filename, 'w') as f:
-            f.write("# n, convergence, "+", ".join(beadnames)+"\n")
-
-    def __call__(self, x_new, convergence=0):
-        r"""
-            
-        Parameters
-        ----------
-        x_new : numpy.ndarray
-            Guess in parameters values
-
-        Returns
-        -------
-        value : bool
-            A true or false value that says whether the guess in parameter value is within bounds
-            
-        """
-        
-        if convergence < self.obj_cut:
-            with open(self.filename, 'a') as f:
-                tmp = [self.ninit, convergence]+[x for x in x_new]
-                f.write(("{}, "*len(tmp)).format(*tmp)+"\n")
-
-        self.ninit += 1
-
-        return False
-
-def del_Data_mpObj(dictionary):
-    r""" A dictionary of fitting objects will remove mpObj attributes so that the multiprocessing pool can be used by the fitting algorithm.
-
-    Parameters
-    ----------
-    dictionary : dict
-        Dictionary of fitting objects
-
-    Returns
-    -------
-    new_dictionary : dict
-        Updated fitting objects
-    """
-
-    new_dictionary = dictionary.copy()
-    for key in new_dictionary:
-        if "mpObj" in new_dictionary[key]._thermodict:
-            del new_dictionary[key]._thermodict["mpObj"]
-
-    return new_dictionary
-
-def global_minimization(global_method, beadparams0, bounds, fit_bead, fit_params, exp_dict, global_dict={}, minimizer_dict={}):
+def global_minimization(global_method, *args, **kwargs):
     r"""
     Fit defined parameters for equation of state object with given experimental data. 
 
@@ -360,18 +160,15 @@ def global_minimization(global_method, beadparams0, bounds, fit_bead, fit_params
     exp_dict : dict
         Dictionary of experimental data objects.
     global_dict : dict, Optional
-        Kwargs of golobal optimization algorithm. Here we list the kwargs used in scipy.optimize.basinhopping
-
-        - niter (int) - default: 10, Number of basin hopping iterations
-        - T (float) - default: 0.5, Temperature parameter, should be comparable to separation between local minima (i.e. the “height” of the walls separating values).
-        - niter_success (int) - default: 3, Stop run if minimum stays the same for this many iterations
-        - stepsize (float) - default: 0.1, Maximum step size for use in the random displacement. We use this value to define an object for the `take_step` option that includes a custom routine that produces attribute stepsizes for each parameter.
-
+        Kwargs of global optimization algorithm. See specific option in `global_methods.py` 
     minimizer_dict : dict, Optional
         Dictionary used to define minimization type and the associated options.
 
         - method (str) - Method available to scipy.optimize.minimize
         - options (dict) - This dictionary contains the kwargs available to the chosen method
+
+    constraints : dict, Optional
+        This dicitonary of constraint types and their arguements will be converted into the appropriate form for the chosen optimizaiton method.
 
     Returns
     -------
@@ -380,202 +177,75 @@ def global_minimization(global_method, beadparams0, bounds, fit_bead, fit_params
         
     """
 
-    # !!!!!!!!! If another methods is added to the if statement below, please also add it here and update the documentation above. !!!!!!!!
-    methods = ["basinhopping", "differential_evolution", "brute"]
     logger.info("Using global optimization method: {}".format(global_method))
-
-    if global_method == "basinhopping":  #__________________________________________________________________
-
-        # Options for basin hopping
-        new_global_dict = {"niter": 10, "T": 0.5, "niter_success": 3}
-        if global_dict:
-            for key, value in global_dict.items():
-                if key is not "mpObj":
-                    new_global_dict[key] = value
-        global_dict = new_global_dict
-    
-        # Set up options for minimizer in basin hopping
-        new_minimizer_dict = {"method": 'nelder-mead', "options": {'maxiter': 50}}
-        if minimizer_dict:
-            for key, value in minimizer_dict.items():
-                if key == "method":
-                    new_minimizer_dict[key] = value
-                elif key == "options":
-                    for key2, value2 in value.items():
-                        new_minimizer_dict[key][key2] = value2
-        minimizer_dict = new_minimizer_dict
-      
-        # NoteHere: how is this array generated? stepmag = np.array([550.0, 26.0, 4.0e-10, 0.45, 500.0, 150.0e-30, 550.0])
-        try:
-            if "stepsize" in global_dict:
-            	stepsize = global_dict["stepsize"]
-            else:
-            	stepsize = 0.1
-            stepmag = np.transpose(np.array(bounds))[1]
-            global_dict["take_step"] = BasinStep(stepmag, stepsize=stepsize)
-            custombounds = BasinBounds(bounds)
-        except:
-        	raise TypeError("Could not initialize BasinStep and/or BasinBounds")
-
-        logger.info("Basin Hopping Options: {}".format(global_dict))
-        result = spo.basinhopping(compute_obj, beadparams0, **global_dict, accept_test=custombounds, minimizer_kwargs={"args": (fit_bead, fit_params, exp_dict, bounds),**minimizer_dict})
-
-    elif global_method == "differential_evolution":  #______________________________________________________
-
-        obj_kwargs = ["obj_cut", "filename"]
-        if "obj_cut" in global_dict:
-            obj_cut = global_dict["obj_cut"]
-        else:
-            obj_cut = None
-
-        if "filename" in global_dict:
-            filename = global_dict["filename"]
-        else:
-            filename = None
-        # Options for differential evolution, set defaults in new_global_dict
-        new_global_dict = {"init": "random"}
-        if global_dict:
-            for key, value in global_dict.items():
-                if key is "mpObj":
-                    if value.ncores > 1:
-                        logger.info("Differential Evolution algoirithm is using {} workers.".format(value.ncores))
-                        new_global_dict["workers"] = value._pool.map
-                        exp_dict = del_Data_mpObj(exp_dict)
-                elif key not in obj_kwargs:
-                    new_global_dict[key] = value
-        global_dict = new_global_dict
-        logger.info("Differential Evolution Options: {}".format(global_dict))
-
-        if minimizer_dict:
-            logger.warning("Minimization options were given but aren't used in this method.")
-
-        obj = WriteParameterResults(fit_params, obj_cut=obj_cut, filename=filename)
-        result = spo.differential_evolution(compute_obj, bounds, callback=obj, args=(fit_bead, fit_params, exp_dict, bounds), **global_dict)
-
-    elif global_method == "brute": #__________________________________________________________________________
-
-        # Options for brute, set defaults in new_global_dict
-        new_global_dict = {"Ns": 5, "finish":spo.minimize}
-        if global_dict:
-            for key, value in global_dict.items():
-                if key is "mpObj":
-                    if value.ncores > 1:
-                        logger.info("Brute algoirithm is using {} workers.".format(value.ncores))
-                        new_global_dict["workers"] = value._pool.map
-                        exp_dict = del_Data_mpObj(exp_dict)
-                else:
-                    new_global_dict[key] = value
-        global_dict = new_global_dict
-        global_dict["full_output"] = True
-
-        if minimizer_dict:
-            logger.warning("Minimization options were given but aren't used in this method. Specify minimization method as 'finish' function in global_dict")
-
-        logger.info("Brute Options: {}".format(global_dict))
-        x0, fval, grid, Jount = spo.brute(compute_obj, bounds, args=(fit_bead, fit_params, exp_dict, bounds), **global_dict)
-        result = spo.OptimizeResult(x=x0,
-                                    fun=fval,
-                                    success=True,
-                                    nit=len(x0)*global_dict["Ns"],
-                                    message="Termination successful with {} grid points and the minimum value minimized. Note that parameters may be outside of the given bounds because of the minimizing function.".format(len(x0)*global_dict["Ns"]))
-
-    elif global_method == "grid_minimization":  #___________________________________________________________________
-
-        # Options for brute, set defaults in new_global_dict
-        flag_use_mp_object = False
-        new_global_dict = {"Ns": 5, "finish":spo.minimize}
-        if global_dict:
-            for key, value in global_dict.items():
-                if key is "mpObj":
-                    if value.ncores > 1:
-                        logger.info("Grid minimization algoirithm is using {} workers.".format(value.ncores))
-                        new_global_dict["mpObj"] = value
-                        flag_use_mp_object = True
-                        exp_dict = del_Data_mpObj(exp_dict)
-                else:
-                    new_global_dict[key] = value
-        global_dict = new_global_dict
-        logger.info("Grid Minimization Options: {}".format(global_dict))
-
-        # Set up options for minimizer
-        new_minimizer_dict = {"method": 'lm'}
-        #new_minimizer_dict = {"method": 'L-BFGS-B'}
-        if minimizer_dict:
-            for key, value in minimizer_dict.items():
-                if key == "method":
-                    new_minimizer_dict[key] = value
-                elif key == "options":
-                    for key2, value2 in value.items():
-                        new_minimizer_dict[key][key2] = value2
-        minimizer_dict = new_minimizer_dict
-        logger.info("    Minimizer Options: {}".format( minimizer_dict))
-
-        args = (fit_bead, fit_params, exp_dict, bounds)    
-
-        # Set up inputs
-        if "initial_guesses" in global_dict:
-            x0_array = global_dict["initial_guesses"]
-        else:
-            # Initialization taken from scipy.optimize.brute
-            N = len(bounds)
-            lrange = list(bounds)
-            for k in range(N):
-                if type(lrange[k]) is not type(slice(None)):
-                    if len(lrange[k]) < 3:
-                        lrange[k] = tuple(lrange[k]) + (complex(global_dict["Ns"]),)
-                    lrange[k] = slice(*lrange[k])
-            if (N == 1):
-                lrange = lrange[0]
-            x0_array = np.mgrid[lrange]
-            inpt_shape = x0_array.shape
-            if (N > 1):
-                x0_array = np.reshape(x0_array, (inpt_shape[0], np.prod(inpt_shape[1:]))).T 
-         
-        inputs = [(x0, args, bounds, minimizer_dict) for x0 in x0_array]
-
-        # Start computation
-        if flag_use_mp_object:
-            x0, results = global_dict["mpObj"].pool_job(_grid_minimization_wrapper, inputs)
-        else:
-            x0, results = MultiprocessingJob.serial_job(_grid_minimization_wrapper, inputs)
-
-        # Choose final output
-        result = [np.inf, None]
-        logger.info("For bead: {} and parameters {}".format(fit_bead,fit_params))
-        for i in range(len(x0_array)):
-            tmp_result = results[i]
-            logger.info("x0: {}, xf: {}, obj: {}".format(x0_array[i], tmp_result.x, tmp_result.fun))
-            if result[0] > tmp_result.fun:
-                result = [tmp_result.fun, tmp_result]
-        result = result[1]
-    else: #________________________________________________________________________________________
-
-        raise ValueError("Global optimization method, {}, is not currently supported. Try: {}".format(global_method,", ".join(methods)))
-
-    return result
-
-def _grid_minimization_wrapper(args):
-
-    x0, obj_args, bounds, opts = args
-
-    if "method" in opts:
-        method = opts["method"]
-        del opts["method"]
-    else:
-        method = "least_squares"
-
+    calc_list = [o[0] for o in getmembers(global_methods_mod) if (isfunction(o[1]) and o[0][0] is not "_")]
     try:
-        result = gtb.solve_root( compute_obj, args=obj_args, method=method, x0=x0, bounds=bounds, options=opts)
+        func = getattr(global_methods_mod, global_method)
     except:
-        result = np.nan*np.ones(len(x0))
+        raise ImportError("The global minimization type, '{}', was not found\nThe following calculation types are supported: {}".format(function,", ".join(calc_list)))
 
-    if np.sum(np.abs(result-x0)) < 1e-6:
-        result = np.nan*np.ones(len(x0))
+    output = func(*args, **kwargs)
 
-    logger.info("Starting parameters: {}, converged to: {}".format(x0,result))
+    return output
 
-    return x0, result
+def initialize_constraints(constraints, constraint_type):
+    r"""
+    A tuple of either constraint classes or dictionaries as required by scipy global optimization methods
 
+    Parameters
+    ----------
+    constraints : dict
+        This dicitonary of constraint types and their arguements will be converted into the appropriate form for the chosen optimizaiton method. The key must be a valid function name from `constraint_types.py`. This key in turn represents a dictionary with two keys, 'type' and 'args'. The 'args' are inputs into the functions (keys), and 'type' entries depends on 'constraint_type'.
+    constraint_type : str
+        Either 'dict' or 'class'. Changes the constraint to the specified form. 
+ 
+        - dict: Allowed types, "eq" or "ineq", eq means must be zero, ineq means it must be non-negative 
+        - class: Allowed types, "nonlinear" or "linear", a kwargs keyword may also be added for the constraint class 
+
+    Returns
+    -------
+    new_constraints : tuple
+        A tuple of either constraint classes or dictionaries as required by scipy global optimization methods
+        
+    """
+
+    calc_list = [o[0] for o in getmembers(constraints_mod) if (isfunction(o[1]) and o[0][0] is not "_")]
+
+    new_constraints = []
+    for const_type, kwargs in constraints.items():
+        try:
+            func = getattr(constraints_mod, const_type)
+        except:
+            raise ImportError("The constraint type, '{}', was not found\nThe following types are supported: {}".format(function,", ".join(calc_list)))
+
+        if "args" not in kwargs:
+            raise ValueError("Constraint function, {}, is missing arguements".format(const_type))
+
+        if constraint_type == "class":
+            if "type" not in kwargs or kwargs["type"] in ['linear', 'nonlinear']:
+                raise ValueError("Constraint, {}, does not have type. Type can be 'linear' or 'nonlinear'.".format(const_type))
+# NoteHere
+            if kwargs["type"] is "linear":
+                if "kwargs" not in kwargs:
+                    output = LinearConstraint(func, args[0], args[1])
+                else:
+                    output = LinearConstraint(func, args[0], args[1], **kwargs)
+            elif kwargs["type"] is "nonlinear":
+                if "kwargs" not in kwargs:
+                    output = NonlinearConstraint(func, args[0], args[1])
+                else:
+                    output = NonlinearConstraint(func, args[0], args[1], **kwargs)
+
+        elif constraint_type == "dict":
+            if "type" not in kwargs or kwargs["type"] in ['eq', 'ineq']:
+                raise ValueError("Constraint, {}, does not have type. Type can be 'eq' or 'ineq'.".format(const_type))
+            output = {"type": kwargs["type"], "function": func, "args": kwargs["args"]}
+        else:
+            raise ValueError("Constraint type {}, must be either 'class' or 'dict'.")
+
+        new_constraints.append(output)
+
+    return tuple(new_constraints)
 
 def compute_obj(beadparams, fit_bead, fit_params, exp_dict, bounds):
     r"""
@@ -621,7 +291,8 @@ def compute_obj(beadparams, fit_bead, fit_params, exp_dict, bounds):
             data_obj.eos.parameter_refresh()
             obj_function.append(data_obj.objective())
         except:
-            raise ValueError("Failed to evaluate objective function for {} of type {}.".format(key,data_obj.name))
+            logger.error("Failed to evaluate objective function for {} of type {}.".format(key,data_obj.name))
+            obj_function.append(np.inf)
 
     obj_total = np.nansum(obj_function)
     if obj_total == 0. and np.isnan(np.sum(obj_function)):

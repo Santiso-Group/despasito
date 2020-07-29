@@ -176,10 +176,16 @@ def multipole(beadA, beadB, parameter, temperature=None, additional_outputs=[]):
     """
 
     if temperature is not None:
-        tmp = {"beadA": beadA, "beadB": beadB}
-        dict_cross, _ = mr.extended_mixing_rules_fitting(tmp, temperature)
-        output = dict_cross["beadA"]["beadB"]
+        tmp = {"beadA": beadA.copy(), "beadB": beadB.copy()}
+        for key, value in tmp.items():
+            tmp[key]["sigma"] = value["sigma"]*10 # convert from nm to angstroms
+        try:
+            dict_cross, _ = mr.extended_mixing_rules_fitting(tmp, temperature)
+            output = dict_cross["beadA"]["beadB"]
+        except:
+            raise ValueError("Extended mixing rule failed.")
     else:
+        logger.warning("Temerature is None, using geometric mean.")
         output = {parameter: geometric_mean( beadA, beadB, parameter)}
 
     return output
