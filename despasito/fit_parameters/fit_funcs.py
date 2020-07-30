@@ -291,6 +291,7 @@ def compute_obj(beadparams, fit_bead, fit_params, exp_dict, bounds):
             data_obj.eos.parameter_refresh()
             obj_function.append(data_obj.objective())
         except:
+            #raise ValueError("Failed to evaluate objective function for {} of type {}.".format(key,data_obj.name))
             logger.error("Failed to evaluate objective function for {} of type {}.".format(key,data_obj.name))
             obj_function.append(np.inf)
 

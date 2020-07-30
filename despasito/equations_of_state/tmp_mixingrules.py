@@ -350,8 +350,8 @@ def fit_polarizability(r, bead_dict, tol=0.05, shape_factor_scale=False):
 
     if np.diag(var_matrix) / pol_tmp > tol:
         eps_fit = test_polarizability(pol_tmp, bead_dict_new, r, plot_fit=True)
-        print("pol",pol_tmp[0],"eps_orig",bead_dict_new["epsilon"],"eps_fit",eps_fit)
-        print("    Note that these calculated values for this test are blind to the shape factor transform and should be corrected if necessary")
+        #print("pol",pol_tmp[0],"eps_orig",bead_dict_new["epsilon"],"eps_fit",eps_fit)
+        #print("    Note that these calculated values for this test are blind to the shape factor transform and should be corrected if necessary")
     
     return pol_tmp[0], var_matrix[0][0]
 
@@ -394,19 +394,19 @@ def test_polarizability(polarizability, bead_dict, r, plot_fit=False):
     bead_dict_new["polarizability"] = polarizability
     output = fit_multipole_cross_interaction_parameter( bead_dict_new, bead_dict_new, distance_array=r)
 
-    print("Refitting attractive exponent with estimated polarizability of {} yields: lamba_a {}, epsilon {}".format(bead_dict_new["polarizability"],output_fit["l_a_fit"],output_fit["epsilon_fit"]))
+    print("Refitting attractive exponent with estimated polarizability of {} yields: lamba_a {}, epsilon {}".format(bead_dict_new["polarizability"],output["l_a_fit"],output["epsilon_fit"]))
 
     if plot_fit:
         w_mie = calc_mie_attractive_potential(r, bead_dict_new)
         bead_dict_plot = bead_dict_new.copy()
-        bead_dict_plot.update({"epsilon": output_fit["epsilon_fit"], "l_a": output_fit["l_a_fit"]})
+        bead_dict_plot.update({"epsilon": output["epsilon_fit"], "l_a": output["l_a_fit"]})
         w_mie_fit = calc_mie_attractive_potential(r, bead_dict_plot)
        # plt.figure(1)
        # plt.plot(r,w_mie,"--k",label="Mie")
        # plt.plot(r,w_mie_fit,"--r",label="Mie fit")
         multipole_terms = calc_cross_multipole_terms(bead_dict_new,bead_dict_new)
-        print("charge-dipole, charge-induced_dipole, induced_dipole-induced_dipole, dipole-dipole, dipole-induced_dipole, charge-quadrupole, dipole-quadrupole, induced_dipole-quadrupole, quadrupole-quadrupole")
-        print(multipole_terms, "\n\n")
+        #print("charge-dipole, charge-induced_dipole, induced_dipole-induced_dipole, dipole-dipole, dipole-induced_dipole, charge-quadrupole, dipole-quadrupole, induced_dipole-quadrupole, quadrupole-quadrupole")
+        #print(multipole_terms, "\n\n")
         potential, potential_terms = calc_cross_multipole_potential(r, multipole_terms, total_only=False)
         #plot_multipole_potential(r, potential, potential_terms=potential_terms)
 

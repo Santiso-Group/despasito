@@ -338,7 +338,7 @@ class gamma_mie():
         """
 
         rho = self._check_density(rho)
-        self._check_temperature_dependent_parameters(self.T)
+        self._check_temperature_dependent_parameters(T)
         self._check_composition_dependent_parameters(xi)
 
         if zetaxstar is None:
@@ -687,7 +687,7 @@ class gamma_mie():
         """
 
         rho = self._check_density(rho)
-        self._check_temperature_dependent_parameters(self.T)
+        self._check_temperature_dependent_parameters(T)
         self._check_composition_dependent_parameters(xi)
     
         if Ktype == "klab":
@@ -835,6 +835,7 @@ class gamma_mie():
             The following entries are updated: dkl, x0kl
         """
         if self.T != T:
+            self.T = T
             # Check for temperature dependent mixing rule
             if self.mixing_temp_dependence is None or self.mixing_temp_dependence is None :
                 self.mixing_temp_dependence = False
@@ -860,7 +861,6 @@ class gamma_mie():
 
             self.eos_dict['dkl'], self.eos_dict['x0kl'] = stb.calc_hard_sphere_matricies(T, self.eos_dict['sigmakl'], self.eos_dict['beadlibrary'], self.eos_dict['beads'], prefactor)
             self._update_chain_temperature_dependent_variables(T)
-            self.T = T
 
     def _check_composition_dependent_parameters(self, xi):
         r"""
