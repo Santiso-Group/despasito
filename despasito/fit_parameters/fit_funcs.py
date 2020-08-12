@@ -311,3 +311,56 @@ def compute_obj(beadparams, fit_bead, fit_params, exp_dict, bounds):
 
     return obj_total
 
+def obj_function_form(data_test, data0, weights=1.0, method="average-squared-deviation"):
+    """
+    Factory method of possible objective functions. 
+
+    Note that if the result is np.nan, that point is removed from the list for the purposes of averaging.
+
+    Parameters
+    ----------
+    data_test : numpy.ndarray
+        Data that is being assessed. Array of data of the same length as `data_test`
+    data0 : numpy.ndarray
+        Reference data for comparison
+    weights : (numpy.ndarray or float), Optional, default=1.0
+        Can be a float or array of data of the same length as `data_test`. Allows the user to tune the importance of various data points.
+    method : str, Optional, default="mean-squared-relative-error"
+        Keyword used to choose the functional form. Can be:
+
+        - average-squared-deviation: sum(((data_test-data0)/data0)**2)/N
+        - sum-squared-deviation: sum(((data_test-data0)/data0)**2)
+        - sum-squared-deviation-boltz: sum(((data_test-data0)/data0)**2 * exp((data_test_min-data_test)/abs(data_test_min))) [DOI: 10.1063/1.2181979]
+        - sum-deviation-boltz: sum(((data_test-data0)/data0) * exp((data_test_min-data_test)/abs(data_test_min)))  [DOI: 10.1063/1.2181979]
+        - percent-absolute-average-deviation: sum((data_test-data0)/data0)/N*100
+
+    """
+
+    if np.size(data0) != np.size(data_test):
+        raise ValueError("Input data of length, {}, must be the same length as reference data of length {}".format(len(data_test),len(data0)))
+    
+    if np.size(weights) > 1 and np.size(weights) != np.size(data_test):
+        raise ValueError("Weight for data is provided as an array of length, {}, but must be length, {}.".format(len(weights),len(data_test)))
+
+    if method == "average-squared-deviation":
+        data_tmp = np.array([(data_test[i]-data0[i])/data0[i] for i in range(len(data_test)) if not np.isnan(data_test[i])])
+        obj_value = np.mean(data_tmp**2)
+    elif method == "sum-squared-deviation":
+        data_tmp = np.array([(data_test[i]-data0[i])/data0[i] for i in range(len(data_test)) if not np.isnan(data_test[i])])
+        obj_value = np.sum(data_tmp**2)
+    elif method == "sum-squared-deviation-boltz":
+        data_tmp = np.array([(data_test[i]-data0[i])/data0[i] for i in range(len(data_test)) if not np.isnan(data_test[i])])
+        data_min = np.min(data_tmp)
+        obj_value = np.sum(data_tmp**2*np.exp((data_min-data_tmp)/np.abs(data_min)))
+    elif method == "sum-deviation-boltz":
+        data_tmp = np.array([(data_test[i]-data0[i])/data0[i] for i in range(len(data_test)) if not np.isnan(data_test[i])])
+        data_min = np.min(data_tmp)
+        obj_value = np.sum(data_tmp*np.exp((data_min-data_tmp)/np.abs(data_min)))
+    elif method == "percent-absolute-average-deviation":
+        data_tmp = np.array([(data_test[i]-data0[i])/data0[i] for i in range(len(data_test)) if not np.isnan(data_test[i])])
+        obj_value = np.mean(np.abs(data_tmp))*100
+
+    if len(data_test) != len(data_tmp):
+        logger.debug("Values of NaN were removed from objective value calculation")
+
+    return obj_value

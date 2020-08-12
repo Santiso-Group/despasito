@@ -62,10 +62,16 @@ class Data(ExpDataTemplate):
             self.calculation_type = "solubility_parameter"
             self._thermodict["calculation_type"] = "solubility_parameter"
 
-        try:
+        if "weights" in data_dict:
             self.weights = data_dict["weights"]
-        except:
+        else:
             self.weights = {}
+
+        if "objective_method" in data_dict:
+            self.method = data_dict["objective_method"]
+        else:
+            self.method = "average-squared-deviation"
+        logger.info("Objective function type: {}".format(self.method))
 
         if "eos_obj" in data_dict:
             self.eos = data_dict["eos_obj"]
@@ -161,9 +167,9 @@ class Data(ExpDataTemplate):
         # objective function
         obj_value = np.zeros(2)
         if "delta" in self._thermodict:
-            obj_value[0] = np.nansum((((phase_list[0] - self._thermodict["delta"]) / self._thermodict["delta"])**2)*self.weights['delta'])
+            obj_value[0] = ff.obj_function_form(phase_list[0], self._thermodict['delta'], weights=self.weights['delta'], method=self.method)
         if "rhol" in self._thermodict:
-            obj_value[1] = np.nansum((((phase_list[1] - self._thermodict["rhol"]) / self._thermodict["rhol"])**2)*self.weights['rhol'])
+            obj_value[1] = ff.obj_function_form(phase_list[1], self._thermodict['rhol'], weights=self.weights['rhol'], method=self.method)
 
         logger.debug("Obj. breakdown for {}: delta {}, rhol {}".format(self.name,obj_value[0],obj_value[1]))
 

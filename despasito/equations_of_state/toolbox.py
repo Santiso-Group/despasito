@@ -224,7 +224,12 @@ def cross_interaction_from_dict(beads, beadlibrary, mixing_dict, crosslibrary={}
                     elif crosslibrary.get(beadname2, {}).get(beadname, {}).get(key, None) is not None:
                         output[key][i, j] = crosslibrary[beadname2][beadname][key]
                     else:
-                        tmp =  mixing_rules( beadlibrary[beadname], beadlibrary[beadname2], key, **mixing_dict[key])
+                        try:
+                            tmp =  mixing_rules( beadlibrary[beadname], beadlibrary[beadname2], key, **mixing_dict[key])
+                            if mixing_dict[key]["function"]=="multipole":
+                                logger.debug("Multipole: {} {}, {}".format(beadname,beadname2,tmp))
+                        except:
+                            raise ValueError("Unable to calculate '{}' with '{}' method, for beads: '{}' '{}'".format(key,mixing_dict[key]["function"], beadname,beadname2))
                         for k2, v2 in tmp.items():
                             output[k2][i, j] = v2
                             output[k2][j, i] = v2

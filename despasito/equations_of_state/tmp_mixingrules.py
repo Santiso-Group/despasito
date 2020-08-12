@@ -3,6 +3,9 @@ import os
 import numpy as np
 #import matplotlib.pyplot as plt
 import scipy.optimize as spo
+import logging
+
+logger = logging.getLogger(__name__)
 
 def calc_distance_array(bead_dict, tol=0.01, max_factor=2, lower_bound="rmin"):
 
@@ -394,7 +397,7 @@ def test_polarizability(polarizability, bead_dict, r, plot_fit=False):
     bead_dict_new["polarizability"] = polarizability
     output = fit_multipole_cross_interaction_parameter( bead_dict_new, bead_dict_new, distance_array=r)
 
-    print("Refitting attractive exponent with estimated polarizability of {} yields: lamba_a {}, epsilon {}".format(bead_dict_new["polarizability"],output["l_a_fit"],output["epsilon_fit"]))
+    logger.info("Refitting attractive exponent with estimated polarizability of {} yields: lamba_a {}, epsilon {}".format(bead_dict_new["polarizability"],output["l_a_fit"],output["epsilon_fit"]))
 
     if plot_fit:
         w_mie = calc_mie_attractive_potential(r, bead_dict_new)
@@ -614,7 +617,12 @@ def solve_polarizability_integral(sigma0, bead_dict0, shape_factor_scale=False):
             raise ValueError("Shape factor was not provided in bead dictionary")
     Cmie_int = mie_integral(sigma0, bead_dict)
 
-    polarizability = spo.brentq(obj_polarizability_from_integral,np.finfo("float").eps,1,args=(bead_dict, Cmie_int, sigma0),xtol=1e-12)
+    tmp1 = obj_polarizability_from_integral(np.finfo("float").eps,bead_dict, Cmie_int, sigma0)
+    tmp2 = obj_polarizability_from_integral(1,bead_dict, Cmie_int, sigma0)
+    if tmp1*tmp2 < 0:
+        polarizability = spo.brentq(obj_polarizability_from_integral,np.finfo("float").eps,1,args=(bead_dict, Cmie_int, sigma0),xtol=1e-12)
+    else:
+        polarizability = np.nan
 
     return polarizability
 
@@ -1134,7 +1142,7 @@ def calc_self_mie_from_multipole(bead_dict, mie_vdw=None, temperature=298, lambd
     K = params[0]
     bead_dict_new["l_a"] = params[1]
     if mie_vdw is not None:
-        print("Overwrite given l_r with Mie potential relationship to vdW like parameter.")
+        logger.info("Overwrite given l_r with Mie potential relationship to vdW like parameter.")
         bead_dict_new["l_r"] = calc_lambdarij_from_lambda_aij(bead_dict_new["l_a"], mie_vdw)
     else:
         bead_dict_new["l_r"] = lambda_r
@@ -1205,7 +1213,7 @@ def extended_mixing_rules_fitting(bead_library, temperature, shape_factor_scale=
             dict_cross[bead1] = {}
             for bead2 in beads[i+1:]:
                 if np.any(np.isnan([bead_library_new[bead1]["polarizability"], bead_library_new[bead2]["polarizability"]])):
-                     print("Error: polarizabilities of {} and {}: {}, {}".format(bead1,bead2,bead_library_new[bead1]["polarizability"],bead_library_new[bead2]["polarizability"]))
+                     raise ValueError("Error: polarizabilities of {} and {}: {}, {}".format(bead1,bead2,bead_library_new[bead1]["polarizability"],bead_library_new[bead2]["polarizability"]))
                      continue
 
                 cross_out = fit_multipole_cross_interaction_parameter(bead_library_new[bead1], bead_library_new[bead2], distance_dict=distance_dict, shape_factor_scale=shape_factor_scale,temperature=temperature)
@@ -1265,7 +1273,7 @@ def extended_mixing_rules_analytical(bead_library, temperature, shape_factor_sca
         r = calc_distance_array(bead_library_new[bead], **distance_dict)
         pol_tmp = solve_polarizability_integral(r[0], bead_library_new[bead], shape_factor_scale=shape_factor_scale)
         if np.isnan(pol_tmp):
-            raise ValueError("Error: Bead {} cannot fit suitable polarizability. Attractive exponent is most likely not suitable given the bead partial charges.")
+            raise ValueError("Error: Bead {} cannot fit suitable polarizability. No value will allow the integrated multipole moment to match the integrated Mie potential".format(bead))
         bead_library_new[bead]["polarizability"] = pol_tmp
 
     # Calculate cross interaction file
@@ -1279,7 +1287,7 @@ def extended_mixing_rules_analytical(bead_library, temperature, shape_factor_sca
             for bead2 in beads[i+1:]:
                 beadB = bead_library_new[bead2]
                 if np.any(np.isnan([beadA["polarizability"], beadB["polarizability"]])):
-                     print("Error: polarizabilities of {} and {}: {}, {}".format(bead1,bead2,beadA["polarizability"],beadB["polarizability"]))
+                     raise ValueError("Error: polarizabilities of {} and {}: {}, {}".format(bead1,bead2,beadA["polarizability"],beadB["polarizability"]))
                      continue
 
                 beadAB = mixed_parameters(beadA,beadB)

@@ -1161,6 +1161,8 @@ def calc_Prange_xi(T, xi, yi, eos, density_dict={}, Pmin=10000, mole_fraction_op
                             p_min = spline.derivative().roots()
                             if len(p_min) > 1:
                                 p_min = p_min[0]
+                            elif len(p_min) == 0:
+                                logger.error("Could not find minimum in pressure range:\n    Pressure: {}\n    Obj Value: {}".format(p_array,obj_array))
                             obj  = solve_P_xiT(p_min, xi, T, eos, density_dict=density_dict)
                             Prange[1] = p_min
                             ObjRange[1] = obj 

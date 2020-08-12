@@ -73,6 +73,9 @@ def phase_xiT(eos, sys_dict):
         if len(T_list) == 1:
             T_list = np.ones(len(xi_list))*T_list[0]
             logger.info("The same temperature, {}, was used for all mole fraction values".format(T_list[0]))
+        elif len(xi_list) == 1:
+            xi_list = np.array([xi_list[0] for i in range(len(T_list))])
+            logger.info("The same composition, {}, was used for all temperature values".format(xi_list[0]))
         else:
             raise ValueError("The number of provided temperatures and mole fraction sets are different")
 
@@ -242,6 +245,9 @@ def phase_yiT(eos, sys_dict):
         if len(T_list) == 1:
             T_list = np.ones(len(yi_list))*T_list[0]
             logger.info("The same temperature, {}, was used for all mole fraction values".format(T_list[0]))
+        elif len(yi_list) == 1:
+            yi_list = np.array([yi_list[0] for i in range(len(T_list))])
+            logger.info("The same composition, {}, was used for all temperature values".format(yi_list[0]))
         else:
             raise ValueError("The number of provided temperatures and mole fraction sets are different")
 
@@ -495,7 +501,7 @@ def saturation_properties(eos, sys_dict):
         xi_list = np.array(sys_dict['xilist'],float)
         logger.info("Using xilist")
     else:
-            xi_list = np.array([[1.0] for x in range(len(T_list))])
+        xi_list = np.array([[1.0] for x in range(len(T_list))])
 
     variables = list(locals().keys())
     if all([key not in variables for key in ["xi_list", "T_list"]]):
@@ -596,6 +602,9 @@ def liquid_properties(eos, sys_dict):
     if 'xilist' in sys_dict:
         xi_list = np.array(sys_dict['xilist'],float)
         logger.info("Using xilist")
+    else:
+        logger.info("Array xilist wasn't specified, assume one component system")
+        xi_list = [[1.0] for i in T_list]
 
     variables = list(locals().keys())
     if all([key not in variables for key in ["xi_list", "T_list"]]):
@@ -616,6 +625,9 @@ def liquid_properties(eos, sys_dict):
         if np.size(T_list) != np.size(P_list, axis=0):
             if len(P_list)==1:
                 P_list = P_list[0] * np.ones_like(T_list)
+            elif len(T_list)==1:
+                T_list = T_list[0] * np.ones_like(P_list)
+                xi_list = np.array([xi_list[0] for i in T_list])
             else:
                 raise ValueError("The number of provided temperatures and pressure sets are different")
         logger.info("Using Plist")
@@ -705,6 +717,9 @@ def vapor_properties(eos, sys_dict):
     if 'yilist' in sys_dict:
         yi_list = np.array(sys_dict['yilist'],float)
         logger.info("Using yilist")
+    else:
+        logger.info("Array yilist wasn't specified, assume one component system")
+        yi_list = [[1.0] for i in T_list]
 
     variables = list(locals().keys())
     if all([key not in variables for key in ["yi_list", "T_list"]]):
@@ -725,6 +740,9 @@ def vapor_properties(eos, sys_dict):
         if np.size(T_list) != np.size(P_list, axis=0):
             if len(P_list)==1:
                 P_list = P_list[0] * np.ones_like(T_list)
+            elif len(T_list)==1:
+                T_list = T_list[0] * np.ones_like(P_list)
+                yi_list = np.array([yi_list[0] for i in T_list])
             else:
                 raise ValueError("The number of provided temperatures and pressure sets are different")
         logger.info("Using Plist")
@@ -848,6 +866,9 @@ def solubility_parameter(eos, sys_dict):
         if len(P_list) == 1:
             P_list = np.ones(len(T_list))*P_list[0]
             logger.info("The same pressure, {}, was used for all temperature values".format(P_list[0]))
+        elif len(T_list)==1:
+            T_list = T_list[0] * np.ones_like(P_list)
+            xi_list = np.array([xi_list[0] for i in T_list])
         else:
             raise ValueError("The number of provided temperatures and pressure sets are different")
 

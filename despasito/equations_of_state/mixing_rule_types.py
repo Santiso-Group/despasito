@@ -153,7 +153,7 @@ def square_well_berthelot(beadA, beadB, parameter, weighting_parameters=[]):
 
     return tmp1*tmp2*tmp3
 
-def multipole(beadA, beadB, parameter, temperature=None, additional_outputs=[]):
+def multipole(beadA, beadB, parameter, temperature=None, additional_outputs=[], mode="curve fit", scaled=False):
     r"""
     Calculates cross interaction parameter according to the calculation method provided.
     square_well berthelot geometric mean: c = np.sqrt(a[0]*b[0]) * np.sqrt(a[1]**3 * b[1]**3) / ((a[1] + b[1])/2)**3 * np.sqrt(()*())/(a[])
@@ -167,25 +167,38 @@ def multipole(beadA, beadB, parameter, temperature=None, additional_outputs=[]):
     parameter : str
         Name of parameter for which a mixed value is needed
     weighting_parameters : list[str], Optional, default=[]
-        Given parameter name is a0 and b0, while weighting_parameters should be of length 1 to represent the name for a1 and b
-1.
+        Given parameter name is a0 and b0, while weighting_parameters should be of length 1 to represent the name for a1 and b1.
+    mode : str, Optional, default='curve fit'
+        Dictates the mode by which the parameters are fit. By default the Mie parameters are fit to the multipole with the keyword "curve fit". Alternatively, the keyword "analytical" indicates that the energy parameter is explicitly calculated from the definite integral.
+    scaled : bool, Optional, default=False
+        Dictates whether the shape factor is used to scale the Mie potential 
+
     Returns
     -------
     output : dict
         Mixed interaction parameter
     """
 
+    if scaled in [True, "True", "true", "yes", "Yes"]:
+        shape_factor_scale = True
+    else:
+        shape_factor_scale = False
+
     if temperature is not None:
         tmp = {"beadA": beadA.copy(), "beadB": beadB.copy()}
         for key, value in tmp.items():
             tmp[key]["sigma"] = value["sigma"]*10 # convert from nm to angstroms
-        try:
-            dict_cross, _ = mr.extended_mixing_rules_fitting(tmp, temperature)
-            output = dict_cross["beadA"]["beadB"]
-        except:
-            raise ValueError("Extended mixing rule failed.")
+
+        if mode == "curve fit":
+            dict_cross, _ = mr.extended_mixing_rules_fitting(tmp, temperature, shape_factor_scale=shape_factor_scale)
+        elif mode == "analytical":
+            dict_cross, _ = mr.extended_mixing_rules_analytical(tmp, temperature, shape_factor_scale=shape_factor_scale)
+        else:
+            raise ValueError("Multipole mixing rule must be either 'curve fit' or 'analytical'.")
+        output = dict_cross["beadA"]["beadB"]
     else:
         logger.warning("Temerature is None, using geometric mean.")
         output = {parameter: geometric_mean( beadA, beadB, parameter)}
 
     return output
+

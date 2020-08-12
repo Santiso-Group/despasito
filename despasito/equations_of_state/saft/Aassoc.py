@@ -84,18 +84,18 @@ def assoc_site_indices(nk, nui, xi=None):
     for bead in nk:
         bead_sites.append([i for i, site in enumerate(bead) if site != 0])
 
-    # Indices of components will minimal mole fractions
-    if xi is not None:
-        zero_frac = np.where(np.array(xi)<np.finfo("float").eps)[0]
-    else:
-        zero_frac = np.array([])
+    ## Indices of components will minimal mole fractions
+    #if xi is not None:
+    #    zero_frac = np.where(np.array(xi)<np.finfo("float").eps)[0]
+    #else:
+    #    zero_frac = np.array([])
 
     for i, comp in enumerate(nui):
-        if i not in zero_frac:
-            for j, bead in enumerate(comp):
-                if (bead != 0 and bead_sites[j]):
-                    for k in bead_sites[j]:
-                        indices.append([i,j,k])
+        #if i not in zero_frac:
+       for j, bead in enumerate(comp):
+           if (bead != 0 and bead_sites[j]):
+               for k in bead_sites[j]:
+                   indices.append([i,j,k])
 
     indices = np.array([np.array(x) for x in indices], dtype=np.int)
 

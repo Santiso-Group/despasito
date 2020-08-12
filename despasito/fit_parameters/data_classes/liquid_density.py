@@ -31,6 +31,7 @@ class Data(ExpDataTemplate):
         * T : list, List of temperature values for calculation
         * xi : list, List of liquid mole fractions used in liquid_properties calculations
         * weights : dict, A dictionary where each key is the header used in the exp. data file. The value associated with a header can be a list as long as the number of data points to multiply by the objective value associated with each point, or a float to multiply the objective value of this data set.
+        * objective_method : str, The 'method' keyword in function despasito.fit_parameters.fit_funcs.obj_function_form.
         * density_dict : dict, Optional, default: {"minrhofrac":(1.0 / 60000.0), "rhoinc":10.0, "vspacemax":1.0E-4}, Dictionary of options used in calculating pressure vs. mole fraction curves.
 
     Attributes
@@ -57,10 +58,16 @@ class Data(ExpDataTemplate):
             self.calculation_type = "liquid_properties"
             self._thermodict["calculation_type"] = "liquid_properties"
 
-        try:
+        if "weights" in data_dict:
             self.weights = data_dict["weights"]
-        except:
+        else:
             self.weights = {}
+
+        if "objective_method" in data_dict:
+            self.method = data_dict["objective_method"]
+        else:
+            self.method = "average-squared-deviation"
+        logger.info("Objective function type: {}".format(self.method))
 
         if "eos_obj" in data_dict:
             self.eos = data_dict["eos_obj"]
@@ -72,9 +79,8 @@ class Data(ExpDataTemplate):
         if "T" in data_dict:
             self._thermodict["Tlist"] = data_dict["T"]
         if "rhol" in data_dict:
-            key = "rhol"
             self._thermodict["rhol"] = data_dict["rhol"]
-            if key in self.weights:
+            if "rhol" in self.weights:
                 if type(self.weights[key]) != float and len(self.weights[key]) != len(self._thermodict[key]):
                     raise ValueError("Array of weights for '{}' values not equal to number of experimental values given.".format(key))
 
@@ -150,7 +156,8 @@ class Data(ExpDataTemplate):
         phase_list = np.transpose(np.array(phase_list))
 
         # objective function
-        obj_value = np.nansum(((np.abs(phase_list[0] - self._thermodict["rhol"]) / self._thermodict["rhol"])**2)*self.weights['rhol'])
+        obj_value = ff.obj_function_form(phase_list, self._thermodict['rhol'], weights=self.weights['rhol'], method=self.method)
+
         if obj_value in [0.0, np.nan]:
             obj_value = np.inf
 

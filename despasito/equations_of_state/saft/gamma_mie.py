@@ -204,9 +204,13 @@ class gamma_mie():
             eta[:, m] = rho * constants.molecule_per_nm3 * self.eos_dict['Cmol2seg'] * (np.sum(np.sqrt(np.diag(self.eos_dict['xskl'])) * (np.diag(self.eos_dict['dkl'])**m)) * (np.pi / 6.0))
 
         tmp = (6.0 / (np.pi * rho * constants.molecule_per_nm3))
-        tmp1 = np.log1p(-eta[:, 3]) * (eta[:, 2]**3 / (eta[:, 3]**2) - eta[:, 0])
+        if self.ncomp == 1:
+            tmp1 = 0
+        else:
+            tmp1 = np.log1p(-eta[:, 3]) * (eta[:, 2]**3 / (eta[:, 3]**2) - eta[:, 0])
         tmp2 = 3.0 * eta[:, 2] / (1 - eta[:, 3]) * eta[:, 1]
         tmp3 = eta[:, 2]**3 / (eta[:, 3] * ((1.0 - eta[:, 3])**2))
+
         AHS = tmp*(tmp1 + tmp2 + tmp3)
 
         #print("AHS", AHS)
@@ -788,7 +792,7 @@ class gamma_mie():
         # Initiate average interaction terms
         self.calc_component_averaged_properties()
 
-        if not np.isnan(self.xi):
+        if not np.any(np.isnan(self.xi)):
             self.eos_dict['Cmol2seg'], self.eos_dict['xskl'] = stb.calc_composition_dependent_variables(self.xi, self.eos_dict['nui'], self.eos_dict['beadlibrary'], self.eos_dict['beads'])
 
         self.eos_dict['Ckl'] = prefactor(self.eos_dict['l_rkl'], self.eos_dict['l_akl'])

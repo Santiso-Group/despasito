@@ -129,12 +129,13 @@ def calc_dkk(epsilon, sigma, T, Cprefactor, l_r, l_a=6.0):
     r = 0.5*sigma*(x+1)
     dkk = 0.5*sigma*np.sum(w*_dkk_int(r, Ce_kT, sigma, l_r, l_a))
 
+    
     # Option 3: Mullers method
     #xgl = np.array([0.97390652852, 0.86506336669, 0.67940956830, 0.43339539413, 0.14887433898])
     #wgl = np.array([0.06667134431, 0.14945134915, 0.21908636252, 0.26926671931, 0.29552422471])
     #x1i = 0.5 * (1 + xgl)
     #x2i = 0.5 * (1 - xgl)
-
+    #
     #xsum = 0.
     #for i in range(len(x1i)):
     #    tmp1 = np.power(x1i[i], -l_r) - np.power(x1i[i], -l_a)

@@ -31,6 +31,7 @@ class Data(ExpDataTemplate):
         * T : list, List of temperature values for calculation
         * xi : list, List of liquid mole fractions used in saturation properties calculations, should be 1 for the molecule of focus and 0 for the rest.
         * weights : dict, A dictionary where each key is the header used in the exp. data file. The value associated with a header can be a list as long as the number of data points to multiply by the objective value associated with each point, or a float to multiply the objective value of this data set.
+        * objective_method : str, The 'method' keyword in function despasito.fit_parameters.fit_funcs.obj_function_form.
         * density_dict : dict, Optional, default: {"minrhofrac":(1.0 / 60000.0), "rhoinc":10.0, "vspacemax":1.0E-4}, Dictionary of options used in calculating pressure vs. mole fraction curves.
 
     Attributes
@@ -57,10 +58,16 @@ class Data(ExpDataTemplate):
             self.calculation_type = "saturation_properties"
             self._thermodict["calculation_type"] = "saturation_properties"
 
-        try:
+        if "weights" in data_dict:
             self.weights = data_dict["weights"]
-        except:
+        else:
             self.weights = {}
+
+        if "objective_method" in data_dict:
+            self.method = data_dict["objective_method"]
+        else:
+            self.method = "average-squared-deviation"
+        logger.info("Objective function type: {}".format(self.method))
 
         if "eos_obj" in data_dict:
             self.eos = data_dict["eos_obj"]
@@ -169,11 +176,11 @@ class Data(ExpDataTemplate):
         # objective function
         obj_value = np.zeros(3)
         if "Psat" in self._thermodict:
-            obj_value[0] = np.nansum((((phase_list[0] - self._thermodict['Psat']) / self._thermodict['Psat'])**2)*self.weights['Psat'])
+            obj_value[0] = ff.obj_function_form(phase_list[0], self._thermodict['Psat'], weights=self.weights['Psat'], method=self.method)
         if "rhol" in self._thermodict:
-            obj_value[1] = np.nansum((((phase_list[1] - self._thermodict['rhol']) / self._thermodict['rhol'])**2)*self.weights['rhol'])
+            obj_value[1] = ff.obj_function_form(phase_list[1], self._thermodict['rhol'], weights=self.weights['rhol'], method=self.method)
         if "rhov" in self._thermodict:
-            obj_value[2] = np.nansum((((phase_list[2] - self._thermodict['rhov']) / self._thermodict['rhov'])**2)*self.weights['rhov'])
+            obj_value[2] = ff.obj_function_form(phase_list[2], self._thermodict['rhov'], weights=self.weights['rhov'], method=self.method)
 
         logger.debug("Obj. breakdown for {}: Psat {}, rhol {}, rhov {}".format(self.name,obj_value[0],obj_value[1],obj_value[2]))
 

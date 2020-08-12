@@ -4,8 +4,10 @@
     "opt_params": {
         "fit_bead" : "CH3",
         "fit_params": ["epsilon_CH2"],
-        "global_method": "differential_evolution",
         "epsilon_bounds" : [150.0, 400.0]
+    },
+    "global_dict": {
+        "method": "single_objective"
     },
     "Knovel": {
         "datatype": "solubility_parameter",

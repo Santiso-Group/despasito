@@ -61,10 +61,16 @@ class Data(ExpDataTemplate):
         else:
             raise ValueError("An eos object should have been included")
 
-        try:
+        if "weights" in data_dict:
             self.weights = data_dict["weights"]
-        except:
+        else:
             self.weights = {}
+
+        if "objective_method" in data_dict:
+            self.method = data_dict["objective_method"]
+        else:
+            self.method = "average-squared-deviation"
+        logger.info("Objective function type: {}".format(self.method))
 
         if "xi" in data_dict: 
             self._thermodict["xilist"] = data_dict["xi"]
@@ -182,16 +188,20 @@ class Data(ExpDataTemplate):
         obj_value = np.zeros(2)
 
         if "Plist" in self._thermodict:
-            obj_value[0] = np.nansum((((phase_list[0] - self._thermodict["Plist"]) / self._thermodict["Plist"])**2)*self.weights['Plist'])
+            obj_value[0] = ff.obj_function_form(phase_list[0], self._thermodict['Plist'], weights=self.weights['Plist'], method=self.method)
 
         if self.calculation_type == "phase_xiT":
             if "yilist" in self._thermodict:
                 yi = np.transpose(self._thermodict["yilist"])
-                obj_value[1] = np.nansum((((phase_list[1:] - yi)/yi)**2)*self.weights['yilist'])
+                obj_value[1] = 0
+                for i in range(len(yi)):
+                    obj_value[1] += ff.obj_function_form(phase_list[1+i], yi[i], weights=self.weights['yilist'], method=self.method)
         elif self.calculation_type == "phase_yiT":
             if "xilist" in self._thermodict:
                 xi = np.transpose(self._thermodict["xilist"])
-                obj_value[1] = np.nansum((((phase_list[1:] - xi)/xi)**2)*self.weights['xilist'])
+                obj_value[1] = 0
+                for i in range(len(xi)):
+                    obj_value[1] += ff.obj_function_form(phase_list[1+i], xi[i], weights=self.weights['xilist'], method=self.method)
 
         logger.debug("Obj. breakdown for {}: P {}, zi {}".format(self.name,obj_value[0],obj_value[1]))
 

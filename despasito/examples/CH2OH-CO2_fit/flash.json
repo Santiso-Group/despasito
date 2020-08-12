@@ -1,0 +1,18 @@
+{
+    "beadconfig": [[["CO2", 1]],[["CH3", 1], ["CH2OH", 1]]],
+    "EOSgroup": "SAFTgroup.json",
+    "EOScross": "SAFTcross.json",
+    "opt_params": {
+        "fit_bead" : "CH2OH",
+        "fit_params": ["epsilon_CO2"],
+        "epsilon_CO2_bounds" : [290.0, 310.0]
+    },
+    "global_dict": {
+        "method": "single_objective"
+    },
+    "CO2-ethanol": {
+        "datatype": "flash",
+        "calculation_type": "flash",
+        "file": "CO2-ethanol_TLVE.csv"
+    }        
+}

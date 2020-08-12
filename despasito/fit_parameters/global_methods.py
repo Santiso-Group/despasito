@@ -11,6 +11,42 @@ import despasito.utils.general_toolbox as gtb
 
 logger = logging.getLogger(__name__)
 
+def single_objective(beadparams0, bounds, fit_bead, fit_params, exp_dict, global_dict={}):
+    r"""
+    Evaluate parameter set for equation of state with given experimental data
+
+    Parameters
+    ----------
+    beadparams0 : numpy.ndarray 
+        An array of initial guesses for parameters, these will be optimized throughout the process.
+    bounds : list[tuple]
+        List of length equal to fit_params with lists of pairs for minimum and maximum bounds of parameter being fit. Defaults are broad, recommend specification.
+    fit_bead : str
+        Name of bead whose parameters are being fit, should be in bead list of beadconfig
+    fit_params : list[str]
+        This list of contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
+    exp_dict : dict
+        Dictionary of experimental data objects.
+
+    Returns
+    -------
+    Objective : obj
+        scipy OptimizedResult
+    """
+
+    if len(global_dict) > 0:
+        logger.info("The fitting method 'single_objective' does not have further options")
+
+    obj_value = ff.compute_obj(beadparams0, fit_bead, fit_params, exp_dict, bounds)
+
+    result = spo.OptimizeResult(x=beadparams0,
+                                fun=obj_value,
+                                success=True,
+                                nit=0,
+                                message="Successfuly computed objective function for provided parameter set." )
+
+    return result
+
 def differential_evolution(beadparams0, bounds, fit_bead, fit_params, exp_dict, global_dict={}, constraints=None):
     r"""
     Fit defined parameters for equation of state object using scipy.optimize.differential_evolution with given experimental data. 
@@ -39,9 +75,8 @@ def differential_evolution(beadparams0, bounds, fit_bead, fit_params, exp_dict, 
 
     Returns
     -------
-    Objective : float
-        Value of sum of objective values according to appropriate weights. Output file saved in current working directory.
-        
+    Objective : obj
+        scipy OptimizedResult
     """
 
     obj_kwargs = ["obj_cut", "filename"]
@@ -66,10 +101,10 @@ def differential_evolution(beadparams0, bounds, fit_bead, fit_params, exp_dict, 
             elif key not in obj_kwargs:
                 new_global_dict[key] = value
     global_dict = new_global_dict
-    logger.info("Differential Evolution Options: {}".format(global_dict))
 
     if constraints is not None:
         global_dict["constraints"] = ff.initialize_constraints(constraints, "class")
+    logger.info("Differential Evolution Options: {}".format(global_dict))
 
     obj = _WriteParameterResults(fit_params, obj_cut=obj_cut, filename=filename)
     result = spo.differential_evolution(ff.compute_obj, bounds, callback=obj, args=(fit_bead, fit_params, exp_dict, bounds), **global_dict)
@@ -110,9 +145,8 @@ def shgo(beadparams0, bounds, fit_bead, fit_params, exp_dict, global_dict={}, mi
 
     Returns
     -------
-    Objective : float
-        Value of sum of objective values according to appropriate weights. Output file saved in current working directory.
-        
+    Objective : obj
+        scipy OptimizedResult
     """
 
     obj_kwargs = ["obj_cut", "filename"]
@@ -194,9 +228,8 @@ def grid_minimization(beadparams0, bounds, fit_bead, fit_params, exp_dict, globa
 
     Returns
     -------
-    Objective : float
-        Value of sum of objective values according to appropriate weights. Output file saved in current working directory.
-        
+    Objective : obj
+        scipy OptimizedResult
     """
 
      # Options for brute, set defaults in new_global_dict
@@ -257,19 +290,24 @@ def grid_minimization(beadparams0, bounds, fit_bead, fit_params, exp_dict, globa
 
     # Start computation
     if flag_use_mp_object:
-        x0, results = global_dict["mpObj"].pool_job(_grid_minimization_wrapper, inputs)
+        x0, results, fval = global_dict["mpObj"].pool_job(_grid_minimization_wrapper, inputs)
     else:
-        x0, results = MultiprocessingJob.serial_job(_grid_minimization_wrapper, inputs)
+        x0, results, fval = MultiprocessingJob.serial_job(_grid_minimization_wrapper, inputs)
 
     # Choose final output
-    result = [np.inf, None]
+    result = [fval[0], results[0]]
     logger.info("For bead: {} and parameters {}".format(fit_bead,fit_params))
     for i in range(len(x0_array)):
         tmp_result = results[i]
-        logger.info("x0: {}, xf: {}, obj: {}".format(x0_array[i], tmp_result.x, tmp_result.fun))
-        if result[0] > tmp_result.fun:
-            result = [tmp_result.fun, tmp_result]
-    result = result[1]
+        logger.info("x0: {}, xf: {}, obj: {}".format(x0_array[i], results[i], fval[i]))
+        if result[0] > fval[i]:
+            result = [fval[i], tmp_result]
+
+    result = spo.OptimizeResult(x=result[1],
+                                fun=result[0],
+                                success=True,
+                                nit=len(x0)*global_dict["Ns"],
+                                message="Termination successful with {} grid points and the minimum value minimized. Note that parameters may be outside of the given bounds because of the minimizing function.".format(len(x0)*global_dict["Ns"]))
 
     return result
 
@@ -303,9 +341,8 @@ def brute(beadparams0, bounds, fit_bead, fit_params, exp_dict, global_dict={}):
 
     Returns
     -------
-    Objective : float
-        Value of sum of objective values according to appropriate weights. Output file saved in current working directory.
-        
+    Objective : obj
+        scipy OptimizedResult
     """
 
     # Options for brute, set defaults in new_global_dict
@@ -365,9 +402,8 @@ def basinhopping(beadparams0, bounds, fit_bead, fit_params, exp_dict, global_dic
 
     Returns
     -------
-    Objective : float
-        Value of sum of objective values according to appropriate weights. Output file saved in current working directory.
-        
+    Objective : obj
+        scipy OptimizedResult
     """
 
     # Options for basin hopping
@@ -431,7 +467,9 @@ def _grid_minimization_wrapper(args):
 
     logger.info("Starting parameters: {}, converged to: {}".format(x0,result))
 
-    return x0, result
+    fval = ff.compute_obj(result, *obj_args)
+
+    return x0, result, fval
 
 class _BasinStep(object):
     r"""

@@ -58,10 +58,16 @@ class Data(ExpDataTemplate):
         self.name = data_dict["name"]
         self._thermodict = {}
 
-        try:
+        if "weights" in data_dict:
             self.weights = data_dict["weights"]
-        except:
+        else:
             self.weights = {}
+
+        if "objective_method" in data_dict:
+            self.method = data_dict["objective_method"]
+        else:
+            self.method = "average-squared-deviation"
+        logger.info("Objective function type: {}".format(self.method))
 
         if "eos_obj" in data_dict:
             self.eos = data_dict["eos_obj"]
@@ -170,11 +176,17 @@ class Data(ExpDataTemplate):
 
         if "yilist" in self._thermodict:
             yi = np.transpose(self._thermodict["yilist"])
-            obj_value[0] = np.nansum((((phase_list[0:ncomp] - yi)/yi)**2)*self.weights['yilist'])
+            obj_value[0] = 0
+            print(np.shape(yi), np.shape(phase_list))
+            for i in range(len(yi)):
+                obj_value[0] += ff.obj_function_form(phase_list[i], yi[i], weights=self.weights['yilist'], method=self.method)
 
         if "xilist" in self._thermodict:
             xi = np.transpose(self._thermodict["xilist"])
-            obj_value[1] = np.nansum((((phase_list[ncomp:] - xi)/xi)**2)*self.weights['xilist'])
+            obj_value[1] = 0
+            print(np.shape(xi), np.shape(phase_list))
+            for i in range(len(xi)):
+                obj_value[1] += ff.obj_function_form(phase_list[ncomp+i], xi[i], weights=self.weights['xilist'], method=self.method)
 
         logger.debug("Obj. breakdown for {}: xi {}, yi {}".format(self.name,obj_value[0],obj_value[1]))
 

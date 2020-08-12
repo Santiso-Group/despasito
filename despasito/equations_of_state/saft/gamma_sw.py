@@ -697,7 +697,7 @@ class gamma_sw():
         self.eos_dict["lambda_kl"] = output["lambda"]
         self.calc_component_averaged_properties()
 
-        if not np.isnan(self.xi):
+        if not np.any(np.isnan(self.xi)):
             self.eos_dict['Cmol2seg'], self.eos_dict['xskl'] = stb.calc_composition_dependent_variables(xi, self.eos_dict['nui'], self.eos_dict['beadlibrary'], self.eos_dict['beads'])
 
     def _check_density(self, rho):
