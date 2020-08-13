@@ -343,22 +343,25 @@ def obj_function_form(data_test, data0, weights=1.0, method="average-squared-dev
         raise ValueError("Weight for data is provided as an array of length, {}, but must be length, {}.".format(len(weights),len(data_test)))
 
     if method == "average-squared-deviation":
-        data_tmp = np.array([(data_test[i]-data0[i])/data0[i] for i in range(len(data_test)) if not np.isnan(data_test[i])])
+        data_tmp = np.array([(data_test[i]-data0[i])/data0[i] for i in range(len(data_test)) if not np.isnan((data_test[i]-data0[i])/data0[i])])
         obj_value = np.mean(data_tmp**2)
     elif method == "sum-squared-deviation":
-        data_tmp = np.array([(data_test[i]-data0[i])/data0[i] for i in range(len(data_test)) if not np.isnan(data_test[i])])
+        data_tmp = np.array([(data_test[i]-data0[i])/data0[i] for i in range(len(data_test)) if not np.isnan((data_test[i]-data0[i])/data0[i])])
         obj_value = np.sum(data_tmp**2)
     elif method == "sum-squared-deviation-boltz":
-        data_tmp = np.array([(data_test[i]-data0[i])/data0[i] for i in range(len(data_test)) if not np.isnan(data_test[i])])
+        data_tmp = np.array([(data_test[i]-data0[i])/data0[i] for i in range(len(data_test)) if not np.isnan((data_test[i]-data0[i])/data0[i])])
         data_min = np.min(data_tmp)
         obj_value = np.sum(data_tmp**2*np.exp((data_min-data_tmp)/np.abs(data_min)))
     elif method == "sum-deviation-boltz":
-        data_tmp = np.array([(data_test[i]-data0[i])/data0[i] for i in range(len(data_test)) if not np.isnan(data_test[i])])
+        data_tmp = np.array([(data_test[i]-data0[i])/data0[i] for i in range(len(data_test)) if not np.isnan((data_test[i]-data0[i])/data0[i])])
         data_min = np.min(data_tmp)
         obj_value = np.sum(data_tmp*np.exp((data_min-data_tmp)/np.abs(data_min)))
     elif method == "percent-absolute-average-deviation":
-        data_tmp = np.array([(data_test[i]-data0[i])/data0[i] for i in range(len(data_test)) if not np.isnan(data_test[i])])
+        data_tmp = np.array([(data_test[i]-data0[i])/data0[i] for i in range(len(data_test)) if not np.isnan((data_test[i]-data0[i])/data0[i])])
         obj_value = np.mean(np.abs(data_tmp))*100
+
+    if not data_tmp:
+        obj_value = np.nan
 
     if len(data_test) != len(data_tmp):
         logger.debug("Values of NaN were removed from objective value calculation")

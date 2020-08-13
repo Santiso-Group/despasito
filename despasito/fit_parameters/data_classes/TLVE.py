@@ -205,8 +205,8 @@ class Data(ExpDataTemplate):
 
         logger.debug("Obj. breakdown for {}: P {}, zi {}".format(self.name,obj_value[0],obj_value[1]))
 
-        if all(np.isnan(obj_value)):
-            obj_total = np.nan
+        if all([(np.isnan(x) or x==0.0) for x in obj_value]):
+            obj_total = np.inf
         else:
             obj_total = np.nansum(obj_value)
 

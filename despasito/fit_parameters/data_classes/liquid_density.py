@@ -158,7 +158,7 @@ class Data(ExpDataTemplate):
         # objective function
         obj_value = ff.obj_function_form(phase_list, self._thermodict['rhol'], weights=self.weights['rhol'], method=self.method)
 
-        if obj_value in [0.0, np.nan]:
+        if (np.isnan(obj_value) or obj_value==0.0):
             obj_value = np.inf
 
         return obj_value

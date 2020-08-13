@@ -931,26 +931,26 @@ def fit_multipole_cross_interaction_parameter(beadA, beadB, distance_dict={}, di
     l_a_fit = params[1]
     eps_fit = calc_epsilonij_from_lambda_aij(l_a_fit, beadA, beadB)
     if K/eps_fit < 1.01:
-        for k in range(100):
-            fname = "output_{}.csv".format(k)
-            if os.path.isfile(fname):
-                continue
-            else:
-                with open("parameters.txt","a") as f: 
-                    f.write("-------{}\n".format(fname))
-                    f.write("{}, {}, {}\n".format(beadAB, float_dimensions(beadA["sigma"],"sigma",temperature), float_dimensions(beadA["epsilon"],"epsilon",temperature)))
-                with open(fname,"w") as f:
-                    f.write("r [A], potential\n")
-                    for kk, rr in enumerate(r):
-                        f.write("{}, {}\n".format(float_dimensions(rr,"sigma",temperature),float_dimensions(w_multipole[kk],"epsilon",temperature)))
-                break
-        with open("parameters.txt","a") as f:
-            f.write("Bead Multipoles\n")
-            for key in ["epsilon","sigma","l_a","charge","dipole","quadrupole","polarizability"]:
-                if temperature is not None and key not in ["l_a","charge","dipole","quadrupole"]:
-                    f.write("{}: {}, {}\n".format(key,float_dimensions(beadA[key],key,temperature),float_dimensions(beadB[key],key,temperature)))
-                else:
-                    f.write("{}: {}, {}".format(key,beadA[key],beadB[key]))
+        #for k in range(100):
+        #    fname = "output_{}.csv".format(k)
+        #    if os.path.isfile(fname):
+        #        continue
+        #    else:
+        #        with open("parameters.txt","a") as f: 
+        #            f.write("-------{}\n".format(fname))
+        #            f.write("{}, {}, {}\n".format(beadAB, float_dimensions(beadA["sigma"],"sigma",temperature), float_dimensions(beadA["epsilon"],"epsilon",temperature)))
+        #        with open(fname,"w") as f:
+        #            f.write("r [A], potential\n")
+        #            for kk, rr in enumerate(r):
+        #                f.write("{}, {}\n".format(float_dimensions(rr,"sigma",temperature),float_dimensions(w_multipole[kk],"epsilon",temperature)))
+        #        break
+        #with open("parameters.txt","a") as f:
+        #    f.write("Bead Multipoles\n")
+        #    for key in ["epsilon","sigma","l_a","charge","dipole","quadrupole","polarizability"]:
+        #        if temperature is not None and key not in ["l_a","charge","dipole","quadrupole"]:
+        #            f.write("{}: {}, {}\n".format(key,float_dimensions(beadA[key],key,temperature),float_dimensions(beadB[key],key,temperature)))
+        #        else:
+        #            f.write("{}: {}, {}".format(key,beadA[key],beadB[key]))
         raise ValueError("A suitable repulsive exponent cannot be calculated using the following cross interaction parameters:\n    epsilon: {}, l_a: {}, Cmie: {} < 1.0\nCheck self-interaction parameters above. A common cause could be poorly fit polarizability because a partial charge was assigned to an bead where it's Mie potential is fit to expect dipole to be the highest order.".format(float_dimensions(eps_fit,"epsilon",temperature),l_a_fit,K/eps_fit))
     else:
         l_r_fit = spo.brentq(lambda x : K/eps_fit-prefactor(x,l_a_fit), l_a_fit*1.01, 1e+4, xtol=1e-12)
