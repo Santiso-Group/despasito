@@ -63,11 +63,14 @@ class Data(ExpDataTemplate):
         else:
             self.weights = {}
 
+        self.obj_opts = {}
         if "objective_method" in data_dict:
-            self.method = data_dict["objective_method"]
-        else:
-            self.method = "average-squared-deviation"
-        logger.info("Objective function type: {}".format(self.method))
+            self.obj_opts["method"] = data_dict["objective_method"]
+        fitting_opts = ["nan_number", "nan_ratio"]
+        for key in fitting_opts:
+            if key in data_dict:
+                self.obj_opts[key] = data_dict[key]
+        logger.info("Objective function options: {}".format(self.obj_opts))
 
         if "eos_obj" in data_dict:
             self.eos = data_dict["eos_obj"]
@@ -156,7 +159,7 @@ class Data(ExpDataTemplate):
         phase_list = np.transpose(np.array(phase_list))
 
         # objective function
-        obj_value = ff.obj_function_form(phase_list, self._thermodict['rhol'], weights=self.weights['rhol'], method=self.method)
+        obj_value = ff.obj_function_form(phase_list, self._thermodict['rhol'], weights=self.weights['rhol'], **self.obj_opts)
 
         if (np.isnan(obj_value) or obj_value==0.0):
             obj_value = np.inf

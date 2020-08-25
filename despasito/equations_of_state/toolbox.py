@@ -217,7 +217,7 @@ def cross_interaction_from_dict(beads, beadlibrary, mixing_dict, crosslibrary={}
     # Put Crosslibrary in output matrices 
     for (i, beadname) in enumerate(beads):
         for (j, beadname2) in enumerate(beads):
-            if beadname != beadname2:
+            if j > i:
                 for key in mixing_dict:
                     if crosslibrary.get(beadname, {}).get(beadname2, {}).get(key, None) is not None:
                         output[key][i, j] = crosslibrary[beadname][beadname2][key]
@@ -226,8 +226,8 @@ def cross_interaction_from_dict(beads, beadlibrary, mixing_dict, crosslibrary={}
                     else:
                         try:
                             tmp =  mixing_rules( beadlibrary[beadname], beadlibrary[beadname2], key, **mixing_dict[key])
-                            if mixing_dict[key]["function"]=="multipole":
-                                logger.debug("Multipole: {} {}, {}".format(beadname,beadname2,tmp))
+#                            if mixing_dict[key]["function"]=="multipole":
+#                                logger.debug("Multipole: {} {}, {}".format(beadname,beadname2,tmp))
                         except:
                             raise ValueError("Unable to calculate '{}' with '{}' method, for beads: '{}' '{}'".format(key,mixing_dict[key]["function"], beadname,beadname2))
                         for k2, v2 in tmp.items():
@@ -299,14 +299,14 @@ def mixing_rules( beadA, beadB, parameter, function="mean", **kwargs):
     
     calc_list = [o[0] for o in getmembers(mixing_rule_types) if isfunction(o[1])]
     try:
-        if function is not "None":
+        if function != "None":
             func = getattr(mixing_rule_types, function)
     except:
         raise ImportError("The mixing rule type, '{}', was not found\nThe following calculation types are supported: {}".format(function,", ".join(calc_list)))
 
-    if function is not "None":
+    if function != "None":
         output = func(beadA, beadB, parameter, **kwargs)
-        if type(output) is not dict:
+        if type(output) != dict:
             tmp = {parameter: output}
             output = tmp
     else:

@@ -795,7 +795,7 @@ class gamma_mie():
 
         if not np.any(np.isnan(self.xi)):
             self.eos_dict['Cmol2seg'], self.eos_dict['xskl'] = stb.calc_composition_dependent_variables(self.xi, self.eos_dict['nui'], self.eos_dict['beadlibrary'], self.eos_dict['beads'])
-
+    
         self.eos_dict['Ckl'] = prefactor(self.eos_dict['l_rkl'], self.eos_dict['l_akl'])
         self.eos_dict['alphakl'] = self.eos_dict['Ckl'] * ((1.0 / (self.eos_dict['l_akl'] - 3.0)) - (1.0 / (self.eos_dict['l_rkl'] - 3.0)))
 
@@ -842,7 +842,7 @@ class gamma_mie():
         if self.T != T:
             self.T = T
             # Check for temperature dependent mixing rule
-            if self.mixing_temp_dependence is None or self.mixing_temp_dependence is None :
+            if self.mixing_temp_dependence is None:
                 self.mixing_temp_dependence = False
                 for key, value in self.mixing_rules.items():
                     if "temperature" in value:

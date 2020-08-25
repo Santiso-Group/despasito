@@ -423,10 +423,17 @@ def flash(eos, sys_dict):
         logger.info("Accepted convergence tolerance for flash calculation")
         opts["tol"] = sys_dict["tol"]
 
-    print(sys_dict)
     if "maxiter" in sys_dict:
         logger.info("Accepted maximum number of iterations for flash calculation loop.")
         opts["maxiter"] = sys_dict["maxiter"]
+
+    if "max_mole_fraction0" in sys_dict:
+        logger.info("Accepted maximum mole fraction for component 1 to restrict search.".format(sys_dict["max_mole_fraction0"]))
+        opts["max_mole_fraction0"] = sys_dict["max_mole_fraction0"]
+
+    if "min_mole_fraction0" in sys_dict:
+        logger.info("Accepted minimum mole fraction for component 1 to restrict search.".format(sys_dict["min_mole_fraction0"]))
+        opts["min_mole_fraction0"] = sys_dict["min_mole_fraction0"]
 
     # Initialize Variables
     l_c = len(eos.nui)

@@ -67,11 +67,14 @@ class Data(ExpDataTemplate):
         else:
             self.weights = {}
 
+        self.obj_opts = {}
         if "objective_method" in data_dict:
-            self.method = data_dict["objective_method"]
-        else:
-            self.method = "average-squared-deviation"
-        logger.info("Objective function type: {}".format(self.method))
+            self.obj_opts["method"] = data_dict["objective_method"]
+        fitting_opts = ["nan_number", "nan_ratio"]
+        for key in fitting_opts:
+            if key in data_dict:
+                self.obj_opts[key] = data_dict[key]
+        logger.info("Objective function options: {}".format(self.obj_opts))
 
         if "eos_obj" in data_dict:
             self.eos = data_dict["eos_obj"]
@@ -167,9 +170,9 @@ class Data(ExpDataTemplate):
         # objective function
         obj_value = np.zeros(2)
         if "delta" in self._thermodict:
-            obj_value[0] = ff.obj_function_form(phase_list[0], self._thermodict['delta'], weights=self.weights['delta'], method=self.method)
+            obj_value[0] = ff.obj_function_form(phase_list[0], self._thermodict['delta'], weights=self.weights['delta'], **self.obj_opts)
         if "rhol" in self._thermodict:
-            obj_value[1] = ff.obj_function_form(phase_list[1], self._thermodict['rhol'], weights=self.weights['rhol'], method=self.method)
+            obj_value[1] = ff.obj_function_form(phase_list[1], self._thermodict['rhol'], weights=self.weights['rhol'], **self.obj_opts)
 
         logger.debug("Obj. breakdown for {}: delta {}, rhol {}".format(self.name,obj_value[0],obj_value[1]))
 

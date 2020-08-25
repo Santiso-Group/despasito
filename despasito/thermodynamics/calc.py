@@ -2421,7 +2421,7 @@ def hildebrand_solubility(rhol, xi, T, eos, dT=.1, tol=1e-4, density_dict={}):
 #                              Calc PT phase                         #
 #                                                                    #
 ######################################################################
-def calc_flash(P, T, eos, density_dict={}, maxiter=200, tol=1e-9):
+def calc_flash(P, T, eos, density_dict={}, maxiter=200, tol=1e-9, max_mole_fraction0=1, min_mole_fraction0=0):
     r"""
     Flash calculation of vapor and liquid mole fractions. Only binary systems are currently supported
     
@@ -2439,6 +2439,10 @@ def calc_flash(P, T, eos, density_dict={}, maxiter=200, tol=1e-9):
         Maximum number of iterations in updating Ki values
     tol : float, Optional, tol: 1e-09
         Tolerance to break loop. The error is defined as the absolute value of the summed difference in Ki values between iterations.
+    min_mole_fraction0 : float, Optional, default=0
+        Set the vapor and liquid mole fraction of component one to be greater than this number. Useful for diagrams with multiple solutions, such as those with an azeotrope.
+    max_mole_fraction0 : float, Optional, default=1
+        Set the vapor and liquid mole fraction of component one to be less than this number. Useful for diagrams with multiple solutions, such as those with an azeotrope.
 
     Returns
     -------
@@ -2473,14 +2477,7 @@ def calc_flash(P, T, eos, density_dict={}, maxiter=200, tol=1e-9):
                 logger.error("Component, {}, is beyond it's critical point. Add an exception to setPsat, otherwise assumed 1".format(NaNbead))
         Ki0[i] = Psat[i]/P
 
-    tmp = Ki0 - 1.0
-    if np.abs(np.sum(tmp)) == np.sum(np.abs(tmp)):
-        if tmp[0] > 0:
-            Ki0[0] = np.sqrt(np.finfo(float).eps)
-        else:
-            Ki0[0] = Ki0[0] + 1.0
-
-    Ki = np.copy(Ki0)
+    Ki = constrain_Ki(Ki0, min_mole_fraction0=min_mole_fraction0, max_mole_fraction0=max_mole_fraction0)
     err = 1
     flag_critical = 0
     for i in np.arange(maxiter):
@@ -2493,7 +2490,7 @@ def calc_flash(P, T, eos, density_dict={}, maxiter=200, tol=1e-9):
             xi[ind] = np.sqrt(np.finfo(float).eps)
             if ind == 0:
                 xi[1] = 1-xi[0]
-            elif ind == 0:
+            elif ind == 1:
                 xi[0] = 1-xi[1]
        
         yi = Ki*xi
@@ -2510,10 +2507,15 @@ def calc_flash(P, T, eos, density_dict={}, maxiter=200, tol=1e-9):
         logger.info("        yi: {}, phiv: {}".format(yi,phiv))
         Kinew = phil/phiv
 
+        # Check Objective function
+        Ki_tmp = constrain_Ki(Kinew, min_mole_fraction0=min_mole_fraction0, max_mole_fraction0=max_mole_fraction0)
+        if not (Kinew==Ki_tmp).all():
+            logger.info("    Reset Ki values, {}, according to mole fraction constraint, {} to {}, to produce {}".format(Kinew,min_mole_fraction0, max_mole_fraction0,Ki_tmp))
+            Kinew = Ki_tmp
+
         err = np.sum(np.abs(Kinew-Ki))
         logger.info("  Guess {} Ki: {}, New Ki: {}, Error: {}".format(i,Ki,Kinew,err))
-
-        # Check Objective function
+            
         if np.all(np.abs(Ki-1.0) < 1e-6) and flag_critical < 2:
             eps = np.sqrt(np.finfo(float).eps)
             ind = 1-flag_critical
@@ -2525,6 +2527,10 @@ def calc_flash(P, T, eos, density_dict={}, maxiter=200, tol=1e-9):
                 Ki[flag_critical] = eps
             flag_critical += 1
             logger.info("    Liquid and vapor mole fractions are equal, let search from Ki = {}".format(Ki))
+        elif err > tol*1e+3 and i > 25:
+            tmp = Ki[0]
+            Ki[0] = Ki[1]
+            Ki[1] = tmp
         elif err < tol:
             ind = np.where(Ki == min(Ki[Ki>0]))[0][0]
             err = np.abs(Kinew[ind] - Ki[ind]) / Ki[ind]
@@ -2543,6 +2549,7 @@ def calc_flash(P, T, eos, density_dict={}, maxiter=200, tol=1e-9):
         err = np.abs(Ki[ind] - Kiprev[ind]) / Kiprev[ind]
         logger.warning('    More than {} iterations needed. Remaining error, {}.'.format(maxiter,err))
 
+    # If needed, switch liquid and vapor mole fractions
     flag_switch = False
     if flagl in [0, 4] or flagv == 1:
         if flagl == 1 or flagv in [0, 4]:
@@ -2559,6 +2566,119 @@ def calc_flash(P, T, eos, density_dict={}, maxiter=200, tol=1e-9):
     logger.info("Final Output: Obj {}, xi {} flagl {}, yi {} flagv {}".format(err,xi,flagl,yi,flagv))
 
     return xi, flagl, yi, flagv, err
+
+def constrain_Ki(Ki0, min_mole_fraction0=0, max_mole_fraction0=1):
+    r"""
+    For a binary mixture, determine whether the K values will produce properly constrained mole fractions. If not, randomly choose a value of Ki[1] within the allowed range.
+    
+    Parameters
+    ----------
+    Ki : numpy.ndarray
+        K values for a binary mixture
+    min_mole_fraction0 : float, Optional, default=0
+        Set the vapor and liquid mole fraction of component one to be greater than this number. Useful for diagrams with multiple solutions, such as those with an azeotrope.
+    max_mole_fraction0 : float, Optional, default=1
+        Set the vapor and liquid mole fraction of component one to be less than this number. Useful for diagrams with multiple solutions, such as those with an azeotrope.
+
+    Ki_new : numpy.ndarray
+        New suggestion for K values for a binary mixture
+    """
+
+    Ki = Ki0.copy()
+
+    # Set-up
+    if Ki[0] > Ki[1]:
+        min0 = np.sqrt(np.finfo(float).eps)
+        max0 = 1 
+    elif Ki[0] < Ki[1]:
+        min0 = 1
+        max0 = 1e+8
+    min_list = [min0]
+    max_list = [max0]
+
+    # flag, x0 x1 y0 y1
+    flag = [False for x in range(4)]
+
+    #tmp = Ki0 - 1.0
+    #if np.abs(np.sum(tmp)) == np.sum(np.abs(tmp)):
+    #    if tmp[0] > 0:
+    #        Ki0[0] = np.sqrt(np.finfo(float).eps)
+    #    else:
+    #        Ki0[0] = Ki0[0] + 1.0
+
+    # Check K0
+    if Ki[0] > Ki[1] and  Ki[0] < 1:
+        Ki[0] = 1 + np.abs(Ki[0])
+    elif Ki[0] < Ki[1] and (Ki[0] > 1 or Ki[0] < 0):
+        Ki[0] = 1/np.abs(Ki[0])
+
+    if min_mole_fraction0 > 0:
+        bound_min_x0 = (1-min_mole_fraction0*Ki[0])/(1-min_mole_fraction0)
+        bound_min_y0 = (1-min_mole_fraction0)*Ki[0]/(Ki[0]-min_mole_fraction0)
+
+        if Ki[0] > Ki[1]:
+            max_list.extend([bound_min_y0])
+            if bound_min_x0 > 0:
+                max_list.extend([bound_min_x0])
+            else:
+                flag[0] = True
+
+        elif Ki[0] < Ki[1]:
+            min_list.extend([bound_min_x0])
+            if bound_min_y0 > 0:
+                min_list.extend([bound_min_y0])
+            else:
+                flag[1] = True
+
+    elif min_mole_fraction0 < 0 or min_mole_fraction0 > 1:
+        raise ValueError("Mole fractions can only be constrained to a value between 0 and 1")
+
+    if max_mole_fraction0 < 1:
+        bound_max_x0 = (1-max_mole_fraction0*Ki[0])/(1-max_mole_fraction0)
+        bound_max_y0 = (1-max_mole_fraction0)*Ki[0]/(Ki[0]-max_mole_fraction0)
+    
+        if Ki[0] > Ki[1]:
+            min_list.extend([bound_max_y0])
+            if bound_max_x0 > 0:
+                min_list.extend([bound_max_x0])
+            else:
+                flag[2] = True
+
+        elif Ki[0] < Ki[1]:
+            max_list.extend([bound_max_x0])
+            if bound_max_y0 > 0:
+                max_list.extend([bound_max_y0])
+            else:
+                flag[3] = True
+
+    elif max_mole_fraction0 < 0 or max_mole_fraction0 > 1:
+        raise ValueError("Mole fractions can only be constrained to a value between 0 and 1")
+
+    max0 = min(max_list)  
+    min0 = max(min_list)
+
+    if np.any(Ki[1] > max_list) or np.any(Ki[1] < min_list):
+        Ki[1] = (max0-min0)*np.random.rand(1)[0]+min0
+
+    x0 = (1-Ki[1])/(Ki[0]-Ki[1])
+    y0 = Ki[0]*x0
+
+    #if flag[0]:
+    #    tmp = Ki[1]*(1-
+    #elif flag[1]:
+    #    
+    #elif flag[2]:
+    #    
+    #elif flag[3]:
+    #    
+
+    if x0 < min_mole_fraction0 or y0 < min_mole_fraction0:
+        raise ValueError("x0: {}, y0 {}, breach lower limit {}".format(x0,y0,max_mole_fraction0))
+
+    if x0 > max_mole_fraction0 or y0 > max_mole_fraction0:
+        raise ValueError("x0: {}, y0 {}, breach upper limit {}".format(x0,y0,max_mole_fraction0))
+
+    return Ki
 
 ######################################################################
 #                                                                    #

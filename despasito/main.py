@@ -75,14 +75,17 @@ def run(filename="input.json", path=".", **kwargs):
     logger.info("Finish processing input file: {}".format(filename))
 
     # Run either parametrization or thermodynamic calculation
+    fitting_opts = ["objective_method", "nan_number", "nan_ratio"]
+
     if "opt_params" in thermo_dict:
         for key,exp_dict in thermo_dict["exp_data"].items():
             if key is not "opt_params":
                 eos_dict = exp_dict["eos_dict"]
                 thermo_dict["exp_data"][key].pop("eos_dict", None)
                 thermo_dict["exp_data"][key]["eos_obj"] = eos_mod(**eos_dict)
-                if "objective_method" in thermo_dict:
-                    thermo_dict["exp_data"][key]["objective_method"] = thermo_dict["objective_method"]
+                for key2 in fitting_opts:
+                    if key2 in thermo_dict:
+                        thermo_dict["exp_data"][key][key2] = thermo_dict[key2]
         logger.info("Initializing parametrization procedure")
 
         output_dict = fit(thermo_dict.copy())
