@@ -379,8 +379,11 @@ def obj_function_form(data_test, data0, weights=1.0, method="average-squared-dev
         obj_value = np.nan
 
     if len(data_test) != len(data_tmp):
-        if len(data_tmp)/len(data_test) > nan_ratio:
+        tmp = 1-len(data_tmp)/len(data_test)
+        if tmp > nan_ratio:
             obj_value += (len(data_test)-len(data_tmp))*nan_number
-        logger.debug("Values of NaN were removed from objective value calculation")
+            logger.debug("Values of NaN were removed from objective value calculation, nan_ratio {} > {}, augment obj. value".format(tmp, nan_ratio))
+        else:
+            logger.debug("Values of NaN were removed from objective value calculation, nan_ratio {} < {}".format(tmp, nan_ratio))
 
     return obj_value

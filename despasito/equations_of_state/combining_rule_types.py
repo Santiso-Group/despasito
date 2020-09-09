@@ -189,7 +189,7 @@ def multipole(beadA, beadB, parameter, temperature=None, additional_outputs=[], 
     else:
         shape_factor_scale = False
 
-    if temperature is not None:
+    if type(temperature) != str and temperature != None:
         tmp = {"beadA": beadA.copy(), "beadB": beadB.copy()}
         for key, value in tmp.items():
             tmp[key]["sigma"] = value["sigma"]*10 # convert from nm to angstroms

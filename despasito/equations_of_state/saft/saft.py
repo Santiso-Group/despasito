@@ -391,7 +391,7 @@ class saft(EOStemplate):
             elif bead_names[0] in self.eos_dict['crosslibrary'] and bead_names[1] in self.eos_dict['crosslibrary'][bead_names[0]]:
                 param_value = self.eos_dict['crosslibrary'][bead_names[0]][bead_names[1]][parameter]
 
-        if param_value is None:
+        if param_value == None:
             bounds = self.check_bounds(bead_names[0], parameter, np.empty(2))
             param_value = (bounds[1]-bounds[0])/2 + bounds[0]
 
@@ -526,8 +526,6 @@ class saft(EOStemplate):
 
         else:
             raise ValueError("The parameter name {} is not found in the allowed parameter types: {}".format(param_name,", ".join(self.eos_dict["parameter_types"])))
-
-        # NoteHere: update with cross library and beadlibrary
 
     def parameter_refresh(self):
         r""" 

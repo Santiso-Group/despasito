@@ -3,7 +3,7 @@ import numpy as np
 import logging
 from inspect import getmembers, isfunction
 
-from . import mixing_rule_types
+from . import combining_rule_types
 
 logger = logging.getLogger(__name__)
 
@@ -204,7 +204,7 @@ def cross_interaction_from_dict(beads, beadlibrary, mixing_dict, crosslibrary={}
         Dictionary of outputs, with the same keys used in mixing dict for the respective interaction matrix
         
     """
-    
+
     nbeads = len(beads)
 
     # Set-up output dictionaries

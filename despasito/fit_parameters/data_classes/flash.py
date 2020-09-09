@@ -180,14 +180,12 @@ class Data(ExpDataTemplate):
         if "yilist" in self._thermodict:
             yi = np.transpose(self._thermodict["yilist"])
             obj_value[0] = 0
-            print(np.shape(yi), np.shape(phase_list))
             for i in range(len(yi)):
                 obj_value[0] += ff.obj_function_form(phase_list[i], yi[i], weights=self.weights['yilist'], **self.obj_opts)
 
         if "xilist" in self._thermodict:
             xi = np.transpose(self._thermodict["xilist"])
             obj_value[1] = 0
-            print(np.shape(xi), np.shape(phase_list))
             for i in range(len(xi)):
                 obj_value[1] += ff.obj_function_form(phase_list[ncomp+i], xi[i], weights=self.weights['xilist'], **self.obj_opts)
 

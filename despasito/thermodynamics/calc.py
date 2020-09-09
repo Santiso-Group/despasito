@@ -2477,9 +2477,10 @@ def calc_flash(P, T, eos, density_dict={}, maxiter=200, tol=1e-9, max_mole_fract
                 logger.error("Component, {}, is beyond it's critical point. Add an exception to setPsat, otherwise assumed 1".format(NaNbead))
         Ki0[i] = Psat[i]/P
 
-    Ki = constrain_Ki(Ki0, min_mole_fraction0=min_mole_fraction0, max_mole_fraction0=max_mole_fraction0)
+    Ki, _ = constrain_Ki(Ki0, min_mole_fraction0=min_mole_fraction0, max_mole_fraction0=max_mole_fraction0)
     err = 1
     flag_critical = 0
+    count_reset = 0
     for i in np.arange(maxiter):
         
         # Mole Fraction
@@ -2507,16 +2508,27 @@ def calc_flash(P, T, eos, density_dict={}, maxiter=200, tol=1e-9, max_mole_fract
         logger.info("        yi: {}, phiv: {}".format(yi,phiv))
         Kinew = phil/phiv
 
-        # Check Objective function
-        Ki_tmp = constrain_Ki(Kinew, min_mole_fraction0=min_mole_fraction0, max_mole_fraction0=max_mole_fraction0)
-        if not (Kinew==Ki_tmp).all():
-            logger.info("    Reset Ki values, {}, according to mole fraction constraint, {} to {}, to produce {}".format(Kinew,min_mole_fraction0, max_mole_fraction0,Ki_tmp))
-            Kinew = Ki_tmp
-
         err = np.sum(np.abs(Kinew-Ki))
         logger.info("  Guess {} Ki: {}, New Ki: {}, Error: {}".format(i,Ki,Kinew,err))
-            
-        if np.all(np.abs(Ki-1.0) < 1e-6) and flag_critical < 2:
+
+        # Check Objective function
+        Kiprev = Ki
+        Ki_tmp, flag_reset = constrain_Ki(Kinew, min_mole_fraction0=min_mole_fraction0, max_mole_fraction0=max_mole_fraction0)
+        if flag_reset:
+            count_reset += 1
+        if not (Kinew==Ki_tmp).all():
+            logger.info("    Reset Ki values, {}, according to mole fraction constraint, {} to {}, to produce {}".format(Kinew,min_mole_fraction0, max_mole_fraction0,Ki_tmp))
+            Ki = Ki_tmp
+            if count_reset == 10:
+                tmp = Ki[0]
+                Ki[0] = Ki[1]
+                Ki[1] = tmp
+            elif count_reset == 20:
+                ind = np.where(Kiprev == min(Kiprev[Kiprev>0]))[0][0]
+                err = np.abs(Ki[ind] - Kiprev[ind]) / Kiprev[ind]
+                logger.warning('    Reset Ki values more than {} times. Remaining error, {}. These constraints may not be feasible'.format(20,err))
+                break
+        elif np.all(np.abs(Ki-1.0) < 1e-6) and flag_critical < 2:
             eps = np.sqrt(np.finfo(float).eps)
             ind = 1-flag_critical
             if flag_critical == 0:
@@ -2527,10 +2539,6 @@ def calc_flash(P, T, eos, density_dict={}, maxiter=200, tol=1e-9, max_mole_fract
                 Ki[flag_critical] = eps
             flag_critical += 1
             logger.info("    Liquid and vapor mole fractions are equal, let search from Ki = {}".format(Ki))
-        elif err > tol*1e+3 and i > 25:
-            tmp = Ki[0]
-            Ki[0] = Ki[1]
-            Ki[1] = tmp
         elif err < tol:
             ind = np.where(Ki == min(Ki[Ki>0]))[0][0]
             err = np.abs(Kinew[ind] - Ki[ind]) / Ki[ind]
@@ -2538,10 +2546,8 @@ def calc_flash(P, T, eos, density_dict={}, maxiter=200, tol=1e-9, max_mole_fract
             if err < tol:
                 logger.info("    Found Ki")
                 break
-            Kiprev = Ki
             Ki = Kinew
         else:
-            Kiprev = Ki
             Ki = Kinew
 
     if i == maxiter - 1:
@@ -2582,13 +2588,17 @@ def constrain_Ki(Ki0, min_mole_fraction0=0, max_mole_fraction0=1):
 
     Ki_new : numpy.ndarray
         New suggestion for K values for a binary mixture
+    flag_reset : bool
+        True or False value indicating that the K values were reset.
     """
 
     Ki = Ki0.copy()
+    flag_reset = False
+    eps = np.sqrt(np.finfo(float).eps)
 
     # Set-up
     if Ki[0] > Ki[1]:
-        min0 = np.sqrt(np.finfo(float).eps)
+        min0 = eps
         max0 = 1 
     elif Ki[0] < Ki[1]:
         min0 = 1
@@ -2608,9 +2618,9 @@ def constrain_Ki(Ki0, min_mole_fraction0=0, max_mole_fraction0=1):
 
     # Check K0
     if Ki[0] > Ki[1] and  Ki[0] < 1:
-        Ki[0] = 1 + np.abs(Ki[0])
+        Ki[0] = 1/eps
     elif Ki[0] < Ki[1] and (Ki[0] > 1 or Ki[0] < 0):
-        Ki[0] = 1/np.abs(Ki[0])
+        Ki[0] = eps
 
     if min_mole_fraction0 > 0:
         bound_min_x0 = (1-min_mole_fraction0*Ki[0])/(1-min_mole_fraction0)
@@ -2658,7 +2668,9 @@ def constrain_Ki(Ki0, min_mole_fraction0=0, max_mole_fraction0=1):
     min0 = max(min_list)
 
     if np.any(Ki[1] > max_list) or np.any(Ki[1] < min_list):
+        logger.debug("    Constrain K1 to between {} and {}".format(min0,max0))
         Ki[1] = (max0-min0)*np.random.rand(1)[0]+min0
+        flag_reset = True
 
     x0 = (1-Ki[1])/(Ki[0]-Ki[1])
     y0 = Ki[0]*x0
@@ -2678,7 +2690,7 @@ def constrain_Ki(Ki0, min_mole_fraction0=0, max_mole_fraction0=1):
     if x0 > max_mole_fraction0 or y0 > max_mole_fraction0:
         raise ValueError("x0: {}, y0 {}, breach upper limit {}".format(x0,y0,max_mole_fraction0))
 
-    return Ki
+    return Ki, flag_reset
 
 ######################################################################
 #                                                                    #

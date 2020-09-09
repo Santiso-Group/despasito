@@ -7,7 +7,6 @@ import despasito.equations_of_state
 
 #import despasito.equations_of_state.saft.solv_assoc as solv_assoc
 import copy
-import copy
 
 import pytest
 import sys

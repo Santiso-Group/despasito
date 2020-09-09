@@ -310,6 +310,7 @@ class gamma_mie():
 
         a2kl = (self.eos_dict['x0kl']**(2.0 * self.eos_dict['l_akl'])) * (a1s_2la + B_2la) / constants.molecule_per_nm3 - ((2.0 * self.eos_dict['x0kl']**(self.eos_dict['l_akl'] + self.eos_dict['l_rkl'])) * (a1s_lalr + B_lalr) / constants.molecule_per_nm3) + ((self.eos_dict['x0kl']**(2.0 * self.eos_dict['l_rkl'])) * (a1s_2lr + B_2lr) / constants.molecule_per_nm3)
         a2kl *= (1.0 + chikl) * self.eos_dict['epsilonkl'] * (self.eos_dict['Ckl']**2)  # *(KHS/2.0)
+
         a2kl = np.einsum("i,ijk->ijk", KHS / 2.0, a2kl)
         
         # eq. 29
@@ -589,8 +590,6 @@ class gamma_mie():
         if np.any(np.isnan(Achain)):
             logger.error("Some Helmholtz values are NaN, check energy parameters.")
 
-        #print("Achain", Achain)
-
         return Achain
 
     def density_max(self, xi, T, maxpack=0.65):
@@ -784,8 +783,14 @@ class gamma_mie():
         self.eos_dict["beadlibrary"].update(beadlibrary)
         self.eos_dict["crosslibrary"].update(crosslibrary)
 
+        output = tb.cross_interaction_from_dict( self.eos_dict['beads'], self.eos_dict['beadlibrary'], self.mixing_rules, crosslibrary=self.eos_dict['crosslibrary'])
+        self.eos_dict["sigmakl"] = output["sigma"]
+        self.eos_dict["epsilonkl"] = output["epsilon"]
+        self.eos_dict["l_akl"] = output["l_a"]
+        self.eos_dict["l_rkl"] = output["l_r"]
+
         # Update Non bonded matrices
-        if not np.isnan(self.T) and self.T is not None:
+        if not np.isnan(self.T) and self.T != None:
             self._check_temperature_dependent_parameters(self.T)
         else:
             self._check_temperature_dependent_parameters(298)
@@ -839,10 +844,11 @@ class gamma_mie():
         eos_dict : dict
             The following entries are updated: dkl, x0kl
         """
+
         if self.T != T:
             self.T = T
             # Check for temperature dependent mixing rule
-            if self.mixing_temp_dependence is None:
+            if self.mixing_temp_dependence == None:
                 self.mixing_temp_dependence = False
                 for key, value in self.mixing_rules.items():
                     if "temperature" in value:
