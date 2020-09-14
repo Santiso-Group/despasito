@@ -287,7 +287,7 @@ def mixing_rules( beadA, beadB, parameter, function="mean", **kwargs):
     parameter : str
         Name of parameter for which a mixed value is needed
     function : str, Optional, default=mean
-        Mixing rule function found in `despasito.equations_of_state.mixing_rule_types.py`
+        Mixing rule function found in `despasito.equations_of_state.combining_rule_types.py`
     kwargs : dict, Optional, default={}
         Keyword arguements used in other averaging function
         
@@ -297,10 +297,10 @@ def mixing_rules( beadA, beadB, parameter, function="mean", **kwargs):
         Dictionary with keyword of parameter and Mixed interaction parameter. If mixing rule type outputs more than one updated variable, it will also be included
     """
     
-    calc_list = [o[0] for o in getmembers(mixing_rule_types) if isfunction(o[1])]
+    calc_list = [o[0] for o in getmembers(combining_rule_types) if isfunction(o[1])]
     try:
         if function != "None":
-            func = getattr(mixing_rule_types, function)
+            func = getattr(combining_rule_types, function)
     except:
         raise ImportError("The mixing rule type, '{}', was not found\nThe following calculation types are supported: {}".format(function,", ".join(calc_list)))
 

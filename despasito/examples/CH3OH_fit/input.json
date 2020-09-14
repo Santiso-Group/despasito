@@ -14,7 +14,6 @@
     },
     "Gibbard": {
         "datatype": "saturation_properties",
-        "calculation_type": "saturation_properties",
         "file": "methanol_Psat_1.csv"
     }
 }

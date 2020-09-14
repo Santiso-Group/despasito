@@ -1,0 +1,7 @@
+{
+    "beadconfig": [[["CH3OH", 1]]],
+    "EOSgroup": "SAFTgroup.json",
+    "calculation_type": "solubility_parameter",
+    "Plist": [11152.285],
+    "Tlist": [288.1506]
+}

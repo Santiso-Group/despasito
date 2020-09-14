@@ -66,8 +66,9 @@ def differential_evolution(beadparams0, bounds, fit_bead, fit_params, exp_dict, 
     global_dict : dict, Optional
 
         - init (str) - type of initiation for population, Optional, default="random" 
-        - filename (str) - filename for callback output, Optional, default=None
-        - obj_cut (float) - Cut-off objective value to write the parameters, Optional, default=Non
+        - write_intermediate_file (str) - If True, an intermediate file will be written from the method callback, default: False
+        - filename (str) - filename for callback output, if provided, `write_intermediate_file` will be set to True, Optional, default=None
+        - obj_cut (float) - Cut-off objective value to write the parameters, if provided, `write_intermediate_file` will be set to True, Optional, default=None
         - etc. Other keywords for scipy.optimize.differential_evolution use the function defaults
 
     constraints : dict, Optional, default=None
@@ -79,16 +80,22 @@ def differential_evolution(beadparams0, bounds, fit_bead, fit_params, exp_dict, 
         scipy OptimizedResult
     """
 
-    obj_kwargs = ["obj_cut", "filename"]
+    obj_kwargs = ["obj_cut", "filename", "write_intermediate_file"]
     if "obj_cut" in global_dict:
         obj_cut = global_dict["obj_cut"]
+        global_dict["write_intermediate_file"] = True
     else:
         obj_cut = None
 
     if "filename" in global_dict:
         filename = global_dict["filename"]
+        global_dict["write_intermediate_file"] = True
     else:
         filename = None
+
+    if "write_intermediate_file" in global_dict and global_dict["write_intermediate_file"]:
+        global_dict["callback"] = _WriteParameterResults(fit_params, obj_cut=obj_cut, filename=filename)
+
     # Options for differential evolution, set defaults in new_global_dict
     new_global_dict = {"init": "random"}
     if global_dict:
@@ -106,8 +113,7 @@ def differential_evolution(beadparams0, bounds, fit_bead, fit_params, exp_dict, 
         global_dict["constraints"] = ff.initialize_constraints(constraints, "class")
     logger.info("Differential Evolution Options: {}".format(global_dict))
 
-    obj = _WriteParameterResults(fit_params, obj_cut=obj_cut, filename=filename)
-    result = spo.differential_evolution(ff.compute_obj, bounds, callback=obj, args=(fit_bead, fit_params, exp_dict, bounds), **global_dict)
+    result = spo.differential_evolution(ff.compute_obj, bounds, args=(fit_bead, fit_params, exp_dict, bounds), **global_dict)
 
     return result
 
@@ -130,8 +136,9 @@ def shgo(beadparams0, bounds, fit_bead, fit_params, exp_dict, global_dict={}, mi
     global_dict : dict, Optional
 
         - init (str) - type of initiation for population, Optional, default="random" 
-        - filename (str) - filename for callback output, Optional, default=None
-        - obj_cut (float) - Cut-off objective value to write the parameters, Optional, default=Non
+        - write_intermediate_file (str) - If True, an intermediate file will be written from the method callback, default: False
+        - filename (str) - filename for callback output, if provided, `write_intermediate_file` will be set to True, Optional, default=None
+        - obj_cut (float) - Cut-off objective value to write the parameters, if provided, `write_intermediate_file` will be set to True, Optional, default=Non
         - etc. Other keywords for scipy.optimize.differential_evolution use the function defaults
 
     minimizer_dict : dict, Optional
@@ -149,21 +156,27 @@ def shgo(beadparams0, bounds, fit_bead, fit_params, exp_dict, global_dict={}, mi
         scipy OptimizedResult
     """
 
-    obj_kwargs = ["obj_cut", "filename"]
+    obj_kwargs = ["obj_cut", "filename", "write_intermediate_file"]
     if "obj_cut" in global_dict:
         obj_cut = global_dict["obj_cut"]
+        global_dict["write_intermediate_file"] = True
     else:
         obj_cut = None
 
     if "filename" in global_dict:
         filename = global_dict["filename"]
+        global_dict["write_intermediate_file"] = True
     else:
         filename = None
+
+    if "write_intermediate_file" in global_dict and global_dict["write_intermediate_file"]:
+        global_dict["callback"] = _WriteParameterResults(fit_params, obj_cut=obj_cut, filename=filename)
+
     # Options for differential evolution, set defaults in new_global_dict
     new_global_dict = {"sampling_method": "sobol"}
     if global_dict:
         for key, value in global_dict.items():
-            if key is not "mpObj":
+            if key is not "mpObj" and key not in obj_kwargs:
                 new_global_dict[key] = value
     global_dict = new_global_dict
 
@@ -189,8 +202,7 @@ def shgo(beadparams0, bounds, fit_bead, fit_params, exp_dict, global_dict={}, mi
     if minimizer_dict:
         logger.warning("Minimization options were given but aren't used in this method.")
 
-    obj = _WriteParameterResults(fit_params, obj_cut=obj_cut, filename=filename)
-    result = spo.shgo(ff.compute_obj, bounds, callback=obj, args=(fit_bead, fit_params, exp_dict, bounds), **global_dict)
+    result = spo.shgo(ff.compute_obj, bounds, args=(fit_bead, fit_params, exp_dict, bounds), **global_dict)
 
     return result
 

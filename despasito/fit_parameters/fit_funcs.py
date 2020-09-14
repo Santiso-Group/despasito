@@ -82,7 +82,7 @@ def check_parameter_bounds(opt_params, eos, bounds):
 
 def reformat_ouput(cluster):
     r"""
-    Takes a list of lists that combine lists and floats and reformats it into a 2D numpy array.
+    Takes a list of lists that contain thermo output of lists and floats and reformats it into a 2D numpy array.
  
     Parameters
     ----------
@@ -124,16 +124,24 @@ def reformat_ouput(cluster):
         # Transfer information to final matrix
         ind = 0
         for i, val in enumerate(cluster):
-            matrix = np.transpose(np.array(val))
+            try:
+                matrix = np.zeros([len(val[0]), len(val)])
+            except:
+                matrix = np.zeros([1, len(val)])
+            for j, tmp in enumerate(val): # yes, this is a simple transpose, but for some reason a numpy array of np arrays wouldn't transpose
+                matrix[:,j] = tmp
             l = len_cluster[i]
             if l == 1:
                 matrix_tmp[:, ind] = np.array(matrix)
                 ind += 1
             else:
+                if len(matrix) == 1:
+                    matrix = matrix[0]
+
                 for j in range(l):
                     matrix_tmp[:, ind] = matrix[j]
                     ind += 1
-        #matrix = np.transpose(np.array(matrix_tmp))
+
         matrix = np.array(matrix_tmp)
 
     return matrix, len_cluster
@@ -295,7 +303,6 @@ def compute_obj(beadparams, fit_bead, fit_params, exp_dict, bounds):
             data_obj.eos.parameter_refresh()
             obj_function.append(data_obj.objective())
         except:
-            #raise ValueError("Failed to evaluate objective function for {} of type {}.".format(key,data_obj.name))
             logger.exception("Failed to evaluate objective function for {} of type {}.".format(key,data_obj.name))
             obj_function.append(np.inf)
 
@@ -306,9 +313,12 @@ def compute_obj(beadparams, fit_bead, fit_params, exp_dict, bounds):
     # Add penalty for being out of bounds for the sake of inner minimization
     for i, param in enumerate(beadparams):
         if param <= bounds[i][0]:
-            obj_total += (1e+3*(param- bounds[i][0]))**8
+            logger.debug("Adding penalty to {} parameter for being lower than range".format(fit_params[i]))
+            obj_total += (1e+3*(param - bounds[i][0]))**8
         elif param >= bounds[i][1]:
-            obj_total += (1e+3*(param- bounds[i][1]))**8
+            logger.debug("Adding penalty to {} parameter for being higher than range".format(fit_params[i]))
+            obj_total += (1e+3*(param - bounds[i][1]))**8
+        print(param, bounds[i], obj_total)
 
     # Write out parameters and objective functions for each dataset
     logger.info("\nParameters: {}\nValues: {}\nExp. Data: {}\nObj. Values: {}\nTotal Obj. Value: {}".format(fit_params,beadparams,list(exp_dict.keys()),obj_function,obj_total))

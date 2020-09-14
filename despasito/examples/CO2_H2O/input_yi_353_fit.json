@@ -1,0 +1,19 @@
+{
+    "beadconfig": [[["CO2m", 1]], [["H2O353", 1]]],
+    "EOSgroup": "../library/SAFTgroup.json",
+    "EOScross": "../library/SAFTcross.json",
+    "opt_params": {
+        "fit_bead" : "CO2m",
+        "fit_params": ["epsilon_H2O353"],
+        "beadparams0" : [432.69]
+    },
+    "Wiley": {
+        "datatype": "TLVE",
+        "calculation_type": "phase_yiT",
+        "T": [353],
+        "P": [7.08e+6],
+        "xi": [[0.0128, 0.9872]],
+        "yi": [[0.9896, 0.0104]]
+    },
+    "global_dict": {"method": "single_objective"}
+}

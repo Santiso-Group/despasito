@@ -619,6 +619,7 @@ class gamma_mie():
         # etax, assuming a maximum packing fraction specified by maxpack
 
         maxrho = maxpack * 6.0 / (self.eos_dict['Cmol2seg'] * np.pi * np.sum(self.eos_dict['xskl'] * (self.eos_dict['dkl']**3))) / constants.molecule_per_nm3
+
         return maxrho
 
     @staticmethod

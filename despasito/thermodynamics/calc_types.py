@@ -66,7 +66,7 @@ def phase_xiT(eos, sys_dict):
         flag_use_mp_object = False
 
     variables = list(locals().keys())
-    if all([key not in variables for key in ["xi_list", "T_list"]]):
+    if not all([key in variables for key in ["xi_list", "T_list"]]):
         raise ValueError('Tlist or xilist are not specified')
 
     if np.size(T_list) != np.size(xi_list, axis=0):
@@ -238,7 +238,7 @@ def phase_yiT(eos, sys_dict):
         logger.info("Using yilist")
 
     variables = list(locals().keys())
-    if all([key not in variables for key in ["yi_list", "T_list"]]):
+    if not all([key in variables for key in ["yi_list", "T_list"]]):
         raise ValueError('Tlist or yilist are not specified')
 
     if np.size(T_list) != np.size(yi_list, axis=0):
@@ -308,10 +308,7 @@ def phase_yiT(eos, sys_dict):
 
     ## Calculate P and xi
     T_list = np.array(T_list)
-    if 'Pguess' in sys_dict:
-        inputs = [(T_list[i], yi_list[i], eos, opts, Pguess[i]) for i in range(len(T_list))]
-    else:
-        inputs = [(T_list[i], yi_list[i], eos, opts) for i in range(len(T_list))]
+    inputs = [(T_list[i], yi_list[i], eos, opts) for i in range(len(T_list))]
 
     if flag_use_mp_object:
         P_list, xi_list, flagv_list, flagl_list, obj_list = mpObj.pool_job(_phase_yiT_wrapper, inputs)
@@ -325,12 +322,7 @@ def phase_yiT(eos, sys_dict):
 
 def _phase_yiT_wrapper(args):
 
-    if len(args) == 4:
-        T, yi, eos, opts = args
-    elif len(args) == 5:
-        T, yi, eos, opts, Pguess = args
-        opts["Pguess"] = Pguess
-
+    T, yi, eos, opts = args
     logger.info("T (K), yi: {} {}, Let's Begin!".format(T, yi))
     try:
         if len(yi[yi!=0.])==1:
@@ -348,7 +340,7 @@ def _phase_yiT_wrapper(args):
     except:
         logger.warning("T (K), yi: {} {}, calculation did not produce a valid result.".format(T, yi))
         logger.debug("Calculation Failed:", exc_info=True)
-        P, xi, flagl, flagv, obj = [np.nan, np.nan*np.ones(len(xi)), 3, 3, np.nan]
+        P, xi, flagl, flagv, obj = [np.nan, np.nan*np.ones(len(yi)), 3, 3, np.nan]
 
     logger.info("P (Pa), xi: {} {}".format(P, xi))
 
@@ -511,7 +503,7 @@ def saturation_properties(eos, sys_dict):
         xi_list = np.array([[1.0] for x in range(len(T_list))])
 
     variables = list(locals().keys())
-    if all([key not in variables for key in ["xi_list", "T_list"]]):
+    if not all([key in variables for key in ["xi_list", "T_list"]]):
         raise ValueError('Tlist or xilist are not specified')
 
     if np.size(T_list) != np.size(xi_list, axis=0):
@@ -614,7 +606,7 @@ def liquid_properties(eos, sys_dict):
         xi_list = [[1.0] for i in T_list]
 
     variables = list(locals().keys())
-    if all([key not in variables for key in ["xi_list", "T_list"]]):
+    if not all([key in variables for key in ["xi_list", "T_list"]]):
         raise ValueError('Tlist or xilist are not specified')
 
     if np.size(T_list) != np.size(xi_list, axis=0):
@@ -729,7 +721,7 @@ def vapor_properties(eos, sys_dict):
         yi_list = [[1.0] for i in T_list]
 
     variables = list(locals().keys())
-    if all([key not in variables for key in ["yi_list", "T_list"]]):
+    if not all([key in variables for key in ["yi_list", "T_list"]]):
         raise ValueError('Tlist or yilist are not specified')
 
     if np.size(T_list) != np.size(yi_list, axis=0):
@@ -840,7 +832,7 @@ def solubility_parameter(eos, sys_dict):
         del sys_dict['Tlist']
 
     variables = list(locals().keys())
-    if all([key not in variables for key in ["T_list"]]):
+    if not all([key in variables for key in ["T_list"]]):
         raise ValueError('Tlist are not specified')
 
     if "Plist" in sys_dict:
