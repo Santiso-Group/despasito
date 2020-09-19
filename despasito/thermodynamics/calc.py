@@ -357,7 +357,7 @@ def PvsV_plot(vlist, Plist, Pvspline, markers=[]):
 #                              Calc Psat                             #
 #                                                                    #
 ######################################################################
-def calc_Psat(T, xi, eos, density_dict={}):
+def calc_Psat(T, xi, eos, density_dict={}, tol=1e-10, Pconverged=1):
     r"""
     Computes the saturated pressure, gas and liquid densities for a single component system.
     
@@ -371,6 +371,10 @@ def calc_Psat(T, xi, eos, density_dict={}):
         An instance of the defined EOS class to be used in thermodynamic computations.
     density_dict : dict, Optional, default: {}
         Dictionary of options used in calculating pressure vs. mole 
+    tol : float, Optional, default=1e-12
+        Tolerance to accept pressure value
+    Pconverged : float, Optional, default=0.1
+        If the pressure is negative (under tension), we search from a value just above vacuum
 
     Returns
     -------
@@ -393,7 +397,7 @@ def calc_Psat(T, xi, eos, density_dict={}):
     Pvspline, roots, extrema = PvsV_spline(vlist, Plist)
 
     if (not extrema or len(extrema)<2 or np.any(np.isnan(roots))):
-        logger.warning('Error: One of the components is above its critical point, add an exception to setPsat')
+        logger.warning('Error: The component is above its critical point, add an exception to setPsat')
         Psat = np.nan
         roots = [1.0, 1.0, 1.0]
 
@@ -402,8 +406,6 @@ def calc_Psat(T, xi, eos, density_dict={}):
         ind_Pmax1 = np.argmax(Plist[ind_Pmin1:]) + ind_Pmin1
 
         Pmaxsearch = Plist[ind_Pmax1]
-
-        Pconverged = 10 # If the pressure is negative (under tension), we search from a value just above vacuum 
         Pminsearch = max(Pconverged, np.amin(Plist[ind_Pmin1:ind_Pmax1]))
 
         #search Pressure that gives equal area in maxwell construction
@@ -419,18 +421,29 @@ def calc_Psat(T, xi, eos, density_dict={}):
       #  except:
       #      PvsV_plot(vlist, Plist, Pvspline, markers=extrema)
 
-        logger.debug("    Psat found: {} Pa, obj value: {}, with {} roots and {} extrema".format(Psat,eq_area(Psat,Plist,vlist),np.size(roots),np.size(extrema)))
+        obj_value = eq_area(Psat,Plist,vlist)
 
-        if len(roots) ==2:
-            slope, yroot = np.polyfit(vlist[-4:], Plist[-4:]-Psat, 1)
-            vroot = -yroot/slope
-            if vroot < 0.0:
-                vroot = np.finfo(float).eps
-            rho_tmp = spo.minimize(Pdiff, 1.0/vroot, args=(Psat, T, xi, eos), bounds=[(1.0/(vroot*1e+2), 1.0/(1.1*roots[-1]))])
-            roots = np.append(roots,[1.0/rho_tmp.x])
+        if obj_value < tol:
+
+            logger.debug("    Psat found: {} Pa, obj value: {}, with {} roots and {} extrema".format(Psat,obj_value,np.size(roots),np.size(extrema)))
+
+            if len(roots) ==2:
+                slope, yroot = np.polyfit(vlist[-4:], Plist[-4:]-Psat, 1)
+                vroot = -yroot/slope
+                if vroot < 0.0:
+                    vroot = np.finfo(float).eps
+                rho_tmp = spo.minimize(Pdiff, 1.0/vroot, args=(Psat, T, xi, eos), bounds=[(1.0/(vroot*1e+2), 1.0/(1.1*roots[-1]))])
+                roots = np.append(roots,[1.0/rho_tmp.x])
+
+            rhol =  1.0 / roots[0]
+            rhov =  1.0 / roots[2]
+
+        else:
+            logger.warning("    Psat NOT found: {} Pa, obj value: {}".format(Psat,obj_value))
+            Psat, rhol, rhov = np.nan, np.nan, np.nan
 
     #Psat,rholsat,rhogsat
-    return Psat, 1.0 / roots[0], 1.0 / roots[2]
+    return Psat, rhol, rhov
 
 ######################################################################
 #                                                                    #
