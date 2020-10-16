@@ -52,7 +52,7 @@ install:
 build: off
 
 test_script:
-  - pytest -v --cov=despasito despasito\\tests
+  - pytest -vvv --cov=despasito despasito\\tests
   - cd docs
   - make html
   - cd ../

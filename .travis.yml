@@ -54,7 +54,7 @@ install:
 script:
 #  - travis_wait pytest -v --cov=despasito despasito/tests/
     # Extend waittime to 30 min
-  - travis_wait 75 pytest -v --cov=despasito despasito/tests/
+  - travis_wait 75 pytest -vvv --cov=despasito despasito/tests/
   - cd docs
   - make html
   - cd ../
