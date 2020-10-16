@@ -16,6 +16,7 @@ else
     MINICONDA=Miniconda3-latest-Linux-x86_64.sh
 fi
 MINICONDA_HOME=$HOME/miniconda
+wget -q https://repo.anaconda.com/miniconda/$MINICONDA
 
 # Check that miniconda is available to download
 MINICONDA_MD5=$(wget -qO- https://repo.anaconda.com/miniconda/ | grep -A3 $MINICONDA | sed -n '4p' | sed -n 's/ *<td>\(.*\)<\/td> */\1/p')
@@ -23,7 +24,6 @@ if [[ $MINICONDA_MD5 != $(md5sum $MINICONDA | cut -d ' ' -f 1) ]]; then
     echo "Miniconda MD5 mismatch"
     exit 1
 fi
-wget -q https://repo.anaconda.com/miniconda/$MINICONDA
 
 bash $MINICONDA -b -p $MINICONDA_HOME
 

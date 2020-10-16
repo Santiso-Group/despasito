@@ -30,7 +30,8 @@ yilist2 = np.array([[0.9896, 0.0104], [0.9903, 0.0097]])
 Plist2 = np.array([7.08e+6, 8.08e+6])
 
 exp_data_phase_yiT = {'Wiley': {'name': 'TLVE', "eos_obj":eos, 'calculation_type': 'phase_yiT', 'T': Tlist, 'P': Plist, "xi": xilist, "yi": yilist}}
-exp_data_flash = {'Wiley': {'name': 'flash', "eos_obj":eos, 'calculation_type': 'flash', 'T': Tlist2, 'P': Plist2, "xi": xilist2, "yi": yilist2}}
+#exp_data_flash = {'Wiley': {'name': 'flash', "eos_obj":eos, 'calculation_type': 'flash', 'T': Tlist2, 'P': Plist2, "xi": xilist2, "yi": yilist2}}
+exp_data_flash = {'Wiley': {'name': 'flash', "eos_obj":eos, 'calculation_type': 'flash', 'T': Tlist, 'P': Plist, "xi": xilist, "yi": yilist}}
 
 ## Optimization options
 opt_params = {"fit_bead" : "CO2", "fit_params": ["epsilon_H2O353"], "epsilon_H2O353_bounds" : [150.0, 600.0]}
