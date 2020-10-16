@@ -2,7 +2,7 @@
 pushd .
 cd $HOME
 # Make sure some level of pip is installed
-python -m ensurepip
+#python -m ensurepip
 
 # Install Miniconda
 if [ "$TRAVIS_OS_NAME" == "osx" ]; then

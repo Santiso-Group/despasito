@@ -50,9 +50,6 @@ install:
   - conda activate test
     # Build and install package
   - python setup.py develop --no-deps
-  - conda install sphinx sphinx_rtd_theme
-  - conda install sphinx-argparse
-
 
 script:
 #  - travis_wait pytest -v --cov=despasito despasito/tests/

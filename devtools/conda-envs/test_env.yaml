@@ -13,6 +13,11 @@ dependencies:
   - pytest-cov
   - codecov
 
+   # Documentation
+   - sphinx
+   - sphinx_rtd_theme
+   - sphinx-argparse
+
     # Pip-only installs
   #- pip:
   #  - codecov
