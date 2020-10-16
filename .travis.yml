@@ -7,7 +7,7 @@ env: FC=gfortran
 branches:
   only:
     - master
-    - dev
+    - update
 
 matrix:
   include:

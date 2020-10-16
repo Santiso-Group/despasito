@@ -144,9 +144,8 @@ class saft(EOStemplate):
         Ares : numpy.ndarray
             Residual helmholtz energy for each density value given.
         """
-
         if len(xi) != len(self.nui):
-            raise ValueError("Number of components in mole fraction list doesn't match components in nui. Check bead_config.")
+            raise ValueError("Number of components in mole fraction list, {}, doesn't match components in nui, {}".format(len(xi),len(self.nui)))
     
         rho = self._check_density(rho)
 
@@ -182,6 +181,9 @@ class saft(EOStemplate):
         A : numpy.ndarray
             Total helmholtz energy for each density value given.
         """
+        if len(xi) != len(self.nui):
+            raise ValueError("Number of components in mole fraction list, {}, doesn't match components in nui, {}".format(len(xi),len(self.nui)))
+
         rho = self._check_density(rho)
 
         A = self.residual_helmholtz_energy(rho, T, xi) + self.Aideal(rho, T, xi, method=self.eos_dict["Aideal_method"])
@@ -212,6 +214,8 @@ class saft(EOStemplate):
         Aideal : numpy.ndarray
             Helmholtz energy of ideal gas for each density given.
         """
+        if len(xi) != len(self.nui):
+            raise ValueError("Number of components in mole fraction list, {}, doesn't match components in nui, {}".format(len(xi),len(self.nui)))
 
         rho = self._check_density(rho)
 
@@ -237,6 +241,9 @@ class saft(EOStemplate):
         Aassoc : numpy.ndarray
             Helmholtz energy of ideal gas for each density given.
         """
+        if len(xi) != len(self.nui):
+            raise ValueError("Number of components in mole fraction list, {}, doesn't match components in nui, {}".format(len(xi),len(self.nui)))
+
         rho = self._check_density(rho)
 
         # compute F_klab    
@@ -288,6 +295,9 @@ class saft(EOStemplate):
         P : numpy.ndarray
             Array of pressure values [Pa] associated with each density and so equal in length
         """
+        if len(xi) != len(self.nui):
+            raise ValueError("Number of components in mole fraction list, {}, doesn't match components in nui, {}".format(len(xi),len(self.nui)))
+
         # derivative of Aideal_broglie here wrt to rho is 1/rho
         rho = self._check_density(rho)
         P_tmp = gtb.central_difference(rho, self.helmholtz_energy, args=(T, xi), step_size=step_size)
@@ -318,6 +328,9 @@ class saft(EOStemplate):
         mui : numpy.ndarray
             Array of chemical potential values for each component
         """
+        if len(xi) != len(self.nui):
+            raise ValueError("Number of components in mole fraction list, {}, doesn't match components in nui, {}".format(len(xi),len(self.nui)))
+
         rho = self._check_density(rho)
         logZ = np.log(P / (rho * T * constants.R))
         Ares = self.residual_helmholtz_energy(rho, T, xi)
@@ -346,6 +359,8 @@ class saft(EOStemplate):
         maxrho : float
             Maximum molar density [mol/m^3]
         """
+        if len(xi) != len(self.nui):
+            raise ValueError("Number of components in mole fraction list, {}, doesn't match components in nui, {}".format(len(xi),len(self.nui)))
 
         maxrho = self.saft_source.density_max(xi, T, maxpack=maxpack)
 

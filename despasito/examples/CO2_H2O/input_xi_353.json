@@ -4,6 +4,8 @@
     "EOScross": "../library/SAFTcross.json",
     "output_file": "out_xi_353.txt",
     "calculation_type" : "phase_xiT",
+    "Pmin": [6900000],
+    "Pmax": [7100000],
     "Tlist" : [353],
     "xilist": [[0.002064,0.997935]]
 }

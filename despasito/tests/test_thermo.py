@@ -27,7 +27,7 @@ def test_thermo_import():
     assert "despasito.thermodynamics" in sys.modules
 
 def test_phase_xiT(eos=eos_co2_h2o,Tlist=Tlist,xilist=xilist):
-    output = thermo.thermo(eos,{"calculation_type":"phase_xiT","Tlist":Tlist,"xilist":xilist})
+    output = thermo.thermo(eos,{"calculation_type":"phase_xiT","Tlist":Tlist,"xilist":xilist, "Pmin": [6900000], "Pmax":[7100000]})
     assert output["P"][0]==pytest.approx(7000914.5,abs=1e+1) and output["yi"][0]==pytest.approx([0.98779049, 0.01220951],abs=1e-4)
 
 #def test_phase_yiT(eos=eos_co2_h2o,Tlist=Tlist,yilist=yilist):

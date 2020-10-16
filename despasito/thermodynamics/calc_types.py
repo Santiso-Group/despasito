@@ -35,7 +35,8 @@ def phase_xiT(eos, sys_dict):
         - Tlist: (list[float]) - [K] Temperature of the system corresponding to composition in xilist. If one set is given, this temperature will be used for all compositions.
         - xilist: (list[list[float]]) - List of sets of component mole fraction, where sum(xi)=1.0 for each set. Each set of components corresponds to a temperature in Tlist, or if one set is given, this composition will be used for all temperatures.
         - Pguess: (list[float]) - [Pa] Optional, Guess the system pressure at the dew point. A value of None will force an estimation based on the saturation pressure of each component.
-        - Pmin: (list[float]) - [Pa] Optional, Guess the minimum system pressure at the dew point. If not defined, the default in :func:`~despasito.thermodynamics.calc_xT_phase` is used.
+        - Pmin: (list[float]) - [Pa] Optional, Set the upper bound for the minimum system pressure at the dew point. If not defined, the default in :func:`~despasito.thermodynamics.calc_xT_phase` is used.
+        - Pmax: (list[float]) - [Pa] Optional, Set the upper bound for the maximum system pressure at the dew point. If not defined, the default in :func:`~despasito.thermodynamics.calc_xT_phase` is used.
         - method: (str) Optional - Solving method for outer loop that converges pressure. If not given the :func:`~despasito.thermodynamics.calc_xT_phase` default will be used.
         - pressure_options: (dict) Optional - Keyword arguments used in the given method, "method" from :func:`~despasito.utils.general_toolbox.solve_root`, to solve the outer loop in the solving algorithm
         - mole_fraction_options: (dict) Optional - Keywords used to solve the mole fraction loop in :func:`~despasito.thermodynamics.calc.solve_yi_xiT`
@@ -129,6 +130,23 @@ def phase_xiT(eos, sys_dict):
             opts["Pmin"] = Pmin
         logger.info("Using user defined min pressure")
 
+    if 'Pmax' in sys_dict:
+        Pmax = np.array(sys_dict['Pmax'],float)
+        if not len(np.shape(Pmax)):
+            Pmax = np.array([Pmax])
+        if np.size(T_list) != np.size(Pmax):
+            if type(Pmax) not in [list, np.ndarray]:
+                opts["Pmax"] = np.ones(len(T_list))*Pmax
+                logger.info("The same min pressure, {}, was used for all mole fraction values".format(Pmax))
+            elif len(Pmax) == 1:
+                opts["Pmax"] = np.ones(len(T_list))*float(Pmax[0])
+                logger.info("The same max pressure, {}, was used for all mole fraction values".format(Pmax))
+            else:
+                raise ValueError("The number of provided pressure and mole fraction sets are different")
+        else:
+            opts["Pmax"] = Pmax
+        logger.info("Using user defined max pressure")
+
     # Extract desired method
     if "method" in sys_dict:
         logger.info("Accepted optimization method, {}, for solving pressure".format(sys_dict['method']))
@@ -150,7 +168,7 @@ def phase_xiT(eos, sys_dict):
         opts["mole_fraction_options"] = sys_dict["mole_fraction_options"]
 
     ## Calculate P and yi
-    per_job_var = ["Pmin","Pguess"]
+    per_job_var = ["Pmin","Pmax","Pguess"]
     inputs = []
     for i in range(len(T_list)):
         opts_tmp = opts.copy()

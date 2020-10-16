@@ -318,7 +318,6 @@ def compute_obj(beadparams, fit_bead, fit_params, exp_dict, bounds):
         elif param >= bounds[i][1]:
             logger.debug("Adding penalty to {} parameter for being higher than range".format(fit_params[i]))
             obj_total += (1e+3*(param - bounds[i][1]))**8
-        print(param, bounds[i], obj_total)
 
     # Write out parameters and objective functions for each dataset
     logger.info("\nParameters: {}\nValues: {}\nExp. Data: {}\nObj. Values: {}\nTotal Obj. Value: {}".format(fit_params,beadparams,list(exp_dict.keys()),obj_function,obj_total))

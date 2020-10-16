@@ -72,7 +72,7 @@ def differential_evolution(beadparams0, bounds, fit_bead, fit_params, exp_dict, 
         - etc. Other keywords for scipy.optimize.differential_evolution use the function defaults
 
     constraints : dict, Optional, default=None
-        This dicitonary of constraint types and their arguements will be converted into a tuple of constraint classes that is compadible
+        This dicitonary of constraint types and their arguements will be converted into a tuple of constraint classes that is compatible
 
     Returns
     -------
@@ -119,7 +119,7 @@ def differential_evolution(beadparams0, bounds, fit_bead, fit_params, exp_dict, 
 
 def shgo(beadparams0, bounds, fit_bead, fit_params, exp_dict, global_dict={}, minimizer_dict={}, constraints=None):
     r"""
-    Fit defined parameters for equation of state object using scipy.optimize.differential_evolution with given experimental data. 
+    Fit defined parameters for equation of state object using scipy.optimize.shgo with given experimental data. 
 
     Parameters
     ----------
@@ -148,7 +148,7 @@ def shgo(beadparams0, bounds, fit_bead, fit_params, exp_dict, global_dict={}, mi
         - options (dict) - This dictionary contains the kwargs available to the chosen method, Optional, default={'maxiter': 50}
 
     constraints : dict, Optional, default=None
-        This dicitonary of constraint types and their arguements will be converted into a tuple of dictionaries that is compadible
+        This dicitonary of constraint types and their arguements will be converted into a tuple of dictionaries that is compatible
 
     Returns
     -------
@@ -236,7 +236,7 @@ def grid_minimization(beadparams0, bounds, fit_bead, fit_params, exp_dict, globa
         - options (dict) - This dictionary contains the kwargs available to the chosen method
 
     constraints : dict, Optional, default=None
-        This dicitonary of constraint types and their arguements will be converted into a tuple of constraint classes that is compadible
+        This dicitonary of constraint types and their arguements will be converted into a tuple of constraint classes that is compatible
 
     Returns
     -------
@@ -343,7 +343,7 @@ def brute(beadparams0, bounds, fit_bead, fit_params, exp_dict, global_dict={}):
 
         - Ns (int) - Number of grid points along the axes, Optional, default=5
         - finish (callable) - An optimization function, default=scipy.optimize.minimize
-        - etc. Other keywords for scipy.optimize.differential_evolution use the function defaults
+        - etc. Other keywords for scipy.optimize.brute use the function defaults
 
     minimizer_dict : dict, Optional
         Dictionary used to define minimization type and the associated options.
@@ -404,7 +404,7 @@ def basinhopping(beadparams0, bounds, fit_bead, fit_params, exp_dict, global_dic
         - niter_success (int) Stop the run if the global minimum candidate remains the same for this number of iterations., Optional, default=3
         - stepsize (float) - Maximum step size for use in the random displacement., Optional, default=0.1
         - take_step (callable) - Set with custom BasinStep class
-        - etc. Other keywords for scipy.optimize.differential_evolution use the function defaults
+        - etc. Other keywords for scipy.optimize.basinhopping use the function defaults
 
     minimizer_dict : dict, Optional
         Dictionary used to define minimization type and the associated options.

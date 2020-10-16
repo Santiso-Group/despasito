@@ -25,7 +25,7 @@ exp_data_sol = {'Wiley': {'name': 'solubility_parameter', "eos_obj":eos, 'calcul
 exp_data_density = {'Wiley': {'name': 'liquid_density', "eos_obj":eos, 'calculation_type': 'liquid_properties', 'T': np.array([288.1506]), 'P': np.array([11152.285]), 'rhol': np.array([24098.4771])}}
 
 ## Optimization options
-opt_params = {"fit_bead" : "CH3OH", "fit_params": ["epsilon"], "epsilon_bounds" : [150.0, 400.0]}
+opt_params = {"fit_bead" : "CH3OH", "fit_params": ["epsilon"], "epsilon_bounds" : [300.0, 400.0]}
 
 thermo_dict0 = {"opt_params": opt_params, "beadparams0": [384.0], "global_dict": {"method": "single_objective"}}
 
@@ -52,10 +52,11 @@ def test_density_so(eos=eos,thermo_dict=copy.deepcopy(thermo_dict0)):
     assert output["final_parameters"][0]==pytest.approx(375.01,abs=1.0) and output["objective_value"]<1.5
 
 thermo_dict0["exp_data"] = exp_data_sat
-thermo_dict0["global_dict"] = {"method": "differential_evolution"}
+thermo_dict0["global_dict"] = {"method": "single_objective"}
 def test_saturation_de(eos=eos,thermo_dict=copy.deepcopy(thermo_dict0)):
 
+    print(thermo_dict)
     thermo_dict = ri.process_param_fit_inputs(thermo_dict)
     output = fit.fit(thermo_dict)
 
-    assert output["final_parameters"][0]==pytest.approx(386.2,abs=1.0) and output["objective_value"]<1.5
+    assert output["final_parameters"][0]==pytest.approx(375.01,abs=1.0) and output["objective_value"]==pytest.approx(2.146,abs=0.01)

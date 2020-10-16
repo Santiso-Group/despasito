@@ -4,7 +4,7 @@ image:
 branches:
   only:
     - master
-    - dev
+    - update
 
 environment:
   MINGW_DIR: C:\mingw-w64\x86_64-7.2.0-posix-seh-rt_v5-rev1\mingw64\bin
@@ -51,7 +51,8 @@ install:
   - conda install sphinx-argparse
 
   
-build: false
+#build: false
+build: off
 
 test_script:
   - pytest -v --cov=despasito despasito\\tests
