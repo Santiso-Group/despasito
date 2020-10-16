@@ -20,15 +20,15 @@ if sys.version_info.major < 3:
 if sys.version_info.minor > 7:
     raise ValueError("DESPASITO cannot run on python versions greater than 3.7 due to incompadibilities between python 3.8 and numpy.")
 
-#try:
-from Cython.Build import cythonize
-cython_list = glob.glob(os.path.join(fpath,"*.pyx"))
-for cyext in cython_list:
-    name = os.path.split(cyext)[-1].split(".")[-2]
-    cy_ext_1 = Extension(name=name,sources=[cyext],include_dirs=[fpath])
-    extensions.extend(cythonize([cy_ext_1]))
-#except:
-#    print('Cython not available on your system. Proceeding without C-extentions.')
+try:
+    from Cython.Build import cythonize
+    cython_list = glob.glob(os.path.join(fpath,"*.pyx"))
+    for cyext in cython_list:
+        name = os.path.split(cyext)[-1].split(".")[-2]
+        cy_ext_1 = Extension(name=name,sources=[cyext],include_dirs=[fpath])
+        extensions.extend(cythonize([cy_ext_1]))
+except:
+    print('Cython not available on your system. Proceeding without C-extentions.')
 
 # from https://github.com/pytest-dev/pytest-runner#conditional-requirement
 needs_pytest = {'pytest', 'test', 'ptr'}.intersection(sys.argv)
