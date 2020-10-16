@@ -52,7 +52,7 @@ def test_flash(eos=eos,thermo_dict=copy.deepcopy(thermo_dict0)):
     thermo_dict = ri.process_param_fit_inputs(thermo_dict)
     output = fit.fit(thermo_dict)
         
-    assert output["final_parameters"][0]==pytest.approx(432.69,abs=1.0) and output["objective_value"]==pytest.approx(0.7405,abs=0.0001)
+    assert output["final_parameters"][0]==pytest.approx(432.69,abs=1.0) and output["objective_value"]==pytest.approx(0.730,abs=0.001)
 
 
 
