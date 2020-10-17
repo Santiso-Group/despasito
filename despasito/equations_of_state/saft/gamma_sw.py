@@ -44,7 +44,7 @@ class gamma_sw():
         A dictionary where bead names are the keys to access EOS self interaction parameters:
     
         - epsilon: :math:`\epsilon_{k,k}/k_B`, Energy well depth scaled by Boltzmann constant
-        - sigma: :math:`\sigma_{k,k}`, Size parameter [m]
+        - sigma: :math:`\sigma_{k,k}`, Size parameter [nm]
         - mass: Bead mass [kg/mol]
         - l_r: :math:`\lambda^{r}_{k,k}`, Exponent of repulsive term between groups of type k
         - l_a: :math:`\lambda^{a}_{k,k}`, Exponent of attractive term between groups of type k
@@ -53,7 +53,7 @@ class gamma_sw():
         Optional library of bead cross interaction parameters. As many or as few of the desired parameters may be defined for whichever group combinations are desired. If this matrix isn't provided, the SAFT mixing rules are used.
         
         - epsilon: :math:`\epsilon_{k,l}/k_B`, Energy parameter scaled by Boltzmann Constant
-        - sigma: :math:`\sigma_{k,k}`, Size parameter [m]
+        - sigma: :math:`\sigma_{k,k}`, Size parameter [nm]
         - l_r: :math:`\lambda^{r}_{k,l}`, Exponent of repulsive term between groups of type k and l
         - l_a: :math:`\lambda^{a}_{k,l}`, Exponent of attractive term between groups of type k and l
         

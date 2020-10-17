@@ -36,7 +36,7 @@ def saft_type(name):
 class saft(EOStemplate):
 
     r"""
-    Initialize EOS object for SAFT-:math:`\gamma`-Mie.
+    Initialize EOS object for SAFT variant.
     
     All input and calculated parameters are defined as hidden attributes.
     
@@ -52,6 +52,7 @@ class saft(EOStemplate):
         - mass: Bead mass [kg/mol]
         - epsilon*: Optional, Interaction energy between each bead and association site. Asterisk represents string from sitenames.
         - K**: Optional, Bonding volume between each association site. Asterisk represents two strings from sitenames.
+        - rc**: Optional, Bonding distance between each association site. Asterisk represents two strings from sitenames.
         - Nk*: Optional, The number of sites of from list sitenames. Asterisk represents string from sitenames.
 
     crosslibrary : dict, Optional, default: {}
@@ -59,6 +60,7 @@ class saft(EOStemplate):
 
         - epsilon*: Optional, Interaction energy between each bead and association site. Asterisk represents string from sitenames.
         - K**: Optional, Bonding volume between each association site. Asterisk represents two strings from sitenames.
+        - rc**: Optional, Bonding distance between each association site. Asterisk represents two strings from sitenames.
 
     Attributes
     ----------
