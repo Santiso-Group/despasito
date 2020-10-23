@@ -16,6 +16,7 @@ from .equations_of_state import eos as eos_mod
 from .thermodynamics import thermo
 from .parameter_fitting import fit
 
+# JITSTAT
 class method_stat:
     disable_numba = True
     disable_cython = True
@@ -44,6 +45,7 @@ def commandline_parser():
     parser = get_parser()
     args = parser.parse_args()
 
+# JITSTAT
     method_stat.disable_numba = not args.numba
     method_stat.disable_cython = not args.cython
     method_stat.disable_python = not args.python

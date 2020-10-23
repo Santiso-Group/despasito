@@ -20,6 +20,7 @@ from despasito.equations_of_state.saft import Aassoc
 
 logger = logging.getLogger(__name__)
 
+# JITSTAT
 from despasito.main import method_stat
 
 if method_stat.disable_cython and method_stat.disable_numba:
