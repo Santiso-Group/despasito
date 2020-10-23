@@ -3,7 +3,8 @@
     "EOSgroup": "SAFTgroup.json",
     "opt_params": {
         "fit_bead" : "CH3",
-        "fit_params": ["epsilon"]
+        "fit_params": ["epsilon"],
+        "epsilon_bounds": [200, 500]
     },
     "H2O-ethane": {
         "datatype": "saturation_properties",

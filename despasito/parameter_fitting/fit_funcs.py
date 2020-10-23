@@ -80,6 +80,51 @@ def check_parameter_bounds(opt_params, eos, bounds):
 
     return new_bounds
 
+def consolidate_bounds(opt_params):
+    r"""
+    Parse parameter bounds in the opt_params dictionary to form a 2D numpy array with a length equal to the numbe of parameters being fit.
+    
+    Parameters
+    ----------
+    opt_params : dict
+        Parameters used in basin fitting algorithm
+    
+        - fit_bead (str) - Name of bead whose parameters are being fit, should be in bead list of beadconfig
+        - fit_params (list[str]) - This list of contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
+        - \*_bounds (list[float]), Optional - This list contains the minimum and maximum of the parameter from a parameter listed in fit_params, represented in place of the asterisk. See input file instructions for more information.
+    
+    Returns
+    -------
+    new_opt_params : dict
+        Parameters used in basin fitting algorithm
+    
+        - fit_bead (str) - Name of bead whose parameters are being fit, should be in bead list of beadconfig
+        - fit_params (list[str]) - This list of contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
+        - bounds (numpy.ndarray) - List of lists of length two, of length equal to fit_params. If no bounds were given then the default parameter boundaries are [0,1e+4], else bounds given as \*_bounds in input dictionary are used.
+    """
+
+    if "fit_bead" not in opt_params:
+        raise ValueError("opt_params dictionary should include keyword, fit_bead, defining the name of the bead whose parameters are to be fit.")
+    if "fit_params" not in opt_params:
+        raise ValueError("opt_params dictionary should include keyword, fit_params, defining the parameters to be fit.")
+
+    new_opt_params = {}
+    new_opt_params["bounds"] = [[0,1e+4] for x in range(len(opt_params["fit_params"]))]
+    for key2, value2 in opt_params.items():
+        if "bounds" in key2:
+            tmp  = key2.replace("_bounds","")
+            if tmp in opt_params["fit_params"]:
+                logger.info("Accepted bounds for parameter, '{}': {}".format(tmp, value2))
+                ind = opt_params["fit_params"].index(tmp)
+                new_opt_params["bounds"][ind] = value2
+            else:
+                logger.warning("Bounds for parameter type '{}' were given, but this parameter is not defined to be fit.".format(tmp))
+        else:
+            new_opt_params[key2] = value2
+            continue
+
+    return new_opt_params
+
 def reformat_ouput(cluster):
     r"""
     Takes a list of lists that contain thermo output of lists and floats and reformats it into a 2D numpy array.
@@ -203,10 +248,11 @@ def initialize_constraints(constraints, constraint_type):
     Parameters
     ----------
     constraints : dict
-        This dicitonary of constraint types and their arguements will be converted into the appropriate form for the chosen optimizaiton method. The key must be a valid function name from `constraint_types.py`. This key in turn represents a dictionary with two keys, 'type' and 'args'. The 'args' are inputs into the functions (keys), and 'type' entries depends on 'constraint_type'.
+        This dicitonary of constraint types and their arguements will be converted into the appropriate form for the chosen optimizaiton method. Although the key can be anything, it must represent a dictionary. The keyword 'function' must be found in the dictionary and represent a valid function name from `constraint_types.py`, as well as the two keys, 'type' and 'args'. The 'args' are inputs into the functions (keys), and 'type' entries depends on 'constraint_type'.
     constraint_type : str
         Either 'dict' or 'class'. Changes the constraint to the specified form. 
  
+        - function: Allowed types, see :any:`~despasito.parameter_fitting.constraint_types` 
         - dict: Allowed types, "eq" or "ineq", eq means must be zero, ineq means it must be non-negative 
         - class: Allowed types, "nonlinear" or "linear", a kwargs keyword may also be added for the constraint class 
 
@@ -221,17 +267,21 @@ def initialize_constraints(constraints, constraint_type):
 
     new_constraints = []
     for const_type, kwargs in constraints.items():
+
+        if "function" not in kwargs:
+            raise ValueError("Constraint function type is not included")
+
         try:
-            func = getattr(constraints_mod, const_type)
+            func = getattr(constraints_mod, kwargs["function"])
         except:
             raise ImportError("The constraint type, '{}', was not found\nThe following types are supported: {}".format(function,", ".join(calc_list)))
 
         if "args" not in kwargs:
-            raise ValueError("Constraint function, {}, is missing arguements".format(const_type))
+            raise ValueError("Constraint function, {}, is missing arguements".format(kwargs["function"]))
 
         if constraint_type == "class":
             if "type" not in kwargs or kwargs["type"] in ['linear', 'nonlinear']:
-                raise ValueError("Constraint, {}, does not have type. Type can be 'linear' or 'nonlinear'.".format(const_type))
+                raise ValueError("Constraint, {}, does not have type. Type can be 'linear' or 'nonlinear'.".format(kwargs["function"]))
 # NoteHere
             if kwargs["type"] is "linear":
                 if "kwargs" not in kwargs:
@@ -246,7 +296,7 @@ def initialize_constraints(constraints, constraint_type):
 
         elif constraint_type == "dict":
             if "type" not in kwargs or kwargs["type"] in ['eq', 'ineq']:
-                raise ValueError("Constraint, {}, does not have type. Type can be 'eq' or 'ineq'.".format(const_type))
+                raise ValueError("Constraint, {}, does not have type. Type can be 'eq' or 'ineq'.".format(kwargs["function"]))
             output = {"type": kwargs["type"], "function": func, "args": kwargs["args"]}
         else:
             raise ValueError("Constraint type {}, must be either 'class' or 'dict'.")

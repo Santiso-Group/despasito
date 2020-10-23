@@ -4,8 +4,8 @@ Unit and regression test for the despasito package.
 
 # Import package, test suite, and other packages as needed
 import despasito.input_output.read_input as ri
-import despasito.fit_parameters as fit
-import despasito.fit_parameters.fit_funcs as funcs
+import despasito.parameter_fitting as fit
+import despasito.parameter_fitting.fit_funcs as funcs
 import despasito.equations_of_state
 import pytest
 import copy
@@ -41,7 +41,7 @@ thermo_dict0 = {"opt_params": opt_params, "exp_data": exp_data_phase_yiT, "beadp
 #def test_phase_yiT(eos=eos,thermo_dict=copy.deepcopy(thermo_dict0)):
 #
 #    thermo_dict = ri.process_param_fit_inputs(thermo_dict)
-#    output = fit.fit(thermo_dict)
+#    output = fit.fit(**thermo_dict)
 #        
 #    assert output["final_parameters"][0]==pytest.approx(432.69,abs=1.0) and output["objective_value"]==pytest.approx(722.6,abs=1.0)
 
@@ -50,7 +50,7 @@ thermo_dict0["min_mole_fraction0"] = 0.98
 def test_flash(eos=eos,thermo_dict=copy.deepcopy(thermo_dict0)):
 
     thermo_dict = ri.process_param_fit_inputs(thermo_dict)
-    output = fit.fit(thermo_dict)
+    output = fit.fit(**thermo_dict)
         
     assert output["final_parameters"][0]==pytest.approx(432.69,abs=1.0) and output["objective_value"]==pytest.approx(0.730,abs=0.001)
 

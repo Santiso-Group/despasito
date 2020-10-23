@@ -14,7 +14,7 @@ import sys
 #np.set_printoptions(threshold=sys.maxsize)
 
 
-import despasito.equations_of_state.toolbox as tb
+import despasito.equations_of_state.eos_toolbox as tb
 from despasito.equations_of_state import constants
 import despasito.equations_of_state.saft.saft_toolbox as stb
 
@@ -53,7 +53,7 @@ class saft_example():
 
         ####### The Following lines are *MANDATORY* but can be edited as needed
 
-        # Standard attributes of the EOStemplate are 'density_max' and 'parameter_refresh', while all saft version require 'calc_gr_assoc' for calculating association sites
+        # Standard attributes of the EosTemplate are 'density_max' and 'parameter_refresh', while all saft version require 'calc_gr_assoc' for calculating association sites
     
         # This keyword is used by the saft.py class and subsequently the `Aideal_contribution` function. If a user desired a different default method of calulating the ideal contribution, add a new function to Aideal.py
         self.Aideal_method = "Abroglie"

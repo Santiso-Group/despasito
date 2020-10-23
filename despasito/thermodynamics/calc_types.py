@@ -7,10 +7,10 @@
 
 import numpy as np
 import logging
-from despasito.utils.parallelization import MultiprocessingJob
 
+from despasito.utils.parallelization import MultiprocessingJob
 from . import calc
-from despasito.utils.parallelization import batch_jobs
+from . import fund_constants as constants
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 #                Phase Equilibrium given xi and T                    #
 #                                                                    #
 ######################################################################
-def phase_xiT(eos, sys_dict):
+def phase_xiT(eos, **sys_dict):
 
     r"""
     Calculate phase diagram given liquid mole fractions, xi, and temperature.
@@ -32,7 +32,7 @@ def phase_xiT(eos, sys_dict):
         An instance of the defined EOS class to be used in thermodynamic computations.
     sys_dict: dict
 
-        - Tlist: (list[float]) - [K] Temperature of the system corresponding to composition in xilist. If one set is given, this temperature will be used for all compositions.
+        - Tlist: (list[float]) Optional - default 298.15 [K] Temperature of the system corresponding to composition in xilist. If one set is given, this temperature will be used for all compositions.
         - xilist: (list[list[float]]) - List of sets of component mole fraction, where sum(xi)=1.0 for each set. Each set of components corresponds to a temperature in Tlist, or if one set is given, this composition will be used for all temperatures.
         - Pguess: (list[float]) - [Pa] Optional, Guess the system pressure at the dew point. A value of None will force an estimation based on the saturation pressure of each component.
         - Pmin: (list[float]) - [Pa] Optional, Set the upper bound for the minimum system pressure at the dew point. If not defined, the default in :func:`~despasito.thermodynamics.calc_xT_phase` is used.
@@ -55,20 +55,21 @@ def phase_xiT(eos, sys_dict):
     if 'Tlist' in sys_dict:
         T_list = np.array(sys_dict['Tlist'],float)
         logger.info("Using Tlist") 
+    else:
+        T_list = np.array([constants.standard_temperature])
+        logger.info("Assuming standard temperature")
 
     if 'xilist' in sys_dict:
         xi_list = np.array(sys_dict['xilist'],float)
         logger.info("Using xilist")
+    else:
+        raise ValueError('Mole fractions, xilist, are not specified')
 
     if 'mpObj' in sys_dict:
         mpObj = sys_dict['mpObj']
         flag_use_mp_object = True
     else:
         flag_use_mp_object = False
-
-    variables = list(locals().keys())
-    if not all([key in variables for key in ["xi_list", "T_list"]]):
-        raise ValueError('Tlist or xilist are not specified')
 
     if np.size(T_list) != np.size(xi_list, axis=0):
         if len(T_list) == 1:
@@ -218,7 +219,7 @@ def _phase_xiT_wrapper(args):
 #                Phase Equilibria given yi and T                     #
 #                                                                    #
 ######################################################################
-def phase_yiT(eos, sys_dict):
+def phase_yiT(eos, **sys_dict):
 
     r"""
     Calculate phase diagram given vapor mole fractions, yi, and temperature.
@@ -231,7 +232,7 @@ def phase_yiT(eos, sys_dict):
         An instance of the defined EOS class to be used in thermodynamic computations.
     sys_dict: dict
 
-        - Tlist: (list[float]) - [K] Temperature of the system corresponding to composition in yilist. If one set is given, this pressure will be used for all compositions.
+        - Tlist: (list[float]) Optional - default 298.15 [K] Temperature of the system corresponding to composition in yilist. If one set is given, this pressure will be used for all compositions.
         - yilist: (list[list[float]]) - List of sets of component mole fraction, where sum(yi)=1.0 for each set. Each set of components corresponds to a temperature in Tlist, or if one set is given, this composition will be used for all temperatures.
         - Pguess: (list[float]) - [Pa] Optional, Guess the system pressure at the dew point. A value of None will force an estimation based on the saturation pressure of each component.
         - method: (str) Optional - Solving method for outer loop that converges pressure. If not given the :func:`~despasito.thermodynamics.calc_yT_phase` default will be used.
@@ -250,14 +251,15 @@ def phase_yiT(eos, sys_dict):
     if 'Tlist' in sys_dict:
         T_list = np.array(sys_dict['Tlist'],float)
         logger.info("Using Tlist")
+    else:
+        T_list = np.array([constants.standard_temperature])
+        logger.info("Assuming standard temperature")
 
     if 'yilist' in sys_dict:
         yi_list = np.array(sys_dict['yilist'],float)
         logger.info("Using yilist")
-
-    variables = list(locals().keys())
-    if not all([key in variables for key in ["yi_list", "T_list"]]):
-        raise ValueError('Tlist or yilist are not specified')
+    else:
+        raise ValueError('Mole fractions, yilist, are not specified')
 
     if np.size(T_list) != np.size(yi_list, axis=0):
         if len(T_list) == 1:
@@ -332,7 +334,6 @@ def phase_yiT(eos, sys_dict):
         P_list, xi_list, flagv_list, flagl_list, obj_list = mpObj.pool_job(_phase_yiT_wrapper, inputs)
     else:
         P_list, xi_list, flagv_list, flagl_list, obj_list = MultiprocessingJob.serial_job(_phase_yiT_wrapper, inputs)
-    #P_list, xi_list, flagv_list, flagl_list, obj_list = batch_jobs( _phase_yiT_wrapper, inputs, ncores=ncores, logger=logger)
 
     logger.info("--- Calculation phase_yiT Complete ---")
 
@@ -369,7 +370,7 @@ def _phase_yiT_wrapper(args):
 #                Phase Equilibria given yi and T                     #
 #                                                                    #
 ######################################################################
-def flash(eos, sys_dict):
+def flash(eos, **sys_dict):
 
     r"""
     Flash calculation of vapor and liquid mole fractions. Only binary systems are currently supported
@@ -382,7 +383,7 @@ def flash(eos, sys_dict):
         An instance of the defined EOS class to be used in thermodynamic computations.
     sys_dict: dict
 
-        - Tlist: (list[float]) - [K] Temperature of the system corresponding Plist. If one value is given, this temperature will be used for all temperatures.
+        - Tlist: (list[float]) Optional - default 298.15 [K] Temperature of the system corresponding Plist. If one value is given, this temperature will be used for all temperatures.
         - Plist: (list[float]) - Pressure of the system corresponding to Tlist. If one value is given, this pressure will be used for all temperatures.
         - mole_fraction_options: (dict) Optional - Keywords used to solve the mole fraction loop in :func:`~despasito.thermodynamics.calc.calc_flash`
         - density_dict: (dict) Optional - Other keyword options for density array :func:`~despasito.thermodynamics.calc.PvsRho` 
@@ -398,13 +399,14 @@ def flash(eos, sys_dict):
         T_list = np.array(sys_dict['Tlist'],float)
         logger.info("Using Tlist")
     else:
-        raise ValueError('Tlist is not specified')
+        T_list = np.array([constants.standard_temperature])
+        logger.info("Assuming standard temperature")
 
     if 'Plist' in sys_dict:
         P_list = np.array(sys_dict['Plist'],float)
         logger.info("Using Plist")
     else:
-        P_list = 101325.0 * np.ones_like(T_list)
+        P_list = constants.standard_pressure * np.ones_like(T_list)
         logger.info("Assuming atmospheric pressure.")
 
     if np.size(T_list) != np.size(P_list, axis=0):
@@ -446,9 +448,8 @@ def flash(eos, sys_dict):
         opts["min_mole_fraction0"] = sys_dict["min_mole_fraction0"]
 
     # Initialize Variables
-    l_c = len(eos.nui)
-    if l_c != 2:
-        raise ValueError("Only binary systems are currently supported for flash calculations, {} were given.".format(l_c))
+    if eos.number_of_components != 2:
+        raise ValueError("Only binary systems are currently supported for flash calculations, {} were given.".format(eos.number_of_components))
     l_x = np.array(T_list).shape[0]
     T_list = np.array(T_list)
     P_list = np.array(P_list)
@@ -473,7 +474,7 @@ def _flash_wrapper(args):
     except:
         logger.warning("T (K), P (Pa): {} {}, calculation did not produce a valid result.".format(T, P))
         logger.debug("Calculation Failed:", exc_info=True)
-        xi, yi, flagl, flagv, obj = [np.nan*np.ones(len(eos.eos_dict["nui"])), np.nan*np.ones(len(eos.eos_dict["nui"])), 3, 3, np.nan]
+        xi, yi, flagl, flagv, obj = [np.nan*np.ones(eos.number_of_components), np.nan*np.ones(eos.number_of_components), 3, 3, np.nan]
 
     logger.info("xi: {}, yi: {}".format(xi, yi))
 
@@ -484,7 +485,7 @@ def _flash_wrapper(args):
 #                Saturation calc for 1 Component                     #
 #                                                                    #
 ######################################################################
-def saturation_properties(eos, sys_dict):
+def saturation_properties(eos, **sys_dict):
 
     r"""
     Computes the saturated pressure, liquid, and gas density a one component phase at a temperature.
@@ -497,8 +498,7 @@ def saturation_properties(eos, sys_dict):
         An instance of the defined EOS class to be used in thermodynamic computations.
     sys_dict: dict
 
-        - Tlist: (list[float]) - [K] Temperature of the system corresponding Plist. If one value is given, this temperature will be used for all temperatures.
-        - xilist: (list[list[float]]) - List of sets of component mole fraction, where sum(xi)=1.0 for each set. Each set of components corresponds to a temperature in Tlist, or if one set is given, this composition will be used for all temperatures.
+        - Tlist: (list[float]) Optional - default: 298.15 [K] Temperature of the system corresponding Plist. If one value is given, this temperature will be used for all temperatures.
         - density_dict: (dict) Optional - Other keyword options for density array :func:`~despasito.thermodynamics.calc.PvsRho` 
 
     Returns
@@ -512,27 +512,13 @@ def saturation_properties(eos, sys_dict):
         T_list = np.array(sys_dict['Tlist'],float)
         logger.info("Using Tlist")
     else:
-        raise ValueError('Tlist is not specified')
+        T_list = np.array([constants.standard_temperature])
+        logger.info("Using standard temperature")
 
     if 'xilist' in sys_dict:
         xi_list = np.array(sys_dict['xilist'],float)
-        logger.info("Using xilist")
     else:
         xi_list = np.array([[1.0] for x in range(len(T_list))])
-
-    variables = list(locals().keys())
-    if not all([key in variables for key in ["xi_list", "T_list"]]):
-        raise ValueError('Tlist or xilist are not specified')
-
-    if np.size(T_list) != np.size(xi_list, axis=0):
-        if len(T_list) == 1:
-            T_list = np.ones(len(xi_list))*T_list[0]
-            logger.info("The same temperature, {}, was used for all mole fraction values".format(T_list[0]))
-        elif len(xi_list) == 1:
-            xi_list = [xi_list[0] for i in T_list]
-            logger.info("The same mole fraction set, {}, was used for all temperature values".format(xi_list[0]))
-        else:
-            raise ValueError("The number of provided temperatures and mole fraction sets are different")
 
     ## Optional values
     opts = {}
@@ -587,7 +573,7 @@ def _saturation_properties_wrapper(args):
 #                Liquid density given xi, T, and P                   #
 #                                                                    #
 ######################################################################
-def liquid_properties(eos, sys_dict):
+def liquid_properties(eos, **sys_dict):
 
     r"""
     Computes the liquid density and chemical potential given a temperature, pressure, and liquid mole fractions.
@@ -600,8 +586,8 @@ def liquid_properties(eos, sys_dict):
         An instance of the defined EOS class to be used in thermodynamic computations.
     sys_dict: dict
 
-        - Tlist: (list[float]) - [K] Temperature of the system corresponding Plist. If one value is given, this temperature will be used for all temperatures.
         - xilist: (list[list[float]]) - List of sets of component mole fraction, where sum(xi)=1.0 for each set. Each set of components corresponds to a temperature in Tlist, or if one set is given, this composition will be used for all temperatures.
+        - Tlist: (list[float]) Optional - default: 298.15 [K] Temperature of the system corresponding Plist. If one value is given, this temperature will be used for all temperatures.
         - Plist: (list[float]) Optional - default: 101325.0 Pa. Pressure of the system corresponding to Tlist. If one value is given, this pressure will be used for all temperatures.
         - density_dict: (dict) Optional - Other keyword options for density array :func:`~despasito.thermodynamics.calc.PvsRho` 
 
@@ -615,17 +601,19 @@ def liquid_properties(eos, sys_dict):
     if 'Tlist' in sys_dict:
         T_list = np.array(sys_dict['Tlist'],float)
         logger.info("Using Tlist")
+    else:
+        T_list = np.array([constants.standard_temperature])
+        logger.info("Assuming standard temperature")
 
     if 'xilist' in sys_dict:
         xi_list = np.array(sys_dict['xilist'],float)
         logger.info("Using xilist")
     else:
-        logger.info("Array xilist wasn't specified, assume one component system")
-        xi_list = [[1.0] for i in T_list]
-
-    variables = list(locals().keys())
-    if not all([key in variables for key in ["xi_list", "T_list"]]):
-        raise ValueError('Tlist or xilist are not specified')
+        if eos.number_of_components == 1:
+            logger.info("Array xilist wasn't specified, assume one component system")
+            xi_list = [[1.0] for i in T_list]
+        else:
+            raise ValueError("With more than one component, xilist must be provided.")
 
     if np.size(T_list) != np.size(xi_list, axis=0):
         if len(T_list) == 1:
@@ -649,7 +637,7 @@ def liquid_properties(eos, sys_dict):
                 raise ValueError("The number of provided temperatures and pressure sets are different")
         logger.info("Using Plist")
     else:
-        P_list = 101325.0 * np.ones_like(T_list)
+        P_list = constants.standard_pressure * np.ones_like(T_list)
         logger.info("Assuming atmospheric pressure.")
 
     if 'mpObj' in sys_dict:
@@ -693,7 +681,7 @@ def _liquid_properties_wrapper(args):
     except:
         logger.warning('Failed to calculate rhol at {} K and {} Pa'.format(T,P))
         rhol, flagl = np.nan, 3
-        phil = np.nan*np.ones(len(eos.eos_dict["nui"]))
+        phil = np.nan*np.ones(eos.number_of_components)
 
     return rhol, phil, flagl
 
@@ -702,7 +690,7 @@ def _liquid_properties_wrapper(args):
 #                Vapor density given yi, T, and P                    #
 #                                                                    #
 ######################################################################
-def vapor_properties(eos, sys_dict):
+def vapor_properties(eos, **sys_dict):
 
     r"""
     Computes the vapor density and chemical potential given a temperature, pressure, and vapor mole fractions.
@@ -715,8 +703,8 @@ def vapor_properties(eos, sys_dict):
         An instance of the defined EOS class to be used in thermodynamic computations.
     sys_dict: dict
 
-        - Tlist: (list[float]) - [K] Temperature of the system corresponding Plist. If one value is given, this temperature will be used for all temperatures.
         - yilist: (list[list[float]]) - List of sets of component mole fraction, where sum(yi)=1.0 for each set. Each set of components corresponds to a temperature in Tlist, or if one set is given, this composition will be used for all temperatures.
+        - Tlist: (list[float]) Optional - default: 298.15 [K] Temperature of the system corresponding Plist. If one value is given, this temperature will be used for all temperatures.
         - Plist: (list[float]) Optional - default: 101325.0 Pa. Pressure of the system corresponding to Tlist. If one value is given, this pressure will be used for all temperatures.
         - density_dict: (dict) Optional - Other keyword options for density array :func:`~despasito.thermodynamics.calc.PvsRho` 
 
@@ -730,17 +718,19 @@ def vapor_properties(eos, sys_dict):
     if 'Tlist' in sys_dict:
         T_list = np.array(sys_dict['Tlist'],float)
         logger.info("Using Tlist")
+    else:
+        logger.info("Assuming standard temperature")
+        T_list = np.array([constants.standard_temperature])
 
     if 'yilist' in sys_dict:
         yi_list = np.array(sys_dict['yilist'],float)
         logger.info("Using yilist")
     else:
-        logger.info("Array yilist wasn't specified, assume one component system")
-        yi_list = [[1.0] for i in T_list]
-
-    variables = list(locals().keys())
-    if not all([key in variables for key in ["yi_list", "T_list"]]):
-        raise ValueError('Tlist or yilist are not specified')
+        if eos.number_of_components == 1:
+            logger.info("Array yilist wasn't specified, assume one component system")
+            yi_list = [[1.0] for i in T_list]
+        else:
+            raise ValueError("With more than one component, yilist must be provided.")
 
     if np.size(T_list) != np.size(yi_list, axis=0):
         if len(T_list) == 1:
@@ -764,7 +754,7 @@ def vapor_properties(eos, sys_dict):
                 raise ValueError("The number of provided temperatures and pressure sets are different")
         logger.info("Using Plist")
     else:
-        P_list = 101325.0 * np.ones_like(T_list)
+        P_list = constants.standard_pressure * np.ones_like(T_list)
         logger.info("Assuming atmospheric pressure.")
 
     if 'mpObj' in sys_dict:
@@ -807,7 +797,7 @@ def _vapor_properties_wrapper(args):
     except:
         logger.warning('Failed to calculate rhov at {} K and {} Pa'.format(T,P))
         rhov, flagv = np.nan, 3
-        phiv = np.nan*np.ones(len(eos.eos_dict["nui"]))
+        phiv = np.nan*np.ones(eos.number_of_components)
 
     return rhov, phiv, flagv
 
@@ -817,7 +807,7 @@ def _vapor_properties_wrapper(args):
 #                                                                    #
 ######################################################################
 
-def solubility_parameter(eos, sys_dict):
+def solubility_parameter(eos, **sys_dict):
 
     r"""
     Calculate the Hildebrand solubility parameter based on temperature and composition. This function is based on the method used in Zeng, Z., Y. Xi, and Y. Li "Calculation of Solubility Parameter Using Perturbed-Chain SAFT and Cubic-Plus-Association Equations of State" Ind. Eng. Chem. Res. 2008, 47, 9663–9669.
@@ -830,7 +820,7 @@ def solubility_parameter(eos, sys_dict):
         An instance of the defined EOS class to be used in thermodynamic computations.
     sys_dict: dict
 
-        - Tlist: (list[float]) - [K] Temperature of the system corresponding Plist. If one value is given, this temperature will be used for all temperatures.
+        - Tlist: (list[float]) Optional - default: 298.15 [K] Temperature of the system corresponding Plist. If one value is given, this temperature will be used for all temperatures.
         - xilist: (list[list[float]]) Optional - default: [1.0] assuming all of one component. List of sets of component mole fraction, where sum(xi)=1.0 for each set. Each set of components corresponds to a temperature in Tlist, or if one set is given, this composition will be used for all temperatures.
         - Plist: (list[float]) Optional - default: 101325.0 Pa. Pressure of the system corresponding to Tlist. If one value is given, this pressure will be used for all temperatures.
         - dT: (float) Optional - Change in temperature used in calculating the derivative with central difference method. See func:`~despasito.thermodynamics.calc.hildebrand_solubility` for default.
@@ -848,17 +838,16 @@ def solubility_parameter(eos, sys_dict):
         T_list = np.array(sys_dict['Tlist'],float)
         logger.info("Using Tlist")
         del sys_dict['Tlist']
-
-    variables = list(locals().keys())
-    if not all([key in variables for key in ["T_list"]]):
-        raise ValueError('Tlist are not specified')
+    else:
+        logger.info("Assuming standard temperature")
+        T_list = np.array([constants.standard_temperature])
 
     if "Plist" in sys_dict:
         P_list = np.array(sys_dict['Plist'])
         logger.info("Using Plist")
         del sys_dict['Plist']
     else:
-        P_list = 101325.0 * np.ones_like(T_list)
+        P_list = constants.standard_pressure * np.ones_like(T_list)
         logger.info("Assuming atmospheric pressure.")
 
     if "xilist" in sys_dict:
@@ -866,8 +855,11 @@ def solubility_parameter(eos, sys_dict):
         logger.info("Using xilist")
         del sys_dict['xilist']
     else:
-        xi_list = np.array([[1.0] for x in range(len(T_list))])
-        logger.info("Single mole fraction of one.")
+        if eos.number_of_components == 1:
+            xi_list = np.array([[1.0] for x in range(len(T_list))])
+            logger.info("Single mole fraction of one.")
+        else:
+            raise ValueError("Mole fractions, xilist, must be specified")
 
     if np.size(T_list) != np.size(xi_list, axis=0):
         if len(T_list) == 1:
@@ -940,7 +932,7 @@ def _solubility_parameter_wrapper(args):
 #                                                                    #
 ######################################################################
 
-def verify_eos(eos, sys_dict):
+def verify_eos(eos, **sys_dict):
 
     r"""
     The following consistency checks are performed to ensure the calculated fugacity coefficients are thermodynamically consistent.
@@ -956,7 +948,7 @@ def verify_eos(eos, sys_dict):
         An instance of the defined EOS class to be used in thermodynamic computations.
     sys_dict: dict
 
-        - Tlist: (list[float]) - [K] Temperature of the system corresponding Plist. If one value is given, this temperature will be used for all temperatures.
+        - Tlist: (list[float]) Optional - default: 298.15 [K] Temperature of the system corresponding Plist. If one value is given, this temperature will be used for all temperatures.
         - xilist: (list[list[float]]) Optional - default: Array of 11 values from x1=0 to x1=1 for binary array. List of sets of component mole fraction, where sum(xi)=1.0 for each set. Each set of components corresponds to a temperature in Tlist, or if one set is given, this composition will be used for all temperatures.
         - Plist: (list[float]) Optional - default: 101325.0 Pa. Pressure of the system corresponding to Tlist. If one value is given, this pressure will be used for all temperatures.
         - density_dict: (dict) Optional - Other keyword options for density array :func:`~despasito.thermodynamics.calc.PvsRho` 
@@ -969,12 +961,11 @@ def verify_eos(eos, sys_dict):
 
     ## Extract and check input data
 
-    ncomp = len(eos.nui)
     if "xilist" in sys_dict:
         xi_list = np.array(sys_dict['xilist'])
         logger.info("Using xilist")
         del sys_dict['xilist']
-    elif ncomp == 2:
+    elif eos.number_of_components == 2:
         tmp = np.linspace(0,1,11)
         xi_list = np.array([[x, 1.0-x] for x in tmp])
         logger.info("Use array of mole fractions")
@@ -986,7 +977,7 @@ def verify_eos(eos, sys_dict):
         logger.info("Using Tlist")
         del sys_dict['Tlist']
     else:
-        T_list = 298.15*np.array(len(xi_list))
+        T_list = constants.standard_temperature*np.array(len(xi_list))
         logger.info("Assume 298.15 K")
 
     if "Plist" in sys_dict:
@@ -994,7 +985,7 @@ def verify_eos(eos, sys_dict):
         logger.info("Using Plist")
         del sys_dict['Plist']
     else:
-        P_list = 101325.0 * np.ones_like(T_list)
+        P_list = constants.standard_pressure * np.ones_like(T_list)
         logger.info("Assuming atmospheric pressure.")
 
     if np.size(T_list) != np.size(xi_list, axis=0):

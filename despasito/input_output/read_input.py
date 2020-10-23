@@ -43,7 +43,7 @@ def append_data_file_path(input_dict, path='.'):
 #                  Extract Bead Data                                 #
 #                                                                    #
 ######################################################################
-def extract_calc_data(input_fname, path='.', **args):
+def extract_calc_data(input_fname, path='.', **thermo_dict):
 
     """
     Parse dictionary from .json input file into a dictionaries.
@@ -79,7 +79,7 @@ def extract_calc_data(input_fname, path='.', **args):
     #process input file
     if 'beadconfig' in input_dict:
         beads, nui = process_bead_data(input_dict['beadconfig'])
-        eos_dict = {'beads':beads,'nui':nui}
+        eos_dict = {'beads':beads, 'nui':nui}
     elif "opt_params" in input_dict:
         eos_dict = {}
     else:
@@ -99,14 +99,6 @@ def extract_calc_data(input_fname, path='.', **args):
     except:
         logger.info("No EOScross file specified")
 
-    ## Make dictionary of data needed for thermodynamic calculation
-    EOS_flags = ['jit', 'cython']
-    thermo_dict = {}
-    for key, value in args.items():
-        if key in EOS_flags:
-            eos_dict[key] = value
-        else:
-            thermo_dict[key] = value
     # Extract relevant system state inputs
     EOS_dict_keys = ['beadconfig', 'EOSgroup', 'EOScross',"output_file"]
     for key, value in input_dict.items():
@@ -284,8 +276,8 @@ def process_param_fit_inputs(thermo_dict):
 
             - fit_bead (str) - Name of bead whose parameters are being fit, should be in bead list of beadconfig
             - fit_params (list[str]) - This list of contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
-            - bounds (numpy.ndarray) - List of lists of length two, of length equal to fit_params. If no bounds were given then the default parameter boundaries are [0,1e+4], else bounds given as \*_bounds in input file are used.
             - beadparams0 (list[float]), Optional - Initial guess in parameter. If one is not provided, a guess is made based on the type of parameter from eos object.
+            - \*_bounds (list[float]), Optional - This list contains the minimum and maximum of the parameter from a parameter listed in fit_params, represented in place of the asterisk. See input file instructions for more information.
 
         - exp_data (dict) - This dictionary is made up of a dictionary for each data set that the parameters are fit to. Each key is an arbitrary string used to identify the data set and used later in reporting objective function values during the fitting process. See data type objects for more details.
 
@@ -296,46 +288,15 @@ def process_param_fit_inputs(thermo_dict):
     new_thermo_dict = {"exp_data":{}}
 
     for key, value in thermo_dict.items():
-        if key == "opt_params": 
-            new_opt_params = {}
-            keys_del = []
-            new_opt_params["bounds"] = [[0,1e+4] for x in range(len(value["fit_params"]))]
-            for key2, value2 in value.items():
-                if "bounds" in key2:
-                    tmp  = key2.replace("_bounds","")
-                    if tmp in value["fit_params"]:
-                        ind = value["fit_params"].index(tmp)
-                        new_opt_params["bounds"][ind] = value2
-                    else:
-                        logger.warning("Bounds for parameter type '{}' were given, but this parameter is not defined to be fit.".format(tmp))
-                else:
-                    new_opt_params[key2] = value2
-                    continue
-                keys_del.append(key2)
-            for key2 in keys_del:
-                value.pop(key2,None)
-
-            if value:
-               logger.info("The opt_params keys: {}, were not used.".format(", ".join(list(value.keys()))))
-            new_thermo_dict[key] = new_opt_params
-
-        elif (type(value) == dict and "datatype" in value):
+        if (type(value) == dict and "datatype" in value):
             new_thermo_dict["exp_data"][key] = process_exp_data(value)
-
         else:
             new_thermo_dict[key] = value
-
-    # Move opt_params values to thermo_dict
-    keys = ["bounds","minimizer_dict"]
-    for key in keys:
-        if key in new_thermo_dict["opt_params"]:
-            new_thermo_dict[key] = new_thermo_dict["opt_params"][key]
-            new_thermo_dict["opt_params"].pop(key,None)
 
     test1 = set(["exp_data","opt_params"]).issubset(list(new_thermo_dict.keys()))
     test2 = set(["fit_bead","fit_params"]).issubset(list(new_thermo_dict["opt_params"].keys()))
     if not all([test1,test2]):
-        raise ValueError("An exp_data and opt_params dictionary with, fit_beads and fit_params must be given")
+        raise ValueError("An exp_data dictionary as well as an opt_params dictionary with fit_beads and fit_params must be provided.")
 
     return new_thermo_dict
 

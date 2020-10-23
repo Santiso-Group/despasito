@@ -36,5 +36,4 @@ def test_process_bead_data(data):
 #def test_file2paramdict(key,answer):
 #    """Test conversion of txt file to dictionary"""
 #    rho_dict = ri.file2paramdict("example/dens_params.txt")
-#    print(rho_dict)
 #    assert rho_dict[key] == pytest.approx(answer,abs=1e-7)

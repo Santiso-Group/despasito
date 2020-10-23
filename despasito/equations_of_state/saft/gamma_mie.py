@@ -13,7 +13,7 @@ import os
 import sys
 #np.set_printoptions(threshold=sys.maxsize)
 
-import despasito.equations_of_state.toolbox as tb
+import despasito.equations_of_state.eos_toolbox as tb
 from despasito.equations_of_state import constants
 import despasito.equations_of_state.saft.saft_toolbox as stb
 from despasito.equations_of_state.saft import Aassoc
@@ -33,7 +33,7 @@ elif not method_stat.disable_numba:
     from .compiled_modules.ext_gamma_mie_numba import calc_a1s, calc_Bkl, calc_a1ii, calc_a1s_eff, calc_Bkl_eff, calc_da1iidrhos, calc_da2ii_1pchi_drhos
     from .compiled_modules.ext_gamma_mie_python import prefactor, calc_Iij
 
-class gamma_mie():
+class SaftType():
 
     r"""
     
@@ -65,7 +65,7 @@ class gamma_mie():
     
     """
 
-    def __init__(self, kwargs):
+    def __init__(self, **kwargs):
     
         self.Aideal_method = "Abroglie"
         self.parameter_types = ["epsilon", "sigma", "l_r", "l_a", "Sk", "rc", "rd", "epsilonHB", "K"]

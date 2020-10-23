@@ -643,6 +643,8 @@ def calc_rhov(P, T, xi, eos, density_dict={}):
 
     logger.info("    Vapor Density: {} mol/m^3, flag {}".format(rho_tmp,flag))
 
+    #PvsV_plot(vlist, Plist, Pvspline, markers=extrema)
+
     # Flag: 0 is vapor, 1 is liquid, 2 mean a critical fluid, 3 means that neither is true, 4 means we should assume ideal gas
     return rho_tmp, flag
 
@@ -1634,7 +1636,7 @@ def calc_Prange_yi(T, xi, yi, eos, density_dict={}, mole_fraction_options={}, Pm
 #                       Solve Yi for xi and T                        #
 #                                                                    #
 ######################################################################
-def solve_yi_xiT(yi, xi, phil, P, T, eos, density_dict={}, maxiter=50, tol=1e-6):
+def solve_yi_xiT(yi, xi, phil, P, T, eos, density_dict={}, maxiter=50, tol=1e-6, **kwargs):
     r"""
     Find vapor mole fraction given pressure, liquid mole fraction, and temperature.
 
@@ -1661,6 +1663,8 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, density_dict={}, maxiter=50, tol=1e-6)
         Maximum number of iteration for both the outer pressure and inner vapor mole fraction loops
     tol : float, Optional, default: 1e-6
         Tolerance in sum of predicted yi "mole numbers"
+    kwargs : dict, Optional
+        Other options for find_new_yi
 
     Returns
     -------
@@ -1694,7 +1698,7 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, density_dict={}, maxiter=50, tol=1e-6)
             flag_check_vapor = False
             if (all(yi_tmp != 0.) and len(yi_tmp)==2):
                 logger.info("    Composition doesn't produce a vapor, let's find one!")
-                yi_tmp = find_new_yi(P, T, phil, xi, eos, density_dict=density_dict)
+                yi_tmp = find_new_yi(P, T, phil, xi, eos, density_dict=density_dict, **kwargs)
                 flag_trivial_sol = False
                 if np.any(np.isnan(yi_tmp)):
                     phiv, rhov, flagv = [np.nan, np.nan, 3]
@@ -1710,7 +1714,7 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, density_dict={}, maxiter=50, tol=1e-6)
             flag_trivial_sol = False
             if (all(yi_tmp != 0.) and len(yi_tmp)==2):
                 logger.info("    Composition produces trivial solution, let's find a different one!")
-                yi_tmp = find_new_yi(P, T, phil, xi, eos, density_dict=density_dict)
+                yi_tmp = find_new_yi(P, T, phil, xi, eos, density_dict=density_dict, **kwargs)
                 flag_check_vapor = False
             else:
                 logger.info("    Composition produces trivial solution, using random guess to reset")
@@ -1774,7 +1778,7 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, density_dict={}, maxiter=50, tol=1e-6)
         tmp = (np.abs(yi2[ind_tmp] - yi_tmp[ind_tmp]) / yi_tmp[ind_tmp])
         logger.warning('    More than {} iterations needed. Error in Smallest Fraction: {}%'.format(maxiter, tmp*100))
         if tmp > .1: # If difference is greater than 10%
-            yinew = find_new_yi(P, T, phil, xi, eos, density_dict=density_dict)
+            yinew = find_new_yi(P, T, phil, xi, eos, density_dict=density_dict, **kwargs)
             yi2 = yinew/np.sum(yinew)
         y1 = spo.least_squares(obj_yi, yi2[0], bounds=(0.,1.), args=(P, T, phil, xi, eos, density_dict))
         yi = y1.x[0]
@@ -1794,7 +1798,7 @@ def solve_yi_xiT(yi, xi, phil, P, T, eos, density_dict={}, maxiter=50, tol=1e-6)
 #                       Solve Yi for xi and T                        #
 #                                                                    #
 ######################################################################
-def solve_xi_yiT(xi, yi, phiv, P, T, eos, density_dict={}, maxiter=20, tol=1e-6):
+def solve_xi_yiT(xi, yi, phiv, P, T, eos, density_dict={}, maxiter=20, tol=1e-6, **kwargs):
     r"""
     Find liquid mole fraction given pressure, vapor mole fraction, and temperature. 
 
@@ -1821,6 +1825,8 @@ def solve_xi_yiT(xi, yi, phiv, P, T, eos, density_dict={}, maxiter=20, tol=1e-6)
         Maximum number of iteration for both the outer pressure and inner vapor mole fraction loops
     tol : float, Optional, default: 1e-6
         Tolerance in sum of predicted xi "mole numbers"
+    kwargs : dict, Optional
+        Optional keywords for find_new_xi
 
     Returns
     -------
@@ -1855,7 +1861,7 @@ def solve_xi_yiT(xi, yi, phiv, P, T, eos, density_dict={}, maxiter=20, tol=1e-6)
                 logger.error("Fugacity coefficient of liquid should not be NaN")
             else:
                 flag_nan = True
-                xi_tmp = find_new_xi(P, T, phiv, yi, eos, density_dict=density_dict)
+                xi_tmp = find_new_xi(P, T, phiv, yi, eos, density_dict=density_dict, **kwargs)
                 phil, rhol, flagl = calc_phil(P, T, xi_tmp, eos, density_dict=density_dict)
                 xinew = yi * phiv / phil
         else:
@@ -1885,7 +1891,7 @@ def solve_xi_yiT(xi, yi, phiv, P, T, eos, density_dict={}, maxiter=20, tol=1e-6)
         tmp = (np.abs(xi2[ind_tmp] - xi_tmp[ind_tmp]) / xi_tmp[ind_tmp])
         logger.warning('    More than {} iterations needed. Error in Smallest Fraction: {} %%'.format(maxiter, tmp*100))
         if tmp > .1: # If difference is greater than 10%
-            xinew = find_new_xi(P, T, phiv, yi, eos, density_dict=density_dict)
+            xinew = find_new_xi(P, T, phiv, yi, eos, density_dict=density_dict, **kwargs)
         xinew = spo.least_squares(obj_xi, xinew[0], bounds=(0.,1.), args=(P, T, phiv, yi, eos, density_dict))
         xi = xinew.x[0]
         xi_tmp = np.array([xi,1-xi])
@@ -2458,16 +2464,16 @@ def setPsat(ind, eos):
         Bead name of the component that is above it's critical point
     """
 
-    for j in range(np.size(eos.nui[ind])):
-        if eos.nui[ind][j] > 0.0 and eos.beads[j] == "CO2":
+    for j in range(np.size(eos.eos_dict['nui'][ind])):
+        if eos.eos_dict['nui'][ind][j] > 0.0 and eos.beads[j] == "CO2":
             Psat = 10377000.0
-        elif eos.nui[ind][j] > 0.0 and eos.beads[j] == "N2":
+        elif eos.eos_dict['nui'][ind][j] > 0.0 and eos.beads[j] == "N2":
             Psat = 7377000.0
-        elif eos.nui[ind][j] > 0.0 and ("CH4" in eos.beads[j]):
+        elif eos.eos_dict['nui'][ind][j] > 0.0 and ("CH4" in eos.beads[j]):
             Psat = 6377000.0
-        elif eos.nui[ind][j] > 0.0 and ("CH3CH3" in eos.beads[j]):
+        elif eos.eos_dict['nui'][ind][j] > 0.0 and ("CH3CH3" in eos.beads[j]):
             Psat = 7377000.0
-        elif eos.nui[ind][j] > 0.0:
+        elif eos.eos_dict['nui'][ind][j] > 0.0:
             #Psat = np.nan
             Psat = 7377000.0
             NaNbead = eos.beads[j]
@@ -2775,12 +2781,10 @@ def calc_flash(P, T, eos, density_dict={}, maxiter=200, tol=1e-9, max_mole_fract
     """
 
     # Initialize Variables
-    lx = len(eos.nui)
+    if eos.number_of_components != 2:
+        raise ValueError("Only binary systems are currently supported for flash calculations, {} were given.".format(eos.number_of_components))
 
-    if lx != 2:
-        raise ValueError("Only binary systems are currently supported for flash calculations, {} were given.".format(lx))
-
-    Psat, Ki0, xi, yi, phil, phiv = [np.zeros(lx) for i in np.arange(6)]
+    Psat, Ki0, xi, yi, phil, phiv = [np.zeros(eos.number_of_components) for i in np.arange(6)]
 
     # Calculate Psat and Ki
     for i in range(np.size(xi)):

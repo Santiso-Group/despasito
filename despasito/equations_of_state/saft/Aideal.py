@@ -13,7 +13,7 @@ import logging
 import sys
 
 from despasito.equations_of_state import constants
-import despasito.equations_of_state.toolbox as tb
+import despasito.equations_of_state.eos_toolbox as tb
 
 logger = logging.getLogger(__name__)
 

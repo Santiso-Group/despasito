@@ -7,17 +7,26 @@
 
 # All folders in this directory refer back to this interface
 
+import numpy as np
+
 from abc import ABC, abstractmethod
 
 
 # __________________ EOS Interface _________________
-class EOStemplate(ABC):
+class EosTemplate(ABC):
 
     """
     Interface used in all EOS object options.
 
     By using this template, all EOS objects are then easily exchanged.
     """
+
+    def __init__(self, beads, beadlibrary, **kwargs):
+
+        self.number_of_components = np.nan
+        for bead in beads:
+            if bead not in beadlibrary:
+                raise ValueError("The group, '{}', was not found in parameter library".format(bead))
 
     @abstractmethod
     def pressure(self, rho, T, xi):

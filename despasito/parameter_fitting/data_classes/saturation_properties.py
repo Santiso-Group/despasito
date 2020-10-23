@@ -6,10 +6,8 @@ import numpy as np
 import logging
 
 from despasito.thermodynamics import thermo
-from despasito.fit_parameters import fit_funcs as ff
-from despasito.fit_parameters.interface import ExpDataTemplate
-from despasito.utils.parallelization import MultiprocessingJob
-
+from despasito.parameter_fitting import fit_funcs as ff
+from despasito.parameter_fitting.interface import ExpDataTemplate
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +19,7 @@ logger = logging.getLogger(__name__)
 class Data(ExpDataTemplate):
 
     r"""
-    Object for hildebrand solubility parameters. This data is evaluated with "solubility_parameter". 
+    Object for saturation data. This data is evaluated with "saturation_properties". 
 
     Parameters
     ----------
@@ -31,34 +29,39 @@ class Data(ExpDataTemplate):
         * name : str, data type, in this case SatProps
         * calculation_type : str, Optional, default: 'saturation_properties
         * T : list, List of temperature values for calculation
-        * P : list, List of pressure values used in calculations
-        * xi : list, List of liquid mole fractions used in calculations.
+        * xi : list, (or yi) List of liquid mole fractions used in saturation properties calculations, should be 1 for the molecule of focus and 0 for the rest.
         * weights : dict, A dictionary where each key is the header used in the exp. data file. The value associated with a header can be a list as long as the number of data points to multiply by the objective value associated with each point, or a float to multiply the objective value of this data set.
+        * objective_method : str, The 'method' keyword in function despasito.parameter_fitting.fit_funcs.obj_function_form.
         * density_dict : dict, Optional, default: {"minrhofrac":(1.0 / 60000.0), "rhoinc":10.0, "vspacemax":1.0E-4}, Dictionary of options used in calculating pressure vs. mole fraction curves.
 
     Attributes
     ----------
     name : str
-        Data type, in this case SolubilityParam
+        Data type, in this case SatProps
     weights : dict, Optional, deafault: {"some_property": 1.0 ...}
         Dicitonary corresponding to thermodict, with weighting factor or vector for each system property used in fitting
     thermodict : dict
         Dictionary of inputs needed for thermodynamic calculations
         
-        - calculation_type (str) default: solubility_parameter
-        - density_dict (dict) default: {"minrhofrac":(1.0 / 300000.0), "rhoinc":10.0, "vspacemax":1.0E-4}
+        - calculation_type (str) default: saturation_properties
+        - density_dict (dict) default: {"minrhofrac":(1.0 / 80000.0), "rhoinc":10.0, "vspacemax":1.0E-4}
+        
     """
 
     def __init__(self, data_dict):
 
         super().__init__(data_dict)
         
+        # If required items weren't defined, set defaults
         if self.thermodict["calculation_type"] == None:
-            self.thermodict["calculation_type"] = "solubility_parameter"
-        
-        if 'density_dict' not in self.thermodict:
-            self.thermodict["density_dict"] = {}
+            self.thermodict["calculation_type"] = "saturation_properties"
 
+        tmp = {"minrhofrac":(1.0 / 80000.0), "rhoinc":10.0, "vspacemax":1.0E-4}
+        if 'density_dict' in self.thermodict:
+            tmp.update(self.thermodict["density_dict"])
+        self.thermodict["density_dict"] = tmp
+
+        # Extract system data
         if "xi" in data_dict:
             self.thermodict["xilist"] = data_dict["xi"]
         if "yi" in data_dict:
@@ -72,28 +75,42 @@ class Data(ExpDataTemplate):
             if key in self.weights:
                 if type(self.weights[key]) != float and len(self.weights[key]) != len(self.thermodict[key]):
                     raise ValueError("Array of weights for '{}' values not equal to number of experimental values given.".format(key))
-        if "P" in data_dict:
-            self.thermodict["Plist"] = data_dict["P"]
-            if 'P' in self.weights:
-                self.weights['Plist'] = self.weights.pop('P')
-        if "delta" in data_dict:
-            key = 'delta'
-            self.thermodict["delta"] = data_dict["delta"]
+        if "rhov" in data_dict:
+            key = "rhov"
+            self.thermodict["rhov"] = data_dict["rhov"]
             if key in self.weights:
                 if type(self.weights[key]) != float and len(self.weights[key]) != len(self.thermodict[key]):
                     raise ValueError("Array of weights for '{}' values not equal to number of experimental values given.".format(key))
+        if "P" in data_dict:
+            self.thermodict["Psat"] = data_dict["P"]
+            if 'P' in self.weights:
+                self.weights['Psat'] = self.weights.pop('P')
+        if "Psat" in data_dict:
+            self.thermodict["Psat"] = data_dict["Psat"]
+            if 'Psat' in self.weights:
+                self.weights['Psat'] = self.weights.pop('Psat')
 
-        if "Tlist" not in self.thermodict and "delta" not in self.thermodict:
-            raise ImportError("Given solubility data, value(s) for T and delta should have been provided.")
+        key = "Psat"
+        if key in self.weights:
+            if type(self.weights[key]) != float and len(self.weights[key]) != len(self.thermodict[key]):
+                raise ValueError("Array of weights for '{}' values not equal to number of experimental values given.".format(key))
 
-        self.npoints = len(self.thermodict["Tlist"])
+        tmp = ["Tlist"]
+        if not all([x in self.thermodict.keys() for x in tmp]):
+            raise ImportError("Given saturation data, value(s) for T should have been provided.")
 
-        for key in self.thermodict.keys():
+        tmp = ["Psat","rhol","rhov"]
+        if not any([x in self.thermodict.keys() for x in tmp]):
+            raise ImportError("Given saturation data, values for Psat, rhol, and/or rhov should have been provided.")
+
+        for key in self.thermodict:
             if key not in self.weights:
                 if key not in ['calculation_type',"density_dict","mpObj"]:
                     self.weights[key] = 1.0
 
-        logger.info("Data type 'solubility parameter' initiated with calculation_type, {}, and data types: {}.\nWeight data by: {}".format(self.thermodict["calculation_type"],", ".join(self.thermodict.keys()),self.weights))
+        self.npoints = len(self.thermodict["Tlist"])
+
+        logger.info("Data type 'saturation_properties' initiated with calculation_type, {}, and data types: {}.\nWeight data by: {}".format(self.thermodict["calculation_type"],", ".join(self.thermodict.keys()),self.weights))
 
     def _thermo_wrapper(self):
 
@@ -108,17 +125,17 @@ class Data(ExpDataTemplate):
 
         # Check bead type
         if 'xilist' not in self.thermodict:
-            if len(self.eos.nui) > 1:
+            if self.eos.number_of_components > 1:
                 raise ValueError("Ambiguous instructions. Include xi to define intended component to obtain saturation properties")
             else:
                 self.thermodict['xilist'] = np.array([[1.0] for x in range(len(self.thermodict['Tlist']))])
-
+ 
         # Run thermo calculations
         try:
-            output_dict = thermo(self.eos, self.thermodict)
-            output = [output_dict["delta"],output_dict["rhol"]]
+            output_dict = thermo(self.eos, **self.thermodict)
+            output = [output_dict["Psat"],output_dict["rhol"],output_dict["rhov"]]
         except:
-            raise ValueError("Calculation of solubility_parameter failed")
+            raise ValueError("Calculation of calc_Psat failed")
 
         return output
 
@@ -133,7 +150,7 @@ class Data(ExpDataTemplate):
         obj_val : float
             A value for the objective function
         """
-
+        
         phase_list = self._thermo_wrapper()
 
         ## Reformat array of results
@@ -141,13 +158,15 @@ class Data(ExpDataTemplate):
         phase_list = np.transpose(np.array(phase_list))
 
         # objective function
-        obj_value = np.zeros(2)
-        if "delta" in self.thermodict:
-            obj_value[0] = ff.obj_function_form(phase_list[0], self.thermodict['delta'], weights=self.weights['delta'], **self.obj_opts)
+        obj_value = np.zeros(3)
+        if "Psat" in self.thermodict:
+            obj_value[0] = ff.obj_function_form(phase_list[0], self.thermodict['Psat'], weights=self.weights['Psat'], **self.obj_opts)
         if "rhol" in self.thermodict:
             obj_value[1] = ff.obj_function_form(phase_list[1], self.thermodict['rhol'], weights=self.weights['rhol'], **self.obj_opts)
+        if "rhov" in self.thermodict:
+            obj_value[2] = ff.obj_function_form(phase_list[2], self.thermodict['rhov'], weights=self.weights['rhov'], **self.obj_opts)
 
-        logger.debug("Obj. breakdown for {}: delta {}, rhol {}".format(self.name,obj_value[0],obj_value[1]))
+        logger.debug("Obj. breakdown for {}: Psat {}, rhol {}, rhov {}".format(self.name,obj_value[0],obj_value[1],obj_value[2]))
 
         if all([(np.isnan(x) or x==0.0) for x in obj_value]):
             obj_total = np.inf

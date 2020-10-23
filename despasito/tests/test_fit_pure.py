@@ -4,8 +4,8 @@ Unit and regression test for the despasito package.
 
 # Import package, test suite, and other packages as needed
 import despasito.input_output.read_input as ri
-import despasito.fit_parameters as fit
-import despasito.fit_parameters.fit_funcs as funcs
+import despasito.parameter_fitting as fit
+import despasito.parameter_fitting.fit_funcs as funcs
 import despasito.equations_of_state
 import pytest
 import copy
@@ -32,13 +32,13 @@ thermo_dict0 = {"opt_params": opt_params, "beadparams0": [384.0], "global_dict":
 
 def test_fit_import():
 #    """Sample test, will always pass so long as import statement worked"""
-    assert "despasito.fit_parameters" in sys.modules
+    assert "despasito.parameter_fitting" in sys.modules
 
 thermo_dict0["exp_data"] = exp_data_sol
 def test_solubility_so(eos=eos,thermo_dict=copy.deepcopy(thermo_dict0)):
 
     thermo_dict = ri.process_param_fit_inputs(thermo_dict)
-    output = fit.fit(thermo_dict)
+    output = fit.fit(**thermo_dict)
         
     assert output["final_parameters"][0]==pytest.approx(375.01,abs=1.0) and output["objective_value"]<1.1
 
@@ -47,7 +47,7 @@ thermo_dict0["exp_data"] = exp_data_density
 def test_density_so(eos=eos,thermo_dict=copy.deepcopy(thermo_dict0)):
 
     thermo_dict = ri.process_param_fit_inputs(thermo_dict)
-    output = fit.fit(thermo_dict)
+    output = fit.fit(**thermo_dict)
         
     assert output["final_parameters"][0]==pytest.approx(375.01,abs=1.0) and output["objective_value"]<1.5
 
@@ -55,8 +55,7 @@ thermo_dict0["exp_data"] = exp_data_sat
 thermo_dict0["global_dict"] = {"method": "single_objective"}
 def test_saturation_de(eos=eos,thermo_dict=copy.deepcopy(thermo_dict0)):
 
-    print(thermo_dict)
     thermo_dict = ri.process_param_fit_inputs(thermo_dict)
-    output = fit.fit(thermo_dict)
+    output = fit.fit(**thermo_dict)
 
     assert output["final_parameters"][0]==pytest.approx(375.01,abs=1.0) and output["objective_value"]==pytest.approx(2.146,abs=0.01)

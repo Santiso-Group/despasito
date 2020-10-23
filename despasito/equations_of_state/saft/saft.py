@@ -14,8 +14,8 @@ import logging
 
 from despasito.equations_of_state import constants
 import despasito.utils.general_toolbox as gtb
-import despasito.equations_of_state.toolbox as tb
-from despasito.equations_of_state.interface import EOStemplate
+import despasito.equations_of_state.eos_toolbox as tb
+from despasito.equations_of_state.interface import EosTemplate
 
 from despasito.equations_of_state.saft import Aideal
 from despasito.equations_of_state.saft import Aassoc
@@ -25,15 +25,15 @@ logger = logging.getLogger(__name__)
 def saft_type(name):
     
     if name == "gamma_mie":
-        from despasito.equations_of_state.saft.gamma_mie import gamma_mie as saft_source
+        from despasito.equations_of_state.saft.gamma_mie import SaftType as saft_source
     elif name == "gamma_sw":
-        from despasito.equations_of_state.saft.gamma_sw import gamma_sw as saft_source
+        from despasito.equations_of_state.saft.gamma_sw import SaftType as saft_source
     else:
         raise ValueError("SAFT type, {}, is not supported. Be sure the class is added to the factory function 'saft_type'".format(name))
 
     return saft_source
 
-class saft(EOStemplate):
+class EosType(EosTemplate):
 
     r"""
     Initialize EOS object for SAFT variant.
@@ -69,10 +69,12 @@ class saft(EOStemplate):
     
     """
 
-    def __init__(self, kwargs):
+    def __init__(self, saft_name="gamma_mie", Aideal_method=None, mixing_rules=None, **kwargs):
 
-        saft_source = saft_type(kwargs["saft_name"])
-        self.saft_source = saft_source(kwargs)
+        super().__init__(**kwargs)
+
+        saft_source = saft_type(saft_name)
+        self.saft_source = saft_source(**kwargs)
 
         if not hasattr(self, 'eos_dict'):
             self.eos_dict = {}
@@ -83,14 +85,14 @@ class saft(EOStemplate):
             try:
                 self.eos_dict[key] = getattr(self.saft_source,key)
             except:
-                raise ValueError("SAFT type, {}, is missing the variable {}.".format(kwargs["saft_name"],key))
+                raise ValueError("SAFT type, {}, is missing the variable {}.".format(saft_name,key))
 
         for res in self.eos_dict["residual_helmholtz_contributions"]:
             setattr( self, res, getattr(self.saft_source, res))
 
-        if "Aideal_method" in kwargs:
-            logger.info("Switching Aideal method from {} to {}.".format(self.eos_dict["Aideal_method"],kwargs["Aideal_method"]))
-            self.eos_dict["Aideal_method"] = kwargs["Aideal_method"]
+        if Aideal_method != None:
+            logger.info("Switching Aideal method from {} to {}.".format(self.eos_dict["Aideal_method"], Aideal_method))
+            self.eos_dict["Aideal_method"] = Aideal_method
 
         # Extract needed values from kwargs
         needed_attributes = ['beadlibrary',"nui","beads"]
@@ -99,28 +101,31 @@ class saft(EOStemplate):
                 raise ValueError("The one of the following inputs is missing: {}".format(", ".join(tmp)))
             elif not hasattr(self, key):
                 self.eos_dict[key] = kwargs[key]
-        self.nui = self.eos_dict["nui"]
+        self.number_of_components = len(self.eos_dict["nui"])
         self.beads = self.eos_dict["beads"]
+        self.beadlibrary = self.eos_dict["beadlibrary"]
 
-        if "mixing_rules" in kwargs:
+        if mixing_rules != None:
             logger.info("Accepted new mixing rule definitions")
-            self.saft_source.mixing_rules.update(kwargs["mixing_rules"])
+            self.saft_source.mixing_rules.update(mixing_rules)
+            self.parameter_refresh()
 
         if 'crosslibrary' not in kwargs:
             self.eos_dict['crosslibrary'] = {}
         else:
             self.eos_dict['crosslibrary'] = kwargs['crosslibrary']
+            self.crosslibrary = self.eos_dict["crosslibrary"]
 
         if not hasattr(self, 'massi'):
-            self.eos_dict['massi'] = tb.calc_massi(self.nui,self.eos_dict['beadlibrary'],self.beads)
+            self.eos_dict['massi'] = tb.calc_massi(self.eos_dict["nui"],self.eos_dict['beadlibrary'],self.beads)
 
         if "reduction_ratio" in kwargs:
             self.eos_dict['reduction_ratio'] = kwargs["reduction_ratio"]
             
 
         # Initiate association site terms
-        self.eos_dict['sitenames'], self.eos_dict['nk'], self.eos_dict['flag_assoc'] = Aassoc.initiate_assoc_matrices(self.beads,self.eos_dict['beadlibrary'],self.nui)
-        assoc_output = Aassoc.calc_assoc_matrices(self.beads,self.eos_dict['beadlibrary'],self.nui,sitenames=self.eos_dict['sitenames'],crosslibrary=self.eos_dict['crosslibrary'],nk=self.eos_dict['nk'])
+        self.eos_dict['sitenames'], self.eos_dict['nk'], self.eos_dict['flag_assoc'] = Aassoc.initiate_assoc_matrices(self.beads,self.eos_dict['beadlibrary'],self.eos_dict["nui"])
+        assoc_output = Aassoc.calc_assoc_matrices(self.beads,self.eos_dict['beadlibrary'],self.eos_dict["nui"],sitenames=self.eos_dict['sitenames'],crosslibrary=self.eos_dict['crosslibrary'],nk=self.eos_dict['nk'])
         self.eos_dict.update(assoc_output)
         if np.size(np.where(self.eos_dict['epsilonHB']!=0.0))==0:
             self.eos_dict['flag_assoc'] = False
@@ -146,8 +151,8 @@ class saft(EOStemplate):
         Ares : numpy.ndarray
             Residual helmholtz energy for each density value given.
         """
-        if len(xi) != len(self.nui):
-            raise ValueError("Number of components in mole fraction list, {}, doesn't match components in nui, {}".format(len(xi),len(self.nui)))
+        if len(xi) != self.number_of_components:
+            raise ValueError("Number of components in mole fraction list, {}, doesn't match self.number_of_components, {}".format(len(xi),self.number_of_components))
     
         rho = self._check_density(rho)
 
@@ -183,8 +188,8 @@ class saft(EOStemplate):
         A : numpy.ndarray
             Total helmholtz energy for each density value given.
         """
-        if len(xi) != len(self.nui):
-            raise ValueError("Number of components in mole fraction list, {}, doesn't match components in nui, {}".format(len(xi),len(self.nui)))
+        if len(xi) != self.number_of_components:
+            raise ValueError("Number of components in mole fraction list, {}, doesn't match self.number_of_components, {}".format(len(xi),self.number_of_components))
 
         rho = self._check_density(rho)
 
@@ -216,8 +221,8 @@ class saft(EOStemplate):
         Aideal : numpy.ndarray
             Helmholtz energy of ideal gas for each density given.
         """
-        if len(xi) != len(self.nui):
-            raise ValueError("Number of components in mole fraction list, {}, doesn't match components in nui, {}".format(len(xi),len(self.nui)))
+        if len(xi) != self.number_of_components:
+            raise ValueError("Number of components in mole fraction list, {}, doesn't match self.number_of_components, {}".format(len(xi),self.number_of_components))
 
         rho = self._check_density(rho)
 
@@ -243,8 +248,8 @@ class saft(EOStemplate):
         Aassoc : numpy.ndarray
             Helmholtz energy of ideal gas for each density given.
         """
-        if len(xi) != len(self.nui):
-            raise ValueError("Number of components in mole fraction list, {}, doesn't match components in nui, {}".format(len(xi),len(self.nui)))
+        if len(xi) != self.number_of_components:
+            raise ValueError("Number of components in mole fraction list, {}, doesn't match self.number_of_components, {}".format(len(xi),self.number_of_components))
 
         rho = self._check_density(rho)
 
@@ -266,8 +271,8 @@ class saft(EOStemplate):
         gr_assoc = self.saft_source.calc_gr_assoc(rho, T, xi, Ktype=Ktype)
 
         # Compute Xika: with python with numba  {BottleNeck}
-        indices = Aassoc.assoc_site_indices(self.eos_dict['nk'], self.nui, xi=xi)
-        Xika = Aassoc.calc_Xika_wrap(indices, rho, xi, self.nui, self.eos_dict['nk'], Fklab, Kklab, gr_assoc)
+        indices = Aassoc.assoc_site_indices(self.eos_dict['nk'], self.eos_dict["nui"], xi=xi)
+        Xika = Aassoc.calc_Xika_wrap(indices, rho, xi, self.eos_dict["nui"], self.eos_dict['nk'], Fklab, Kklab, gr_assoc)
 
         # Compute A_assoc
         Assoc_contribution = np.zeros(np.size(rho)) 
@@ -275,7 +280,7 @@ class saft(EOStemplate):
             if self.eos_dict['nk'][k, a] != 0.0:
                 #tmp = (np.log(Xika[:, i, k, a]) + ((1.0 - Xika[:, i, k, a]) / 2.0))
                 tmp = (np.log(Xika[:,ind]) + ((1.0 - Xika[:,ind]) / 2.0))
-                Assoc_contribution += xi[i] * self.nui[i, k] * self.eos_dict['nk'][k, a] * tmp
+                Assoc_contribution += xi[i] * self.eos_dict["nui"][i, k] * self.eos_dict['nk'][k, a] * tmp
 
         return Assoc_contribution
 
@@ -297,8 +302,8 @@ class saft(EOStemplate):
         P : numpy.ndarray
             Array of pressure values [Pa] associated with each density and so equal in length
         """
-        if len(xi) != len(self.nui):
-            raise ValueError("Number of components in mole fraction list, {}, doesn't match components in nui, {}".format(len(xi),len(self.nui)))
+        if len(xi) != self.number_of_components:
+            raise ValueError("Number of components in mole fraction list, {}, doesn't match self.number_of_components, {}".format(len(xi),self.number_of_components))
 
         # derivative of Aideal_broglie here wrt to rho is 1/rho
         rho = self._check_density(rho)
@@ -330,8 +335,8 @@ class saft(EOStemplate):
         mui : numpy.ndarray
             Array of chemical potential values for each component
         """
-        if len(xi) != len(self.nui):
-            raise ValueError("Number of components in mole fraction list, {}, doesn't match components in nui, {}".format(len(xi),len(self.nui)))
+        if len(xi) != self.number_of_components:
+            raise ValueError("Number of components in mole fraction list, {}, doesn't match self.number_of_components, {}".format(len(xi),self.number_of_components))
 
         rho = self._check_density(rho)
         logZ = np.log(P / (rho * T * constants.R))
@@ -361,8 +366,8 @@ class saft(EOStemplate):
         maxrho : float
             Maximum molar density [mol/m^3]
         """
-        if len(xi) != len(self.nui):
-            raise ValueError("Number of components in mole fraction list, {}, doesn't match components in nui, {}".format(len(xi),len(self.nui)))
+        if len(xi) != self.number_of_components:
+            raise ValueError("Number of components in mole fraction list, {}, doesn't match self.number_of_components, {}".format(len(xi),self.number_of_components))
 
         maxrho = self.saft_source.density_max(xi, T, maxpack=maxpack)
 
@@ -541,6 +546,9 @@ class saft(EOStemplate):
                 else:
                     self.eos_dict['crosslibrary'][bead_names[0]] = {bead_names[1]: {param_name: param_value}}
 
+            self.beadlibrary = self.eos_dict["beadlibrary"]
+            self.crosslibrary = self.eos_dict["crosslibrary"]
+
         else:
             raise ValueError("The parameter name {} is not found in the allowed parameter types: {}".format(param_name,", ".join(self.eos_dict["parameter_types"])))
 
@@ -555,7 +563,7 @@ class saft(EOStemplate):
 
         # Update Association site matrices
         if self.eos_dict["flag_assoc"]: 
-            assoc_output = Aassoc.calc_assoc_matrices(self.beads,self.eos_dict['beadlibrary'],self.nui,sitenames=self.eos_dict['sitenames'],crosslibrary=self.eos_dict['crosslibrary'],nk=self.eos_dict['nk'])
+            assoc_output = Aassoc.calc_assoc_matrices(self.beads,self.eos_dict['beadlibrary'],self.eos_dict["nui"],sitenames=self.eos_dict['sitenames'],crosslibrary=self.eos_dict['crosslibrary'],nk=self.eos_dict['nk'])
             self.eos_dict.update(assoc_output)
 
     def _check_density(self,rho):

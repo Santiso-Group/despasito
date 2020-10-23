@@ -14,7 +14,7 @@ import scipy.optimize as spo
 import os
 import sys
 
-import despasito.equations_of_state.toolbox as tb
+import despasito.equations_of_state.eos_toolbox as tb
 from despasito.equations_of_state import constants
 
 logger = logging.getLogger(__name__)

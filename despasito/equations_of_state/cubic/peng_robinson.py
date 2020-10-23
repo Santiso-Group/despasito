@@ -8,11 +8,11 @@
 import numpy as np
 import logging
 
-from despasito.equations_of_state.interface import EOStemplate
+from despasito.equations_of_state.interface import EosTemplate
 
 logger = logging.getLogger(__name__)
 
-class cubic_peng_robinson(EOStemplate):
+class EosType(EosTemplate):
     r"""
     EOS object for the Peng-Robinson EOS. 
 
@@ -43,32 +43,33 @@ class cubic_peng_robinson(EOStemplate):
     
     """
 
-    def __init__(self, kwargs):
+    def __init__(self, **kwargs):
 
+        super().__init__(**kwargs)
 
         # Self interaction parameters
-        self._beads = kwargs['beads']
-        self._beadlibrary = kwargs['beadlibrary']
-        self.nui = np.identity(len(self._beads))
+        self.beads = kwargs['beads']
+        self.beadlibrary = kwargs['beadlibrary']
+        self.number_of_components = len(self.beads)
 
-        self._Tc = np.zeros(len(self._beads))
-        self._Pc = np.zeros(len(self._beads))
-        self._omega = np.zeros(len(self._beads))
-        self._kappa = np.zeros(len(self._beads))
-        self.alpha = np.empty(len(self._beads))
-        self.ai = np.zeros(len(self._beads))
-        self.bi = np.zeros(len(self._beads))
+        self._Tc = np.zeros(len(self.beads))
+        self._Pc = np.zeros(len(self.beads))
+        self._omega = np.zeros(len(self.beads))
+        self._kappa = np.zeros(len(self.beads))
+        self.alpha = np.empty(len(self.beads))
+        self.ai = np.zeros(len(self.beads))
+        self.bi = np.zeros(len(self.beads))
 
         self._R = 8.31446261815324 # [J/mol*K]
 
-        for bead in self._beads:
-            if bead in self._beadlibrary:
-                ind = self._beads.index(bead)
+        for bead in self.beads:
+            if bead in self.beadlibrary:
+                ind = self.beads.index(bead)
                 try:
-                    self._Tc[ind] = self._beadlibrary[bead]["Tc"]
-                    self._Pc[ind] = self._beadlibrary[bead]["Pc"]
-                    if "omega" in self._beadlibrary[bead]:
-                        self._omega[ind] = self._beadlibrary[bead]["omega"]     
+                    self._Tc[ind] = self.beadlibrary[bead]["Tc"]
+                    self._Pc[ind] = self.beadlibrary[bead]["Pc"]
+                    if "omega" in self.beadlibrary[bead]:
+                        self._omega[ind] = self.beadlibrary[bead]["omega"]     
                         self._kappa[ind] = 0.37464 + 1.54226*self._omega[ind] - 0.26992*self._omega[ind]**2
 
                     self.ai[ind] = 0.45723553*(self._R*self._Tc[ind])**2/self._Pc[ind]
@@ -80,15 +81,15 @@ class cubic_peng_robinson(EOStemplate):
                 raise ValueError("Parameters weren't provided for component: {}".format(bead))
 
         # Cross interaction parameters
-        self._kij = np.zeros((len(self._beads),len(self._beads)))
+        self._kij = np.zeros((len(self.beads),len(self.beads)))
         if 'crosslibrary' in list(kwargs.keys()):
             crosslibrary = kwargs['crosslibrary']
             for key, value in crosslibrary.items():
-                if key in self._beads:
-                    ind = self._beads.index(key)
+                if key in self.beads:
+                    ind = self.beads.index(key)
                     for key2, value2 in value.items():
-                        if key2 in self._beads:
-                            jnd = self._beads.index(key2)
+                        if key2 in self.beads:
+                            jnd = self.beads.index(key2)
                             if "kij" in value2:
                                 self._kij[ind,jnd] = value2["kij"]
                                 self._kij[jnd,ind] = value2["kij"]
@@ -115,9 +116,9 @@ class cubic_peng_robinson(EOStemplate):
         alpha : numpy.ndarray
             Peng-Robinson parameter b [m^3/mol]
         """
-        for bead in self._beads: 
-            if bead in self._beadlibrary:
-                ind = self._beads.index(bead)
+        for bead in self.beads: 
+            if bead in self.beadlibrary:
+                ind = self.beads.index(bead)
                 if self._kappa[ind]:
                     self.alpha[ind] = (1+self._kappa[ind]*(1-np.sqrt(T/self._Tc[ind])))**2
                 else:
@@ -270,7 +271,7 @@ class cubic_peng_robinson(EOStemplate):
 
     def param_guess(self, param_name, bead_names):
         r"""
-        Update a single parameter value to _beadlibrary or _crosslibrary attributes during parameter fitting process.
+        Update a single parameter value to beadlibrary or crosslibrary attributes during parameter fitting process.
             
         To refresh those parameters that are dependent on these libraries, use method "parameter refresh".
             
@@ -291,25 +292,25 @@ class cubic_peng_robinson(EOStemplate):
         
         if len(bead_names) > 2:
             raise ValueError("The bead names {} were given, but only a maximum of 2 are permitted.".format(", ".join(bead_names)))
-        if not set(bead_names).issubset(self._beads):
-            raise ValueError("The bead names {} were given, but they are not in the allowed list: {}".format(", ".join(bead_names),", ".join(self._beads)))
+        if not set(bead_names).issubset(self.beads):
+            raise ValueError("The bead names {} were given, but they are not in the allowed list: {}".format(", ".join(bead_names),", ".join(self.beads)))
         
         # Non bonded parameters
         if (param_name in param_types):
             # Parameter kij
             if "kij" == param_name:
-                if bead_names[0] in self._beads:
-                    ind = self._beads.index(bead_names[0])
-                    if bead_names[1] in self._beads:
-                        jnd = self._beads.index(bead_names[1])
+                if bead_names[0] in self.beads:
+                    ind = self.beads.index(bead_names[0])
+                    if bead_names[1] in self.beads:
+                        jnd = self.beads.index(bead_names[1])
                         param_value = self._kij[ind,jnd]
             elif "ai" == param_name:
-                if bead_names[0] in self._beads:
-                    ind = self._beads.index(bead_names[0])
+                if bead_names[0] in self.beads:
+                    ind = self.beads.index(bead_names[0])
                     param_value = self.ai[ind]
             elif "bi" == param_name:
-                if bead_names[0] in self._beads:
-                    ind = self._beads.index(bead_names[0])
+                if bead_names[0] in self.beads:
+                    ind = self.beads.index(bead_names[0])
                     param_value = self.bi[ind]
     
         else:
@@ -342,8 +343,8 @@ class cubic_peng_robinson(EOStemplate):
         
         if len(bead_names) > 2:
             raise ValueError("The bead names {} were given, but only a maximum of 2 are permitted.".format(", ".join(bead_names)))
-        if not set(bead_names).issubset(self._beads):
-            raise ValueError("The bead names {} were given, but they are not in the allowed list: {}".format(", ".join(bead_names),", ".join(self._beads)))
+        if not set(bead_names).issubset(self.beads):
+            raise ValueError("The bead names {} were given, but they are not in the allowed list: {}".format(", ".join(bead_names),", ".join(self.beads)))
         
         # Non bonded parameters
         if (param_name in param_types):
@@ -366,7 +367,7 @@ class cubic_peng_robinson(EOStemplate):
 
     def update_parameters(self, param_name, bead_names, param_value):
         r"""
-        Update a single parameter value to _beadlibrary or _crosslibrary attributes during parameter fitting process. 
+        Update a single parameter value to beadlibrary or crosslibrary attributes during parameter fitting process. 
 
         To refresh those parameters that are dependent on these libraries, use method "parameter refresh".
         
@@ -384,26 +385,26 @@ class cubic_peng_robinson(EOStemplate):
 
         if len(bead_names) > 2:
             raise ValueError("The bead names {} were given, but only a maximum of 2 are permitted.".format(", ".join(bead_names)))
-        if not set(bead_names).issubset(self._beads):
-            raise ValueError("The bead names {} were given, but they are not in the allowed list: {}".format(", ".join(bead_names),", ".join(self._beads)))
+        if not set(bead_names).issubset(self.beads):
+            raise ValueError("The bead names {} were given, but they are not in the allowed list: {}".format(", ".join(bead_names),", ".join(self.beads)))
 
         # Non bonded parameters
         if (param_name in param_types):
             # Parameter kij
             if "kij" == param_name:
-                if bead_names[0] in self._beads:
-                    ind = self._beads.index(bead_names[0])
-                    if bead_names[1] in self._beads:
-                        jnd = self._beads.index(bead_names[1])
+                if bead_names[0] in self.beads:
+                    ind = self.beads.index(bead_names[0])
+                    if bead_names[1] in self.beads:
+                        jnd = self.beads.index(bead_names[1])
                         self._kij[ind,jnd] = param_value
                         self._kij[jnd,ind] = param_value
             elif "ai" == param_name:
-                if bead_names[0] in self._beads:
-                    ind = self._beads.index(bead_names[0])
+                if bead_names[0] in self.beads:
+                    ind = self.beads.index(bead_names[0])
                     self.ai[ind] = param_value
             elif "bi" == param_name:
-                if bead_names[0] in self._beads:
-                    ind = self._beads.index(bead_names[0])
+                if bead_names[0] in self.beads:
+                    ind = self.beads.index(bead_names[0])
                     self.bi[ind] = param_value
 
         else:
@@ -411,7 +412,7 @@ class cubic_peng_robinson(EOStemplate):
 
     def __str__(self):
 
-        string = "Beads:" + str(self._beads) + "\n"
+        string = "Beads:" + str(self.beads) + "\n"
         string += "T:" + str(self.T) + "\n"
         return string
 

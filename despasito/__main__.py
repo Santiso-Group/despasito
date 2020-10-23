@@ -54,7 +54,6 @@ else:
     kwargs = {}
 
 kwargs["mpObj"] = MultiprocessingJob(ncores=args.ncores)
-kwargs["ncores"] = args.ncores
 kwargs["path"] = args.path
 
 run(**kwargs)

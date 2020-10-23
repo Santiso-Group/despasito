@@ -14,7 +14,7 @@ import sys
 #np.set_printoptions(threshold=sys.maxsize)
 
 
-import despasito.equations_of_state.toolbox as tb
+import despasito.equations_of_state.eos_toolbox as tb
 from despasito.equations_of_state import constants
 import despasito.equations_of_state.saft.saft_toolbox as stb
 from despasito.equations_of_state.saft import Aassoc
@@ -31,7 +31,7 @@ elif not method_stat.disable_numba:
 
 ckl_coef = np.array([[2.25855, -1.50349, 0.249434], [-0.669270, 1.40049, -0.827739], [10.1576, -15.0427, 5.30827]])
 
-class gamma_sw():
+class SaftType():
 
     r"""
     
@@ -64,7 +64,7 @@ class gamma_sw():
     
     """
 
-    def __init__(self, kwargs):
+    def __init__(self, **kwargs):
     
         self.Aideal_method = "Abroglie"
         self.residual_helmholtz_contributions = ["Amonomer","Achain"]

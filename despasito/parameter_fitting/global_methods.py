@@ -101,7 +101,8 @@ def differential_evolution(beadparams0, bounds, fit_bead, fit_params, exp_dict, 
     if global_dict:
         for key, value in global_dict.items():
             if key is "mpObj":
-                if value.ncores > 1:
+                flag_workers = "workers" in global_dict and global_dict["workers"] > 1
+                if value.ncores > 1 and flag_workers:
                     logger.info("Differential Evolution algoirithm is using {} workers.".format(value.ncores))
                     new_global_dict["workers"] = value._pool.map
                     exp_dict = _del_Data_mpObj(exp_dict)
@@ -362,7 +363,8 @@ def brute(beadparams0, bounds, fit_bead, fit_params, exp_dict, global_dict={}):
     if global_dict:
         for key, value in global_dict.items():
             if key is "mpObj":
-                if value.ncores > 1:
+                flag_workers = "workers" in global_dict and global_dict["workers"] > 1
+                if value.ncores > 1 and flag_workers:
                     logger.info("Brute algoirithm is using {} workers.".format(value.ncores))
                     new_global_dict["workers"] = value._pool.map
                     exp_dict = _del_Data_mpObj(exp_dict)
@@ -450,7 +452,11 @@ def basinhopping(beadparams0, bounds, fit_bead, fit_params, exp_dict, global_dic
             raise TypeError("Could not initialize BasinStep and/or BasinBounds")
 
     logger.info("Basin Hopping Options: {}".format(global_dict))
-    result = spo.basinhopping(ff.compute_obj, beadparams0, **global_dict, accept_test=custombounds, minimizer_kwargs={"args": (fit_bead, fit_params, exp_dict, bounds),**minimizer_dict})
+    minimizer_kwargs={"args": (fit_bead, fit_params, exp_dict, bounds),**minimizer_dict}
+    if "minimizer_kwargs" in global_dict:
+        minimizer_kwargs.update(global_dict["minimizer_kwargs"])
+        del global_dict["minimizer_kwargs"]
+    result = spo.basinhopping(ff.compute_obj, beadparams0, **global_dict, accept_test=custombounds, minimizer_kwargs=minimizer_kwargs)
 
     return result
 
@@ -679,7 +685,7 @@ def _del_Data_mpObj(dictionary):
 
     new_dictionary = dictionary.copy()
     for key in new_dictionary:
-        if "mpObj" in new_dictionary[key]._thermodict:
-            del new_dictionary[key]._thermodict["mpObj"]
+        if "mpObj" in new_dictionary[key].thermodict:
+            del new_dictionary[key].thermodict["mpObj"]
 
     return new_dictionary

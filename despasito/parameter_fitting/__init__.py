@@ -19,7 +19,7 @@ from . import data_classes
 
 logger = logging.getLogger(__name__)
 
-def fit(thermo_dict):
+def fit(opt_params=None, exp_data=None, global_dict={}, minimizer_dict=None, mpObj=None, **thermo_dict):
     r"""
     Fit defined parameters for equation of state object with given experimental data. 
 
@@ -36,20 +36,17 @@ def fit(thermo_dict):
             - fit_bead (str) - Name of bead whose parameters are being fit, should be in bead list of beadconfig
             - fit_params (list[str]) - This list of contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
             - beadparams0 (list[float]), Optional - Initial guess in parameter. If one is not provided, a guess is made based on the type of parameter from eos object.
+            - \*_bounds (list[float]), Optional - This list contains the minimum and maximum of the parameter from a parameter listed in fit_params, represented in place of the asterisk. See input file instructions for more information.
 
-        - bounds (numpy.ndarray) - List of length equal to fit_params with lists of pairs for minimum and maximum bounds of parameter being fit. Defaults are broad, recommend specification.
         - exp_data (dict) - This dictionary is made up of a dictionary for each data set that the parameters are fit to. Each dictionary is converted into an object and saved back to this structure before parameter fitting begins. Each key is an arbitrary string used to identify the data set and used later in reporting objective function values during the fitting process. See data type objects for more details.
 
             - name (str) - One of the supported data type objects to fit parameters
             - eos_obj (obj) - Equation of state output that writes pressure, max density, chemical potential, updates parameters, and evaluates objective functions. For parameter fitting algorithm See equation of state documentation for more details.
 
-        - global_dict (dict), Optional - kwargs used in global optimization method. See :func:`~despasito.fit_parameters.fit_funcs.global_minimization`.
+        - global_dict (dict), Optional - kwargs used in global optimization method. See :func:`~despasito.parameter_fitting.fit_funcs.global_minimization`.
 
-            - method (str), Optional - default: 'differential_evolution', Global optimization method used to fit parameters. See :func:`~despasito.fit_parameters.fit_funcs.global_minimization`.
-            - niter (int) - default: 10, Number of basin hopping iterations
-            - T (float) - default: 0.5, Temperature parameter, should be comparable to separation between local minima (i.e. the “height” of the walls separating values).
-            - niter_success (int) - default: 3, Stop run if minimum stays the same for this many iterations
-            - stepsize (float) - default: 0.1, Maximum step size for use in the random displacement. We use this value to define an object for the `take_step` option that includes a custom routine that produces attribute stepsizes for each parameter.
+            - method (str), Optional - default: 'differential_evolution', Global optimization method used to fit parameters. See :func:`~despasito.parameter_fitting.fit_funcs.global_minimization`.
+            - Additional options, specific to global_optimizaiton method
 
         - minimizer_dict (dict), Optional - Dictionary used to define minimization type and the associated options.
 
@@ -65,46 +62,38 @@ def fit(thermo_dict):
     dicts = {}
 
     # Extract inputs
-    if "opt_params" in thermo_dict:
-        opt_params  = thermo_dict["opt_params"]
-        del thermo_dict['opt_params']
-    else:
+    if opt_params == None:
         raise ValueError("Required input, opt_params, is missing.")
 
-    if "exp_data" in thermo_dict:
-        exp_data = thermo_dict["exp_data"]
-        del thermo_dict['exp_data']
-        if "mpObj" in thermo_dict:
-            for k2 in list(exp_data.keys()):
-                exp_data[k2]["mpObj"] = thermo_dict["mpObj"]
-            dicts["mpObj"] = thermo_dict["mpObj"]
-    else:
+    dicts['global_dict'] = global_dict
+    if minimizer_dict != None:
+        dicts['minimizer_dict'] =  minimizer_dict
+
+    if exp_data == None:
         raise ValueError("Required input, exp_data, is missing.")
 
-    # Optional inputs
-    if "bounds" in thermo_dict:
-        bounds = thermo_dict["bounds"]
-        del thermo_dict['bounds']
+    # Add multiprocessing object to exp_data objects and global_dicts
+    if mpObj != None:
+        for k2 in list(exp_data.keys()):
+            exp_data[k2]["mpObj"] = mpObj
+        dicts['global_dict']["mpObj"] = mpObj
+
+    # Thermodynamic options and optimizaiton options are added to data object
+    for k2 in list(exp_data.keys()):
+        for key, value in thermo_dict.items():
+            if key not in exp_data[k2]:
+                exp_data[k2][key] = value
+
+    # Generate initial guess and bounds for parameters if none was given
+    opt_params = ff.consolidate_bounds(opt_params)
+    if "bounds" in opt_params:
+        bounds = opt_params["bounds"]
+        del opt_params['bounds']
     else:
         bounds = np.zeros((len(opt_params["fit_params"]),2))
     eos = exp_data[list(exp_data.keys())[0]]["eos_obj"] # since all exp data sets use the same eos, it doesn't really matter
     bounds = ff.check_parameter_bounds(opt_params, eos, bounds)
 
-    if "minimizer_dict" in thermo_dict:
-        dicts['minimizer_dict'] =  thermo_dict['minimizer_dict']
-        del thermo_dict['minimizer_dict']
-
-    if "global_dict" in thermo_dict:
-        dicts['global_dict'] = thermo_dict['global_dict']
-        del thermo_dict['global_dict']
-    else:
-        dicts['global_dict'] = {}
-
-    if "mpObj" in dicts:
-        dicts['global_dict']["mpObj"] = dicts["mpObj"]
-        del dicts["mpObj"]
-
-    # Generate initial guess for parameters if none was given
     if "beadparams0" in opt_params:
         beadparams0 = opt_params["beadparams0"]
         if len(beadparams0) != len(opt_params["fit_params"]):
@@ -113,8 +102,7 @@ def fit(thermo_dict):
         beadparams0 = ff.initial_guess(opt_params, eos)
     logger.info("Initial guess in parameters: {}".format(beadparams0))
 
-    if list(thermo_dict.keys()):
-        logger.info("Note: thermo_dict keys: {}, were not used.".format(", ".join(list(thermo_dict.keys()))))
+    # _________________________________________________________
 
     # Reformat exp. data into formatted dictionary
     exp_dict = {}
@@ -125,7 +113,7 @@ def fit(thermo_dict):
     for key, data_dict in exp_data.items():
         fittype = data_dict["name"]
         try:
-            exp_module = import_module("."+fittype,package="despasito.fit_parameters.data_classes")
+            exp_module = import_module("."+fittype,package="despasito.parameter_fitting.data_classes")
             data_class = getattr(exp_module, "Data")
         except:
             if not type_list:
@@ -134,7 +122,7 @@ def fit(thermo_dict):
                 tmp = type_list[0]
             else:
                 tmp = ", ".join(type_list)
-            raise ImportError("The experimental data type, '"+fittype+"', was not found\nThe following calculation types are supported: "+tmp)
+            raise ImportError("The experimental data type, '{}', was not found\nThe following calculation types are supported: {}".format(fittype,tmp))
 
         try:
             instance = data_class(data_dict)

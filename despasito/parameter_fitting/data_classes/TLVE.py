@@ -6,8 +6,8 @@ import numpy as np
 import logging
 
 from despasito.thermodynamics import thermo
-from despasito.fit_parameters import fit_funcs as ff
-from despasito.fit_parameters.interface import ExpDataTemplate
+from despasito.parameter_fitting import fit_funcs as ff
+from despasito.parameter_fitting.interface import ExpDataTemplate
 
 logger = logging.getLogger(__name__)
 
@@ -130,14 +130,14 @@ class Data(ExpDataTemplate):
 
         if self.thermodict["calculation_type"] == "phase_xiT":
             try:
-                output_dict = thermo(self.eos, self.thermodict)
+                output_dict = thermo(self.eos, **self.thermodict)
                 output = [output_dict['P'],output_dict["yi"]]
             except:
                 raise ValueError("Calculation of calc_xT_phase failed")
 
         elif self.thermodict["calculation_type"] == "phase_yiT":
             try:
-                output_dict = thermo(self.eos, self.thermodict)
+                output_dict = thermo(self.eos, **self.thermodict)
                 output = [output_dict['P'],output_dict["xi"]]
             except:
                 raise ValueError("Calculation of calc_yT_phase failed")

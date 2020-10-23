@@ -6,8 +6,8 @@ import numpy as np
 import logging
 
 from despasito.thermodynamics import thermo
-from despasito.fit_parameters import fit_funcs as ff
-from despasito.fit_parameters.interface import ExpDataTemplate
+from despasito.parameter_fitting import fit_funcs as ff
+from despasito.parameter_fitting.interface import ExpDataTemplate
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ class Data(ExpDataTemplate):
         * T : list, List of temperature values for calculation
         * xi : list, List of liquid mole fractions used in liquid_properties calculations
         * weights : dict, A dictionary where each key is the header used in the exp. data file. The value associated with a header can be a list as long as the number of data points to multiply by the objective value associated with each point, or a float to multiply the objective value of this data set.
-        * objective_method : str, The 'method' keyword in function despasito.fit_parameters.fit_funcs.obj_function_form.
+        * objective_method : str, The 'method' keyword in function despasito.parameter_fitting.fit_funcs.obj_function_form.
         * density_dict : dict, Optional, default: {"minrhofrac":(1.0 / 60000.0), "rhoinc":10.0, "vspacemax":1.0E-4}, Dictionary of options used in calculating pressure vs. mole fraction curves.
 
     Attributes
@@ -108,13 +108,13 @@ class Data(ExpDataTemplate):
 
         # Check bead type
         if 'xilist' not in self.thermodict:
-            if len(self.eos.nui) > 1:
+            if self.eos.number_of_components > 1:
                 raise ValueError("Ambiguous instructions. Include xi to define intended component to obtain saturation properties")
             else:
                 self.thermodict['xilist'] = np.array([[1.0] for x in range(len(self.thermodict['Tlist']))])
 
         try:
-            output_dict = thermo(self.eos, self.thermodict)
+            output_dict = thermo(self.eos, **self.thermodict)
             output = [output_dict["rhol"]]
         except:
             raise ValueError("Calculation of calc_rhol failed")

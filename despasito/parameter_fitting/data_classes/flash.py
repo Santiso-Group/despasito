@@ -6,8 +6,8 @@ import numpy as np
 import logging
 
 from despasito.thermodynamics import thermo
-from despasito.fit_parameters import fit_funcs as ff
-from despasito.fit_parameters.interface import ExpDataTemplate
+from despasito.parameter_fitting import fit_funcs as ff
+from despasito.parameter_fitting.interface import ExpDataTemplate
 
 logger = logging.getLogger(__name__)
 
@@ -123,7 +123,7 @@ class Data(ExpDataTemplate):
         """
 
         try:
-            output_dict = thermo(self.eos, self.thermodict)
+            output_dict = thermo(self.eos, **self.thermodict)
             output = [output_dict["yi"],output_dict['xi']]
         except:
             raise ValueError("Calculation of flash failed")
@@ -146,8 +146,6 @@ class Data(ExpDataTemplate):
         phase_list, len_cluster = ff.reformat_ouput(phase_list)
         phase_list = np.transpose(np.array(phase_list))
 
-        ncomp = np.shape(self.eos.nui)[0]
-   
         obj_value = np.zeros(2)
 
         if "yilist" in self.thermodict:
@@ -160,7 +158,7 @@ class Data(ExpDataTemplate):
             xi = np.transpose(self.thermodict["xilist"])
             obj_value[1] = 0
             for i in range(len(xi)):
-                obj_value[1] += ff.obj_function_form(phase_list[ncomp+i], xi[i], weights=self.weights['xilist'], **self.obj_opts)
+                obj_value[1] += ff.obj_function_form(phase_list[self.eos.number_of_components+i], xi[i], weights=self.weights['xilist'], **self.obj_opts)
 
         logger.debug("Obj. breakdown for {}: xi {}, yi {}".format(self.name,obj_value[0],obj_value[1]))
 

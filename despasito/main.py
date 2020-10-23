@@ -14,7 +14,7 @@ from .input_output import read_input
 from .input_output import write_output
 from .equations_of_state import eos as eos_mod
 from .thermodynamics import thermo
-from .fit_parameters import fit
+from .parameter_fitting import fit
 
 class method_stat:
     disable_numba = True
@@ -51,7 +51,6 @@ def commandline_parser():
     return args
 
 def run(filename="input.json", path=".", **kwargs):
-
     """ Main function for running despasito calculations. All inputs and settings should be in the supplied JSON file(s).
     """
 
@@ -79,22 +78,21 @@ def run(filename="input.json", path=".", **kwargs):
 
     if "opt_params" in thermo_dict:
         for key,exp_dict in thermo_dict["exp_data"].items():
-            if key is not "opt_params":
-                eos_dict = exp_dict["eos_dict"]
-                thermo_dict["exp_data"][key].pop("eos_dict", None)
-                thermo_dict["exp_data"][key]["eos_obj"] = eos_mod(**eos_dict)
-                for key2 in fitting_opts:
-                    if key2 in thermo_dict:
-                        thermo_dict["exp_data"][key][key2] = thermo_dict[key2]
+            eos_dict = exp_dict["eos_dict"]
+            thermo_dict["exp_data"][key].pop("eos_dict", None)
+            thermo_dict["exp_data"][key]["eos_obj"] = eos_mod(**eos_dict)
+            for key2 in fitting_opts:
+                if key2 in thermo_dict:
+                    thermo_dict["exp_data"][key][key2] = thermo_dict[key2]
         logger.info("Initializing parametrization procedure")
 
-        output_dict = fit(thermo_dict.copy())
+        output_dict = fit(**thermo_dict.copy())
         logger.info("Finished parametrization")
         write_output.writeout_fit_dict(output_dict,**file_dict)
     else:
         eos = eos_mod(**eos_dict)
         logger.info("Initializing thermodynamic calculation")
-        output_dict = thermo(eos, thermo_dict.copy())
+        output_dict = thermo(eos, **thermo_dict.copy())
         logger.info("Finished thermodynamic calculation")
         try:
             write_output.writeout_thermo_dict(output_dict,thermo_dict["calculation_type"],**file_dict)
