@@ -19,21 +19,21 @@ from despasito.equations_of_state import constants
 
 logger = logging.getLogger(__name__)
 
-from despasito.main import method_stat
+from despasito.equations_of_state import method_stat
 
 flag_fortran = False
-if method_stat.disable_cython and method_stat.disable_numba and method_stat.disable_python:
+if not method_stat.cython and not method_stat.numba and not method_stat.python:
     try:
         from .compiled_modules import ext_Aassoc_fortran
         flag_fortran = True
     except:
         logger.info("Fortran module failed to import, using pure python. Consider using 'numba' flag")
         from .compiled_modules.ext_Aassoc_python import calc_Xika
-elif not method_stat.disable_cython:
+elif method_stat.cython:
     from .compiled_modules.ext_Aassoc_cython import calc_Xika
-elif not method_stat.disable_numba:
+elif method_stat.numba:
     from .compiled_modules.ext_Aassoc_numba import calc_Xika
-elif not method_stat.disable_python:
+elif method_stat.python:
     logger.info("Using pure python. Consider using 'numba' flag")
     from .compiled_modules.ext_Aassoc_python import calc_Xika
 

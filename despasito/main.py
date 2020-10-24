@@ -16,12 +16,6 @@ from .equations_of_state import eos as eos_mod
 from .thermodynamics import thermo
 from .parameter_fitting import fit
 
-# JITSTAT
-class method_stat:
-    disable_numba = True
-    disable_cython = True
-    disable_python = True
-
 logger = logging.getLogger(__name__)
 
 def get_parser():
@@ -39,20 +33,7 @@ def get_parser():
 
     return parser
 
-def commandline_parser():
-    """ Dummy function that separates the parser definition (get_parser()) from the parsing (purpose: generating api.rst for sphinx-build)"""
-
-    parser = get_parser()
-    args = parser.parse_args()
-
-# JITSTAT
-    method_stat.disable_numba = not args.numba
-    method_stat.disable_cython = not args.cython
-    method_stat.disable_python = not args.python
-
-    return args
-
-def run(filename="input.json", path=".", **kwargs):
+def run(filename="input.json", path=".", numba=False, cython=False, python=False, **kwargs):
     """ Main function for running despasito calculations. All inputs and settings should be in the supplied JSON file(s).
     """
 
@@ -61,6 +42,9 @@ def run(filename="input.json", path=".", **kwargs):
     eos_dict, thermo_dict, output_file = read_input.extract_calc_data(filename, path, **kwargs)
 
     thermo_dict['mpObj'] = kwargs['mpObj']
+    eos_dict["numba"] = numba
+    eos_dict["cython"] = cython
+    eos_dict["python"] = python
 
     if output_file:
         file_dict = {"output_file":output_file}

@@ -2,7 +2,7 @@
 Process command line argparse and initiate logging settings.
 """
 
-from .main import run, commandline_parser
+from .main import run, get_parser
 from .utils.parallelization import MultiprocessingJob
 import os
 import logging
@@ -10,7 +10,8 @@ import logging.handlers
 
 quiet = False
 
-args = commandline_parser()
+parser = get_parser()
+args = parser.parse_args()
 
 ## Extract arguments
 if args.verbose == 0:
@@ -42,16 +43,19 @@ if quiet == False:
 
 logging.info("Input args: {}".format(args))
 
-# Update flags for optimization methods 
-logging.info("Use Numba JIT: {}".format(args.numba))
-logging.info("Use Cython: {}".format(args.cython))
-logging.info("Pure Python (no fortran): {}".format(args.python))
-
 # Run program
 if args.input:
     kwargs = {"filename":args.input}
 else:
     kwargs = {}
+
+# Update flags for optimization methods 
+logging.info("Use Numba JIT: {}".format(args.numba))
+kwargs["numba"] = args.numba
+logging.info("Use Cython: {}".format(args.cython))
+kwargs["cython"] = args.cython
+logging.info("Pure Python (no fortran): {}".format(args.python))
+kwargs["python"] = args.python
 
 kwargs["mpObj"] = MultiprocessingJob(ncores=args.ncores)
 kwargs["path"] = args.path

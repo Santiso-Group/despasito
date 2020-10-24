@@ -11,7 +11,6 @@ import numpy as np
 
 from abc import ABC, abstractmethod
 
-
 # __________________ EOS Interface _________________
 class EosTemplate(ABC):
 
@@ -21,7 +20,7 @@ class EosTemplate(ABC):
     By using this template, all EOS objects are then easily exchanged.
     """
 
-    def __init__(self, beads, beadlibrary, **kwargs):
+    def __init__(self, beads, beadlibrary, numba=False, cython=False, python=False, **kwargs):
 
         self.number_of_components = np.nan
         for bead in beads:

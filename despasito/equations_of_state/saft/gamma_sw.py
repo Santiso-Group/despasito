@@ -21,13 +21,12 @@ from despasito.equations_of_state.saft import Aassoc
 
 logger = logging.getLogger(__name__)
 
-# JITSTAT
-from despasito.main import method_stat
-if method_stat.disable_cython and method_stat.disable_numba:
+from despasito.equations_of_state import method_stat
+if not method_stat.cython and not method_stat.numba:
     pass
-elif not method_stat.disable_cython:
+elif method_stat.cython:
     logger.warning("saft.gamma_sw does not use cython.")
-elif not method_stat.disable_numba:
+elif method_stat.numba:
     logger.warning("saft.gamma_sw does not use numba.")
 
 ckl_coef = np.array([[2.25855, -1.50349, 0.249434], [-0.669270, 1.40049, -0.827739], [10.1576, -15.0427, 5.30827]])

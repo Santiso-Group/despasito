@@ -8,12 +8,14 @@ Create an EOS class from options taken from factory design pattern.
 from importlib import import_module
 import logging
 
-# JITSTAT
-#from despasito import method_stat
+class method_stat:
+    numba = False
+    cython = False
+    python = False
 
 logger = logging.getLogger(__name__)
 
-def eos(eos="saft.gamma_mie", **input_dict):
+def eos(eos="saft.gamma_mie", numba=False, cython=False, python=False, **input_dict):
     """
     Interface between the user and our library of equations of state (EOS).
 
@@ -32,16 +34,9 @@ def eos(eos="saft.gamma_mie", **input_dict):
         An instance of the defined EOS class to be used in thermodynamic computations.
     """
 
-# JITSTAT
-#    if "numba" in input_dict:
-#        method_stat.disable_numba = False
-#        del input_dict["numba"]
-#    if "cython" in input_dict:
-#        method_stat.disable_cython = False
-#        del input_dict["cython"]
-#    if "python" in input_dict:
-#        method_stat.disable_python = False
-#        del input_dict["python"]
+    method_stat.numba = numba
+    method_stat.cython = cython
+    method_stat.python = python
 
     factory_families = ["saft"] # eos families in this list have a general object with a factory to import relevent modules
 
