@@ -12,7 +12,6 @@ import argparse
 
 from .input_output import read_input
 from .input_output import write_output
-from .equations_of_state import eos as eos_mod
 from .thermodynamics import thermo
 from .parameter_fitting import fit
 
@@ -55,6 +54,8 @@ def commandline_parser():
 def run(filename="input.json", path=".", **kwargs):
     """ Main function for running despasito calculations. All inputs and settings should be in the supplied JSON file(s).
     """
+
+    from .equations_of_state import eos as eos_mod
 
     #read input file (need to add command line specification)
     logger.info("Begin processing input file: %s" % filename)
