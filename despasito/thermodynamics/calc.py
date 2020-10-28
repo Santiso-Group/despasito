@@ -417,7 +417,7 @@ def calc_Psat(T, xi, eos, density_dict={}, tol=1e-6, Pconverged=1):
     Pvspline, roots, extrema = PvsV_spline(vlist, Plist)
 
     if (not extrema or len(extrema)<2 or np.any(np.isnan(roots))):
-        logger.warning('Error: The component is above its critical point, add an exception to setPsat')
+        logger.warning('The component is above its critical point')
         Psat, rhol, rhov = np.nan, np.nan, np.nan
 
     else:
@@ -2442,55 +2442,10 @@ def solve_P_yiT(P, yi, T, eos, density_dict={}, mole_fraction_options={}):
 
 ######################################################################
 #                                                                    #
-#                   Set Psat for Critical Components                 #
-#                                                                    #
-######################################################################
-def setPsat(ind, eos):
-    r"""
-    Generate dummy value for component saturation pressure if it is above its critical point.
-    
-    Parameters
-    ----------
-    ind : int
-        Index of bead that is above critical point
-    eos : obj
-        An instance of the defined EOS class to be used in thermodynamic computations.
-
-    Returns
-    -------
-    Psat : float
-        [Pa] Dummy value of saturation pressure
-    NaNbead : str
-        Bead name of the component that is above it's critical point
-    """
-
-    for j in range(np.size(eos.eos_dict['nui'][ind])):
-        if eos.eos_dict['nui'][ind][j] > 0.0 and eos.beads[j] == "CO2":
-            Psat = 10377000.0
-        elif eos.eos_dict['nui'][ind][j] > 0.0 and eos.beads[j] == "N2":
-            Psat = 7377000.0
-        elif eos.eos_dict['nui'][ind][j] > 0.0 and ("CH4" in eos.beads[j]):
-            Psat = 6377000.0
-        elif eos.eos_dict['nui'][ind][j] > 0.0 and ("CH3CH3" in eos.beads[j]):
-            Psat = 7377000.0
-        elif eos.eos_dict['nui'][ind][j] > 0.0:
-            #Psat = np.nan
-            Psat = 7377000.0
-            NaNbead = eos.beads[j]
-            logger.warning("Bead, {}, is above its critical point. Psat is assumed to be {}. To add an exception go to thermodynamics.calc.setPsat".format(NaNbead,Psat))
-
-    if "NaNbead" not in list(locals().keys()):
-       NaNbead = "No NaNbead"
-       logger.info("No beads above their critical point")
-
-    return Psat, NaNbead 
-
-######################################################################
-#                                                                    #
 #                              Calc yT phase                         #
 #                                                                    #
 ######################################################################
-def calc_yT_phase(yi, T, eos, density_dict={}, mole_fraction_options={}, Pguess=None, Pmin=1e+4, method="bisect", pressure_options={}):
+def calc_yT_phase(yi, T, eos, density_dict={}, mole_fraction_options={}, Pguess=None, Pmin=1e+4, method="bisect", pressure_options={}, Psat_set=1e+7):
     r"""
     Calculate dew point mole fraction and pressure given system vapor mole fraction and temperature.
     
@@ -2508,6 +2463,8 @@ def calc_yT_phase(yi, T, eos, density_dict={}, mole_fraction_options={}, Pguess=
         Options used to solve the inner loop in the solving algorithm
     Pguess : float, Optional, default: None
         [Pa] Guess the system pressure at the dew point. A negative value will force an estimation based on the saturation pressure of each component.
+    Psat_set : float, Optional, default: 1e+7
+        [Pa] Set the saturation pressure if the pure component is above the critical point in these conditions
     Pmin : float, Optional, default: 10000
         [Pa] Guess the minimum system pressure at the dew point. A value of None will used the calc_Prange_xi default.
     method : str, Optional, default: "broyden1"
@@ -2538,9 +2495,8 @@ def calc_yT_phase(yi, T, eos, density_dict={}, mole_fraction_options={}, Pguess=
         yi_tmp[i] = 1.0
         Psat[i], _, _ = calc_Psat(T, yi_tmp, eos, density_dict)
         if np.isnan(Psat[i]):
-            Psat[i], NaNbead = setPsat(i, eos)
-            if np.isnan(Psat[i]):
-                raise ValueError("Component, {}, is beyond it's critical point at {} K. Add an exception to setPsat".format(NaNbead,T))
+            Psat[i] = Psat_guess
+            logger.warning("Component, {}, is above its critical point. Psat is assumed to be {}.".format(i+1,Psat[i]))
 
     # Estimate initial pressure
     if Pguess is None:
@@ -2578,7 +2534,7 @@ def calc_yT_phase(yi, T, eos, density_dict={}, mole_fraction_options={}, Pguess=
 #                              Calc xT phase                         #
 #                                                                    #
 ######################################################################
-def calc_xT_phase(xi, T, eos, density_dict={}, mole_fraction_options={}, Pguess=None, Pmin=None, Pmax=None, method="bisect", pressure_options={}):
+def calc_xT_phase(xi, T, eos, density_dict={}, mole_fraction_options={}, Pguess=None, Psat_set=1e+7, Pmin=None, Pmax=None, method="bisect", pressure_options={}):
     r"""
     Calculate bubble point mole fraction and pressure given system liquid mole fraction and temperature.
     
@@ -2596,6 +2552,8 @@ def calc_xT_phase(xi, T, eos, density_dict={}, mole_fraction_options={}, Pguess=
         Options used to solve the inner loop in the solving algorithm
     Pguess : float, Optional, default: None
         [Pa] Guess the system pressure at the dew point. A value of None will force an estimation based on the saturation pressure of each component.
+    Psat_set : float, Optional, default: 1e+7
+        [Pa] Set the saturation pressure if the pure component is above the critical point in these conditions
     Pmin : float, Optional, default: see calc_Prange_xi
         [Pa] Set lower bound on the minimum system pressure at the dew point. A value of None will used the calc_Prange_xi default.
     Pmax : float, Optional, default: see calc_Prange_xi
@@ -2627,9 +2585,8 @@ def calc_xT_phase(xi, T, eos, density_dict={}, mole_fraction_options={}, Pguess=
         xi_tmp[i] = 1.0
         Psat[i], _, _ = calc_Psat(T, xi_tmp, eos, density_dict)
         if np.isnan(Psat[i]):
-            Psat[i], NaNbead = setPsat(i, eos)
-            if np.isnan(Psat[i]):
-                logger.error("Component, {}, is beyond it's critical point. Add an exception to setPsat".format(NaNbead))
+            Psat[i] = Psat_guess
+            logger.warning("Component, {}, is above its critical point. Psat is assumed to be {}.".format(i+1,Psat[i]))
 
     # Estimate initial pressure
     if Pguess is None:
@@ -2743,7 +2700,7 @@ def hildebrand_solubility(rhol, xi, T, eos, dT=.1, tol=1e-4, density_dict={}):
 #                              Calc PT phase                         #
 #                                                                    #
 ######################################################################
-def calc_flash(P, T, eos, density_dict={}, maxiter=200, tol=1e-9, max_mole_fraction0=1, min_mole_fraction0=0):
+def calc_flash(P, T, eos, density_dict={}, maxiter=200, tol=1e-9, max_mole_fraction0=1, min_mole_fraction0=0, Psat_set=1e+7):
     r"""
     Flash calculation of vapor and liquid mole fractions. Only binary systems are currently supported
     
@@ -2765,6 +2722,8 @@ def calc_flash(P, T, eos, density_dict={}, maxiter=200, tol=1e-9, max_mole_fract
         Set the vapor and liquid mole fraction of component one to be greater than this number. Useful for diagrams with multiple solutions, such as those with an azeotrope.
     max_mole_fraction0 : float, Optional, default=1
         Set the vapor and liquid mole fraction of component one to be less than this number. Useful for diagrams with multiple solutions, such as those with an azeotrope.
+    Psat_set : float, Optional, default: 1e+7
+        [Pa] Set the saturation pressure if the pure component is above the critical point in these conditions
 
     Returns
     -------
@@ -2792,9 +2751,8 @@ def calc_flash(P, T, eos, density_dict={}, maxiter=200, tol=1e-9, max_mole_fract
         xi_tmp[i] = 1.0
         Psat[i], _, _ = calc_Psat(T, xi_tmp, eos, density_dict)
         if np.isnan(Psat[i]):
-            Psat[i], NaNbead = setPsat(i, eos)
-            if np.isnan(Psat[i]):
-                logger.error("Component, {}, is beyond it's critical point. Add an exception to setPsat, otherwise assumed 1".format(NaNbead))
+            Psat[i] = Psat_guess
+            logger.warning("Component, {}, is above its critical point. Psat is assumed to be {}.".format(i+1,Psat[i]))
         Ki0[i] = Psat[i]/P
 
     Ki, _ = constrain_Ki(Ki0, min_mole_fraction0=min_mole_fraction0, max_mole_fraction0=max_mole_fraction0)
@@ -3017,7 +2975,7 @@ def constrain_Ki(Ki0, min_mole_fraction0=0, max_mole_fraction0=1):
 #                              Calc PT phase                         #
 #                                                                    #
 ######################################################################
-def _calc_PT_phase(xi, T, eos, density_dict={}):
+def _calc_PT_phase(xi, T, eos, density_dict={}, Psat_set=1e+7):
     r"""
     *Not Complete*
     Calculate the PT phase diagram given liquid mole fraction and temperature
@@ -3032,6 +2990,8 @@ def _calc_PT_phase(xi, T, eos, density_dict={}):
         An instance of the defined EOS class to be used in thermodynamic computations.
     density_dict : dict, Optional, default: {}
         Dictionary of options used in calculating pressure vs. mole 
+    Psat_set : float, Optional, default: 1e+7
+        [Pa] Set the saturation pressure if the pure component is above the critical point in these conditions
 
     Returns
     -------
@@ -3049,9 +3009,8 @@ def _calc_PT_phase(xi, T, eos, density_dict={}):
   #      xi_tmp[i] = 1.0
   #      Psat[i], rholsat, rhogsat = calc_Psat(T, xi_tmp, eos, density_dict)
   #      if np.isnan(Psat[i]):
-  #          Psat[i], NaNbead = setPsat(i, eos)
-  #          if np.isnan(Psat[i]):
-  #              logger.error("Component, {}, is beyond it's critical point. Add an exception to setPsat".format(NaNbead))
+  #          Psat[i] = Psat_guess
+  #          logger.warning("Component, {}, is above its critical point. Psat is assumed to be {}.".format(i+1,Psat[i]))
 
   #  zi = np.array([0.5, 0.5])
 

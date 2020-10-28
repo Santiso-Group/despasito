@@ -37,15 +37,12 @@ def initial_guess(opt_params, eos):
     beadparams0 = np.ones(len(opt_params['fit_params']))
     for i, param in enumerate(opt_params['fit_params']):
         fit_params_list = param.split("_")
-        if (fit_params_list[0] == "l" and fit_params_list[1] in ["a","r"]):
-            fit_params_list[0] = "{}_{}".format(fit_params_list[0],fit_params_list[1])
-            fit_params_list.remove(fit_params_list[1])
         if len(fit_params_list) == 1:
             beadparams0[i] = eos.param_guess(fit_params_list[0], [opt_params['fit_bead']])
         elif len(fit_params_list) == 2:
             beadparams0[i] = eos.param_guess(fit_params_list[0], [opt_params['fit_bead'], fit_params_list[1]])
         else:
-            raise ValueError("Parameters for only one bead are allowed to be fit at one time. Please only list one bead type in your fit parameter name.")
+            raise ValueError("Parameters for only one bead are allowed to be fit. Multiple underscores in a parameter name suggest more than one bead type in your fit parameter name, {}".format(param))
 
     return beadparams0
 
@@ -76,7 +73,8 @@ def check_parameter_bounds(opt_params, eos, bounds):
     new_bounds = [(0,0) for x in range(len(opt_params['fit_params']))]
     # Check boundary parameters to be sure they're in a reasonable range
     for i, param in enumerate(opt_params['fit_params']):
-        new_bounds[i] = tuple(eos.check_bounds(opt_params['fit_bead'], param, bounds[i]))
+        fit_params_list = param.split("_")
+        new_bounds[i] = tuple(eos.check_bounds(fit_params_list[0], param, bounds[i]))
 
     return new_bounds
 
@@ -343,14 +341,8 @@ def compute_obj(beadparams, fit_bead, fit_params, exp_dict, bounds):
     # Compute obj_function
     obj_function = []
     for key,data_obj in exp_dict.items():
-        #for i, param in enumerate(fit_params):
-        #    data_obj.eos.update_parameters(fit_bead, param, beadparams[i])
-        #data_obj.eos.parameter_refresh()
-        #obj_function.append(data_obj.objective())
         try:
-            for i, param in enumerate(fit_params):
-                data_obj.eos.update_parameters(fit_bead, param, beadparams[i])
-            data_obj.eos.parameter_refresh()
+            data_obj.update_parameters(fit_bead, fit_params, beadparams)
             obj_function.append(data_obj.objective())
         except:
             logger.exception("Failed to evaluate objective function for {} of type {}.".format(key,data_obj.name))
@@ -414,7 +406,6 @@ def obj_function_form(data_test, data0, weights=1.0, method="average-squared-dev
     if np.size(weights) > 1 and np.size(weights) != np.size(data_test):
         raise ValueError("Weight for data is provided as an array of length, {}, but must be length, {}.".format(len(weights),len(data_test)))
 
-#    data_tmp = np.array([(data_test[i]-data0[i])/data0[i] if not np.isnan((data_test[i]-data0[i])/data0[i]) else nan_number  for i in range(len(data_test))])
     data_tmp = np.array([(data_test[i]-data0[i])/data0[i] for i in range(len(data_test)) if not np.isnan((data_test[i]-data0[i])/data0[i])])
 
     if method == "average-squared-deviation":

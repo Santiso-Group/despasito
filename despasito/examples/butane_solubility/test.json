@@ -3,7 +3,7 @@
     "EOSgroup": "../library/SAFTgroup.json",
     "opt_params": {
         "fit_bead" : "CH3",
-        "fit_params": ["l_r_CH2"],
+        "fit_params": ["lambdar_CH2"],
         "global_method": "basinhopping",
         "epsilon_CH2_bounds" : [12.0, 40.0]
     },

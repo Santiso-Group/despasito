@@ -48,8 +48,8 @@ class SaftType():
         - epsilon: :math:`\epsilon_{k,k}/k_B`, Energy well depth scaled by Boltzmann constant
         - sigma: :math:`\sigma_{k,k}`, Size parameter [nm]
         - mass: Bead mass [kg/mol]
-        - l_r: :math:`\lambda^{r}_{k,k}`, Exponent of repulsive term between groups of type k
-        - l_a: :math:`\lambda^{a}_{k,k}`, Exponent of attractive term between groups of type k
+        - lambdar: :math:`\lambda^{r}_{k,k}`, Exponent of repulsive term between groups of type k
+        - lambdaa: :math:`\lambda^{a}_{k,k}`, Exponent of attractive term between groups of type k
         
     Attributes
     ----------
@@ -60,20 +60,20 @@ class SaftType():
         
         - epsilon: :math:`\epsilon_{k,l}/k_B`, Energy parameter scaled by Boltzmann Constant
         - sigma: :math:`\sigma_{k,k}`, Size parameter [nm]
-        - l_r: :math:`\lambda^{r}_{k,l}`, Exponent of repulsive term between groups of type k and l
-        - l_a: :math:`\lambda^{a}_{k,l}`, Exponent of attractive term between groups of type k and l
+        - lambdar: :math:`\lambda^{r}_{k,l}`, Exponent of repulsive term between groups of type k and l
+        - lambdaa: :math:`\lambda^{a}_{k,l}`, Exponent of attractive term between groups of type k and l
     
     """
 
     def __init__(self, **kwargs):
     
         self.Aideal_method = "Abroglie"
-        self.parameter_types = ["epsilon", "sigma", "l_r", "l_a", "Sk", "rc", "rd", "epsilonHB", "K"]
-        self.parameter_bound_extreme = {"epsilon":[100.0,1000.], "sigma":[0.1,1.0], "l_r":[6.0,100.], "l_a":[3.0,100.], "Sk":[0.1,1.], "epsilonHB":[100.0,5000.], "K":[1e-5,10000.]}    
+        self.parameter_types = ["epsilon", "sigma", "lambdar", "lambdaa", "Sk", "rc", "rd", "epsilonHB", "K"]
+        self.parameter_bound_extreme = {"epsilon":[100.0,1000.], "sigma":[0.1,1.0], "lambdar":[6.0,100.], "lambdaa":[3.0,100.], "Sk":[0.1,1.], "epsilonHB":[100.0,5000.], "K":[1e-5,10000.]}    
         self.residual_helmholtz_contributions = ["Amonomer","Achain"]
         self.mixing_rules = {"sigma": {"function": "mean"},
-                             "l_r": {"function": "mie_exponent"},
-                             "l_a": {"function": "mie_exponent"},
+                             "lambdar": {"function": "mie_exponent"},
+                             "lambdaa": {"function": "mie_exponent"},
                              "epsilon": {"function": "volumetric_geometric_mean", "weighting_parameters": ["sigma"]}
                             }
 
@@ -87,19 +87,22 @@ class SaftType():
             if key not in kwargs:
                 raise ValueError("The one of the following inputs is missing: {}".format(", ".join(tmp)))
             elif not hasattr(self, key):
-                self.eos_dict[key] = kwargs[key]
+                if key == "nui":
+                    self.eos_dict[key] = kwargs[key]
+                else:
+                    setattr(self, key, kwargs[key])
 
         if 'crosslibrary' not in kwargs:
-            self.eos_dict['crosslibrary'] = {}
+            self.crosslibrary = {}
         else:
-            self.eos_dict['crosslibrary'] = kwargs['crosslibrary']
+            self.crosslibrary = kwargs['crosslibrary']
 
         if not hasattr(self, 'massi'):
-            self.eos_dict['massi'] = tb.calc_massi(self.eos_dict['nui'],self.eos_dict['beadlibrary'],self.eos_dict['beads'])
+            self.eos_dict['massi'] = tb.calc_massi(self.eos_dict['nui'],self.beadlibrary,self.beads)
         if not hasattr(self, 'Vks'):
-            self.eos_dict['Vks'] = tb.extract_property("Vks",self.eos_dict['beadlibrary'],self.eos_dict['beads'])
+            self.eos_dict['Vks'] = tb.extract_property("Vks",self.beadlibrary,self.beads)
         if not hasattr(self, 'Sk'):
-            self.eos_dict['Sk'] = tb.extract_property("Sk",self.eos_dict['beadlibrary'],self.eos_dict['beads'])
+            self.eos_dict['Sk'] = tb.extract_property("Sk",self.beadlibrary,self.beads)
 
         # Initialize temperature attribute
         if not hasattr(self, 'T'):
@@ -111,11 +114,11 @@ class SaftType():
             self.ncomp, self.nbeads = np.shape(self.eos_dict['nui'])
 
         # Intiate cross interaction terms
-        output = tb.cross_interaction_from_dict( self.eos_dict['beads'], self.eos_dict['beadlibrary'], self.mixing_rules, crosslibrary=self.eos_dict['crosslibrary'])
+        output = tb.cross_interaction_from_dict( self.beads, self.beadlibrary, self.mixing_rules, crosslibrary=self.crosslibrary)
         self.eos_dict["sigmakl"] = output["sigma"]
         self.eos_dict["epsilonkl"] = output["epsilon"]
-        self.eos_dict["l_akl"] = output["l_a"]
-        self.eos_dict["l_rkl"] = output["l_r"]
+        self.eos_dict["lambdaakl"] = output["lambdaa"]
+        self.eos_dict["lambdarkl"] = output["lambdar"]
 
         # Initiate average interaction terms
         self.calc_component_averaged_properties()
@@ -127,8 +130,8 @@ class SaftType():
             self.eos_dict['num_rings'] = np.zeros(len(self.eos_dict['nui']))
         
         # compute alphakl eq. 33
-        self.eos_dict['Ckl'] = prefactor(self.eos_dict['l_rkl'], self.eos_dict['l_akl'])
-        self.eos_dict['alphakl'] = self.eos_dict['Ckl'] * ((1.0 / (self.eos_dict['l_akl'] - 3.0)) - (1.0 / (self.eos_dict['l_rkl'] - 3.0)))
+        self.eos_dict['Ckl'] = prefactor(self.eos_dict['lambdarkl'], self.eos_dict['lambdaakl'])
+        self.eos_dict['alphakl'] = self.eos_dict['Ckl'] * ((1.0 / (self.eos_dict['lambdaakl'] - 3.0)) - (1.0 / (self.eos_dict['lambdarkl'] - 3.0)))
 
     def calc_component_averaged_properties(self):
         r"""
@@ -140,8 +143,8 @@ class SaftType():
     
             - epsilonii_avg : numpy.ndarray, Matrix of well depths for groups (k,l)
             - sigmaii_avg : numpy.ndarray, Matrix of Mie diameter for groups (k,l)
-            - l_aii_avg : numpy.ndarray, Matrix of Mie potential attractive exponents for k,l groups
-            - l_rii_avg : numpy.ndarray, Matrix of Mie potential attractive exponents for k,l groups
+            - lambdaaii_avg : numpy.ndarray, Matrix of Mie potential attractive exponents for k,l groups
+            - lambdarii_avg : numpy.ndarray, Matrix of Mie potential attractive exponents for k,l groups
     
         """
     
@@ -152,8 +155,8 @@ class SaftType():
         output = {}
         output['epsilonii_avg'] = np.zeros(ncomp, float)
         output['sigmaii_avg'] = np.zeros(ncomp, float)
-        output['l_rii_avg'] = np.zeros(ncomp, float)
-        output['l_aii_avg'] = np.zeros(ncomp, float)
+        output['lambdarii_avg'] = np.zeros(ncomp, float)
+        output['lambdaaii_avg'] = np.zeros(ncomp, float)
     
         #compute zki
         for i in range(ncomp):
@@ -170,8 +173,8 @@ class SaftType():
                 for l in range(nbeads):
                     output['sigmaii_avg'][i] += zki[i, k] * zki[i, l] * self.eos_dict['sigmakl'][k, l]**3
                     output['epsilonii_avg'][i] += zki[i, k] * zki[i, l] * self.eos_dict['epsilonkl'][k, l]
-                    output['l_rii_avg'][i] += zki[i, k] * zki[i, l] * self.eos_dict['l_rkl'][k, l]
-                    output['l_aii_avg'][i] += zki[i, k] * zki[i, l] * self.eos_dict['l_akl'][k, l]
+                    output['lambdarii_avg'][i] += zki[i, k] * zki[i, l] * self.eos_dict['lambdarkl'][k, l]
+                    output['lambdaaii_avg'][i] += zki[i, k] * zki[i, l] * self.eos_dict['lambdaakl'][k, l]
             output['sigmaii_avg'][i] = output['sigmaii_avg'][i]**(1/3.0)
 
         self.eos_dict.update(output)
@@ -246,7 +249,7 @@ class SaftType():
             zetax = stb.calc_zetax(rho, self.eos_dict['Cmol2seg'], self.eos_dict['xskl'], self.eos_dict['dkl'])
 
         # compute components of eq. 19
-        a1kl = calc_a1ii(rho, self.eos_dict['Cmol2seg'], self.eos_dict['dkl'], self.eos_dict['l_akl'], self.eos_dict['l_rkl'], self.eos_dict['x0kl'], self.eos_dict['epsilonkl'], zetax)
+        a1kl = calc_a1ii(rho, self.eos_dict['Cmol2seg'], self.eos_dict['dkl'], self.eos_dict['lambdaakl'], self.eos_dict['lambdarkl'], self.eos_dict['x0kl'], self.eos_dict['epsilonkl'], zetax)
 
         # eq. 18
         a1 = np.einsum("ijk,jk->i", a1kl, self.eos_dict['xskl'])
@@ -301,14 +304,14 @@ class SaftType():
     
         chikl = np.einsum("i,jk", zetaxstar, fmlist123[0]) + np.einsum("i,jk", zetaxstar**5, fmlist123[1]) + np.einsum("i,jk", zetaxstar**8, fmlist123[2])
 
-        a1s_2la = calc_a1s(rho, self.eos_dict['Cmol2seg'], 2.0 * self.eos_dict['l_akl'], zetax, self.eos_dict['epsilonkl'], self.eos_dict['dkl'])
-        a1s_2lr = calc_a1s(rho, self.eos_dict['Cmol2seg'], 2.0 * self.eos_dict['l_rkl'], zetax, self.eos_dict['epsilonkl'], self.eos_dict['dkl'])
-        a1s_lalr = calc_a1s(rho, self.eos_dict['Cmol2seg'], self.eos_dict['l_akl'] + self.eos_dict['l_rkl'], zetax, self.eos_dict['epsilonkl'], self.eos_dict['dkl'])
-        B_2la = calc_Bkl(rho, 2.0 * self.eos_dict['l_akl'], self.eos_dict['Cmol2seg'], self.eos_dict['dkl'], self.eos_dict['epsilonkl'], self.eos_dict['x0kl'], zetax)
-        B_2lr = calc_Bkl(rho, 2.0 * self.eos_dict['l_rkl'], self.eos_dict['Cmol2seg'], self.eos_dict['dkl'], self.eos_dict['epsilonkl'], self.eos_dict['x0kl'], zetax)
-        B_lalr = calc_Bkl(rho, self.eos_dict['l_akl'] + self.eos_dict['l_rkl'], self.eos_dict['Cmol2seg'], self.eos_dict['dkl'], self.eos_dict['epsilonkl'], self.eos_dict['x0kl'], zetax)
+        a1s_2la = calc_a1s(rho, self.eos_dict['Cmol2seg'], 2.0 * self.eos_dict['lambdaakl'], zetax, self.eos_dict['epsilonkl'], self.eos_dict['dkl'])
+        a1s_2lr = calc_a1s(rho, self.eos_dict['Cmol2seg'], 2.0 * self.eos_dict['lambdarkl'], zetax, self.eos_dict['epsilonkl'], self.eos_dict['dkl'])
+        a1s_lalr = calc_a1s(rho, self.eos_dict['Cmol2seg'], self.eos_dict['lambdaakl'] + self.eos_dict['lambdarkl'], zetax, self.eos_dict['epsilonkl'], self.eos_dict['dkl'])
+        B_2la = calc_Bkl(rho, 2.0 * self.eos_dict['lambdaakl'], self.eos_dict['Cmol2seg'], self.eos_dict['dkl'], self.eos_dict['epsilonkl'], self.eos_dict['x0kl'], zetax)
+        B_2lr = calc_Bkl(rho, 2.0 * self.eos_dict['lambdarkl'], self.eos_dict['Cmol2seg'], self.eos_dict['dkl'], self.eos_dict['epsilonkl'], self.eos_dict['x0kl'], zetax)
+        B_lalr = calc_Bkl(rho, self.eos_dict['lambdaakl'] + self.eos_dict['lambdarkl'], self.eos_dict['Cmol2seg'], self.eos_dict['dkl'], self.eos_dict['epsilonkl'], self.eos_dict['x0kl'], zetax)
 
-        a2kl = (self.eos_dict['x0kl']**(2.0 * self.eos_dict['l_akl'])) * (a1s_2la + B_2la) / constants.molecule_per_nm3 - ((2.0 * self.eos_dict['x0kl']**(self.eos_dict['l_akl'] + self.eos_dict['l_rkl'])) * (a1s_lalr + B_lalr) / constants.molecule_per_nm3) + ((self.eos_dict['x0kl']**(2.0 * self.eos_dict['l_rkl'])) * (a1s_2lr + B_2lr) / constants.molecule_per_nm3)
+        a2kl = (self.eos_dict['x0kl']**(2.0 * self.eos_dict['lambdaakl'])) * (a1s_2la + B_2la) / constants.molecule_per_nm3 - ((2.0 * self.eos_dict['x0kl']**(self.eos_dict['lambdaakl'] + self.eos_dict['lambdarkl'])) * (a1s_lalr + B_lalr) / constants.molecule_per_nm3) + ((self.eos_dict['x0kl']**(2.0 * self.eos_dict['lambdarkl'])) * (a1s_2lr + B_2lr) / constants.molecule_per_nm3)
         a2kl *= (1.0 + chikl) * self.eos_dict['epsilonkl'] * (self.eos_dict['Ckl']**2)  # *(KHS/2.0)
 
         a2kl = np.einsum("i,ijk->ijk", KHS / 2.0, a2kl)
@@ -463,22 +466,22 @@ class SaftType():
         if zetax is None:
             zetax = stb.calc_zetax(rho, self.eos_dict['Cmol2seg'], self.eos_dict['xskl'], self.eos_dict['dkl'])
 
-        da1iidrhos = calc_da1iidrhos(rho, self.eos_dict['Cmol2seg'], self.eos_dict['dii_eff'], self.eos_dict['l_aii_avg'], self.eos_dict['l_rii_avg'], self.eos_dict['x0ii'], self.eos_dict['epsilonii_avg'], zetax)
+        da1iidrhos = calc_da1iidrhos(rho, self.eos_dict['Cmol2seg'], self.eos_dict['dii_eff'], self.eos_dict['lambdaaii_avg'], self.eos_dict['lambdarii_avg'], self.eos_dict['x0ii'], self.eos_dict['epsilonii_avg'], zetax)
 
-        a1sii_l_aii_avg = calc_a1s_eff(rho, self.eos_dict['Cmol2seg'], self.eos_dict['l_aii_avg'], zetax, self.eos_dict['epsilonii_avg'], self.eos_dict['dii_eff'])
-        a1sii_l_rii_avg = calc_a1s_eff(rho, self.eos_dict['Cmol2seg'], self.eos_dict['l_rii_avg'], zetax, self.eos_dict['epsilonii_avg'], self.eos_dict['dii_eff'])
+        a1sii_lambdaaii_avg = calc_a1s_eff(rho, self.eos_dict['Cmol2seg'], self.eos_dict['lambdaaii_avg'], zetax, self.eos_dict['epsilonii_avg'], self.eos_dict['dii_eff'])
+        a1sii_lambdarii_avg = calc_a1s_eff(rho, self.eos_dict['Cmol2seg'], self.eos_dict['lambdarii_avg'], zetax, self.eos_dict['epsilonii_avg'], self.eos_dict['dii_eff'])
 
-        Bii_l_aii_avg = calc_Bkl_eff(rho, self.eos_dict['l_aii_avg'], self.eos_dict['Cmol2seg'], self.eos_dict['dii_eff'], self.eos_dict['epsilonii_avg'], self.eos_dict['x0ii'], zetax)
-        Bii_l_rii_avg = calc_Bkl_eff(rho, self.eos_dict['l_rii_avg'], self.eos_dict['Cmol2seg'], self.eos_dict['dii_eff'], self.eos_dict['epsilonii_avg'], self.eos_dict['x0ii'], zetax)
+        Bii_lambdaaii_avg = calc_Bkl_eff(rho, self.eos_dict['lambdaaii_avg'], self.eos_dict['Cmol2seg'], self.eos_dict['dii_eff'], self.eos_dict['epsilonii_avg'], self.eos_dict['x0ii'], zetax)
+        Bii_lambdarii_avg = calc_Bkl_eff(rho, self.eos_dict['lambdarii_avg'], self.eos_dict['Cmol2seg'], self.eos_dict['dii_eff'], self.eos_dict['epsilonii_avg'], self.eos_dict['x0ii'], zetax)
 
-        Cii = prefactor(self.eos_dict['l_rii_avg'], self.eos_dict['l_aii_avg'])
+        Cii = prefactor(self.eos_dict['lambdarii_avg'], self.eos_dict['lambdaaii_avg'])
 
         tmp1 = (1.0 / (2.0 * np.pi * self.eos_dict['epsilonii_avg'] * self.eos_dict['dii_eff']**3 * constants.molecule_per_nm3**2)) 
         tmp11 = 3.0 * da1iidrhos
-        tmp21 = Cii * self.eos_dict['l_aii_avg'] * (self.eos_dict['x0ii']**self.eos_dict['l_aii_avg'])  
-        tmp22 = np.einsum("ij,i->ij", (a1sii_l_aii_avg + Bii_l_aii_avg), 1.0 / (rho * self.eos_dict['Cmol2seg']))
-        tmp31 = (Cii * self.eos_dict['l_rii_avg'] *  (self.eos_dict['x0ii']**self.eos_dict['l_rii_avg'])) 
-        tmp32 = np.einsum("ij,i->ij", (a1sii_l_rii_avg + Bii_l_rii_avg), 1.0 / (rho * self.eos_dict['Cmol2seg'])) 
+        tmp21 = Cii * self.eos_dict['lambdaaii_avg'] * (self.eos_dict['x0ii']**self.eos_dict['lambdaaii_avg'])  
+        tmp22 = np.einsum("ij,i->ij", (a1sii_lambdaaii_avg + Bii_lambdaaii_avg), 1.0 / (rho * self.eos_dict['Cmol2seg']))
+        tmp31 = (Cii * self.eos_dict['lambdarii_avg'] *  (self.eos_dict['x0ii']**self.eos_dict['lambdarii_avg'])) 
+        tmp32 = np.einsum("ij,i->ij", (a1sii_lambdarii_avg + Bii_lambdarii_avg), 1.0 / (rho * self.eos_dict['Cmol2seg'])) 
         g1 = tmp1*(tmp11-tmp21*tmp22+tmp31*tmp32)
 
         return g1
@@ -513,36 +516,36 @@ class SaftType():
         zetaxstar = stb.calc_zetaxstar(rho, self.eos_dict['Cmol2seg'], self.eos_dict['xskl'], self.eos_dict['sigmakl'])
         KHS = stb.calc_KHS(zetax)
         
-        Cii = prefactor(self.eos_dict['l_rii_avg'], self.eos_dict['l_aii_avg'])
+        Cii = prefactor(self.eos_dict['lambdarii_avg'], self.eos_dict['lambdaaii_avg'])
         
         phi7 = np.array([10.0, 10.0, 0.57, -6.7, -8.0])
-        alphaii = Cii * ((1.0 / (self.eos_dict['l_aii_avg'] - 3.0)) - (1.0 / (self.eos_dict['l_rii_avg'] - 3.0)))
+        alphaii = Cii * ((1.0 / (self.eos_dict['lambdaaii_avg'] - 3.0)) - (1.0 / (self.eos_dict['lambdarii_avg'] - 3.0)))
         theta = np.exp(self.eos_dict['epsilonii_avg'] / T) - 1.0
         
         gammacii = np.zeros((np.size(rho), np.size(xi)))
         for i in range(self.ncomp):
             gammacii[:, i] = phi7[0] * (-np.tanh(phi7[1] * (phi7[2] - alphaii[i])) + 1.0) * zetaxstar * theta[i] * np.exp(phi7[3] * zetaxstar + phi7[4] * (zetaxstar**2))
 
-        da2iidrhos = calc_da2ii_1pchi_drhos(rho, self.eos_dict['Cmol2seg'], self.eos_dict['epsilonii_avg'], self.eos_dict['dii_eff'], self.eos_dict['x0ii'], self.eos_dict['l_rii_avg'], self.eos_dict['l_aii_avg'], zetax)
+        da2iidrhos = calc_da2ii_1pchi_drhos(rho, self.eos_dict['Cmol2seg'], self.eos_dict['epsilonii_avg'], self.eos_dict['dii_eff'], self.eos_dict['x0ii'], self.eos_dict['lambdarii_avg'], self.eos_dict['lambdaaii_avg'], zetax)
 
-        a1sii_2l_aii_avg = calc_a1s_eff(rho, self.eos_dict['Cmol2seg'], 2.0 * self.eos_dict['l_aii_avg'], zetax, self.eos_dict['epsilonii_avg'], self.eos_dict['dii_eff'])
-        a1sii_2l_rii_avg = calc_a1s_eff(rho, self.eos_dict['Cmol2seg'], 2.0 * self.eos_dict['l_rii_avg'], zetax, self.eos_dict['epsilonii_avg'], self.eos_dict['dii_eff'])
-        a1sii_l_rii_avgl_aii_avg = calc_a1s_eff(rho, self.eos_dict['Cmol2seg'], self.eos_dict['l_aii_avg'] + self.eos_dict['l_rii_avg'], zetax, self.eos_dict['epsilonii_avg'], self.eos_dict['dii_eff'])
+        a1sii_2lambdaaii_avg = calc_a1s_eff(rho, self.eos_dict['Cmol2seg'], 2.0 * self.eos_dict['lambdaaii_avg'], zetax, self.eos_dict['epsilonii_avg'], self.eos_dict['dii_eff'])
+        a1sii_2lambdarii_avg = calc_a1s_eff(rho, self.eos_dict['Cmol2seg'], 2.0 * self.eos_dict['lambdarii_avg'], zetax, self.eos_dict['epsilonii_avg'], self.eos_dict['dii_eff'])
+        a1sii_lambdarii_avglambdaaii_avg = calc_a1s_eff(rho, self.eos_dict['Cmol2seg'], self.eos_dict['lambdaaii_avg'] + self.eos_dict['lambdarii_avg'], zetax, self.eos_dict['epsilonii_avg'], self.eos_dict['dii_eff'])
         
-        Bii_2l_aii_avg = calc_Bkl_eff(rho, 2.0 * self.eos_dict['l_aii_avg'], self.eos_dict['Cmol2seg'], self.eos_dict['dii_eff'], self.eos_dict['epsilonii_avg'], self.eos_dict['x0ii'], zetax)
-        Bii_2l_rii_avg = calc_Bkl_eff(rho, 2.0 * self.eos_dict['l_rii_avg'], self.eos_dict['Cmol2seg'], self.eos_dict['dii_eff'], self.eos_dict['epsilonii_avg'], self.eos_dict['x0ii'], zetax)
-        Bii_l_aii_avgl_rii_avg = calc_Bkl_eff(rho, self.eos_dict['l_aii_avg'] + self.eos_dict['l_rii_avg'], self.eos_dict['Cmol2seg'], self.eos_dict['dii_eff'], self.eos_dict['epsilonii_avg'], self.eos_dict['x0ii'], zetax)
+        Bii_2lambdaaii_avg = calc_Bkl_eff(rho, 2.0 * self.eos_dict['lambdaaii_avg'], self.eos_dict['Cmol2seg'], self.eos_dict['dii_eff'], self.eos_dict['epsilonii_avg'], self.eos_dict['x0ii'], zetax)
+        Bii_2lambdarii_avg = calc_Bkl_eff(rho, 2.0 * self.eos_dict['lambdarii_avg'], self.eos_dict['Cmol2seg'], self.eos_dict['dii_eff'], self.eos_dict['epsilonii_avg'], self.eos_dict['x0ii'], zetax)
+        Bii_lambdaaii_avglambdarii_avg = calc_Bkl_eff(rho, self.eos_dict['lambdaaii_avg'] + self.eos_dict['lambdarii_avg'], self.eos_dict['Cmol2seg'], self.eos_dict['dii_eff'], self.eos_dict['epsilonii_avg'], self.eos_dict['x0ii'], zetax)
 
         eKC2 = np.einsum("i,j->ij", KHS / rho / self.eos_dict['Cmol2seg'], self.eos_dict['epsilonii_avg'] * (Cii**2))
         
         g2MCA = (1.0 / (2.0 * np.pi * (self.eos_dict['epsilonii_avg']**2) * self.eos_dict['dii_eff']**3 * constants.molecule_per_nm3**2)) * ((3.0 * da2iidrhos) \
-                - (eKC2 * self.eos_dict['l_rii_avg'] * (self.eos_dict['x0ii']**(2.0 * self.eos_dict['l_rii_avg']))) \
-                   * (a1sii_2l_rii_avg + Bii_2l_rii_avg) \
-                + eKC2 * (self.eos_dict['l_rii_avg'] + self.eos_dict['l_aii_avg']) \
-                   * (self.eos_dict['x0ii']**(self.eos_dict['l_rii_avg'] + self.eos_dict['l_aii_avg'])) * (a1sii_l_rii_avgl_aii_avg + \
-                Bii_l_aii_avgl_rii_avg) \
-                - eKC2 * self.eos_dict['l_aii_avg'] * (self.eos_dict['x0ii']**(2.0 * self.eos_dict['l_aii_avg'])) \
-                   * (a1sii_2l_aii_avg + Bii_2l_aii_avg))
+                - (eKC2 * self.eos_dict['lambdarii_avg'] * (self.eos_dict['x0ii']**(2.0 * self.eos_dict['lambdarii_avg']))) \
+                   * (a1sii_2lambdarii_avg + Bii_2lambdarii_avg) \
+                + eKC2 * (self.eos_dict['lambdarii_avg'] + self.eos_dict['lambdaaii_avg']) \
+                   * (self.eos_dict['x0ii']**(self.eos_dict['lambdarii_avg'] + self.eos_dict['lambdaaii_avg'])) * (a1sii_lambdarii_avglambdaaii_avg + \
+                Bii_lambdaaii_avglambdarii_avg) \
+                - eKC2 * self.eos_dict['lambdaaii_avg'] * (self.eos_dict['x0ii']**(2.0 * self.eos_dict['lambdaaii_avg'])) \
+                   * (a1sii_2lambdaaii_avg + Bii_2lambdaaii_avg))
 
         g2 = (1.0 + gammacii) * g2MCA
 
@@ -778,17 +781,17 @@ class SaftType():
         r""" 
         To refresh dependent parameters
         
-        Those parameters that are dependent on _beadlibrary and _crosslibrary attributes **must** be updated by running this function after all parameters from update_parameters method have been changed.
+        Those parameters that are dependent on beadlibrary and crosslibrary attributes **must** be updated by running this function after all parameters from update_parameters method have been changed.
         """
 
-        self.eos_dict["beadlibrary"].update(beadlibrary)
-        self.eos_dict["crosslibrary"].update(crosslibrary)
+        self.beadlibrary.update(beadlibrary)
+        self.crosslibrary.update(crosslibrary)
 
-        output = tb.cross_interaction_from_dict( self.eos_dict['beads'], self.eos_dict['beadlibrary'], self.mixing_rules, crosslibrary=self.eos_dict['crosslibrary'])
+        output = tb.cross_interaction_from_dict( self.beads, self.beadlibrary, self.mixing_rules, crosslibrary=self.crosslibrary)
         self.eos_dict["sigmakl"] = output["sigma"]
         self.eos_dict["epsilonkl"] = output["epsilon"]
-        self.eos_dict["l_akl"] = output["l_a"]
-        self.eos_dict["l_rkl"] = output["l_r"]
+        self.eos_dict["lambdaakl"] = output["lambdaa"]
+        self.eos_dict["lambdarkl"] = output["lambdar"]
 
         # Update Non bonded matrices
         if not np.isnan(self.T) and self.T != None:
@@ -800,10 +803,10 @@ class SaftType():
         self.calc_component_averaged_properties()
 
         if not np.any(np.isnan(self.xi)):
-            self.eos_dict['Cmol2seg'], self.eos_dict['xskl'] = stb.calc_composition_dependent_variables(self.xi, self.eos_dict['nui'], self.eos_dict['beadlibrary'], self.eos_dict['beads'])
+            self.eos_dict['Cmol2seg'], self.eos_dict['xskl'] = stb.calc_composition_dependent_variables(self.xi, self.eos_dict['nui'], self.beadlibrary, self.beads)
     
-        self.eos_dict['Ckl'] = prefactor(self.eos_dict['l_rkl'], self.eos_dict['l_akl'])
-        self.eos_dict['alphakl'] = self.eos_dict['Ckl'] * ((1.0 / (self.eos_dict['l_akl'] - 3.0)) - (1.0 / (self.eos_dict['l_rkl'] - 3.0)))
+        self.eos_dict['Ckl'] = prefactor(self.eos_dict['lambdarkl'], self.eos_dict['lambdaakl'])
+        self.eos_dict['alphakl'] = self.eos_dict['Ckl'] * ((1.0 / (self.eos_dict['lambdaakl'] - 3.0)) - (1.0 / (self.eos_dict['lambdarkl'] - 3.0)))
 
     def _check_density(self, rho):
         r"""
@@ -864,14 +867,14 @@ class SaftType():
                         self.mixing_rules[key]["temperature"] = T
 
             if self.mixing_temp_dependence:
-                output = tb.cross_interaction_from_dict( self.eos_dict['beads'], self.eos_dict['beadlibrary'], self.mixing_rules, crosslibrary=self.eos_dict['crosslibrary'])
+                output = tb.cross_interaction_from_dict( self.beads, self.beadlibrary, self.mixing_rules, crosslibrary=self.crosslibrary)
                 self.eos_dict["sigmakl"] = output["sigma"]
                 self.eos_dict["epsilonkl"] = output["epsilon"]
-                self.eos_dict["l_akl"] = output["l_a"]
-                self.eos_dict["l_rkl"] = output["l_r"]
+                self.eos_dict["lambdaakl"] = output["lambdaa"]
+                self.eos_dict["lambdarkl"] = output["lambdar"]
                 self.calc_component_averaged_properties()
 
-            self.eos_dict['dkl'], self.eos_dict['x0kl'] = stb.calc_hard_sphere_matricies(T, self.eos_dict['sigmakl'], self.eos_dict['beadlibrary'], self.eos_dict['beads'], prefactor)
+            self.eos_dict['dkl'], self.eos_dict['x0kl'] = stb.calc_hard_sphere_matricies(T, self.eos_dict['sigmakl'], self.beadlibrary, self.beads, prefactor)
             self._update_chain_temperature_dependent_variables(T)
 
     def _check_composition_dependent_parameters(self, xi):
@@ -894,7 +897,7 @@ class SaftType():
         """
         xi = np.array(xi)
         if not np.all(self.xi == xi):
-            self.eos_dict['Cmol2seg'], self.eos_dict['xskl'] = stb.calc_composition_dependent_variables(xi, self.eos_dict['nui'], self.eos_dict['beadlibrary'], self.eos_dict['beads'])
+            self.eos_dict['Cmol2seg'], self.eos_dict['xskl'] = stb.calc_composition_dependent_variables(xi, self.eos_dict['nui'], self.beadlibrary, self.beads)
             self.xi = xi
 
     def _update_chain_temperature_dependent_variables(self, T):
@@ -937,5 +940,5 @@ class SaftType():
 
     def __str__(self):
 
-        string = "Beads: {}".format(self.eos_dict['beads'])
+        string = "Beads: {}".format(self.beads)
         return string

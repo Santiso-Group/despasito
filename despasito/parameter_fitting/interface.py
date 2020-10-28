@@ -52,6 +52,39 @@ class ExpDataTemplate(ABC):
         for key in thermo_dict_keys:
             if key in data_dict:
                 self.thermodict[key] = data_dict[key]
+
+    def update_parameters(self, fit_bead, param_names, param_values):
+        r"""
+        Update a single parameter value during parameter fitting process.
+
+        To refresh those parameters that are dependent on to beadlibrary or crosslibrary, use method "parameter refresh".
+        
+        Parameters
+        ----------
+        fit_bead : str
+            Name of bead being fit
+        param_names : list
+            Parameters to be fit. See EOS mentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
+        param_values : list
+            Value of parameter
+        """
+
+        for i, param in enumerate(param_names):
+            bead_names = [fit_bead]
+            fit_params_list = param.split("_")
+            param = fit_params_list[0]
+            if len(fit_params_list) > 1:
+                bead_names.append(fit_params_list[1])
+
+            if len(fit_params_list) == 1:
+                self.eos.update_parameter(fit_params_list[0], [fit_bead], param_values[i])
+            elif len(fit_params_list) == 2:
+                self.eos.update_parameter(fit_params_list[0], [fit_bead, fit_params_list[1]], param_values[i])
+            else:
+                raise ValueError("Parameters for only one bead are allowed to be fit. Multiple underscores in a parameter name suggest more than one bead type in your fit parameter name, {}".format(param))
+
+        if hasattr(self.eos, "parameter_refresh"):
+            self.eos.parameter_refresh()
     
     @abstractmethod
     def objective(self, eos):

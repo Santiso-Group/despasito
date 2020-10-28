@@ -12,9 +12,5 @@
         "datatype": "liquid_density",
         "calculation_type": "liquid_properties",
         "file": "butane_solubility.csv"
-    },
-    "global_dict": {
-        "method": "brute",
-        "Ns": 2
     }
 }

@@ -24,8 +24,8 @@ def calc_hard_sphere_matricies(T, sigmakl, beadlibrary, beads, Cprefactor_funcio
         - epsilon: :math:`\epsilon_{k,k}/k_B`, Energy well depth scaled by Boltzmann constant
         - sigma: :math:`\sigma_{k,k}`, Size parameter [m]
         - mass: Bead mass [kg/mol]
-        - l_r: :math:`\lambda^{r}_{k,k}`, Exponent of repulsive term between groups of type k
-        - l_a: :math:`\lambda^{a}_{k,k}`, Exponent of attractive term between groups of type k
+        - lambdar: :math:`\lambda^{r}_{k,k}`, Exponent of repulsive term between groups of type k
+        - lambdaa: :math:`\lambda^{a}_{k,k}`, Exponent of attractive term between groups of type k
     
     beads : list[str]
         List of unique bead names used among components
@@ -43,8 +43,8 @@ def calc_hard_sphere_matricies(T, sigmakl, beadlibrary, beads, Cprefactor_funcio
     nbeads = np.size(beads)
     dkk = np.zeros(nbeads)
     for i in np.arange(nbeads):
-        prefactor = Cprefactor_funcion(beadlibrary[beads[i]]["l_r"], beadlibrary[beads[i]]["l_a"])
-        dkk[i] = calc_dkk(beadlibrary[beads[i]]["epsilon"], beadlibrary[beads[i]]["sigma"], T, prefactor, beadlibrary[beads[i]]["l_r"], beadlibrary[beads[i]]["l_a"])
+        prefactor = Cprefactor_funcion(beadlibrary[beads[i]]["lambdar"], beadlibrary[beads[i]]["lambdaa"])
+        dkk[i] = calc_dkk(beadlibrary[beads[i]]["epsilon"], beadlibrary[beads[i]]["sigma"], T, prefactor, beadlibrary[beads[i]]["lambdar"], beadlibrary[beads[i]]["lambdaa"])
     dkl = np.zeros((nbeads, nbeads))
     for k in range(nbeads):
         for l in range(nbeads):
@@ -54,7 +54,7 @@ def calc_hard_sphere_matricies(T, sigmakl, beadlibrary, beads, Cprefactor_funcio
 
     return dkl, x0kl
 
-def _dkk_int(r, Ce_kT, sigma, l_r, l_a):
+def _dkk_int(r, Ce_kT, sigma, lambdar, lambdaa):
     r"""
     Return integrand used to calculate the hard sphere diameter.
     
@@ -68,9 +68,9 @@ def _dkk_int(r, Ce_kT, sigma, l_r, l_a):
         :math:`C \epsilon_{k,k}/(k_B T)`, Mie prefactor scaled by kT
     sigma : float
         :math:`\sigma_{k,k}`, Size parameter [Å] (or same units as r)
-    l_r : float
+    lambdar : float
         :math:`\lambda^{r}_{k,k}`, Exponent of repulsive term between groups of type k
-    l_a : float
+    lambdaa : float
         :math:`\lambda^{r}_{k,k}`, Exponent of repulsive term between groups of type k
     
     Returns
@@ -79,11 +79,11 @@ def _dkk_int(r, Ce_kT, sigma, l_r, l_a):
         Integrand used to calculate the hard sphere diameter
     """
         
-    dkk_int_tmp = 1.0 - np.exp(-Ce_kT * (np.power(sigma / r, l_r) - np.power(sigma / r, l_a)))
+    dkk_int_tmp = 1.0 - np.exp(-Ce_kT * (np.power(sigma / r, lambdar) - np.power(sigma / r, lambdaa)))
         
     return dkk_int_tmp
 
-def calc_dkk(epsilon, sigma, T, Cprefactor, l_r, l_a=6.0):
+def calc_dkk(epsilon, sigma, T, Cprefactor, lambdar, lambdaa=6.0):
     r"""
     Calculates hard sphere diameter of a group k, :math:`d_{k,k}`. Defined in eq. 10.
     
@@ -97,9 +97,9 @@ def calc_dkk(epsilon, sigma, T, Cprefactor, l_r, l_a=6.0):
         Temperature of the system [K]
     Cprefactor : float
         Prefactor for chosen potential
-    l_r : float
+    lambdar : float
         :math:`\lambda^{r}_{k,k}`, Exponent of repulsive term between groups of type k
-    l_a : float, Optional, default: 6.0
+    lambdaa : float, Optional, default: 6.0
         :math:`\lambda^{r}_{k,k}`, Exponent of repulsive term between groups of type k
     
     Returns
@@ -112,7 +112,7 @@ def calc_dkk(epsilon, sigma, T, Cprefactor, l_r, l_a=6.0):
     # calculate integral of dkk_int from 0.0 to sigma
 
     ## Option 1
-    #results = integrate.quad(lambda r: _dkk_int(r, Ce_kT, sigma, l_r, l_a), 0.0, sigma, epsabs=1.0e-16, epsrel=1.0e-16)
+    #results = integrate.quad(lambda r: _dkk_int(r, Ce_kT, sigma, lambdar, lambdaa), 0.0, sigma, epsabs=1.0e-16, epsrel=1.0e-16)
     #results = results[0]
     
     ## Option 2: 10pt Gauss Legendre
@@ -127,7 +127,7 @@ def calc_dkk(epsilon, sigma, T, Cprefactor, l_r, l_a=6.0):
     x = np.array([-0.038772418, 0.038772418, -0.116084071, 0.116084071, -0.192697581, 0.192697581, -0.268152185, 0.268152185, -0.341994091, 0.341994091, -0.413779204, 0.413779204, -0.483075802, 0.483075802, -0.549467125, 0.549467125, -0.61255389, 0.61255389, -0.671956685, 0.671956685, -0.727318255, 0.727318255, -0.778305651, 0.778305651, -0.824612231, 0.824612231, -0.865959503, 0.865959503, -0.902098807, 0.902098807, -0.932812808, 0.932812808, -0.957916819, 0.957916819, -0.97725995, 0.97725995, -0.990726239, 0.990726239, -0.99823771, 0.99823771])
     
     r = 0.5*sigma*(x+1)
-    dkk = 0.5*sigma*np.sum(w*_dkk_int(r, Ce_kT, sigma, l_r, l_a))
+    dkk = 0.5*sigma*np.sum(w*_dkk_int(r, Ce_kT, sigma, lambdar, lambdaa))
 
     
     # Option 3: Mullers method
@@ -138,8 +138,8 @@ def calc_dkk(epsilon, sigma, T, Cprefactor, l_r, l_a=6.0):
     #
     #xsum = 0.
     #for i in range(len(x1i)):
-    #    tmp1 = np.power(x1i[i], -l_r) - np.power(x1i[i], -l_a)
-    #    tmp2 = np.power(x2i[i], -l_r) - np.power(x2i[i], -l_a) 
+    #    tmp1 = np.power(x1i[i], -lambdar) - np.power(x1i[i], -lambdaa)
+    #    tmp2 = np.power(x2i[i], -lambdar) - np.power(x2i[i], -lambdaa) 
     #    xsum = xsum + wgl[i] * ((x1i[i]**2 * np.exp(-tmp1 * Ce_kT)) + (x2i[i]**2 * np.exp(-tmp2 * Ce_kT)))
     #dcube_s = 1 - (3 / 2 * xsum)
     #dkk = sigma*pow(dcube_s, 1/3)

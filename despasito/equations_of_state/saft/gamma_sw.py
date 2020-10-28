@@ -83,19 +83,22 @@ class SaftType():
             if key not in kwargs:
                 raise ValueError("The one of the following inputs is missing: {}".format(", ".join(tmp)))
             elif not hasattr(self, key):
-                self.eos_dict[key] = kwargs[key]
+                if key == "nui":
+                    self.eos_dict[key] = kwargs[key]
+                else:
+                    setattr(self, key, kwargs[key])
 
         if 'crosslibrary' not in kwargs:
-            self.eos_dict['crosslibrary'] = {}
+            self.crosslibrary = {}
         else:
-            self.eos_dict['crosslibrary'] = kwargs['crosslibrary']
+            self.crosslibrary = kwargs['crosslibrary']
 
         if not hasattr(self, 'massi'):
-            self.eos_dict['massi'] = tb.calc_massi(self.eos_dict['nui'],self.eos_dict['beadlibrary'],self.eos_dict['beads'])
+            self.eos_dict['massi'] = tb.calc_massi(self.eos_dict['nui'],self.beadlibrary,self.beads)
         if not hasattr(self, 'Vks'):
-            self.eos_dict['Vks'] = tb.extract_property("Vks",self.eos_dict['beadlibrary'],self.eos_dict['beads'])
+            self.eos_dict['Vks'] = tb.extract_property("Vks",self.beadlibrary,self.beads)
         if not hasattr(self, 'Sk'):
-            self.eos_dict['Sk'] = tb.extract_property("Sk",self.eos_dict['beadlibrary'],self.eos_dict['beads'])
+            self.eos_dict['Sk'] = tb.extract_property("Sk",self.beadlibrary,self.beads)
 
         # Initialize component attribute
         if not hasattr(self, 'xi'):
@@ -104,7 +107,7 @@ class SaftType():
             self.ncomp, self.nbeads = np.shape(self.eos_dict['nui'])
 
         # Intiate cross interaction terms
-        output = tb.cross_interaction_from_dict( self.eos_dict['beads'], self.eos_dict['beadlibrary'], self.mixing_rules, crosslibrary=self.eos_dict['crosslibrary'])
+        output = tb.cross_interaction_from_dict( self.beads, self.beadlibrary, self.mixing_rules, crosslibrary=self.crosslibrary)
         self.eos_dict["sigma_kl"] = output["sigma"]
         self.eos_dict["epsilon_kl"] = output["epsilon"]
         self.eos_dict["lambda_kl"] = output["lambda"]
@@ -687,18 +690,18 @@ class SaftType():
         Those parameters that are dependent on _beadlibrary and _crosslibrary attributes **must** be updated by running this function after all parameters from update_parameters method have been changed.
         """
 
-        self.eos_dict["beadlibrary"].update(beadlibrary)
-        self.eos_dict["crosslibrary"].update(crosslibrary)
+        self.beadlibrary.update(beadlibrary)
+        self.crosslibrary.update(crosslibrary)
 
         # Update Non bonded matrices
-        output = tb.cross_interaction_from_dict( self.eos_dict['beads'], self.eos_dict['beadlibrary'], self.mixing_rules, crosslibrary=self.eos_dict['crosslibrary'])
+        output = tb.cross_interaction_from_dict( self.beads, self.beadlibrary, self.mixing_rules, crosslibrary=self.crosslibrary)
         self.eos_dict["sigma_kl"] = output["sigma"]
         self.eos_dict["epsilon_kl"] = output["epsilon"]
         self.eos_dict["lambda_kl"] = output["lambda"]
         self.calc_component_averaged_properties()
 
         if not np.any(np.isnan(self.xi)):
-            self.eos_dict['Cmol2seg'], self.eos_dict['xskl'] = stb.calc_composition_dependent_variables(xi, self.eos_dict['nui'], self.eos_dict['beadlibrary'], self.eos_dict['beads'])
+            self.eos_dict['Cmol2seg'], self.eos_dict['xskl'] = stb.calc_composition_dependent_variables(xi, self.eos_dict['nui'], self.beadlibrary, self.beads)
 
     def _check_density(self, rho):
         r"""
@@ -746,10 +749,10 @@ class SaftType():
         """
         xi = np.array(xi)
         if not np.all(self.xi == xi):
-            self.eos_dict['Cmol2seg'], self.eos_dict['xskl'] = stb.calc_composition_dependent_variables(xi, self.eos_dict['nui'], self.eos_dict['beadlibrary'], self.eos_dict['beads'])
+            self.eos_dict['Cmol2seg'], self.eos_dict['xskl'] = stb.calc_composition_dependent_variables(xi, self.eos_dict['nui'], self.beadlibrary, self.beads)
             self.xi = xi
 
     def __str__(self):
 
-        string = "Beads: {}".format(self.eos_dict['beads'])
+        string = "Beads: {}".format(self.beads)
         return string

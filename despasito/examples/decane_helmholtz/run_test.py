@@ -6,16 +6,16 @@ beads  = ['CH3', 'CH2']
 beads_per_molecule  = np.array([[2., 8.]])
 beadlibrary  = {'CH3':
                   {'epsilon': 256.7662,
-                        'l_a': 6.0,
-                        'l_r': 15.04982,
+                        'lambdaa': 6.0,
+                        'lambdar': 15.04982,
                         'sigma': 4.077257e-1,
                         'Sk': 0.5725512,
                         'Vks': 1,
                         'mass': 0.015035},
             'CH2': 
                   {'epsilon': 473.3893,
-                        'l_a': 6.0,
-                        'l_r': 19.87107,
+                        'lambdaa': 6.0,
+                        'lambdar': 19.87107,
                         'sigma': 4.880081e-1,
                         'Sk': 0.2293202,
                         'Vks': 1,

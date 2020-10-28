@@ -15,7 +15,7 @@ import numpy as np
 ## EOS Object
 beads = ['CH3OH']
 nui = np.array([[1.]])
-beadlibrary = {'CH3OH': {'epsilon': 375.01, 'l_a': 6.0, 'l_r': 16.352, 'sigma': 3.463e-1, 'Sk': 1.0, 'Vks': 2, 'mass': 0.0310337}}
+beadlibrary = {'CH3OH': {'epsilon': 375.01, 'lambdaa': 6.0, 'lambdar': 16.352, 'sigma': 3.463e-1, 'Sk': 1.0, 'Vks': 2, 'mass': 0.0310337}}
 eos = despasito.equations_of_state.eos(eos="saft.gamma_mie",beads=beads,nui=nui,beadlibrary=beadlibrary)
 
 ## Exp Data dict

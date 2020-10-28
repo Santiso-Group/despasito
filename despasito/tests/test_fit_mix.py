@@ -14,7 +14,7 @@ import numpy as np
 
 beads = ['CO2', 'H2O353']
 nui = np.array([[1., 0.],[0., 1.]])
-beadlibrary = {'H2O353': {'epsilon': 479.56, 'l_a': 6.0, 'l_r': 8.0, 'sigma': 3.0029e-1, 'Sk': 1.0, 'Vks': 1, 'mass': 0.018015}, 'CO2': {'epsilon': 353.55, 'l_a': 6.66, 'l_r': 23.0, 'sigma': 3.741e-1, 'Sk': 1.0, 'Vks': 1, 'mass': 0.04401}}
+beadlibrary = {'H2O353': {'epsilon': 479.56, 'lambdaa': 6.0, 'lambdar': 8.0, 'sigma': 3.0029e-1, 'Sk': 1.0, 'Vks': 1, 'mass': 0.018015}, 'CO2': {'epsilon': 353.55, 'lambdaa': 6.66, 'lambdar': 23.0, 'sigma': 3.741e-1, 'Sk': 1.0, 'Vks': 1, 'mass': 0.04401}}
 crosslibrary = {'CO2': {'H2O353': {'epsilon': 432.69}}}
 eos = despasito.equations_of_state.eos(eos="saft.gamma_mie", beads=beads, nui=nui, beadlibrary=beadlibrary, crosslibrary=crosslibrary)
 
