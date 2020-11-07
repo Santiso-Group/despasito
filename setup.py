@@ -40,12 +40,16 @@ try:
 except:
     long_description = "\n".join(short_description[2:])
 
-if len(available_fcompilers_for_platform()) != 0:
-    fortran_list = glob.glob(os.path.join(fpath,"*.f90"))
-    for fext in fortran_list:
-        name = os.path.split(fext)[-1].split(".")[-2]
-        ext1 = Extension(name=name,sources=[fext],include_dirs=[fpath])
-        extensions.append(ext1)
+tmp = available_fcompilers_for_platform()
+if len(tmp) != 0:
+    try:
+        fortran_list = glob.glob(os.path.join(fpath,"*.f90"))
+        for fext in fortran_list:
+            name = os.path.split(fext)[-1].split(".")[-2]
+            ext1 = Extension(name=name,sources=[fext],include_dirs=[fpath])
+            extensions.append(ext1)
+    except:
+        raise ValueError("Although the fortran compilers, {}, appear to be present, the fortran modules failed to compile.")
 else:
     print("Fortran compiler is not found, default will use pure python")
 

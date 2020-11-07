@@ -153,7 +153,7 @@ def square_well_berthelot(beadA, beadB, parameter, weighting_parameters=[]):
 
     return tmp1*tmp2*tmp3
 
-def multipole(beadA, beadB, parameter, temperature=None, additional_outputs=[], mode="curve fit", scaled=False):
+def multipole(beadA, beadB, parameter, temperature=None, mode="curve fit", scaled=False):
     r"""
     Calculates cross interaction parameter according to the calculation method provided.
     square_well berthelot geometric mean: c = np.sqrt(a[0]*b[0]) * np.sqrt(a[1]**3 * b[1]**3) / ((a[1] + b[1])/2)**3 * np.sqrt(()*())/(a[])

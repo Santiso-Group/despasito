@@ -110,11 +110,6 @@ class EosType(EosTemplate):
                 setattr(self, key, kwargs[key])
         self.number_of_components = len(self.eos_dict["nui"])
 
-        if mixing_rules != None:
-            logger.info("Accepted new mixing rule definitions")
-            self.saft_source.mixing_rules.update(mixing_rules)
-            self.parameter_refresh()
-
         if 'crosslibrary' not in kwargs:
             self.crosslibrary = {}
         else:
@@ -134,6 +129,11 @@ class EosType(EosTemplate):
         self.eos_dict.update(assoc_output)
         if np.size(np.where(self.eos_dict['epsilonHB']!=0.0))==0:
             self.eos_dict['flag_assoc'] = False
+
+        if mixing_rules != None:
+            logger.info("Accepted new mixing rule definitions")
+            self.saft_source.mixing_rules.update(mixing_rules)
+            self.parameter_refresh()
 
     def residual_helmholtz_energy(self, rho, T, xi):
         r"""
