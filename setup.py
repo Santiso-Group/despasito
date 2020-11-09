@@ -7,7 +7,7 @@ import os
 from setuptools import find_packages
 import versioneer
 from numpy.distutils.core import Extension, setup
-from numpy.distutils.fcompiler import available_fcompilers_for_platform
+from numpy.distutils.fcompiler import get_default_fcompiler
 import numpy as np
 import glob
 
@@ -40,16 +40,12 @@ try:
 except:
     long_description = "\n".join(short_description[2:])
 
-tmp = available_fcompilers_for_platform()
-if len(tmp) != 0:
-    try:
-        fortran_list = glob.glob(os.path.join(fpath,"*.f90"))
-        for fext in fortran_list:
-            name = os.path.split(fext)[-1].split(".")[-2]
-            ext1 = Extension(name=name,sources=[fext],include_dirs=[fpath])
-            extensions.append(ext1)
-    except:
-        raise ValueError("Although the fortran compilers, {}, appear to be present, the fortran modules failed to compile.")
+if get_default_fcompiler() != None:
+    fortran_list = glob.glob(os.path.join(fpath,"*.f90"))
+    for fext in fortran_list:
+        name = os.path.split(fext)[-1].split(".")[-2]
+        ext1 = Extension(name=name,sources=[fext],include_dirs=[fpath])
+        extensions.append(ext1)
 else:
     print("Fortran compiler is not found, default will use pure python")
 
