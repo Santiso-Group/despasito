@@ -17,8 +17,8 @@ extensions = []
 
 if sys.version_info.major < 3:
     raise ValueError("Due to abstract classes used. DESPASITO must be run using python 3.")
-if sys.version_info.minor > 7:
-    raise ValueError("DESPASITO cannot run on python versions greater than 3.7 due to incompadibilities between python 3.8 and numpy.")
+if sys.version_info.minor > 8:
+    raise ValueError("DESPASITO cannot run on python versions greater than 3.8 due to incompadibilities between python 3.9 and numba.")
 
 try:
     from Cython.Build import cythonize
