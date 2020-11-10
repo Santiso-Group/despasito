@@ -24,6 +24,6 @@ We used the following mixing rules:
 
 
 .. autoclass::
-   despasito.equations_of_state.cubic.peng_robinson.cubic_peng_robinson
+   despasito.equations_of_state.cubic.peng_robinson.EosType
    :members:
 
