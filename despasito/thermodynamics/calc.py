@@ -2373,7 +2373,7 @@ def calc_yT_phase(yi, T, eos, density_dict={}, mole_fraction_options={}, Pguess=
         yi_tmp[i] = 1.0
         Psat[i], _, _ = calc_Psat(T, yi_tmp, eos, density_dict)
         if np.isnan(Psat[i]):
-            Psat[i] = Psat_guess
+            Psat[i] = Psat_set
             logger.warning("Component, {}, is above its critical point. Psat is assumed to be {}.".format(i+1,Psat[i]))
 
     # Estimate initial pressure
@@ -2463,7 +2463,7 @@ def calc_xT_phase(xi, T, eos, density_dict={}, mole_fraction_options={}, Pguess=
         xi_tmp[i] = 1.0
         Psat[i], _, _ = calc_Psat(T, xi_tmp, eos, density_dict)
         if np.isnan(Psat[i]):
-            Psat[i] = Psat_guess
+            Psat[i] = Psat_set
             logger.warning("Component, {}, is above its critical point. Psat is assumed to be {}.".format(i+1,Psat[i]))
 
     # Estimate initial pressure
@@ -2629,7 +2629,7 @@ def calc_flash(P, T, eos, density_dict={}, maxiter=200, tol=1e-9, max_mole_fract
         xi_tmp[i] = 1.0
         Psat[i], _, _ = calc_Psat(T, xi_tmp, eos, density_dict)
         if np.isnan(Psat[i]):
-            Psat[i] = Psat_guess
+            Psat[i] = Psat_set
             logger.warning("Component, {}, is above its critical point. Psat is assumed to be {}.".format(i+1,Psat[i]))
         Ki0[i] = Psat[i]/P
 
@@ -2887,7 +2887,7 @@ def _calc_PT_phase(xi, T, eos, density_dict={}, Psat_set=1e+7):
   #      xi_tmp[i] = 1.0
   #      Psat[i], rholsat, rhogsat = calc_Psat(T, xi_tmp, eos, density_dict)
   #      if np.isnan(Psat[i]):
-  #          Psat[i] = Psat_guess
+  #          Psat[i] = Psat_set
   #          logger.warning("Component, {}, is above its critical point. Psat is assumed to be {}.".format(i+1,Psat[i]))
 
   #  zi = np.array([0.5, 0.5])
