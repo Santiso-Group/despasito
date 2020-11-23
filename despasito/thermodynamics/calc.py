@@ -1265,14 +1265,19 @@ def calc_Prange_xi(T, xi, yi, eos, density_dict={}, Pmin=None, Pmax=None, maxite
                 p = (Prange[1]-Prange[0])/2.0 + Prange[0]
             else:
                 logger.info("New Maximum Pressure: {},  Obj. Func: {}, Range {}".format(p,obj,Prange))
-                if Prange[1] < p:
-                    Prange[0] = Prange[1]
-                    ObjRange[0] = ObjRange[1]
-                Prange[1] = p
-                ObjRange[1] = obj
+                if not flag_hard_max:
+                    if Prange[1] < p:
+                        Prange[0] = Prange[1]
+                        ObjRange[0] = ObjRange[1]
+                    Prange[1] = p
+                    ObjRange[1] = obj
                 slope = (ObjRange[1] - ObjRange[0]) / (Prange[1] - Prange[0])
                 intercept = ObjRange[1] - slope * Prange[1]
-                p = np.nanmax([-intercept / slope, maxfactor*Prange[1]])
+
+                if flag_hard_max:
+                    p = (Prange[1]-Prange[0])*np.random.rand(1)[0] + Prange[0]
+                else:
+                    p = np.nanmax([-intercept / slope, maxfactor*Prange[1]])
 
     if (z == maxiter-1 or flag_min):
         if flag_min:

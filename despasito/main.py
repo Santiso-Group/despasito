@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 def get_parser():
 
     ## Define parser functions and arguments
-    parser = argparse.ArgumentParser(description="DESPASITO: Determining Equilibrium State and Parametrization: Application for SAFT, Intended for Thermodynamic Output.  This is an open-source application for thermodynamic calculations and parameter fitting for the Statistical Associating Fluid Theory (SAFT) EOS and SAFT-:math:`\gamma`-Mie coarse-grained simulations.")
+    parser = argparse.ArgumentParser(description="DESPASITO: Determining Equilibrium State and Parametrization Application for SAFT, Intended for Thermodynamic Output.  This is an open-source application for thermodynamic calculations and parameter fitting for the Statistical Associating Fluid Theory (SAFT) EOS and SAFT-:math:`\gamma`-Mie coarse-grained simulations.")
     parser.add_argument("-i", "--input", dest="input", help="Input .json file with calculation instructions and path(s) to equation of state parameters. See documentation for explicit explanation. Compile docs or visit https://despasito.readthedocs.io")
     parser.add_argument("-v", "--verbose", action="count", default=0, help="Verbose level: repeat up to three times for Warning, Info, or Debug levels.")
     parser.add_argument("--log", nargs='?', dest="logFile", default="despasito.log", help="Output a log file. The default name is despasito.log.")

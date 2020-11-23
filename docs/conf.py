@@ -184,7 +184,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
     (master_doc, 'despasito', 'DESPASITO Documentation',
-     author, 'despasito', 'DESPASITO: Determining Equilibrium State and Parametrization: Application for SAFT, Intended for Thermodynamic Output',
+     author, 'despasito', 'DESPASITO: Determining Equilibrium State and Parametrization Application for SAFT, Intended for Thermodynamic Output',
      'Miscellaneous'),
 ]
 

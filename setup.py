@@ -1,6 +1,6 @@
 """
 DESPASITO
-DESPASITO: Determining Equilibrium State and Parametrization: Application for SAFT, Intended for Thermodynamic Output
+DESPASITO: Determining Equilibrium State and Parametrization Application for SAFT, Intended for Thermodynamic Output
 """
 import sys
 import os
