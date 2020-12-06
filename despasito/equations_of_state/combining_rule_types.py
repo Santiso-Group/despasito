@@ -195,9 +195,9 @@ def multipole(beadA, beadB, parameter, temperature=None, mode="curve fit", scale
             tmp[key]["sigma"] = value["sigma"]*10 # convert from nm to angstroms
 
         if mode == "curve fit":
-            dict_cross, _ = mr.extended_mixing_rules_fitting(tmp, temperature, shape_factor_scale=shape_factor_scale)
+            dict_cross, _ = mr.extended_combining_rules_fitting(tmp, temperature, shape_factor_scale=shape_factor_scale)
         elif mode == "analytical":
-            dict_cross, _ = mr.extended_mixing_rules_analytical(tmp, temperature, shape_factor_scale=shape_factor_scale)
+            dict_cross, _ = mr.extended_combining_rules_analytical(tmp, temperature, shape_factor_scale=shape_factor_scale)
         else:
             raise ValueError("Multipole mixing rule must be either 'curve fit' or 'analytical'.")
         output = dict_cross["beadA"]["beadB"]
