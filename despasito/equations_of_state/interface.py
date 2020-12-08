@@ -151,8 +151,6 @@ class EosTemplate(ABC):
         else:
             raise ValueError("The parameter name {} is not found in the allowed parameter types: {}".format(param_name,", ".join(self.parameter_types)))
 
-        print(self.parameter_types, parameter)
-
         return bounds_new
 
     def update_parameter(self, param_name, bead_names, param_value):

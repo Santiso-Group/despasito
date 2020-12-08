@@ -1,0 +1,11 @@
+
+SAFTgroup.json:
+- Dufal, S., et al. Prediction of Thermodynamic Properties and Phase Behavior of Fluids and Mixtures with the SAFT‐γ Mie Group-Contribution Equation of State, J. Chem. Eng. Data 2014, 59, 3272−3288, dx.doi.org/10.1021/je500248h 
+- Lobanova, Muller SAFT-γ force field for the simulation of molecular fluids: 4. A single-site coarse-grained model of water applicable over a wide temperature range, Molecular Physics, 2015 Vol. 113, Nos. 9–10, 1228–1249 http://dx.doi.org/10.1080/00268976.2015.1004804
+- Herdes, Muller, Coarse grained force field for the molecular simulation of natural gases and condensates, Fluid Phase Equilibria 406 (2015) 91–100, http://dx.doi.org/10.1016/j.fluid.2015.07.014
+
+SAFTcross.json:
+- Dufal, S., et al. Prediction of Thermodynamic Properties and Phase Behavior of Fluids and Mixtures with the SAFT‐γ Mie Group-Contribution Equation of State, J. Chem. Eng. Data 2014, 59, 3272−3288, dx.doi.org/10.1021/je500248h 
+- Lobanova, O., et al., SAFT-c force field for the simulation of molecular fluids 6: Binary
+and ternary mixtures comprising water, carbon dioxide, and n-alkanes, J. Chem. Thermodynamics 93 (2016) 320–336, http://dx.doi.org/10.1016/j.jct.2015.10.011
+
