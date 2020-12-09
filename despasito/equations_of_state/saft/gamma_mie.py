@@ -216,8 +216,6 @@ class SaftType():
 
         AHS = tmp*(tmp1 + tmp2 + tmp3)
 
-        #print("AHS", AHS)
-
         return AHS
     
     def Afirst_order(self,rho, T, xi, zetax=None):
@@ -254,8 +252,6 @@ class SaftType():
         # eq. 18
         a1 = np.einsum("ijk,jk->i", a1kl, self.eos_dict['xskl'])
         A1 = (self.eos_dict['Cmol2seg'] / T) * a1 # Units of K
-
-        #print("A1", A1)
 
         return A1
 
@@ -319,8 +315,6 @@ class SaftType():
         # eq. 29
         a2 = np.einsum("ijk,jk->i", a2kl, self.eos_dict['xskl'])
         A2 = (self.eos_dict['Cmol2seg'] / (T**2)) * a2
-
-        #print("A2", A2)
 
         return A2
     
@@ -581,8 +575,6 @@ class SaftType():
 
         gii = gdHS * np.exp((self.eos_dict['epsilonii_avg'] * g1 / (T * gdHS)) + (((self.eos_dict['epsilonii_avg'] / T)**2) * g2 / gdHS))
 
-        #print("gii", gii)
-        
         Achain = 0.0
         for i in range(self.ncomp):
             beadsum = -1.0 + self.eos_dict['num_rings'][i]

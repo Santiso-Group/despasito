@@ -321,8 +321,6 @@ class SaftType():
         tmp3 = zeta[:, 2]**3 / (zeta[:, 3] * ((1.0 - zeta[:, 3])**2))
         AHS = tmp*(tmp1 + tmp2 + tmp3)
 
-        #print("AHS",AHS)
-
         return AHS
     
     def Afirst_order(self,rho, T, xi, zetax=None):
@@ -355,8 +353,6 @@ class SaftType():
         g0HS = self.calc_g0HS(rho, xi, zetax=zetax)
         a1kl_tmp = np.tensordot(rho * constants.molecule_per_nm3, self.eos_dict['xskl']*self.alphakl, 0)
         A1 = -(self.eos_dict['Cmol2seg']**2 / T) * np.sum(a1kl_tmp * g0HS, axis=(1,2)) # Units of K
-
-        #print("A1",A1)
 
         return A1
 
@@ -405,9 +401,8 @@ class SaftType():
 
         a2 = a2kl_tmp*(g0HS + zetax[:,np.newaxis,np.newaxis]*dzetakl*(2.5 - zeta_eff)/(1-zeta_eff)**4)
 
-        A2 = (self.eos_dict['Cmol2seg'] / (T**2)) * np.sum(a2, axis=(1,2))
-
-        #print("A2",A2)
+        # Lymperiadis 2007 has a disconect where Eq. 24 != Eq. 30, as Eq. 24 is missing a minus sign. (Same in Lymperiadis 2008 for Eq. 32 and Eq. 38)
+        A2 = -(self.eos_dict['Cmol2seg'] / (T**2)) * np.sum(a2, axis=(1,2))
 
         return A2
     
@@ -441,6 +436,8 @@ class SaftType():
         zetax = self.reduced_density(rho, xi)[:,3]
 
         Amonomer = self.Ahard_sphere(rho, T, xi) + self.Afirst_order(rho, T, xi, zetax=zetax) + self.Asecond_order(rho, T, xi, zetax=zetax)
+
+        #print("Amonomer",Amonomer)
 
         return Amonomer
 

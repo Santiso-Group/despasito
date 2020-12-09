@@ -245,7 +245,7 @@ def calc_assoc_matrices(beads, beadlibrary, nui, crosslibrary={}, nk=None, siten
                     rd_tmp = "-".join(["rd",site1,site2])
 
                     if epsilon_tmp in beadlibrary[bead1] and (K_tmp not in beadlibrary[bead1] and rc_tmp not in beadlibrary[bead1]):
-                        raise ValueError("An association site energy parameter for {} was given for bead {}, but not the bonding information. Kklab or rc_klab must be given.".format("{}-{}".format(site1,site2),bead1))
+                        raise ValueError("An association site energy parameter for {} was given for bead {}, but not the bonding information. Either K-sitename-sitename or rc-sitename-sitename must be given.".format("{}-{}".format(site1,site2),bead1))
                     elif K_tmp in beadlibrary[bead1] and rc_tmp in beadlibrary[bead1]:
                         raise ValueError("Both association site bonding volumes and cutoff distances were provided for bead {}. This is redundant.".format(bead1))
                     elif epsilon_tmp not in beadlibrary[bead1] and (K_tmp in beadlibrary[bead1] or rc_tmp in beadlibrary[bead1]):
