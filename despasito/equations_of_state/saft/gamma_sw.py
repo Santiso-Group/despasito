@@ -59,8 +59,8 @@ class SaftType():
         
     Attributes
     ----------
-    eos_dict : dict
-        A dictionary that packages all the relevant parameters
+    alpha : np.array
+        van der Waals attractive parameter for square-well segments, equal to :math:`\alpha_{k,l}/k_B`.
     
     """
 
@@ -184,7 +184,7 @@ class SaftType():
         Returns
         -------
         zeta : numpy.ndarray
-            Reduced density (len(rho), 4)
+            Reduced density matrix of length 4 of varying degrees of dependence on sigma. Units: [molecules/nm^3, molecules/nm^2, molecules/nm, molecules]
         """
 
         self._check_density(rho)
@@ -402,9 +402,9 @@ class SaftType():
         tmp1 = KHS * rho2 / 2.0
         tmp2 = self.eos_dict['epsilon_kl'] * self.alphakl * self.eos_dict['xskl']
         a2kl_tmp = np.tensordot( tmp1, tmp2, 0)
+
         a2 = a2kl_tmp*(g0HS + zetax[:,np.newaxis,np.newaxis]*dzetakl*(2.5 - zeta_eff)/(1-zeta_eff)**4)
 
-        # NoteHere: this negative sign is in the final expression for A2 but not in any of the components
         A2 = (self.eos_dict['Cmol2seg'] / (T**2)) * np.sum(a2, axis=(1,2))
 
         #print("A2",A2)
@@ -508,7 +508,7 @@ class SaftType():
         gHS = np.zeros((np.size(rho), self.ncomp, self.ncomp))
         for i in range(self.ncomp):
             for j in range(self.ncomp):
-                tmp = constants.molecule_per_nm3 * self.eos_dict['sigma_ij'][i,i]*self.eos_dict['sigma_ij'][j,j]/(self.eos_dict['sigma_ij'][i,i]+self.eos_dict['sigma_ij'][j,j])
+                tmp = self.eos_dict['sigma_ij'][i,i]*self.eos_dict['sigma_ij'][j,j]/(self.eos_dict['sigma_ij'][i,i]+self.eos_dict['sigma_ij'][j,j])
                 gHS[:,i,j] = tmp1 + 3*tmp*tmp2 + 2*tmp**2*tmp3
 
         return gHS
@@ -702,6 +702,7 @@ class SaftType():
 
         if not np.any(np.isnan(self.xi)):
             self.eos_dict['Cmol2seg'], self.eos_dict['xskl'] = stb.calc_composition_dependent_variables(xi, self.eos_dict['nui'], self.beadlibrary, self.beads)
+        self.alphakl = 2.0*np.pi/3.0*self.eos_dict['epsilon_kl']*self.eos_dict['sigma_kl']**3*(self.eos_dict['lambda_kl']**3 - 1.0)
 
     def _check_density(self, rho):
         r"""
