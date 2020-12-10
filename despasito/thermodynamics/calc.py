@@ -269,7 +269,7 @@ def calc_Psat(T, xi, eos, density_dict={}, tol=1e-6, Pconverged=1):
         An instance of the defined EOS class to be used in thermodynamic computations.
     density_dict : dict, Optional, default: {}
         Dictionary of options used in calculating pressure vs. mole 
-    tol : float, Optional, default=1e-12
+    tol : float, Optional, default=1e-6
         Tolerance to accept pressure value
     Pconverged : float, Optional, default=0.1
         If the pressure is negative (under tension), we search from a value just above vacuum
@@ -305,20 +305,16 @@ def calc_Psat(T, xi, eos, density_dict={}, tol=1e-6, Pconverged=1):
         Pmaxsearch = Plist[ind_Pmax1]
         Pminsearch = max(Pconverged, np.amin(Plist[ind_Pmin1:ind_Pmax1]))
 
-        #search Pressure that gives equal area in maxwell construction
-      #  try:
+        #Using computed Psat find the roots in the maxwell construction to give liquid (first root) and vapor (last root) densities
         Psat = spo.minimize_scalar(eq_area,
                                args=(Plist, vlist),
                                bounds=(Pminsearch, Pmaxsearch),
                                method='bounded')
-
-        #Using computed Psat find the roots in the maxwell construction to give liquid (first root) and vapor (last root) densities
         Psat = Psat.x
         Pvspline, roots, extrema = PvsV_spline(vlist, Plist-Psat)
-      #  except:
-      #      PvsV_plot(vlist, Plist, Pvspline, markers=extrema)
 
         obj_value = eq_area(Psat,Plist,vlist)
+  #      PvsV_plot(vlist, Plist, Pvspline, markers=extrema)
 
         if obj_value < tol:
 
@@ -336,7 +332,7 @@ def calc_Psat(T, xi, eos, density_dict={}, tol=1e-6, Pconverged=1):
             rhov =  1.0 / roots[2]
 
         else:
-            logger.warning("    Psat NOT found: {} Pa, obj value: {}".format(Psat,obj_value))
+            logger.warning("    Psat NOT found: {} Pa, obj value: {}, consider decreasing 'pressure_min' option in density_dict".format(Psat,obj_value))
             Psat, rhol, rhov = np.nan, np.nan, np.nan
 
     tmpv, _, _ = calc_phiv(Psat, T, xi, eos, density_dict=density_dict)
@@ -982,7 +978,6 @@ def calc_Prange_xi(T, xi, yi, eos, density_dict={}, Pmin=None, Pmax=None, maxite
             yi_range, phiv_min, flagv_min = solve_yi_xiT(yi_range, xi, phil, p, T, eos, density_dict=density_dict, **mole_fraction_options)
             obj = (np.nansum(xi * phil / phiv_min) - 1.0)
 
-# NoteHere
             if np.any(np.isnan(yi_range)):
                 logger.info("Estimated minimum pressure produces NaN")
                 flag_max = True

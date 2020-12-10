@@ -970,14 +970,14 @@ def verify_eos(eos, **sys_dict):
         xi_list = np.array([[x, 1.0-x] for x in tmp])
         logger.info("Use array of mole fractions")
     else:
-        raise ValueError("With more that 2 components, the mole fractions need to be specified")
+        raise ValueError("Must have at least 2 components. With more that 2 components, the mole fractions need to be specified")
 
     if 'Tlist' in sys_dict:
         T_list = np.array(sys_dict['Tlist'],float)
         logger.info("Using Tlist")
         del sys_dict['Tlist']
     else:
-        T_list = constants.standard_temperature*np.array(len(xi_list))
+        T_list = constants.standard_temperature*np.ones(len(xi_list))
         logger.info("Assume 298.15 K")
 
     if "Plist" in sys_dict:
