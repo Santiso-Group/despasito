@@ -10,7 +10,7 @@ import logging
 
 from despasito.utils.parallelization import MultiprocessingJob
 from . import calc
-from . import fund_constants as constants
+from despasito import fund_constants as constants
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ def phase_xiT(eos, **sys_dict):
     ----------
     eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
-    sys_dict: dict
+    sys_dict: kwargs, Optional
 
         - Tlist: (list[float]) Optional - default 298.15 [K] Temperature of the system corresponding to composition in xilist. If one set is given, this temperature will be used for all compositions.
         - xilist: (list[list[float]]) - List of sets of component mole fraction, where sum(xi)=1.0 for each set. Each set of components corresponds to a temperature in Tlist, or if one set is given, this composition will be used for all temperatures.
@@ -41,7 +41,6 @@ def phase_xiT(eos, **sys_dict):
         - pressure_options: (dict) Optional - Keyword arguments used in the given method, "method" from :func:`~despasito.utils.general_toolbox.solve_root`, to solve the outer loop in the solving algorithm
         - mole_fraction_options: (dict) Optional - Keywords used to solve the mole fraction loop in :func:`~despasito.thermodynamics.calc.solve_yi_xiT`
         - density_dict: (dict) Optional - Other keyword options for density array :func:`~despasito.thermodynamics.calc.PvsRho` 
-        - CriticalProp: (list[list[float]]) Optional - A list of lists of the component critical properties so a better guess in pressure can be derived from corresponding states theory. See :func:`~despasito.thermodynamics.calc.calc_CC_Pguess` for more details
 
     Returns
     -------
@@ -55,6 +54,7 @@ def phase_xiT(eos, **sys_dict):
     if 'Tlist' in sys_dict:
         T_list = np.array(sys_dict['Tlist'],float)
         logger.info("Using Tlist") 
+        del sys_dict['Tlist']
     else:
         T_list = np.array([constants.standard_temperature])
         logger.info("Assuming standard temperature")
@@ -62,12 +62,14 @@ def phase_xiT(eos, **sys_dict):
     if 'xilist' in sys_dict:
         xi_list = np.array(sys_dict['xilist'],float)
         logger.info("Using xilist")
+        del sys_dict['xilist']
     else:
         raise ValueError('Mole fractions, xilist, are not specified')
 
     if 'mpObj' in sys_dict:
         mpObj = sys_dict['mpObj']
         flag_use_mp_object = True
+        del sys_dict['mpObj']
     else:
         flag_use_mp_object = False
 
@@ -87,13 +89,11 @@ def phase_xiT(eos, **sys_dict):
     # Process initial guess in pressure
     if 'Pguess' in sys_dict:
         Pguess = np.array(sys_dict['Pguess'],float)
+        del sys_dict['Pguess']
         if not len(np.shape(Pguess)):
             Pguess = np.array([Pguess])
         if np.size(T_list) != np.size(Pguess):
-            if type(Pguess) not in [list, np.ndarray]:
-                opts["Pguess"] = np.ones(len(T_list))*Pguess
-                logger.info("The same pressure, {}, was used for all mole fraction values".format(Pguess))
-            elif len(Pguess) == 1:
+            if len(Pguess) == 1:
                 opts["Pguess"] = np.ones(len(T_list))*float(Pguess[0])
                 logger.info("The same pressure, {}, was used for all mole fraction values".format(Pguess))
             else:
@@ -101,28 +101,14 @@ def phase_xiT(eos, **sys_dict):
         else:
             opts["Pguess"] = Pguess
         logger.info("Using user defined initial guess has been provided")
-    else:
-        if 'CriticalProp' in sys_dict:
-            CriticalProp = np.array(sys_dict['CriticalProp'])
-            logger.info("Using critical properties to intially guess pressure")
-
-            # Critical properties: [Tc, Pc, omega, rho_0.7, Zc, Vc, M]
-            Pguess = calc.calc_CC_Pguess(xi_list, T_list, CriticalProp)
-            if np.isnan(Pguess):
-                logger.info("Critical properties were not used to guess an initial pressure")
-            else:
-                logger.info("Pguess: ", Pguess)
-                opts["Pguess"] = Pguess
 
     if 'Pmin' in sys_dict:
         Pmin = np.array(sys_dict['Pmin'],float)
+        del sys_dict['Pmin']
         if not len(np.shape(Pmin)):
             Pmin = np.array([Pmin])
         if np.size(T_list) != np.size(Pmin):
-            if type(Pmin) not in [list, np.ndarray]:
-                opts["Pmin"] = np.ones(len(T_list))*Pmin
-                logger.info("The same min pressure, {}, was used for all mole fraction values".format(Pmin))
-            elif len(Pmin) == 1:
+            if len(Pmin) == 1:
                 opts["Pmin"] = np.ones(len(T_list))*float(Pmin[0])
                 logger.info("The same min pressure, {}, was used for all mole fraction values".format(Pmin))
             else:
@@ -133,13 +119,11 @@ def phase_xiT(eos, **sys_dict):
 
     if 'Pmax' in sys_dict:
         Pmax = np.array(sys_dict['Pmax'],float)
+        del sys_dict['Pmax']
         if not len(np.shape(Pmax)):
             Pmax = np.array([Pmax])
         if np.size(T_list) != np.size(Pmax):
-            if type(Pmax) not in [list, np.ndarray]:
-                opts["Pmax"] = np.ones(len(T_list))*Pmax
-                logger.info("The same min pressure, {}, was used for all mole fraction values".format(Pmax))
-            elif len(Pmax) == 1:
+            if len(Pmax) == 1:
                 opts["Pmax"] = np.ones(len(T_list))*float(Pmax[0])
                 logger.info("The same max pressure, {}, was used for all mole fraction values".format(Pmax))
             else:
@@ -148,25 +132,7 @@ def phase_xiT(eos, **sys_dict):
             opts["Pmax"] = Pmax
         logger.info("Using user defined max pressure")
 
-    # Extract desired method
-    if "method" in sys_dict:
-        logger.info("Accepted optimization method, {}, for solving pressure".format(sys_dict['method']))
-        opts["method"] = sys_dict['method']
-
-    # Extract rho dict
-    if "density_dict" in sys_dict:
-        logger.info("Accepted options for P vs. density curve")
-        opts["density_dict"] = sys_dict["density_dict"]
-
-    # Extract pressure optimization dict
-    if "pressure_options" in sys_dict:
-        logger.info("Accepted options for P optimization")
-        opts["pressure_options"] = sys_dict["pressure_options"]
-
-    # Extract pressure optimization dict
-    if "mole_fraction_options" in sys_dict:
-        logger.info("Accepted options for mole fraction optimization")
-        opts["mole_fraction_options"] = sys_dict["mole_fraction_options"]
+    opts.update(sys_dict) # Add unprocessed options
 
     ## Calculate P and yi
     per_job_var = ["Pmin","Pmax","Pguess"]
@@ -191,13 +157,10 @@ def _phase_xiT_wrapper(args):
 
     T, xi, eos, opts = args
     logger.info("T (K), xi: {} {}, Let's Begin!".format(T, xi))
+
     try:
         if len(xi[xi!=0.])==1:
-            if "density_dict" in opts:
-                opt_tmp = {"density_dict": opts["density_dict"]}
-            else:
-                opt_tmp = {}
-            P, _, _ = calc.calc_Psat(T, xi, eos, **opt_tmp)
+            P, _, _ = calc.calc_Psat(T, xi, eos, **opts)
             yi, flagv, flagl, obj = xi, 0, 1, 0.0
         else:
             if "pressure_options" in opts and "method" in opts["pressure_options"]:
@@ -230,7 +193,7 @@ def phase_yiT(eos, **sys_dict):
     ----------
     eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
-    sys_dict: dict
+    sys_dict: kwargs, Optional
 
         - Tlist: (list[float]) Optional - default 298.15 [K] Temperature of the system corresponding to composition in yilist. If one set is given, this pressure will be used for all compositions.
         - yilist: (list[list[float]]) - List of sets of component mole fraction, where sum(yi)=1.0 for each set. Each set of components corresponds to a temperature in Tlist, or if one set is given, this composition will be used for all temperatures.
@@ -239,7 +202,6 @@ def phase_yiT(eos, **sys_dict):
         - pressure_options: (dict) Optional - Keyword arguments used in the given method, "method" from :func:`~despasito.utils.general_toolbox.solve_root`, to solve the outer loop in the solving algorithm
         - mole_fraction_options: (dict) Optional - Keywords used to solve the mole fraction loop in :func:`~despasito.thermodynamics.calc.solve_xi_yiT`
         - density_dict: (dict) Optional - Other keyword options for density array :func:`~despasito.thermodynamics.calc.PvsRho` 
-        - CriticalProp: (list[list[float]]) Optional - A list of lists of the component critical properties so a better guess in pressure can be derived from corresponding states theory. See :func:`~despasito.thermodynamics.calc.calc_CC_Pguess` for more details
 
     Returns
     -------
@@ -250,6 +212,7 @@ def phase_yiT(eos, **sys_dict):
     ## Extract and check input data
     if 'Tlist' in sys_dict:
         T_list = np.array(sys_dict['Tlist'],float)
+        del sys_dict['Tlist']
         logger.info("Using Tlist")
     else:
         T_list = np.array([constants.standard_temperature])
@@ -257,6 +220,7 @@ def phase_yiT(eos, **sys_dict):
 
     if 'yilist' in sys_dict:
         yi_list = np.array(sys_dict['yilist'],float)
+        del sys_dict['yilist']
         logger.info("Using yilist")
     else:
         raise ValueError('Mole fractions, yilist, are not specified')
@@ -273,6 +237,7 @@ def phase_yiT(eos, **sys_dict):
 
     if 'mpObj' in sys_dict:
         mpObj = sys_dict['mpObj']
+        del sys_dict['mpObj']
         flag_use_mp_object = True
     else:
         flag_use_mp_object = False
@@ -283,48 +248,60 @@ def phase_yiT(eos, **sys_dict):
     # Process initial guess in pressure
     if 'Pguess' in sys_dict:
         Pguess = np.array(sys_dict['Pguess'],float)
+        del sys_dict['Pguess']
+        if not len(np.shape(Pguess)):
+            Pguess = np.array([Pguess])
         if np.size(T_list) != np.size(Pguess):
-            if type(Pguess) not in [list, np.ndarray]:
-                opts["Pguess"] = np.ones(len(T_list))*Pguess
-                logger.info("The same pressure, {}, was used for all mole fraction values".format(Pguess))
-            elif len(T_list) == 1:
+            if len(Pguess) == 1:
                 opts["Pguess"] = np.ones(len(T_list))*float(Pguess[0])
                 logger.info("The same pressure, {}, was used for all mole fraction values".format(Pguess))
             else:
                 raise ValueError("The number of provided pressure and mole fraction sets are different")
+        else:
+            opts["Pguess"] = Pguess
         logger.info("Using user defined initial guess has been provided")
-    else:
-        if 'CriticalProp' in sys_dict:
-            CriticalProp = np.array(sys_dict['CriticalProp'])
-            logger.info("Using critical properties to intially guess pressure")
 
-            # Critical properties: [Tc, Pc, omega, rho_0.7, Zc, Vc, M]
-            Pguess = calc.calc_CC_Pguess(yi_list, T_list, CriticalProp)
-            if np.isnan(Pguess):
-                logger.info("Critical properties were not used to guess an initial pressure")
+    if 'Pmin' in sys_dict:
+        Pmin = np.array(sys_dict['Pmin'],float)
+        del sys_dict['Pmin']
+        if not len(np.shape(Pmin)):
+            Pmin = np.array([Pmin])
+        if np.size(T_list) != np.size(Pmin):
+            if len(Pmin) == 1:
+                opts["Pmin"] = np.ones(len(T_list))*float(Pmin[0])
+                logger.info("The same min pressure, {}, was used for all mole fraction values".format(Pmin))
             else:
-                logger.info("Pguess: {}".format(Pguess))
-                opts["Pguess"] = Pguess
+                raise ValueError("The number of provided pressure and mole fraction sets are different")
+        else:
+            opts["Pmin"] = Pmin
+        logger.info("Using user defined min pressure")
 
-    # Extract desired method
-    if "method" in sys_dict:
-        logger.info("Accepted optimization method, {}, for solving pressure".format(sys_dict['method']))
-        opts["method"] = sys_dict['method']
+    if 'Pmax' in sys_dict:
+        Pmax = np.array(sys_dict['Pmax'],float)
+        del sys_dict['Pmax']
+        if not len(np.shape(Pmax)):
+            Pmax = np.array([Pmax])
+        if np.size(T_list) != np.size(Pmax):
+            if len(Pmax) == 1:
+                opts["Pmax"] = np.ones(len(T_list))*float(Pmax[0])
+                logger.info("The same max pressure, {}, was used for all mole fraction values".format(Pmax))
+            else:
+                raise ValueError("The number of provided pressure and mole fraction sets are different")
+        else:
+            opts["Pmax"] = Pmax
+        logger.info("Using user defined max pressure")
 
-    # Extract rho dict
-    if "density_dict" in sys_dict:
-        logger.info("Accepted options for P vs. density curve")
-        opts["density_dict"] = sys_dict["density_dict"]
+    opts.update(sys_dict) # Add unprocessed options
 
-    # Extract pressure optimization dict
-    if "pressure_options" in sys_dict:
-        logger.info("Accepted options for P optimization")
-        opts["pressure_options"] = sys_dict["pressure_options"]
-
-    # Extract pressure optimization dict
-    if "mole_fraction_options" in sys_dict:
-        logger.info("Accepted options for mole fraction optimization")
-        opts["mole_fraction_options"] = sys_dict["mole_fraction_options"]
+    ## Calculate P and yi
+    per_job_var = ["Pguess", "Pmin", "Pmax"]
+    inputs = []
+    for i in range(len(T_list)):
+        opts_tmp = opts.copy()
+        for key in per_job_var:
+            if key in opts_tmp:
+                opts_tmp[key] = opts_tmp[key][i]
+        inputs.append((T_list[i], yi_list[i], eos, opts_tmp))
 
     ## Calculate P and xi
     T_list = np.array(T_list)
@@ -343,13 +320,10 @@ def _phase_yiT_wrapper(args):
 
     T, yi, eos, opts = args
     logger.info("T (K), yi: {} {}, Let's Begin!".format(T, yi))
+
     try:
         if len(yi[yi!=0.])==1:
-            if "density_dict" in opts:
-                opt_tmp = {"density_dict": opts["density_dict"]}
-            else:
-                opt_tmp = {}
-            P, _, _ = calc.calc_Psat(T, yi, eos, **opt_tmp)
+            P, _, _ = calc.calc_Psat(T, yi, eos, **opts)
             xi, flagv, flagl, obj = yi, 0, 1, 0.0
         else:
             if "pressure_options" in opts and "method" in opts["pressure_options"]:
@@ -381,7 +355,7 @@ def flash(eos, **sys_dict):
     ----------
     eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
-    sys_dict: dict
+    sys_dict: kwargs, Optional
 
         - Tlist: (list[float]) Optional - default 298.15 [K] Temperature of the system corresponding Plist. If one value is given, this temperature will be used for all temperatures.
         - Plist: (list[float]) - Pressure of the system corresponding to Tlist. If one value is given, this pressure will be used for all temperatures.
@@ -397,6 +371,7 @@ def flash(eos, **sys_dict):
     ## Extract and check input data
     if 'Tlist' in sys_dict:
         T_list = np.array(sys_dict['Tlist'],float)
+        del sys_dict['Tlist']
         logger.info("Using Tlist")
     else:
         T_list = np.array([constants.standard_temperature])
@@ -404,6 +379,7 @@ def flash(eos, **sys_dict):
 
     if 'Plist' in sys_dict:
         P_list = np.array(sys_dict['Plist'],float)
+        del sys_dict['Plist']
         logger.info("Using Plist")
     else:
         P_list = constants.standard_pressure * np.ones_like(T_list)
@@ -421,40 +397,19 @@ def flash(eos, **sys_dict):
 
     if 'mpObj' in sys_dict:
         mpObj = sys_dict['mpObj']
+        del sys_dict['mpObj']
         flag_use_mp_object = True
     else:
         flag_use_mp_object = False
 
-    opts = {}
-    if "density_dict" in sys_dict:
-        logger.info("Accepted options for P vs. density curve")
-        opts["density_dict"] = sys_dict["density_dict"]
-
-    # Extract pressure optimization dict
-    if "tol" in sys_dict:
-        logger.info("Accepted convergence tolerance for flash calculation")
-        opts["tol"] = sys_dict["tol"]
-
-    if "maxiter" in sys_dict:
-        logger.info("Accepted maximum number of iterations for flash calculation loop.")
-        opts["maxiter"] = sys_dict["maxiter"]
-
-    if "max_mole_fraction0" in sys_dict:
-        logger.info("Accepted maximum mole fraction for component 1 to restrict search.".format(sys_dict["max_mole_fraction0"]))
-        opts["max_mole_fraction0"] = sys_dict["max_mole_fraction0"]
-
-    if "min_mole_fraction0" in sys_dict:
-        logger.info("Accepted minimum mole fraction for component 1 to restrict search.".format(sys_dict["min_mole_fraction0"]))
-        opts["min_mole_fraction0"] = sys_dict["min_mole_fraction0"]
+    opts = sys_dict.copy()
 
     # Initialize Variables
     if eos.number_of_components != 2:
         raise ValueError("Only binary systems are currently supported for flash calculations, {} were given.".format(eos.number_of_components))
-    l_x = np.array(T_list).shape[0]
-    T_list = np.array(T_list)
-    P_list = np.array(P_list)
 
     inputs = [(T_list[i], P_list[i], eos, opts) for i in range(len(T_list))]
+
     if flag_use_mp_object:
         xi_list, yi_list, flagv_list, flagl_list, obj_list = mpObj.pool_job(_flash_wrapper, inputs)
     else:
@@ -468,7 +423,6 @@ def _flash_wrapper(args):
 
     T, P, eos, opts = args
 
-    logger.info("T (K), P (Pa): {} {}, Let's Begin!".format(T, P))
     try:
         xi, flagl, yi, flagv, obj = calc.calc_flash(P, T, eos, **opts)
     except:
@@ -496,7 +450,7 @@ def saturation_properties(eos, **sys_dict):
     ----------
     eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
-    sys_dict: dict
+    sys_dict: kwargs, Optional
 
         - Tlist: (list[float]) Optional - default: 298.15 [K] Temperature of the system corresponding Plist. If one value is given, this temperature will be used for all temperatures.
         - density_dict: (dict) Optional - Other keyword options for density array :func:`~despasito.thermodynamics.calc.PvsRho` 
@@ -510,6 +464,7 @@ def saturation_properties(eos, **sys_dict):
     ## Extract and check input data
     if 'Tlist' in sys_dict:
         T_list = np.array(sys_dict['Tlist'],float)
+        del sys_dict['Tlist']
         logger.info("Using Tlist")
     else:
         T_list = np.array([constants.standard_temperature])
@@ -517,25 +472,18 @@ def saturation_properties(eos, **sys_dict):
 
     if 'xilist' in sys_dict:
         xi_list = np.array(sys_dict['xilist'],float)
+        del sys_dict['xilist']
     else:
         xi_list = np.array([[1.0] for x in range(len(T_list))])
 
-    ## Optional values
-    opts = {}
-
-    # Extract rho dict
-    if "density_dict" in sys_dict:
-        logger.info("Accepted options for P vs. density curve")
-        opts["density_dict"] = sys_dict["density_dict"]
-
     if 'mpObj' in sys_dict:
         mpObj = sys_dict['mpObj']
+        del sys_dict['mpObj']
         flag_use_mp_object = True
     else:
         flag_use_mp_object = False
 
-    ## Calculate saturation properties
-    T_list = np.array(T_list)
+    opts = sys_dict.copy()
 
     inputs = [(T_list[i], xi_list[i], eos, opts) for i in range(len(T_list))]
     if flag_use_mp_object:
@@ -584,7 +532,7 @@ def liquid_properties(eos, **sys_dict):
     ----------
     eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
-    sys_dict: dict
+    sys_dict: kwargs, Optional
 
         - xilist: (list[list[float]]) - List of sets of component mole fraction, where sum(xi)=1.0 for each set. Each set of components corresponds to a temperature in Tlist, or if one set is given, this composition will be used for all temperatures.
         - Tlist: (list[float]) Optional - default: 298.15 [K] Temperature of the system corresponding Plist. If one value is given, this temperature will be used for all temperatures.
@@ -600,6 +548,7 @@ def liquid_properties(eos, **sys_dict):
     ## Extract and check input data
     if 'Tlist' in sys_dict:
         T_list = np.array(sys_dict['Tlist'],float)
+        del sys_dict['Tlist']
         logger.info("Using Tlist")
     else:
         T_list = np.array([constants.standard_temperature])
@@ -607,6 +556,7 @@ def liquid_properties(eos, **sys_dict):
 
     if 'xilist' in sys_dict:
         xi_list = np.array(sys_dict['xilist'],float)
+        del sys_dict['xilist']
         logger.info("Using xilist")
     else:
         if eos.number_of_components == 1:
@@ -627,6 +577,7 @@ def liquid_properties(eos, **sys_dict):
 
     if "Plist" in sys_dict:
         P_list = np.array(sys_dict['Plist'])
+        del sys_dict['Plist']
         if np.size(T_list) != np.size(P_list, axis=0):
             if len(P_list)==1:
                 P_list = P_list[0] * np.ones_like(T_list)
@@ -642,21 +593,12 @@ def liquid_properties(eos, **sys_dict):
 
     if 'mpObj' in sys_dict:
         mpObj = sys_dict['mpObj']
+        del sys_dict['mpObj']
         flag_use_mp_object = True
     else:
         flag_use_mp_object = False
 
-    ## Optional values
-    opts = {}
-
-    # Extract rho dict
-    if "density_dict" in sys_dict:
-        logger.info("Accepted options for P vs. density curve")
-        opts["density_dict"] = sys_dict["density_dict"]
-
-    ## Calculate liquid density
-    l_x = len(T_list)
-    T_list = np.array(T_list)
+    opts = sys_dict.copy()
 
     inputs = [(P_list[i], T_list[i], xi_list[i], eos, opts) for i in range(len(T_list))]
     if flag_use_mp_object:
@@ -675,8 +617,7 @@ def _liquid_properties_wrapper(args):
     logger.info("T (K), P (Pa), xi: {} {} {}, Let's Begin!".format(T, P, xi))
 
     try:
-        rhol, flagl = calc.calc_rhol(P, T, xi, eos, **opts)
-        phil = eos.fugacity_coefficient(P, np.array([rhol]), xi, T)
+        phil, rhol, flagl = calc.calc_phil(P, T, xi, eos, **opts)
         logger.info("P {} Pa, T {} K, xi {}, rhol {}, phil {}, flagl {}".format(P, T, xi, rhol, phil, flagl))
     except:
         logger.warning('Failed to calculate rhol at {} K and {} Pa'.format(T,P))
@@ -701,7 +642,7 @@ def vapor_properties(eos, **sys_dict):
     ----------
     eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
-    sys_dict: dict
+    sys_dict: kwargs, Optional
 
         - yilist: (list[list[float]]) - List of sets of component mole fraction, where sum(yi)=1.0 for each set. Each set of components corresponds to a temperature in Tlist, or if one set is given, this composition will be used for all temperatures.
         - Tlist: (list[float]) Optional - default: 298.15 [K] Temperature of the system corresponding Plist. If one value is given, this temperature will be used for all temperatures.
@@ -717,6 +658,7 @@ def vapor_properties(eos, **sys_dict):
     ## Extract and check input data
     if 'Tlist' in sys_dict:
         T_list = np.array(sys_dict['Tlist'],float)
+        del sys_dict['Tlist']
         logger.info("Using Tlist")
     else:
         logger.info("Assuming standard temperature")
@@ -724,6 +666,7 @@ def vapor_properties(eos, **sys_dict):
 
     if 'yilist' in sys_dict:
         yi_list = np.array(sys_dict['yilist'],float)
+        del sys_dict['yilist']
         logger.info("Using yilist")
     else:
         if eos.number_of_components == 1:
@@ -744,6 +687,7 @@ def vapor_properties(eos, **sys_dict):
 
     if "Plist" in sys_dict:
         P_list = np.array(sys_dict['Plist'])
+        del sys_dict['Plist']
         if np.size(T_list) != np.size(P_list, axis=0):
             if len(P_list)==1:
                 P_list = P_list[0] * np.ones_like(T_list)
@@ -759,20 +703,12 @@ def vapor_properties(eos, **sys_dict):
 
     if 'mpObj' in sys_dict:
         mpObj = sys_dict['mpObj']
+        del sys_dict['mpObj']
         flag_use_mp_object = True
     else:
         flag_use_mp_object = False
 
-    ## Optional values
-    opts = {}
-
-    # Extract rho dict
-    if "density_dict" in sys_dict:
-        logger.info("Accepted options for P vs. density curve")
-        opts["density_dict"] = sys_dict["density_dict"]
-
-    ## Calculate vapor density
-    T_list = np.array(T_list)
+    opts = sys_dict.copy()
 
     inputs = [(P_list[i], T_list[i], yi_list[i], eos, opts) for i in range(len(T_list))]
     if flag_use_mp_object:
@@ -791,8 +727,7 @@ def _vapor_properties_wrapper(args):
     logger.info("T (K), P (Pa), yi: {} {} {}, Let's Begin!".format(T, P, yi))
 
     try:
-        rhov, flagv = calc.calc_rhov(P, T, yi, eos, **opts)
-        phiv = eos.fugacity_coefficient(P, np.array([rhov]), yi, T)
+        phiv, rhov, flagv = calc.calc_phiv(P, T, yi, eos, **opts)
         logger.info("P {} Pa, T {} K, yi {}, rhov {}, phiv {}, flagv {}".format(P, T, yi, rhov, phiv, flagv))
     except:
         logger.warning('Failed to calculate rhov at {} K and {} Pa'.format(T,P))
@@ -818,7 +753,7 @@ def solubility_parameter(eos, **sys_dict):
     ----------
     eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
-    sys_dict: dict
+    sys_dict: kwargs, Optional
 
         - Tlist: (list[float]) Optional - default: 298.15 [K] Temperature of the system corresponding Plist. If one value is given, this temperature will be used for all temperatures.
         - xilist: (list[list[float]]) Optional - default: [1.0] assuming all of one component. List of sets of component mole fraction, where sum(xi)=1.0 for each set. Each set of components corresponds to a temperature in Tlist, or if one set is given, this composition will be used for all temperatures.
@@ -883,21 +818,12 @@ def solubility_parameter(eos, **sys_dict):
 
     if 'mpObj' in sys_dict:
         mpObj = sys_dict['mpObj']
+        del sys_dict['mpObj']
         flag_use_mp_object = True
     else:
         flag_use_mp_object = False
 
-    ## Optional values
-    opts = {}
-    for key, val in sys_dict.items():
-        if key in ['dT', 'tol']:
-            opts[key] = val
-            del sys_dict[key]
-
-    # Extract rho dict
-    if "density_dict" in sys_dict:
-        logger.info("Accepted options for P vs. density curve")
-        opts["density_dict"] = sys_dict["density_dict"]
+    opts = sys_dict.copy()
 
     ## Calculate solubility parameter
     inputs = [(P_list[i], T_list[i], xi_list[i], eos, opts) for i in range(len(T_list))]
@@ -946,7 +872,7 @@ def verify_eos(eos, **sys_dict):
     ----------
     eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
-    sys_dict: dict
+    sys_dict: kwargs, Optional
 
         - Tlist: (list[float]) Optional - default: 298.15 [K] Temperature of the system corresponding Plist. If one value is given, this temperature will be used for all temperatures.
         - xilist: (list[list[float]]) Optional - default: Array of 11 values from x1=0 to x1=1 for binary array. List of sets of component mole fraction, where sum(xi)=1.0 for each set. Each set of components corresponds to a temperature in Tlist, or if one set is given, this composition will be used for all temperatures.
@@ -1007,17 +933,12 @@ def verify_eos(eos, **sys_dict):
 
     if 'mpObj' in sys_dict:
         mpObj = sys_dict['mpObj']
+        del sys_dict['mpObj']
         flag_use_mp_object = True
     else:
         flag_use_mp_object = False
 
-    ## Optional values
-    opts = {}
-
-    # Extract rho dict
-    if "density_dict" in sys_dict:
-        logger.info("Accepted options for P vs. density curve")
-        opts["density_dict"] = sys_dict["density_dict"]
+    opts = sys_dict.copy()
 
     ## Calculate solubility parameter
     inputs = [(P_list[i], T_list[i], xi_list[i], eos, opts) for i in range(len(T_list))]

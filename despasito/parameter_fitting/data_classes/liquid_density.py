@@ -5,6 +5,7 @@ Objects for storing and producing objective values for comparing experimental da
 import numpy as np
 import logging
 
+from despasito import fund_constants as constants
 from despasito.thermodynamics import thermo
 from despasito.parameter_fitting import fit_funcs as ff
 from despasito.parameter_fitting.interface import ExpDataTemplate
@@ -62,38 +63,55 @@ class Data(ExpDataTemplate):
 
         if "xi" in data_dict:
             self.thermodict["xilist"] = data_dict["xi"]
+            del data_dict["xi"]
         if "T" in data_dict:
             self.thermodict["Tlist"] = data_dict["T"]
-        if "rhol" in data_dict:
-            self.thermodict["rhol"] = data_dict["rhol"]
-            if "rhol" in self.weights:
-                if type(self.weights[key]) != float and len(self.weights[key]) != len(self.thermodict[key]):
-                    raise ValueError("Array of weights for '{}' values not equal to number of experimental values given.".format(key))
+            del data_dict["T"]
+        if "P" in data_dict:
+            self.thermodict["Plist"] = data_dict["P"]
+            del data_dict["P"]
+
+        thermo_keys = ["Plist", "xilist", "Tlist"]
+        lx = max([len(self.thermodict[key]) for key in thermo_keys if key in self.thermodict])
+        for key in thermo_keys:
+            if key in self.thermodict and len(self.thermodict[key]) == 1:
+                self.thermodict[key] = np.array([self.thermodict[key][0] for x in range(lx)])
+
+        if "Tlist" not in self.thermodict:
+            self.thermodict["Tlist"] = np.ones(lx)*constants.standard_temperature
+            logger.info("Assume {}K".format(constants.standard_temperature))
+        if "Plist" not in self.thermodict:
+            self.thermodict["Plist"] = np.ones(lx)*constants.standard_pressure
+            logger.info("Assume atmospheric pressure")
+        if 'xilist' not in self.thermodict:
+            if self.eos.number_of_components > 1:
+                raise ValueError("Ambiguous instructions. Include xi to define intended component to obtain saturation properties")
+            else:
+                self.thermodict['xilist'] = np.array([[1.0] for x in range(lx)])
+
+        self.result_keys = ["rhol", "phil"]
+        for key in self.result_keys:
+            if key in data_dict:
+                self.thermodict[key] = data_dict[key]
+                del data_dict[key]
+                if key in self.weights:
+                    if type(self.weights[key]) != float and len(self.weights[key]) != len(self.thermodict[key]):
+                        raise ValueError("Array of weights for '{}' values not equal to number of experimental values given.".format(key))
+                else:
+                    self.weights[key] = 1.0
 
         if "Tlist" not in self.thermodict and "rhol" not in self.thermodict:
             raise ImportError("Given liquid property data, values for T, xi, and rhol should have been provided.")
 
-        if "P" in data_dict:
-            if (type(data_dict["P"]) == float or len(data_dict["P"])==1):
-                self.thermodict["Plist"] = np.ones(len(self.thermodict["Tlist"]))*data_dict["P"]
-            else:
-                self.thermodict["Plist"] = data_dict["P"]
-        else:
-            self.thermodict["Plist"] = np.ones(len(self.thermodict["Tlist"]))*101325.0
-            logger.info("Assume atmospheric pressure")
-
-        self.npoints = len(self.thermodict["Tlist"])
-        thermo_keys = ["Plist", "rhol"]
+        self.npoints = len(self.thermodict["rhol"])
+        thermo_keys = ["Plist", "rhol", "xilist", "Tlist", "phil"]
         for key in thermo_keys:
             if key in self.thermodict and len(self.thermodict[key]) != self.npoints:
-                raise ValueError("T, P, and rhol are not all the same length.")
+                raise ValueError("T, P, xi, and rhol are not all the same length.")
 
-        for key in self.thermodict.keys():
-            if key not in self.weights:
-                if key not in ['calculation_type',"density_dict","mpObj"]:
-                    self.weights[key] = 1.0
+        self.thermodict.update(data_dict)
 
-        logger.info("Data type 'liquid_properties' initiated with calculation_type, {}, and data types: {}.\nWeight data by: {}".format(self.thermodict["calculation_type"],", ".join(self.thermodict.keys()),self.weights))
+        logger.info("Data type 'liquid_properties' initiated with calculation_type, {}, and data types: {}.\nWeight data by: {}".format(self.thermodict["calculation_type"],", ".join(self.result_keys),self.weights))
 
     def _thermo_wrapper(self):
 
@@ -106,15 +124,15 @@ class Data(ExpDataTemplate):
             A list of the predicted thermodynamic values estimated from thermo calculation. This list can be composed of lists or floats
         """
 
-        # Check bead type
-        if 'xilist' not in self.thermodict:
-            if self.eos.number_of_components > 1:
-                raise ValueError("Ambiguous instructions. Include xi to define intended component to obtain saturation properties")
-            else:
-                self.thermodict['xilist'] = np.array([[1.0] for x in range(len(self.thermodict['Tlist']))])
+        # Remove results
+        opts = self.thermodict.copy()
+        tmp = self.result_keys + ["name", "beadparams0"]
+        for key in tmp:
+            if key in opts:
+                del opts[key]
 
         try:
-            output_dict = thermo(self.eos, **self.thermodict)
+            output_dict = thermo(self.eos, **opts)
             output = [output_dict["rhol"]]
         except:
             raise ValueError("Calculation of calc_rhol failed")

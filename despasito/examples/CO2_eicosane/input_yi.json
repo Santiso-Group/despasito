@@ -1,9 +1,0 @@
-{
-    "beadconfig": [[["CO2", 1]], [["CH3", 2],["CH2", 18]]],
-    "EOSgroup": "../library/SAFTgroup.json",
-    "EOScross": "../library/SAFTcross.json",
-    "output_file": "out_yi.txt",
-    "calculation_type" : "phase_yiT",
-    "Tlist" : [373.0],
-    "xilist": [[0.999570996807184,4.290031928158509E-004]]
-}

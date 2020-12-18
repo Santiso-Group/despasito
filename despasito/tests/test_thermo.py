@@ -11,8 +11,8 @@ import sys
 import numpy as np
 
 Tlist = [353.0]
-xilist = [[0.002064,0.997935]]
-yilist = [[0.987755,0.012245]]
+xilist = [[0.002065,0.997935]]
+yilist = [[0.98779049, 0.01220951]]
 Plist = [7000000.0]
 rho_co2_h2o = np.array([19986.78358869])
 
@@ -28,11 +28,7 @@ def test_thermo_import():
 
 def test_phase_xiT(eos=eos_co2_h2o,Tlist=Tlist,xilist=xilist):
     output = thermo.thermo(eos,calculation_type="phase_xiT",**{"Tlist":Tlist,"xilist":xilist, "Pmin": [6900000], "Pmax":[7100000]})
-    assert output["P"][0]==pytest.approx(7000914.5,abs=5e+1) and output["yi"][0]==pytest.approx([0.98779049, 0.01220951],abs=1e-4)
-
-#def test_phase_yiT(eos=eos_co2_h2o,Tlist=Tlist,yilist=yilist):
-#    output = thermo.thermo(eos,calculation_type="phase_yiT",**{"Tlist":Tlist,"yilist":yilist})
-#    assert output["P"][0]==pytest.approx(6926411.28,abs=1e+1) and output["xi"][0]==pytest.approx([0.26451786, 0.73548214],abs=1e-4)
+    assert output["P"][0]==pytest.approx(7005198.6,abs=5e+1) and output["yi"][0]==pytest.approx([0.98779049, 0.01220951],abs=1e-4)
 
 def test_saturation_properties(eos=eos_co2_h2o,Tlist=Tlist):
 
@@ -45,7 +41,7 @@ def test_liquid_properties(eos=eos_co2_h2o,Tlist=Tlist,xilist=xilist,Plist=Plist
     output = thermo.thermo(eos,calculation_type="liquid_properties",**{"Tlist":Tlist,"Plist":Plist,"xilist":xilist})
 
 #    assert output["rhol"][0]==pytest.approx(54072.87630577754,abs=1e-1) and output["phil"][0]==pytest.approx(np.array([2646.44010, 0.120295122]),abs=1e-1)
-    assert output["rhol"][0]==pytest.approx(53831.7,abs=1e-1) and output["phil"][0]==pytest.approx(np.array([403.98, 6.8846e-03]),abs=1e-1)
+    assert output["rhol"][0]==pytest.approx(53831.6,abs=1e-1) and output["phil"][0]==pytest.approx(np.array([403.98, 6.8846e-03]),abs=1e-1)
 
 def test_vapor_properties(eos=eos_co2_h2o,Tlist=Tlist,yilist=yilist,Plist=Plist):
 

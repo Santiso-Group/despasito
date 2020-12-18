@@ -26,9 +26,7 @@ exp_data_density = {'Wiley': {'name': 'liquid_density', "eos_obj":eos, 'calculat
 
 ## Optimization options
 opt_params = {"fit_bead" : "CH3OH", "fit_params": ["epsilon"], "epsilon_bounds" : [300.0, 400.0]}
-
 thermo_dict0 = {"opt_params": opt_params, "beadparams0": [384.0], "global_dict": {"method": "single_objective"}}
-
 
 def test_fit_import():
 #    """Sample test, will always pass so long as import statement worked"""
@@ -55,7 +53,8 @@ thermo_dict0["exp_data"] = exp_data_sat
 thermo_dict0["global_dict"] = {"method": "single_objective"}
 def test_saturation_de(eos=eos,thermo_dict=copy.deepcopy(thermo_dict0)):
 
+    thermo_dict["density_dict"] = {"pressure_min": 10}
     thermo_dict = ri.process_param_fit_inputs(thermo_dict)
     output = fit.fit(**thermo_dict)
 
-    assert output["final_parameters"][0]==pytest.approx(375.01,abs=1.0) and output["objective_value"]==pytest.approx(2.146,abs=0.01)
+    assert output["final_parameters"][0]==pytest.approx(375.01,abs=1.0) and output["objective_value"]==pytest.approx(5.8195,abs=0.01)

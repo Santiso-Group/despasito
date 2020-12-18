@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 ######################################################################
 
 def append_data_file_path(input_dict, path='.'):
-   """
+   r"""
    Appends path to data file(s).
 
    Parameters
@@ -45,7 +45,7 @@ def append_data_file_path(input_dict, path='.'):
 ######################################################################
 def extract_calc_data(input_fname, path='.', **thermo_dict):
 
-    """
+    r"""
     Parse dictionary from .json input file into a dictionaries.
 
     Resulting dictionaries are used for creating the equation of state object, and for passing instructions for thermodynamic calculations.
@@ -135,7 +135,7 @@ def extract_calc_data(input_fname, path='.', **thermo_dict):
 ######################################################################
 def file2paramdict(filename,delimiter=" "):
 
-    """
+    r"""
     Converted file directly into a dictionary.
 
     Each line in the input file is a key followed by a value in the resulting dictionary.
@@ -176,7 +176,7 @@ def file2paramdict(filename,delimiter=" "):
 ######################################################################
 def make_xi_matrix(filename):
 
-    """
+    r"""
     Extract system information from input .json file of parameters.
 
     Parameters
@@ -207,7 +207,7 @@ def make_xi_matrix(filename):
 ######################################################################
 def process_bead_data(bead_data):
 
-    """
+    r"""
     Process system information from input file.
 
     Parameters
@@ -246,7 +246,7 @@ def process_bead_data(bead_data):
 ######################################################################
 def process_param_fit_inputs(thermo_dict):
 
-    """
+    r"""
     Process parameter fitting information.
 
     Parameters
@@ -307,7 +307,7 @@ def process_param_fit_inputs(thermo_dict):
 ######################################################################
 def process_exp_data(exp_data_dict):
 
-    """
+    r"""
     Convert experimental data dictionary into form used by parameter fitting module. 
 
     Note that there should be one dictionary per data set. All data is extracted from data files.
@@ -350,7 +350,7 @@ def process_exp_data(exp_data_dict):
 ######################################################################
 def process_exp_data_file(fname):
 
-    """
+    r"""
     Import data file and convert columns into dictionary entries.
 
     The headers in the file are the dictionary keys. The top line is skipped, and column headers are the second line. Note that column headers should be thermo properties (e.g. T, P, x1, x2, y1, y2) without suffixes. Mole fractions x1, x2, ... should be in the same order as in the beadconfig line of the input file. No mole fractions should be left out.

@@ -64,36 +64,49 @@ class Data(ExpDataTemplate):
         # Extract system data
         if "xi" in data_dict:
             self.thermodict["xilist"] = data_dict["xi"]
+            del data_dict["xi"]
         if "yi" in data_dict:
             self.thermodict["xilist"] = data_dict["yi"]
             logger.info("Vapor mole fraction recorded as 'xi'")
+            del data_dict["yi"]
         if "T" in data_dict:
             self.thermodict["Tlist"] = data_dict["T"]
-        if "rhol" in data_dict:
-            key = 'rhol'
-            self.thermodict["rhol"] = data_dict["rhol"]
-            if key in self.weights:
-                if type(self.weights[key]) != float and len(self.weights[key]) != len(self.thermodict[key]):
-                    raise ValueError("Array of weights for '{}' values not equal to number of experimental values given.".format(key))
-        if "rhov" in data_dict:
-            key = "rhov"
-            self.thermodict["rhov"] = data_dict["rhov"]
-            if key in self.weights:
-                if type(self.weights[key]) != float and len(self.weights[key]) != len(self.thermodict[key]):
-                    raise ValueError("Array of weights for '{}' values not equal to number of experimental values given.".format(key))
+            del data_dict["T"]
+
+        thermo_keys = ["xilist", "Tlist"]
+        lx = max([len(self.thermodict[key]) for key in thermo_keys if key in self.thermodict])
+        for key in thermo_keys:
+            if key in self.thermodict and len(self.thermodict[key]) == 1:
+                self.thermodict[key] = np.array([self.thermodict[key][0] for x in range(lx)])
+
+        if "Tlist" not in self.thermodict:
+            self.thermodict["Tlist"] = np.ones(lx)*constants.standard_temperature
+            logger.info("Assume {}K".format(constants.standard_temperature))
+        if 'xilist' not in self.thermodict:
+            if self.eos.number_of_components > 1:
+                raise ValueError("Ambiguous instructions. Include xi to define intended component to obtain saturation properties")
+            else:
+                self.thermodict['xilist'] = np.array([[1.0] for x in range(lx)])
+
+        self.result_keys = ["rhol", "rhov", "Psat"]
+        for key in self.result_keys:
+            if key in data_dict:
+                self.thermodict[key] = data_dict[key]
+                del data_dict[key]
+                if key in self.weights:
+                    if type(self.weights[key]) != float and len(self.weights[key]) != len(self.thermodict[key]):
+                        raise ValueError("Array of weights for '{}' values not equal to number of experimental values given.".format(key))
+                else:
+                    self.weights[key] = 1.0
+
         if "P" in data_dict:
             self.thermodict["Psat"] = data_dict["P"]
+            del data_dict["P"]
             if 'P' in self.weights:
-                self.weights['Psat'] = self.weights.pop('P')
-        if "Psat" in data_dict:
-            self.thermodict["Psat"] = data_dict["Psat"]
-            if 'Psat' in self.weights:
-                self.weights['Psat'] = self.weights.pop('Psat')
-
-        key = "Psat"
-        if key in self.weights:
-            if type(self.weights[key]) != float and len(self.weights[key]) != len(self.thermodict[key]):
-                raise ValueError("Array of weights for '{}' values not equal to number of experimental values given.".format(key))
+                if type(self.weights["P"]) != float and len(self.weights["P"]) != len(self.thermodict["P"]):
+                    raise ValueError("Array of weights for '{}' values not equal to number of experimental values given.".format("P"))
+                else:
+                    self.weights['Psat'] = self.weights.pop('P')
 
         tmp = ["Tlist"]
         if not all([x in self.thermodict.keys() for x in tmp]):
@@ -103,14 +116,15 @@ class Data(ExpDataTemplate):
         if not any([x in self.thermodict.keys() for x in tmp]):
             raise ImportError("Given saturation data, values for Psat, rhol, and/or rhov should have been provided.")
 
-        for key in self.thermodict:
-            if key not in self.weights:
-                if key not in ['calculation_type',"density_dict","mpObj"]:
-                    self.weights[key] = 1.0
-
         self.npoints = len(self.thermodict["Tlist"])
+        thermo_keys = ["Plist", "rhol", "rhov", "Tlist", "xilist"]
+        for key in thermo_keys:
+            if key in self.thermodict and len(self.thermodict[key]) != self.npoints:
+                raise ValueError("T, P, rhov, xi, and rhol are not all the same length.")
 
-        logger.info("Data type 'saturation_properties' initiated with calculation_type, {}, and data types: {}.\nWeight data by: {}".format(self.thermodict["calculation_type"],", ".join(self.thermodict.keys()),self.weights))
+        self.thermodict.update(data_dict)
+
+        logger.info("Data type 'saturation_properties' initiated with calculation_type, {}, and data types: {}.\nWeight data by: {}".format(self.thermodict["calculation_type"],", ".join(self.result_keys),self.weights))
 
     def _thermo_wrapper(self):
 
@@ -123,22 +137,21 @@ class Data(ExpDataTemplate):
             A list of the predicted thermodynamic values estimated from thermo calculation. This list can be composed of lists or floats
         """
 
-        # Check bead type
-        if 'xilist' not in self.thermodict:
-            if self.eos.number_of_components > 1:
-                raise ValueError("Ambiguous instructions. Include xi to define intended component to obtain saturation properties")
-            else:
-                self.thermodict['xilist'] = np.array([[1.0] for x in range(len(self.thermodict['Tlist']))])
- 
+        # Remove results
+        opts = self.thermodict.copy()
+        tmp = self.result_keys + ["name", "beadparams0"]
+        for key in tmp:
+            if key in opts:
+                del opts[key]
+
         # Run thermo calculations
         try:
-            output_dict = thermo(self.eos, **self.thermodict)
+            output_dict = thermo(self.eos, **opts)
             output = [output_dict["Psat"],output_dict["rhol"],output_dict["rhov"]]
         except:
             raise ValueError("Calculation of calc_Psat failed")
 
         return output
-
 
     def objective(self):
 

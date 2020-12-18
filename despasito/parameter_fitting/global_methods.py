@@ -439,7 +439,6 @@ def basinhopping(beadparams0, bounds, fit_bead, fit_params, exp_dict, global_dic
                     new_minimizer_dict[key][key2] = value2
     minimizer_dict = new_minimizer_dict
 
-    # NoteHere: how is this array generated? stepmag = np.array([550.0, 26.0, 4.0e-10, 0.45, 500.0, 150.0e-30, 550.0])
     try:
         if "stepsize" in global_dict:
             stepsize = global_dict["stepsize"]

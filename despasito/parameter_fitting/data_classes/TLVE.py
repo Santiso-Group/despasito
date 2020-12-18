@@ -52,50 +52,62 @@ class Data(ExpDataTemplate):
     def __init__(self, data_dict):
         
         super().__init__(data_dict)
-        
+
         self.thermodict["density_dict"] = {}
         if 'density_dict' in self.thermodict:
             self.thermodict["density_dict"].update(self.thermodict["density_dict"])
         
+        if "T" in data_dict:
+            self.thermodict["Tlist"] = data_dict["T"]
+            del data_dict["T"]
+
         if "xi" in data_dict: 
             self.thermodict["xilist"] = data_dict["xi"]
+            del data_dict["xi"]
             if 'xi' in self.weights:
                 self.weights['xilist'] = self.weights.pop('xi')
                 key = 'xilist'
                 if key in self.weights:
                     if type(self.weights[key]) != float and len(self.weights[key]) != len(self.thermodict[key]):
                         raise ValueError("Array of weights for '{}' values not equal to number of experimental values given.".format(key))
-        if "T" in data_dict:
-            self.thermodict["Tlist"] = data_dict["T"]
-            if 'T' in self.weights:
-                self.weights['Tlist'] = self.weights.pop('T')
+            else:
+                self.weights["xilist"] = 1.0
+
         if "yi" in data_dict:
             self.thermodict["yilist"] = data_dict["yi"]
+            del data_dict["yi"]
             if 'yi' in self.weights:
                 self.weights['yilist'] = self.weights.pop('yi')
                 key = 'yilist'
                 if key in self.weights:
                     if type(self.weights[key]) != float and len(self.weights[key]) != len(self.thermodict[key]):
                         raise ValueError("Array of weights for '{}' values not equal to number of experimental values given.".format(key))
+            else:
+                self.weights["yilist"] = 1.0
+
         if "P" in data_dict: 
             self.thermodict["Plist"] = data_dict["P"]
             self.thermodict["Pguess"] = data_dict["P"]
+            del data_dict["P"]
             if 'P' in self.weights:
                 self.weights['Plist'] = self.weights.pop('P')
                 key = 'Plist'
                 if key in self.weights:
                     if type(self.weights[key]) != float and len(self.weights[key]) != len(self.thermodict[key]):
                         raise ValueError("Array of weights for '{}' values not equal to number of experimental values given.".format(key))
+            else:
+                self.weights["Plist"] = 1.0
 
-        if 'Plist' not in self.thermodict and 'Tlist' not in self.thermodict:
-            raise ImportError("Given TLVE data, values for P and T should have been provided.")
+        if 'Tlist' not in self.thermodict:
+            raise ImportError("Given TLVE data, values for T should have been provided.")
 
-        if 'xilist' not in self.thermodict or 'yilist' not in self.thermodict:
-            raise ImportError("Given TLVE data, mole fractions should have been provided.")
+        thermo_keys = ["xilist", "yilist", "Plist"]
+        if not any([key in self.thermodict for key in thermo_keys]):
+            raise ImportError("Given TLVE data, mole fractions and/or pressure should have been provided.")
 
         self.npoints = len(self.thermodict["Tlist"])
-        thermo_keys = ["Plist", 'xilist', 'yilist']
-        for key in thermo_keys:
+        self.result_keys = ["Plist", 'xilist', 'yilist']
+        for key in self.result_keys:
             if key in self.thermodict and len(self.thermodict[key]) != self.npoints:
                 raise ValueError("T, P, yi, and xi are not all the same length.")
 
@@ -110,12 +122,16 @@ class Data(ExpDataTemplate):
             else:
                 raise ValueError("Unknown calculation instructions")
 
-        for key in self.thermodict:
-            if key not in self.weights:
-                if key not in ['calculation_type',"density_dict","mpObj"]:
-                    self.weights[key] = 1.0
+        if self.thermodict["calculation_type"] == "phase_xiT":
+            self.result_keys.remove("xilist")
+            del self.weights["xilist"]
+        elif self.thermodict["calculation_type"] == "phase_yiT":
+            self.result_keys.remove("yilist")
+            del self.weights["yilist"]
 
-        logger.info("Data type 'TLVE' initiated with calculation_type, {}, and data types: {}.\nWeight data by: {}".format(self.thermodict["calculation_type"],", ".join(self.thermodict.keys()),self.weights))
+        self.thermodict.update(data_dict)
+
+        logger.info("Data type 'TLVE' initiated with calculation_type, {}, and data types: {}.\nWeight data by: {}".format(self.thermodict["calculation_type"],", ".join(self.result_keys),self.weights))
 
     def _thermo_wrapper(self):
 
@@ -128,16 +144,23 @@ class Data(ExpDataTemplate):
             A list of the predicted thermodynamic values estimated from thermo calculation. This list can be composed of lists or floats
         """
 
+        # Remove results
+        opts = self.thermodict.copy()
+        tmp = self.result_keys + ["name", "beadparams0"]
+        for key in tmp:
+            if key in opts:
+                del opts[key]
+
         if self.thermodict["calculation_type"] == "phase_xiT":
             try:
-                output_dict = thermo(self.eos, **self.thermodict)
+                output_dict = thermo(self.eos, **opts)
                 output = [output_dict['P'],output_dict["yi"]]
             except:
                 raise ValueError("Calculation of calc_xT_phase failed")
 
         elif self.thermodict["calculation_type"] == "phase_yiT":
             try:
-                output_dict = thermo(self.eos, **self.thermodict)
+                output_dict = thermo(self.eos, **opts)
                 output = [output_dict['P'],output_dict["xi"]]
             except:
                 raise ValueError("Calculation of calc_yT_phase failed")

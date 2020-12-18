@@ -27,21 +27,25 @@ class ExpDataTemplate(ABC):
         
         if "eos_obj" in data_dict:
             self.eos = data_dict["eos_obj"]
+            del data_dict["eos_obj"]
         else:
             raise ValueError("An eos object should have been included")
         
         if "weights" in data_dict:
             self.weights = data_dict["weights"]
+            del data_dict["weights"]
         else:
             self.weights = {}
         
         self.obj_opts = {}
         if "objective_method" in data_dict:
             self.obj_opts["method"] = data_dict["objective_method"]
+            del data_dict["objective_method"]
         fitting_opts = ["nan_number", "nan_ratio"]
         for key in fitting_opts:
             if key in data_dict:
                 self.obj_opts[key] = data_dict[key]
+                del data_dict[key]
         logger.info("Objective function options: {}".format(self.obj_opts))
         
         self.npoints = np.nan
@@ -52,6 +56,7 @@ class ExpDataTemplate(ABC):
         for key in thermo_dict_keys:
             if key in data_dict:
                 self.thermodict[key] = data_dict[key]
+                del data_dict[key]
 
     def update_parameters(self, fit_bead, param_names, param_values):
         r"""
