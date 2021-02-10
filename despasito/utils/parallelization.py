@@ -5,7 +5,7 @@ import multiprocessing
 import logging
 import logging.handlers
 import os
-#import glob
+import glob
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +75,6 @@ class MultiprocessingJob:
         :param logger: whose handlers to wrap. By default, the root logger.
         """
 
-        #if logger is None:
         logger = logging.getLogger()
 
         pid = os.getpid()
@@ -91,7 +90,7 @@ class MultiprocessingJob:
 
     def pool_job(self, func, inputs):
         """
-        This function will setup and dispatch thermodynamic jobs.
+        This function will setup and dispatch thermodynamic or parameter fitting jobs.
 
         Parameters
         ----------
@@ -149,7 +148,6 @@ class MultiprocessingJob:
             with open(fn) as f:
                logger.info("Log from thread {0}:\n{1}".format(i, f.read()))
             open(fn,"w").write("")
-            #os.remove(fn)
 
     def _remove_mp_logs(self):
         """ Ensure all previous mp logs are removed
@@ -166,13 +164,11 @@ class MultiprocessingJob:
             self._remove_mp_logs()
 
 def initialize_mp_handler(level,logformat):
-#def initialize_mp_handler():
     """Wraps the handlers in the given Logger with an MultiProcessingHandler.
 
     :param logger: whose handlers to wrap. By default, the root logger.
     """
 
-    #if logger is None:
     logger = logging.getLogger()
 
     pid = os.getpid()
@@ -217,13 +213,11 @@ def batch_jobs( func, inputs, ncores=1, logger=None):
     logging.root.handlers = []
 
     pool = multiprocessing.Pool(ncores, initializer=initialize_mp_handler, initargs=(level,logformat))
-#    pool = multiprocessing.Pool(ncores, initializer=initialize_mp_handler(level,formatter)) 
 
     output = zip(*pool.map(func, inputs))
 
     logging.root.handlers = root_handlers
 
-    #for i, fn in enumerate(self.logfiles):
     for i, fn in enumerate(glob.glob('./mp-handler-*.log')):
         with open(fn) as f:
            logger.info("Log from thread {0}:\n{1}".format(i, f.read()))

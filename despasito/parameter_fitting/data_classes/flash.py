@@ -26,26 +26,25 @@ class Data(ExpDataTemplate):
     Parameters
     ----------
     data_dict : dict
-        Dictionary of exp data of type TLVE.
+        Dictionary of exp data of type flash.
 
-        * name : str, data type, in this case TLVE
-        * calculation_type : str, Optional, default: 'phase_xiT', 'phase_yiT' is also acceptable
+        * calculation_type : str, Optional, default: 'bubble_pressure', 'dew_pressure' is also acceptable
         * T : list, List of temperature values for calculation
         * P : list, List of pressure values for calculation
         * weights : dict, A dictionary where each key is the header used in the exp. data file. The value associated with a header can be a list as long as the number of data points to multiply by the objective value associated with each point, or a float to multiply the objective value of this data set.
-        * density_dict : dict, Optional, default: {"minrhofrac":(1.0 / 300000.0), "rhoinc":10.0, "vspacemax":1.0E-4}, Dictionary of options used in calculating pressure vs. mole fraction curves.
+        * density_opts : dict, Optional, default: {"minrhofrac":(1.0 / 300000.0), "rhoinc":10.0, "vspacemax":1.0E-4}, Dictionary of options used in calculating pressure vs. mole fraction curves.
 
     Attributes
     ----------
     name : str
-        Data type, in this case TLVE
+        Data type, in this case flash
     weights : dict, Optional, deafault: {"some_property": 1.0 ...}
         Dicitonary corresponding to thermodict, with weighting factor or vector for each system property used in fitting
     thermodict : dict
         Dictionary of inputs needed for thermodynamic calculations
         
         - calculation_type (str) default: flash
-        - density_dict (dict) default: {"minrhofrac":(1.0 / 300000.0), "rhoinc":10.0, "vspacemax":1.0E-4}
+        - density_opts (dict) default: {"minrhofrac":(1.0 / 300000.0), "rhoinc":10.0, "vspacemax":1.0E-4}
     
     """
 
@@ -53,14 +52,15 @@ class Data(ExpDataTemplate):
 
         super().__init__(data_dict)
 
+        self.name = "flash"
         if self.thermodict["calculation_type"] == None:
             logger.warning("No calculation type has been provided.")
             self.thermodict["calculation_type"] = "flash"
     
         tmp = {"minrhofrac":(1.0 / 300000.0), "rhoinc":10.0, "vspacemax":1.0E-4}
-        if 'density_dict' in self.thermodict:
-            tmp.update(self.thermodict["density_dict"])
-        self.thermodict["density_dict"] = tmp
+        if 'density_opts' in self.thermodict:
+            tmp.update(self.thermodict["density_opts"])
+        self.thermodict["density_opts"] = tmp
         
         if "xi" in data_dict: 
             self.thermodict["xilist"] = data_dict["xi"]
@@ -120,7 +120,7 @@ class Data(ExpDataTemplate):
     def _thermo_wrapper(self):
 
         """
-        Generate thermodynamic predictions from eos object
+        Generate thermodynamic predictions from Eos object
 
         Returns
         -------
@@ -136,7 +136,7 @@ class Data(ExpDataTemplate):
                 del opts[key]
 
         try:
-            output_dict = thermo(self.eos, **opts)
+            output_dict = thermo(self.Eos, **opts)
             output = [output_dict["yi"],output_dict['xi']]
         except:
             raise ValueError("Calculation of flash failed")
@@ -171,7 +171,7 @@ class Data(ExpDataTemplate):
             xi = np.transpose(self.thermodict["xilist"])
             obj_value[1] = 0
             for i in range(len(xi)):
-                obj_value[1] += ff.obj_function_form(phase_list[self.eos.number_of_components+i], xi[i], weights=self.weights['xilist'], **self.obj_opts)
+                obj_value[1] += ff.obj_function_form(phase_list[self.Eos.number_of_components+i], xi[i], weights=self.weights['xilist'], **self.obj_opts)
 
         logger.debug("Obj. breakdown for {}: xi {}, yi {}".format(self.name,obj_value[0],obj_value[1]))
 

@@ -1,5 +1,5 @@
 {
-    "beadconfig": [[["CO2m", 1]], [["H2O353", 1]]],
+    "bead_configuration": [[["CO2m", 1]], [["H2O353", 1]]],
     "EOSgroup": "../../library/SAFTgroup.json",
     "EOScross": "../../library/SAFTcross.json",
     "output_file": "out_flash_353.txt",

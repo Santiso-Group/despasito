@@ -1,9 +1,9 @@
 {
-    "beadconfig": [[["CO2m", 1]], [["H2O353", 1]]],
+    "bead_configuration": [[["CO2m", 1]], [["H2O353", 1]]],
     "EOSgroup": "../../library/SAFTgroup.json",
     "EOScross": "../../library/SAFTcross.json",
     "output_file": "out_xi_353.txt",
-    "calculation_type" : "phase_xiT",
+    "calculation_type" : "bubble_pressure",
     "Pmin": [6900000],
     "Pmax": [7100000],
     "Tlist" : [353],

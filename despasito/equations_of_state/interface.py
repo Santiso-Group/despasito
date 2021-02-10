@@ -131,19 +131,19 @@ class EosTemplate(ABC):
         if (parameter in self.parameter_bound_extreme):
 
             if bounds[0] < self.parameter_bound_extreme[parameter][0]:
-                logger.debug("Given {} lower boundary, {}, is less than what is recommended by eos object. Using value of {}.".format(param_name,bounds[0],self.parameter_bound_extreme[parameter][0]))
+                logger.debug("Given {} lower boundary, {}, is less than what is recommended by Eos object. Using value of {}.".format(param_name,bounds[0],self.parameter_bound_extreme[parameter][0]))
                 bounds_new[0] = self.parameter_bound_extreme[parameter][0]
             elif bounds[0] > self.parameter_bound_extreme[parameter][1]:
-                logger.debug("Given {} lower boundary, {}, is greater than what is recommended by eos object. Using value of {}.".format(param_name,bounds[0],self.parameter_bound_extreme[parameter][0]))
+                logger.debug("Given {} lower boundary, {}, is greater than what is recommended by Eos object. Using value of {}.".format(param_name,bounds[0],self.parameter_bound_extreme[parameter][0]))
                 bounds_new[0] = self.parameter_bound_extreme[parameter][0]
             else:
                 bounds_new[0] = bounds[0]
 
             if (bounds[1] > self.parameter_bound_extreme[parameter][1]):
-                logger.debug("Given {} upper boundary, {}, is greater than what is recommended by eos object. Using value of {}.".format(param_name,bounds[1],self.parameter_bound_extreme[parameter][1]))
+                logger.debug("Given {} upper boundary, {}, is greater than what is recommended by Eos object. Using value of {}.".format(param_name,bounds[1],self.parameter_bound_extreme[parameter][1]))
                 bounds_new[1] = self.parameter_bound_extreme[parameter][1]
             elif (bounds[1] < self.parameter_bound_extreme[parameter][0]):
-                logger.debug("Given {} upper boundary, {}, is less than what is recommended by eos object. Using value of {}.".format(param_name,bounds[1],self.parameter_bound_extreme[parameter][1]))
+                logger.debug("Given {} upper boundary, {}, is less than what is recommended by Eos object. Using value of {}.".format(param_name,bounds[1],self.parameter_bound_extreme[parameter][1]))
                 bounds_new[1] = self.parameter_bound_extreme[parameter][1]
             else:
                 bounds_new[1] = bounds[1]

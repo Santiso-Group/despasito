@@ -1,5 +1,5 @@
 {
-    "beadconfig": [[["CH_hex", 1]], [["CH_hep", 1]]],
+    "bead_configuration": [[["CH_hex", 1]], [["CH_hep", 1]]],
     "EOSgroup": "SAFTgroup_vr_mie.json",
     "EOScross": "SAFTcross_vr_mie.json",
     "output_file": "out_yi_vr.txt",

@@ -15,8 +15,6 @@ short_description = __doc__.split("\n")
 fpath = os.path.join("despasito","equations_of_state","saft","compiled_modules")
 extensions = []
 
-if sys.version_info.major < 3:
-    raise ValueError("Due to abstract classes used. DESPASITO must be run using python 3.")
 if sys.version_info.minor > 8:
     raise ValueError("DESPASITO cannot run on python versions greater than 3.8 due to incompadibilities between python 3.9 and numba.")
 
@@ -47,7 +45,7 @@ if get_default_fcompiler() != None:
         ext1 = Extension(name=name,sources=[fext],include_dirs=[fpath])
         extensions.append(ext1)
 else:
-    print("Fortran compiler is not found, default will use pure python")
+    print("Fortran compiler is not found, default will use numba")
 
 # try Extension and compile
 # !!!! Note that we have fortran modules that need to be compiled with "f2py3 -m solv_assoc -c solve_assoc.f90" and the same with solve_assoc_matrix.f90
@@ -87,9 +85,10 @@ setup(
     #            'Mac OS-X',
     #            'Unix',
     #            'Windows'],            # Valid platforms your code works on, adjust to your flavor
-    # python_requires=">=3.5",          # Python version restrictions
+    python_requires=">=3.6, <3.8",          # Python version restrictions
 
     # Manual control if final package is compressible or not, set False to prevent the .egg from being made
     zip_safe=False,
 
 )
+

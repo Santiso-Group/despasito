@@ -23,13 +23,13 @@ class ExpDataTemplate(ABC):
     def __init__(self, data_dict):
 
         # Self interaction parameters
-        self.name = data_dict["name"]
+        self.name = "To be set"
         
         if "eos_obj" in data_dict:
-            self.eos = data_dict["eos_obj"]
+            self.Eos = data_dict["eos_obj"]
             del data_dict["eos_obj"]
         else:
-            raise ValueError("An eos object should have been included")
+            raise ValueError("An Eos object should have been included")
         
         if "weights" in data_dict:
             self.weights = data_dict["weights"]
@@ -52,7 +52,7 @@ class ExpDataTemplate(ABC):
         
         # Add to thermo_dict
         self.thermodict = {"calculation_type": None}
-        thermo_dict_keys = ["mpObj", "density_dict", "calculation_type"]
+        thermo_dict_keys = ["MultiprocessingObject", "density_opts", "calculation_type"]
         for key in thermo_dict_keys:
             if key in data_dict:
                 self.thermodict[key] = data_dict[key]
@@ -82,17 +82,17 @@ class ExpDataTemplate(ABC):
                 bead_names.append(fit_params_list[1])
 
             if len(fit_params_list) == 1:
-                self.eos.update_parameter(fit_params_list[0], [fit_bead], param_values[i])
+                self.Eos.update_parameter(fit_params_list[0], [fit_bead], param_values[i])
             elif len(fit_params_list) == 2:
-                self.eos.update_parameter(fit_params_list[0], [fit_bead, fit_params_list[1]], param_values[i])
+                self.Eos.update_parameter(fit_params_list[0], [fit_bead, fit_params_list[1]], param_values[i])
             else:
                 raise ValueError("Parameters for only one bead are allowed to be fit. Multiple underscores in a parameter name suggest more than one bead type in your fit parameter name, {}".format(param))
 
-        if hasattr(self.eos, "parameter_refresh"):
-            self.eos.parameter_refresh()
+        if hasattr(self.Eos, "parameter_refresh"):
+            self.Eos.parameter_refresh()
     
     @abstractmethod
-    def objective(self, eos):
+    def objective(self, Eos):
         """
         Float representing objective function of from comparing predictions to experimental data.
         """

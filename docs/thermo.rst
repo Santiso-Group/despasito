@@ -15,7 +15,7 @@ Click below!
 .. autosummary::
    :toctree: _autosummary
 
-   thermodynamics.calc_types
+   thermodynamics.calculation_types
 
 Supporting Thermodynamic Functions
 ----------------------------------

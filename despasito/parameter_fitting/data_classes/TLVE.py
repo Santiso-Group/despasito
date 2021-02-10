@@ -21,31 +21,30 @@ class Data(ExpDataTemplate):
     r"""
     Object for Temperature dependent VLE data. 
 
-    This data could be evaluated with phase_xiT or phase_yiT. Most entries in the exp. dictionary are converted to attributes. 
+    This data could be evaluated with bubble_pressure or dew_pressure. Most entries in the exp. dictionary are converted to attributes. 
 
     Parameters
     ----------
     data_dict : dict
-        Dictionary of exp data of type TLVE.
+        Dictionary of exp data of TLVE temperature dependent liquid vapor equilibria
 
-        * name : str, data type, in this case TLVE
-        * calculation_type : str, Optional, default: 'phase_xiT', 'phase_yiT' is also acceptable
+        * calculation_type : str, Optional, default: 'bubble_pressure', 'dew_pressure' is also acceptable
         * T : list, List of temperature values for calculation
-        * xi(yi) : list, List of liquid (or vapor) mole fractions used in phase_xiT (or phase_yiT) calculation.
+        * xi(yi) : list, List of liquid (or vapor) mole fractions used in bubble_pressure (or dew_pressure) calculation.
         * weights : dict, A dictionary where each key is the header used in the exp. data file. The value associated with a header can be a list as long as the number of data points to multiply by the objective value associated with each point, or a float to multiply the objective value of this data set.
-        * density_dict : dict, Optional, default: {}, Dictionary of options used in calculating pressure vs. mole fraction curves.
+        * density_opts : dict, Optional, default: {}, Dictionary of options used in calculating pressure vs. mole fraction curves.
 
     Attributes
     ----------
     name : str
-        Data type, in this case SatProps
+        Data type, in this case TLVE
     weights : dict, Optional, deafault: {"some_property": 1.0 ...}
         Dicitonary corresponding to thermodict, with weighting factor or vector for each system property used in fitting
     thermodict : dict
         Dictionary of inputs needed for thermodynamic calculations
     
         - calculation_type (str) default: phasexiT or phaseyiT
-        - density_dict (dict) default: {"minrhofrac":(1.0 / 300000.0), "rhoinc":10.0, "vspacemax":1.0E-4}
+        - density_opts (dict) default: {"minrhofrac":(1.0 / 300000.0), "rhoinc":10.0, "vspacemax":1.0E-4}
   
     """
 
@@ -53,9 +52,10 @@ class Data(ExpDataTemplate):
         
         super().__init__(data_dict)
 
-        self.thermodict["density_dict"] = {}
-        if 'density_dict' in self.thermodict:
-            self.thermodict["density_dict"].update(self.thermodict["density_dict"])
+        self.name = "TLVE"
+        self.thermodict["density_opts"] = {}
+        if 'density_opts' in self.thermodict:
+            self.thermodict["density_opts"].update(self.thermodict["density_opts"])
         
         if "T" in data_dict:
             self.thermodict["Tlist"] = data_dict["T"]
@@ -114,18 +114,18 @@ class Data(ExpDataTemplate):
         if self.thermodict["calculation_type"] == None:
             logger.warning("No calculation type has been provided.")
             if self.thermodict["xilist"]:
-                self.thermodict["calculation_type"] = "phase_xiT"
-                logger.warning("Assume a calculation type of phase_xiT")
+                self.thermodict["calculation_type"] = "bubble_pressure"
+                logger.warning("Assume a calculation type of bubble_pressure")
             elif self.thermodict["yilist"]:
-                self.thermodict["calculation_type"] = "phase_yiT"
-                logger.warning("Assume a calculation type of phase_yiT")
+                self.thermodict["calculation_type"] = "dew_pressure"
+                logger.warning("Assume a calculation type of dew_pressure")
             else:
                 raise ValueError("Unknown calculation instructions")
 
-        if self.thermodict["calculation_type"] == "phase_xiT":
+        if self.thermodict["calculation_type"] == "bubble_pressure":
             self.result_keys.remove("xilist")
             del self.weights["xilist"]
-        elif self.thermodict["calculation_type"] == "phase_yiT":
+        elif self.thermodict["calculation_type"] == "dew_pressure":
             self.result_keys.remove("yilist")
             del self.weights["yilist"]
 
@@ -136,7 +136,7 @@ class Data(ExpDataTemplate):
     def _thermo_wrapper(self):
 
         """
-        Generate thermodynamic predictions from eos object
+        Generate thermodynamic predictions from Eos object
 
         Returns
         -------
@@ -151,19 +151,19 @@ class Data(ExpDataTemplate):
             if key in opts:
                 del opts[key]
 
-        if self.thermodict["calculation_type"] == "phase_xiT":
+        if self.thermodict["calculation_type"] == "bubble_pressure":
             try:
-                output_dict = thermo(self.eos, **opts)
+                output_dict = thermo(self.Eos, **opts)
                 output = [output_dict['P'],output_dict["yi"]]
             except:
-                raise ValueError("Calculation of calc_xT_phase failed")
+                raise ValueError("Calculation of calc_bubble_pressure failed")
 
-        elif self.thermodict["calculation_type"] == "phase_yiT":
+        elif self.thermodict["calculation_type"] == "dew_pressure":
             try:
-                output_dict = thermo(self.eos, **opts)
+                output_dict = thermo(self.Eos, **opts)
                 output = [output_dict['P'],output_dict["xi"]]
             except:
-                raise ValueError("Calculation of calc_yT_phase failed")
+                raise ValueError("Calculation of calc_dew_pressure failed")
 
         return output
 
@@ -188,13 +188,13 @@ class Data(ExpDataTemplate):
         if "Plist" in self.thermodict:
             obj_value[0] = ff.obj_function_form(phase_list[0], self.thermodict['Plist'], weights=self.weights['Plist'], **self.obj_opts)
 
-        if self.thermodict["calculation_type"] == "phase_xiT":
+        if self.thermodict["calculation_type"] == "bubble_pressure":
             if "yilist" in self.thermodict:
                 yi = np.transpose(self.thermodict["yilist"])
                 obj_value[1] = 0
                 for i in range(len(yi)):
                     obj_value[1] += ff.obj_function_form(phase_list[1+i], yi[i], weights=self.weights['yilist'], **self.obj_opts)
-        elif self.thermodict["calculation_type"] == "phase_yiT":
+        elif self.thermodict["calculation_type"] == "dew_pressure":
             if "xilist" in self.thermodict:
                 xi = np.transpose(self.thermodict["xilist"])
                 obj_value[1] = 0

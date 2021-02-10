@@ -10,19 +10,19 @@ from . import global_methods as global_methods_mod
 
 logger = logging.getLogger(__name__)
 
-def initial_guess(opt_params, eos):
+def initial_guess(optimization_parameters, Eos):
     r"""
     Extract initial guess in fit parameters from EOS object. These values were taken from the EOSgroup file.
 
     Parameters
     ----------
-    opt_params : dict
+    optimization_parameters : dict
         Parameters used in basin fitting algorithm
 
-        - fit_bead (str) - Name of bead whose parameters are being fit, should be in bead list of beadconfig
+        - fit_bead (str) - Name of bead whose parameters are being fit, should be in bead list of bead_configuration
         - fit_params (list[str]) - This list of contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
 
-    eos : obj
+    Eos : obj
         Equation of state output that writes pressure, max density, chemical potential, updates parameters, and evaluates objective functions. For parameter fitting algorithm See equation of state documentation for more details.
 
     Returns
@@ -34,31 +34,31 @@ def initial_guess(opt_params, eos):
 
     # Update beadlibrary with test paramters
 
-    beadparams0 = np.ones(len(opt_params['fit_params']))
-    for i, param in enumerate(opt_params['fit_params']):
+    beadparams0 = np.ones(len(optimization_parameters['fit_params']))
+    for i, param in enumerate(optimization_parameters['fit_params']):
         fit_params_list = param.split("_")
         if len(fit_params_list) == 1:
-            beadparams0[i] = eos.param_guess(fit_params_list[0], [opt_params['fit_bead']])
+            beadparams0[i] = Eos.param_guess(fit_params_list[0], [optimization_parameters['fit_bead']])
         elif len(fit_params_list) == 2:
-            beadparams0[i] = eos.param_guess(fit_params_list[0], [opt_params['fit_bead'], fit_params_list[1]])
+            beadparams0[i] = Eos.param_guess(fit_params_list[0], [optimization_parameters['fit_bead'], fit_params_list[1]])
         else:
             raise ValueError("Parameters for only one bead are allowed to be fit. Multiple underscores in a parameter name suggest more than one bead type in your fit parameter name, {}".format(param))
 
     return beadparams0
 
-def check_parameter_bounds(opt_params, eos, bounds):
+def check_parameter_bounds(optimization_parameters, Eos, bounds):
     r"""
     Extract initial guess in fit parameters from EOS object. These values were taken from the EOSgroup file.
     
     Parameters
     ----------
-    opt_params : dict
+    optimization_parameters : dict
         Parameters used in basin fitting algorithm
     
-        - fit_bead (str) - Name of bead whose parameters are being fit, should be in bead list of beadconfig
+        - fit_bead (str) - Name of bead whose parameters are being fit, should be in bead list of bead_configuration
         - fit_params (list[str]) - This list of contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
     
-    eos : obj
+    Eos : obj
         Equation of state output that writes pressure, max density, chemical potential, updates parameters, and evaluates objective functions. For parameter fitting algorithm See equation of state documentation for more details.
     bounds : numpy.ndarray
         List of length equal to fit_params with lists of pairs for minimum and maximum bounds of parameter being fit. Defaults are broad, recommend specification.
@@ -66,62 +66,62 @@ def check_parameter_bounds(opt_params, eos, bounds):
     Returns
     -------
     bounds : list[tuple]
-        Checked with eos object method, this list has a length equal to fit_params with lists of pairs for minimum and maximum bounds of parameter being fit. Defaults are broad, recommend specification.
+        Checked with Eos object method, this list has a length equal to fit_params with lists of pairs for minimum and maximum bounds of parameter being fit. Defaults are broad, recommend specification.
     
     """
 
-    new_bounds = [(0,0) for x in range(len(opt_params['fit_params']))]
+    new_bounds = [(0,0) for x in range(len(optimization_parameters['fit_params']))]
     # Check boundary parameters to be sure they're in a reasonable range
-    for i, param in enumerate(opt_params['fit_params']):
+    for i, param in enumerate(optimization_parameters['fit_params']):
         fit_params_list = param.split("_")
-        new_bounds[i] = tuple(eos.check_bounds(fit_params_list[0], param, bounds[i]))
+        new_bounds[i] = tuple(Eos.check_bounds(fit_params_list[0], param, bounds[i]))
 
     return new_bounds
 
-def consolidate_bounds(opt_params):
+def consolidate_bounds(optimization_parameters):
     r"""
-    Parse parameter bounds in the opt_params dictionary to form a 2D numpy array with a length equal to the numbe of parameters being fit.
+    Parse parameter bounds in the optimization_parameters dictionary to form a 2D numpy array with a length equal to the numbe of parameters being fit.
     
     Parameters
     ----------
-    opt_params : dict
+    optimization_parameters : dict
         Parameters used in basin fitting algorithm
     
-        - fit_bead (str) - Name of bead whose parameters are being fit, should be in bead list of beadconfig
+        - fit_bead (str) - Name of bead whose parameters are being fit, should be in bead list of bead_configuration
         - fit_params (list[str]) - This list of contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
         - \*_bounds (list[float]), Optional - This list contains the minimum and maximum of the parameter from a parameter listed in fit_params, represented in place of the asterisk. See input file instructions for more information.
     
     Returns
     -------
-    new_opt_params : dict
+    new_optimization_parameters : dict
         Parameters used in basin fitting algorithm
     
-        - fit_bead (str) - Name of bead whose parameters are being fit, should be in bead list of beadconfig
+        - fit_bead (str) - Name of bead whose parameters are being fit, should be in bead list of bead_configuration
         - fit_params (list[str]) - This list of contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
         - bounds (numpy.ndarray) - List of lists of length two, of length equal to fit_params. If no bounds were given then the default parameter boundaries are [0,1e+4], else bounds given as \*_bounds in input dictionary are used.
     """
 
-    if "fit_bead" not in opt_params:
-        raise ValueError("opt_params dictionary should include keyword, fit_bead, defining the name of the bead whose parameters are to be fit.")
-    if "fit_params" not in opt_params:
-        raise ValueError("opt_params dictionary should include keyword, fit_params, defining the parameters to be fit.")
+    if "fit_bead" not in optimization_parameters:
+        raise ValueError("optimization_parameters dictionary should include keyword, fit_bead, defining the name of the bead whose parameters are to be fit.")
+    if "fit_params" not in optimization_parameters:
+        raise ValueError("optimization_parameters dictionary should include keyword, fit_params, defining the parameters to be fit.")
 
-    new_opt_params = {}
-    new_opt_params["bounds"] = [[0,1e+4] for x in range(len(opt_params["fit_params"]))]
-    for key2, value2 in opt_params.items():
+    new_optimization_parameters = {}
+    new_optimization_parameters["bounds"] = [[0,1e+4] for x in range(len(optimization_parameters["fit_params"]))]
+    for key2, value2 in optimization_parameters.items():
         if "bounds" in key2:
             tmp  = key2.replace("_bounds","")
-            if tmp in opt_params["fit_params"]:
+            if tmp in optimization_parameters["fit_params"]:
                 logger.info("Accepted bounds for parameter, '{}': {}".format(tmp, value2))
-                ind = opt_params["fit_params"].index(tmp)
-                new_opt_params["bounds"][ind] = value2
+                ind = optimization_parameters["fit_params"].index(tmp)
+                new_optimization_parameters["bounds"][ind] = value2
             else:
                 logger.warning("Bounds for parameter type '{}' were given, but this parameter is not defined to be fit.".format(tmp))
         else:
-            new_opt_params[key2] = value2
+            new_optimization_parameters[key2] = value2
             continue
 
-    return new_opt_params
+    return new_optimization_parameters
 
 def reformat_ouput(cluster):
     r"""
@@ -199,20 +199,20 @@ def global_minimization(global_method, *args, **kwargs):
     Parameters
     ----------
     global_method : str
-        Global optimization method used to fit parameters. Currently scipy.optimize methods 'basinhopping', 'differential_evolution', and 'brute' are supported.
+        Global optimization method used to fit parameters. See supported :mod:`~despasito.parameter_fitting.global_methods`.
     beadparams0 : numpy.ndarray, 
         An array of initial guesses for parameters, these will be optimized throughout the process.
     bounds : list[tuple]
         List of length equal to fit_params with lists of pairs for minimum and maximum bounds of parameter being fit. Defaults are broad, recommend specification.
     fit_bead : str
-        Name of bead whose parameters are being fit, should be in bead list of beadconfig
+        Name of bead whose parameters are being fit, should be in bead list of bead_configuration
     fit_params : list[str]
         This list of contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
     exp_dict : dict
         Dictionary of experimental data objects.
-    global_dict : dict, Optional
+    global_opts : dict, Optional
         Kwargs of global optimization algorithm. See specific option in `global_methods.py` 
-    minimizer_dict : dict, Optional
+    minimizer_opts : dict, Optional
         Dictionary used to define minimization type and the associated options.
 
         - method (str) - Method available to scipy.optimize.minimize
@@ -250,7 +250,7 @@ def initialize_constraints(constraints, constraint_type):
     constraint_type : str
         Either 'dict' or 'class'. Changes the constraint to the specified form. 
  
-        - function: Allowed types, see :any:`~despasito.parameter_fitting.constraint_types` 
+        - function: Allowed types, see :mod:`~despasito.parameter_fitting.constraint_types` 
         - dict: Allowed types, "eq" or "ineq", eq means must be zero, ineq means it must be non-negative 
         - class: Allowed types, "nonlinear" or "linear", a kwargs keyword may also be added for the constraint class 
 
@@ -315,7 +315,7 @@ def compute_obj(beadparams, fit_bead, fit_params, exp_dict, bounds):
     beadparams0 : numpy.ndarray, 
         An array of initial guesses for parameters, these will be optimized throughout the process.
     fit_bead : str
-        Name of bead whose parameters are being fit, should be in bead list of beadconfig
+        Name of bead whose parameters are being fit, should be in bead list of bead_configuration
     fit_params : list[str]
         This list contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
     bounds : list[tuple]

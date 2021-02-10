@@ -4,7 +4,7 @@ Input/Output
 
 Package Inputs
 --------------
-Inputs are .json files containing instructions for thermodynamic calculations and paths to the .json files of parameters for the eos object. 
+Inputs are .json files containing instructions for thermodynamic calculations and paths to the .json files of parameters for the Eos object. 
 
 .. currentmodule:: despasito.input_output
 .. autosummary::

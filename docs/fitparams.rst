@@ -5,7 +5,7 @@ Parametrization
 
 Fit to Experimental Data
 ------------------------
-Parameters can be fit for one component at a time, and as many parameters as desired **can** be fit. Input file structure is very similar to before with the mandatory addition of an `opt_params` section whose presence will signify to DESPASITO that this is a fitting job. Here we summarize the available experimental data types that are currently supported for fitting, followed by the desciption of the main fitting function containing more details.
+Parameters can be fit for one component at a time, and as many parameters as desired **can** be fit. Input file structure is very similar to before with the mandatory addition of an `optimization_parameters` section whose presence will signify to DESPASITO that this is a fitting job. Here we summarize the available experimental data types that are currently supported for fitting, followed by the desciption of the main fitting function containing more details.
 
 .. automodule:: despasito.parameter_fitting
    :members:
@@ -32,6 +32,8 @@ Supporting Thermodynamic Functions
    :toctree: _autosummary
 
    fit_funcs
+   global_methods
+   constraint_types
 
 Estimate with Electronic Structure Methods
 ------------------------------------------

@@ -1,5 +1,5 @@
 {
-    "beadconfig": [[["CO2", 1]], [["H2O", 1]]],
+    "bead_configuration": [[["CO2", 1]], [["H2O", 1]]],
     "EOSgroup": "../../library/SAFTgroup.json",
     "EOScross": "../../library/SAFTcross.json",
     "output_file": "out_liquid.txt",

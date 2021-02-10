@@ -1,5 +1,5 @@
 {
-    "beadconfig": [[["aCH", 5],["aCCH2",1],["CH3",1]]], 
+    "bead_configuration": [[["aCH", 5],["aCCH2",1],["CH3",1]]], 
     "eos": "saft.gamma_sw",
     "EOSgroup": "../../library/SWgroup.json",
     "EOScross": "../../library/SWcross.json",

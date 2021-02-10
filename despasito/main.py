@@ -12,7 +12,7 @@ import argparse
 
 from .input_output import read_input
 from .input_output import write_output
-from .equations_of_state import eos as eos_mod
+from .equations_of_state import Eos as eos_mod
 from .thermodynamics import thermo
 from .parameter_fitting import fit
 
@@ -41,7 +41,7 @@ def run(filename="input.json", path=".", numba=False, cython=False, python=False
     logger.info("Begin processing input file: %s" % filename)
     eos_dict, thermo_dict, output_file = read_input.extract_calc_data(filename, path, **kwargs)
 
-    thermo_dict['mpObj'] = kwargs['mpObj']
+    thermo_dict['MultiprocessingObject'] = kwargs['MultiprocessingObject']
     eos_dict["numba"] = numba
     eos_dict["cython"] = cython
     eos_dict["python"] = python
@@ -62,7 +62,7 @@ def run(filename="input.json", path=".", numba=False, cython=False, python=False
     # Run either parametrization or thermodynamic calculation
     fitting_opts = ["objective_method", "nan_number", "nan_ratio"]
 
-    if "opt_params" in thermo_dict:
+    if "optimization_parameters" in thermo_dict:
         for key,exp_dict in thermo_dict["exp_data"].items():
             eos_dict = exp_dict["eos_dict"]
             thermo_dict["exp_data"][key].pop("eos_dict", None)
@@ -76,15 +76,15 @@ def run(filename="input.json", path=".", numba=False, cython=False, python=False
         logger.info("Finished parametrization")
         write_output.writeout_fit_dict(output_dict,**file_dict)
     else:
-        eos = eos_mod(**eos_dict)
+        Eos = eos_mod(**eos_dict)
         logger.info("Initializing thermodynamic calculation")
-        output_dict = thermo(eos, **thermo_dict.copy())
+        output_dict = thermo(Eos, **thermo_dict.copy())
         logger.info("Finished thermodynamic calculation")
         try:
             write_output.writeout_thermo_dict(output_dict,thermo_dict["calculation_type"],**file_dict)
         except:
             logger.info("Final Output: {}".format(output_dict))
 
-    if thermo_dict['mpObj'].flag_use_mp:
-        thermo_dict['mpObj'].end_pool()
+    if thermo_dict['MultiprocessingObject'].flag_use_mp:
+        thermo_dict['MultiprocessingObject'].end_pool()
     

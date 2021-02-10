@@ -28,36 +28,36 @@ class Data(ExpDataTemplate):
     data_dict : dict
         Dictionary of exp data of saturation properties.
 
-        * name : str, data type, in this case SatProps
-        * calculation_type : str, Optional, default: 'saturation_properties
+        * calculation_type : str, Optional, default: 'solubility_parameter'
         * T : list, List of temperature values for calculation
         * P : list, List of pressure values used in calculations
         * xi : list, List of liquid mole fractions used in calculations.
         * weights : dict, A dictionary where each key is the header used in the exp. data file. The value associated with a header can be a list as long as the number of data points to multiply by the objective value associated with each point, or a float to multiply the objective value of this data set.
-        * density_dict : dict, Optional, default: {"minrhofrac":(1.0 / 60000.0), "rhoinc":10.0, "vspacemax":1.0E-4}, Dictionary of options used in calculating pressure vs. mole fraction curves.
+        * density_opts : dict, Optional, default: {"minrhofrac":(1.0 / 60000.0), "rhoinc":10.0, "vspacemax":1.0E-4}, Dictionary of options used in calculating pressure vs. mole fraction curves.
 
     Attributes
     ----------
     name : str
-        Data type, in this case SolubilityParam
+        Data type, in this case solubility_parameter
     weights : dict, Optional, deafault: {"some_property": 1.0 ...}
         Dicitonary corresponding to thermodict, with weighting factor or vector for each system property used in fitting
     thermodict : dict
         Dictionary of inputs needed for thermodynamic calculations
         
         - calculation_type (str) default: solubility_parameter
-        - density_dict (dict) default: {"minrhofrac":(1.0 / 300000.0), "rhoinc":10.0, "vspacemax":1.0E-4}
+        - density_opts (dict) default: {"minrhofrac":(1.0 / 300000.0), "rhoinc":10.0, "vspacemax":1.0E-4}
     """
 
     def __init__(self, data_dict):
 
         super().__init__(data_dict)
         
+        self.name = "solubility_parameter"
         if self.thermodict["calculation_type"] == None:
             self.thermodict["calculation_type"] = "solubility_parameter"
         
-        if 'density_dict' not in self.thermodict:
-            self.thermodict["density_dict"] = {}
+        if 'density_opts' not in self.thermodict:
+            self.thermodict["density_opts"] = {}
 
         if "xi" in data_dict:
             self.thermodict["xilist"] = data_dict["xi"]
@@ -88,7 +88,7 @@ class Data(ExpDataTemplate):
             self.thermodict["Plist"] = np.ones(lx)*constants.standard_pressure
             logger.info("Assume atmospheric pressure")
         if 'xilist' not in self.thermodict:
-            if self.eos.number_of_components > 1:
+            if self.Eos.number_of_components > 1:
                 raise ValueError("Ambiguous instructions. Include xi to define intended component to obtain saturation properties")
             else:
                 self.thermodict['xilist'] = np.array([[1.0] for x in range(lx)])
@@ -120,7 +120,7 @@ class Data(ExpDataTemplate):
     def _thermo_wrapper(self):
 
         """
-        Generate thermodynamic predictions from eos object
+        Generate thermodynamic predictions from Eos object
 
         Returns
         -------
@@ -137,7 +137,7 @@ class Data(ExpDataTemplate):
 
         # Run thermo calculations
         try:
-            output_dict = thermo(self.eos, **opts)
+            output_dict = thermo(self.Eos, **opts)
             output = [output_dict["delta"],output_dict["rhol"]]
         except:
             raise ValueError("Calculation of solubility_parameter failed")

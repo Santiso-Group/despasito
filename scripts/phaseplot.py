@@ -206,7 +206,7 @@ def extract_sim_Pxy_data(fname):
     sim_data : numpy.ndarray
         Array of simulation data, P, x1, y1.
     debug_data : numpy.ndarray
-        Extra data from output file containing information for debugging or assessing the data. The first and second columns are the density flags for the liquid and vapor phase respectively. See thermodynamics.calc.calc_rhov or calc.rhol for more details. The third columns contains the objective function, this should be at least less than 1e-5.
+        Extra data from output file containing information for debugging or assessing the data. The first and second columns are the density flags for the liquid and vapor phase respectively. See thermodynamics.calc.calc_vapor_density or calc.rhol for more details. The third columns contains the objective function, this should be at least less than 1e-5.
     """
 
     # Extract data from csv file
@@ -227,7 +227,7 @@ def plot_sim_Pxy_data(sim_data, debug_data, label, fig_num=1, style="", color='k
     sim_data : numpy.ndarray
         Array of simulation data, P, x1, y1.
     debug_data : numpy.ndarray
-        Extra data from output file containing information for debugging or assessing the data. The first and second columns are the density flags for the liquid and vapor phase respectively. See thermodynamics.calc.calc_rhov or calc.rhol for more details. The third columns contains the objective function, this should be at least less than 1e-5.
+        Extra data from output file containing information for debugging or assessing the data. The first and second columns are the density flags for the liquid and vapor phase respectively. See thermodynamics.calc.calc_vapor_density or calc.rhol for more details. The third columns contains the objective function, this should be at least less than 1e-5.
     label : str
         Label for phase diagram figure
     fig_num : int, Optional, default=1

@@ -1,7 +1,7 @@
 """
-    This thermo module contains a series of wrappers to handle the inputs and outputs of these functions. The `calc` module contains the thermodynamic calculations. Calculation of pressure, chemical potential, and max density are handled by an eos object so that these functions can be used with any EOS.
-    
-    None of the functions in this folder need to be handled directly, as a function factory is included in our __init__.py file. Add "from thermodynamics import thermo" and use "thermo("calc_type",eos,input_dict)" to get started.
+    This thermo module contains a series of wrappers to handle the inputs and outputs of these functions.
+
+    The 'calc' module contains the thermodynamic calculations. Calculation of pressure, fugacity_coefficient, and maximum allowed density are handled by an Eos object so that these functions can be used with any EOS. None of the functions in this folder need to be handled directly, as a function factory is included in our __init__.py file. Add "from thermodynamics import thermo" and use "thermo("calc_type",Eos,input_dict)" to get started.
     
 """
 
@@ -10,45 +10,48 @@ import logging
 
 from despasito.utils.parallelization import MultiprocessingJob
 from . import calc
-from despasito import fund_constants as constants
+from despasito import fundamental_constants as constants
 
 logger = logging.getLogger(__name__)
 
-######################################################################
-#                                                                    #
-#                Phase Equilibrium given xi and T                    #
-#                                                                    #
-######################################################################
-def phase_xiT(eos, **sys_dict):
 
+def bubble_pressure(Eos, **sys_dict):
     r"""
-    Calculate phase diagram given liquid mole fractions, xi, and temperature.
+    Calculates pressure and vapor compositions given liquid mole fractions and temperature.
 
-    Input and system information are assessed first. An output file is generated with T, xi, and corresponding P and yi.
-    
     Parameters
     ----------
-    eos : obj
+    Eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
-    sys_dict: kwargs, Optional
-
-        - Tlist: (list[float]) Optional - default 298.15 [K] Temperature of the system corresponding to composition in xilist. If one set is given, this temperature will be used for all compositions.
-        - xilist: (list[list[float]]) - List of sets of component mole fraction, where sum(xi)=1.0 for each set. Each set of components corresponds to a temperature in Tlist, or if one set is given, this composition will be used for all temperatures.
-        - Pguess: (list[float]) - [Pa] Optional, Guess the system pressure at the dew point. A value of None will force an estimation based on the saturation pressure of each component.
-        - Pmin: (list[float]) - [Pa] Optional, Set the upper bound for the minimum system pressure at the dew point. If not defined, the default in :func:`~despasito.thermodynamics.calc_xT_phase` is used.
-        - Pmax: (list[float]) - [Pa] Optional, Set the upper bound for the maximum system pressure at the dew point. If not defined, the default in :func:`~despasito.thermodynamics.calc_xT_phase` is used.
-        - method: (str) Optional - Solving method for outer loop that converges pressure. If not given the :func:`~despasito.thermodynamics.calc_xT_phase` default will be used.
-        - pressure_options: (dict) Optional - Keyword arguments used in the given method, "method" from :func:`~despasito.utils.general_toolbox.solve_root`, to solve the outer loop in the solving algorithm
-        - mole_fraction_options: (dict) Optional - Keywords used to solve the mole fraction loop in :func:`~despasito.thermodynamics.calc.solve_yi_xiT`
-        - density_dict: (dict) Optional - Other keyword options for density array :func:`~despasito.thermodynamics.calc.PvsRho` 
+    xilist : list
+        List of sets of component mole fraction, where sum(xi)=1.0 for each set. Each set of components corresponds to a temperature in Tlist, or if one set is given, this composition will be used for all temperatures.
+    Tlist : list, Optional, default: 298.15
+        [K] Temperature of the system corresponding to composition in xilist. If one set is given, this temperature will be used for all compositions.
+    Pguess : list/float, Optional
+        [Pa] Guess the system pressure at the bubble point. If a list of length 1 is provided, that value is used for all temperature-composition sets given.
+    Pmin : list, Optional
+        [Pa] Set the upper bound for the minimum system pressure at the bubble point. If not defined, the default in :func:`~despasito.thermodynamics.calc.calc_bubble_pressure` is used. If a list of length 1 is provided, that value is used for all temperature-composition sets given.
+    Pmax : list, Optional
+        [Pa] Set the upper bound for the maximum system pressure at the bubble point. If not defined, the default in :func:`~despasito.thermodynamics.calc.calc_bubble_pressure` is used. If a list of length 1 is provided, that value is used for all temperature-composition sets given.
+    MultiprocessingObject : obj, Optional
+        Multiprocessing object, :class:`~despasito.utils.parallelization.MultiprocessingJob`
+    kwargs, Optional
+        Keyword arguments for :func:`~despasito.thermodynamics.calc.calc_saturation_properties` and :func:`~despasito.thermodynamics.calc.calc_bubble_pressure`
 
     Returns
     -------
     output_dict : dict
-        Output of dictionary containing given and calculated values    
-    """
+        Output of dictionary containing given and calculated arrays  
 
-    #computes P and yi from xi and T
+        - T: Temperature array generated from given instructions
+        - xi: Given array of liquid compositions
+        - flagl: Phase flag for liquid given temperature and calculated pressure, a value of 0 is vapor, 1 is liquid, 2 mean a critical fluid, 3 means that neither is true, 4 means we should assume ideal gas
+        - P: Pressure values evaluated for given conditions
+        - yi: Vapor mole fraction evaluated for given conditions
+        - flagv: Phase flag for vapor given temperature and calculated pressure, a value of 0 is vapor, 1 is liquid, 2 mean a critical fluid, 3 means that neither is true, 4 means we should assume ideal gas
+        - obj: List of objective values
+
+    """
 
     ## Extract and check input data
     if 'Tlist' in sys_dict:
@@ -66,10 +69,10 @@ def phase_xiT(eos, **sys_dict):
     else:
         raise ValueError('Mole fractions, xilist, are not specified')
 
-    if 'mpObj' in sys_dict:
-        mpObj = sys_dict['mpObj']
+    if 'MultiprocessingObject' in sys_dict:
+        MultiprocessingObject = sys_dict['MultiprocessingObject']
         flag_use_mp_object = True
-        del sys_dict['mpObj']
+        del sys_dict['MultiprocessingObject']
     else:
         flag_use_mp_object = False
 
@@ -142,31 +145,33 @@ def phase_xiT(eos, **sys_dict):
         for key in per_job_var:
             if key in opts_tmp:
                 opts_tmp[key] = opts_tmp[key][i]
-        inputs.append((T_list[i], xi_list[i], eos, opts_tmp))
+        inputs.append((T_list[i], xi_list[i], Eos, opts_tmp))
 
     if flag_use_mp_object:
-        P_list, yi_list, flagv_list, flagl_list, obj_list = mpObj.pool_job(_phase_xiT_wrapper, inputs)
+        P_list, yi_list, flagv_list, flagl_list, obj_list = MultiprocessingObject.pool_job(_bubble_pressure_wrapper, inputs)
     else:
-        P_list, yi_list, flagv_list, flagl_list, obj_list = MultiprocessingJob.serial_job(_phase_xiT_wrapper, inputs)
+        P_list, yi_list, flagv_list, flagl_list, obj_list = MultiprocessingJob.serial_job(_bubble_pressure_wrapper, inputs)
 
-    logger.info("--- Calculation phase_xiT Complete ---")
+    logger.info("--- Calculation bubble_pressure Complete ---")
 
-    return {"T":T_list,"xi":xi_list,"P":P_list,"yi":yi_list,"flagl":flagl_list,"flagv":flagv_list,"obj":obj_list}
+    return {"T":T_list, "xi":xi_list, "P":P_list, "yi":yi_list, "flagl":flagl_list, "flagv":flagv_list, "obj":obj_list}
 
-def _phase_xiT_wrapper(args):
+def _bubble_pressure_wrapper(args):
+    r""" Wrapper for parallelized use of 'bubble_pressure' calculation type.
+    """
 
-    T, xi, eos, opts = args
+    T, xi, Eos, opts = args
     logger.info("T (K), xi: {} {}, Let's Begin!".format(T, xi))
 
     try:
         if len(xi[xi!=0.])==1:
-            P, _, _ = calc.calc_Psat(T, xi, eos, **opts)
+            P, _, _ = calc.calc_saturation_properties(T, xi, Eos, **opts)
             yi, flagv, flagl, obj = xi, 0, 1, 0.0
         else:
             if "pressure_options" in opts and "method" in opts["pressure_options"]:
                 opts['method'] = opts["pressure_options"]["method"]
                 del opts["pressure_options"]["method"]
-            P, yi, flagv, flagl, obj = calc.calc_xT_phase(xi, T, eos, **opts)
+            P, yi, flagv, flagl, obj = calc.calc_bubble_pressure(xi, T, Eos, **opts)
     except:
         logger.warning("T (K), xi: {} {}, calculation did not produce a valid result.".format(T, xi))
         logger.debug("Calculation Failed:", exc_info=True)
@@ -177,36 +182,43 @@ def _phase_xiT_wrapper(args):
     return P, yi, flagv, flagl, obj
 
 
-######################################################################
-#                                                                    #
-#                Phase Equilibria given yi and T                     #
-#                                                                    #
-######################################################################
-def phase_yiT(eos, **sys_dict):
+def dew_pressure(Eos, **sys_dict):
 
     r"""
-    Calculate phase diagram given vapor mole fractions, yi, and temperature.
-
-    Input and system information are assessed first. An output file is generated with T, yi, and corresponding P and xi.
+    Calculate pressure and liquid composition given vapor mole fractions, yi, and temperature.
     
     Parameters
     ----------
-    eos : obj
+    Eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
-    sys_dict: kwargs, Optional
-
-        - Tlist: (list[float]) Optional - default 298.15 [K] Temperature of the system corresponding to composition in yilist. If one set is given, this pressure will be used for all compositions.
-        - yilist: (list[list[float]]) - List of sets of component mole fraction, where sum(yi)=1.0 for each set. Each set of components corresponds to a temperature in Tlist, or if one set is given, this composition will be used for all temperatures.
-        - Pguess: (list[float]) - [Pa] Optional, Guess the system pressure at the dew point. A value of None will force an estimation based on the saturation pressure of each component.
-        - method: (str) Optional - Solving method for outer loop that converges pressure. If not given the :func:`~despasito.thermodynamics.calc_yT_phase` default will be used.
-        - pressure_options: (dict) Optional - Keyword arguments used in the given method, "method" from :func:`~despasito.utils.general_toolbox.solve_root`, to solve the outer loop in the solving algorithm
-        - mole_fraction_options: (dict) Optional - Keywords used to solve the mole fraction loop in :func:`~despasito.thermodynamics.calc.solve_xi_yiT`
-        - density_dict: (dict) Optional - Other keyword options for density array :func:`~despasito.thermodynamics.calc.PvsRho` 
+    yilist : list
+        List of sets of component mole fraction, where sum(yi)=1.0 for each set. Each set of components corresponds to a temperature in Tlist, or if one set is given, this composition will be used for all temperatures.
+    Tlist : list, Optional, default: 298.15
+        [K] Temperature of the system corresponding to composition in yilist. If one set is given, this pressure will be used for all compositions.
+    Pguess : list/float, Optional
+        [Pa] Guess the system pressure at the dew point. If a list of length 1 is provided, that value is used for all temperature-composition sets given.
+    Pmin : list, Optional
+        [Pa] Set the upper bound for the minimum system pressure at the bubble point. If not defined, the default in :func:`~despasito.thermodynamics.calc.calc_dew_pressure` is used. If a list of length 1 is provided, that value is used for all temperature-composition sets given.
+    Pmax : list, Optional
+        [Pa] Set the upper bound for the maximum system pressure at the bubble point. If not defined, the default in :func:`~despasito.thermodynamics.calc.calc_dew_pressure` is used. If a list of length 1 is provided, that value is used for all temperature-composition sets given.
+    MultiprocessingObject : obj, Optional
+        Multiprocessing object, :class:`~despasito.utils.parallelization.MultiprocessingJob`
+    kwargs, Optional
+        Keyword arguments for :func:`~despasito.thermodynamics.calc.calc_saturation_properties` and :func:`~despasito.thermodynamics.calc.calc_dew_pressure`
 
     Returns
     -------
     output_dict : dict
         Output of dictionary containing given and calculated values
+
+        - T: Temperature array generated from given instructions
+        - yi: Given array of vapor compositions
+        - flagv: Phase flag for vapor given temperature and calculated pressure, a value of 0 is vapor, 1 is liquid, 2 mean a critical fluid, 3 means that neither is true, 4 means we should assume ideal gas
+        - P: Pressure values evaluated for given conditions
+        - xi: Liquid mole fraction evaluated for given conditions
+        - flagl: Phase flag for liquid given temperature and calculated pressure, a value of 0 is vapor, 1 is liquid, 2 mean a critical fluid, 3 means that neither is true, 4 means we should assume ideal gas
+        - obj: List of objective values
+
     """
 
     ## Extract and check input data
@@ -235,9 +247,9 @@ def phase_yiT(eos, **sys_dict):
         else:
             raise ValueError("The number of provided temperatures and mole fraction sets are different")
 
-    if 'mpObj' in sys_dict:
-        mpObj = sys_dict['mpObj']
-        del sys_dict['mpObj']
+    if 'MultiprocessingObject' in sys_dict:
+        MultiprocessingObject = sys_dict['MultiprocessingObject']
+        del sys_dict['MultiprocessingObject']
         flag_use_mp_object = True
     else:
         flag_use_mp_object = False
@@ -301,35 +313,37 @@ def phase_yiT(eos, **sys_dict):
         for key in per_job_var:
             if key in opts_tmp:
                 opts_tmp[key] = opts_tmp[key][i]
-        inputs.append((T_list[i], yi_list[i], eos, opts_tmp))
+        inputs.append((T_list[i], yi_list[i], Eos, opts_tmp))
 
     ## Calculate P and xi
     T_list = np.array(T_list)
-    inputs = [(T_list[i], yi_list[i], eos, opts) for i in range(len(T_list))]
+    inputs = [(T_list[i], yi_list[i], Eos, opts) for i in range(len(T_list))]
 
     if flag_use_mp_object:
-        P_list, xi_list, flagv_list, flagl_list, obj_list = mpObj.pool_job(_phase_yiT_wrapper, inputs)
+        P_list, xi_list, flagv_list, flagl_list, obj_list = MultiprocessingObject.pool_job(_dew_pressure_wrapper, inputs)
     else:
-        P_list, xi_list, flagv_list, flagl_list, obj_list = MultiprocessingJob.serial_job(_phase_yiT_wrapper, inputs)
+        P_list, xi_list, flagv_list, flagl_list, obj_list = MultiprocessingJob.serial_job(_dew_pressure_wrapper, inputs)
 
-    logger.info("--- Calculation phase_yiT Complete ---")
+    logger.info("--- Calculation dew_pressure Complete ---")
 
     return {"T":T_list,"xi":xi_list,"P":P_list,"yi":yi_list,"flagl":flagl_list,"flagv":flagv_list, "obj":obj_list}
 
-def _phase_yiT_wrapper(args):
+def _dew_pressure_wrapper(args):
+    r""" Wrapper for parallelized use of 'dew_pressure' calculation type.
+    """
 
-    T, yi, eos, opts = args
+    T, yi, Eos, opts = args
     logger.info("T (K), yi: {} {}, Let's Begin!".format(T, yi))
 
     try:
         if len(yi[yi!=0.])==1:
-            P, _, _ = calc.calc_Psat(T, yi, eos, **opts)
+            P, _, _ = calc.calc_saturation_properties(T, yi, Eos, **opts)
             xi, flagv, flagl, obj = yi, 0, 1, 0.0
         else:
             if "pressure_options" in opts and "method" in opts["pressure_options"]:
                 opts['method'] = opts["pressure_options"]["method"]
                 del opts["pressure_options"]["method"]
-            P, xi, flagl, flagv, obj = calc.calc_yT_phase(yi, T, eos, **opts)
+            P, xi, flagl, flagv, obj = calc.calc_dew_pressure(yi, T, Eos, **opts)
     except:
         logger.warning("T (K), yi: {} {}, calculation did not produce a valid result.".format(T, yi))
         logger.debug("Calculation Failed:", exc_info=True)
@@ -339,12 +353,8 @@ def _phase_yiT_wrapper(args):
 
     return P, xi, flagv, flagl, obj
 
-######################################################################
-#                                                                    #
-#                Phase Equilibria given yi and T                     #
-#                                                                    #
-######################################################################
-def flash(eos, **sys_dict):
+
+def flash(Eos, **sys_dict):
 
     r"""
     Flash calculation of vapor and liquid mole fractions. Only binary systems are currently supported
@@ -353,19 +363,30 @@ def flash(eos, **sys_dict):
     
     Parameters
     ----------
-    eos : obj
+    Eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
-    sys_dict: kwargs, Optional
-
-        - Tlist: (list[float]) Optional - default 298.15 [K] Temperature of the system corresponding Plist. If one value is given, this temperature will be used for all temperatures.
-        - Plist: (list[float]) - Pressure of the system corresponding to Tlist. If one value is given, this pressure will be used for all temperatures.
-        - mole_fraction_options: (dict) Optional - Keywords used to solve the mole fraction loop in :func:`~despasito.thermodynamics.calc.calc_flash`
-        - density_dict: (dict) Optional - Other keyword options for density array :func:`~despasito.thermodynamics.calc.PvsRho` 
+    Tlist : list, Optional, default: 298.15
+        [K] Temperature of the system corresponding Plist. If one value is given, this temperature will be used for all temperatures.
+    Plist : list, Optional, default: 101325.0
+        [Pa] Pressure of the system corresponding to Tlist. If one value is given, this pressure will be used for all temperatures.
+    MultiprocessingObject : obj, Optional
+        Multiprocessing object, :class:`~despasito.utils.parallelization.MultiprocessingJob`
+    kwargs, Optional
+        Keyword arguments for :func:`~despasito.thermodynamics.calc.calc_flash`
 
     Returns
     -------
     output_dict : dict
         Output of dictionary containing given and calculated values
+
+        - T: Temperature array generated from given instructions
+        - P: Pressure array generated from given instructions
+        - xi: Given array of liquid compositions
+        - flagl: Phase flag for liquid given temperature and calculated pressure, a value of 0 is vapor, 1 is liquid, 2 mean a critical fluid, 3 means that neither is true, 4 means we should assume ideal gas
+        - yi: Vapor mole fraction evaluated for given conditions
+        - flagv: Phase flag for vapor given temperature and calculated pressure, a value of 0 is vapor, 1 is liquid, 2 mean a critical fluid, 3 means that neither is true, 4 means we should assume ideal gas
+        - obj: List of objective values
+
     """
 
     ## Extract and check input data
@@ -395,9 +416,9 @@ def flash(eos, **sys_dict):
         else:
             raise ValueError("The number of provided temperatures and pressure values are different")
 
-    if 'mpObj' in sys_dict:
-        mpObj = sys_dict['mpObj']
-        del sys_dict['mpObj']
+    if 'MultiprocessingObject' in sys_dict:
+        MultiprocessingObject = sys_dict['MultiprocessingObject']
+        del sys_dict['MultiprocessingObject']
         flag_use_mp_object = True
     else:
         flag_use_mp_object = False
@@ -405,13 +426,13 @@ def flash(eos, **sys_dict):
     opts = sys_dict.copy()
 
     # Initialize Variables
-    if eos.number_of_components != 2:
-        raise ValueError("Only binary systems are currently supported for flash calculations, {} were given.".format(eos.number_of_components))
+    if Eos.number_of_components != 2:
+        raise ValueError("Only binary systems are currently supported for flash calculations, {} were given.".format(Eos.number_of_components))
 
-    inputs = [(T_list[i], P_list[i], eos, opts) for i in range(len(T_list))]
+    inputs = [(T_list[i], P_list[i], Eos, opts) for i in range(len(T_list))]
 
     if flag_use_mp_object:
-        xi_list, yi_list, flagv_list, flagl_list, obj_list = mpObj.pool_job(_flash_wrapper, inputs)
+        xi_list, yi_list, flagv_list, flagl_list, obj_list = MultiprocessingObject.pool_job(_flash_wrapper, inputs)
     else:
         xi_list, yi_list, flagv_list, flagl_list, obj_list = MultiprocessingJob.serial_job(_flash_wrapper, inputs)
 
@@ -420,26 +441,24 @@ def flash(eos, **sys_dict):
     return {"T":T_list,"xi":xi_list,"P":P_list,"yi":yi_list,"flagl":flagl_list,"flagv":flagv_list, "obj":obj_list}
 
 def _flash_wrapper(args):
+    r""" Wrapper for parallelized use of 'flash' calculation type.
+    """
 
-    T, P, eos, opts = args
+    T, P, Eos, opts = args
 
     try:
-        xi, flagl, yi, flagv, obj = calc.calc_flash(P, T, eos, **opts)
+        xi, flagl, yi, flagv, obj = calc.calc_flash(P, T, Eos, **opts)
     except:
         logger.warning("T (K), P (Pa): {} {}, calculation did not produce a valid result.".format(T, P))
         logger.debug("Calculation Failed:", exc_info=True)
-        xi, yi, flagl, flagv, obj = [np.nan*np.ones(eos.number_of_components), np.nan*np.ones(eos.number_of_components), 3, 3, np.nan]
+        xi, yi, flagl, flagv, obj = [np.nan*np.ones(Eos.number_of_components), np.nan*np.ones(Eos.number_of_components), 3, 3, np.nan]
 
     logger.info("xi: {}, yi: {}".format(xi, yi))
 
     return xi, yi, flagv, flagl, obj
 
-######################################################################
-#                                                                    #
-#                Saturation calc for 1 Component                     #
-#                                                                    #
-######################################################################
-def saturation_properties(eos, **sys_dict):
+
+def saturation_properties(Eos, **sys_dict):
 
     r"""
     Computes the saturated pressure, liquid, and gas density a one component phase at a temperature.
@@ -448,17 +467,25 @@ def saturation_properties(eos, **sys_dict):
     
     Parameters
     ----------
-    eos : obj
+    Eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
-    sys_dict: kwargs, Optional
-
-        - Tlist: (list[float]) Optional - default: 298.15 [K] Temperature of the system corresponding Plist. If one value is given, this temperature will be used for all temperatures.
-        - density_dict: (dict) Optional - Other keyword options for density array :func:`~despasito.thermodynamics.calc.PvsRho` 
+    Tlist : list, Optional, default: 298.15 
+        [K] Temperature of the system corresponding Plist. If one value is given, this temperature will be used for all temperatures.
+    MultiprocessingObject : obj, Optional
+        Multiprocessing object, :class:`~despasito.utils.parallelization.MultiprocessingJob`
+    kwargs, Optional
+        Keyword arguments for :func:`~despasito.thermodynamics.calc.calc_saturation_properties`
 
     Returns
     -------
     output_dict : dict
         Output of dictionary containing given and calculated values
+
+        - T: Temperature array generated from given instructions
+        - Psat: Saturation pressure
+        - rhol: Liquid saturation density
+        - rholv: Vapor saturation density
+
     """
 
     ## Extract and check input data
@@ -476,18 +503,18 @@ def saturation_properties(eos, **sys_dict):
     else:
         xi_list = np.array([[1.0] for x in range(len(T_list))])
 
-    if 'mpObj' in sys_dict:
-        mpObj = sys_dict['mpObj']
-        del sys_dict['mpObj']
+    if 'MultiprocessingObject' in sys_dict:
+        MultiprocessingObject = sys_dict['MultiprocessingObject']
+        del sys_dict['MultiprocessingObject']
         flag_use_mp_object = True
     else:
         flag_use_mp_object = False
 
     opts = sys_dict.copy()
 
-    inputs = [(T_list[i], xi_list[i], eos, opts) for i in range(len(T_list))]
+    inputs = [(T_list[i], xi_list[i], Eos, opts) for i in range(len(T_list))]
     if flag_use_mp_object:
-        Psat, rholsat, rhovsat = mpObj.pool_job(_saturation_properties_wrapper, inputs)
+        Psat, rholsat, rhovsat = MultiprocessingObject.pool_job(_saturation_properties_wrapper, inputs)
     else:
         Psat, rholsat, rhovsat = MultiprocessingJob.serial_job(_saturation_properties_wrapper, inputs)
 
@@ -496,13 +523,15 @@ def saturation_properties(eos, **sys_dict):
     return {"T":T_list,"Psat":Psat,"rhol":rholsat,"rhov":rhovsat}
 
 def _saturation_properties_wrapper(args):
+    r""" Wrapper for parallelized use of 'saturation_properties' calculation type.
+    """
 
-    T, xi, eos, opts = args
+    T, xi, Eos, opts = args
 
     logger.info("T (K), xi: {} {}, Let's Begin!".format(T, xi))
 
     try:
-        Psat, rholsat, rhovsat = calc.calc_Psat(T, xi, eos, **opts)
+        Psat, rholsat, rhovsat = calc.calc_saturation_properties(T, xi, Eos, **opts)
         if np.isnan(Psat):
             logger.warning("T (K), xi: {} {}, calculation did not produce a valid result.".format(T, xi))
             logger.debug("Calculation Failed:", exc_info=True)
@@ -516,12 +545,8 @@ def _saturation_properties_wrapper(args):
 
     return Psat, rholsat, rhovsat
 
-######################################################################
-#                                                                    #
-#                Liquid density given xi, T, and P                   #
-#                                                                    #
-######################################################################
-def liquid_properties(eos, **sys_dict):
+
+def liquid_properties(Eos, **sys_dict):
 
     r"""
     Computes the liquid density and chemical potential given a temperature, pressure, and liquid mole fractions.
@@ -530,19 +555,31 @@ def liquid_properties(eos, **sys_dict):
     
     Parameters
     ----------
-    eos : obj
+    Eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
-    sys_dict: kwargs, Optional
-
-        - xilist: (list[list[float]]) - List of sets of component mole fraction, where sum(xi)=1.0 for each set. Each set of components corresponds to a temperature in Tlist, or if one set is given, this composition will be used for all temperatures.
-        - Tlist: (list[float]) Optional - default: 298.15 [K] Temperature of the system corresponding Plist. If one value is given, this temperature will be used for all temperatures.
-        - Plist: (list[float]) Optional - default: 101325.0 Pa. Pressure of the system corresponding to Tlist. If one value is given, this pressure will be used for all temperatures.
-        - density_dict: (dict) Optional - Other keyword options for density array :func:`~despasito.thermodynamics.calc.PvsRho` 
+    xilist : list
+        List of sets of component mole fraction, where sum(xi)=1.0 for each set. Each set of components corresponds to a temperature in Tlist, or if one set is given, this composition will be used for all temperatures.
+    Tlist : list, Optional default: 298.15 
+        [K] Temperature of the system corresponding Plist. If one value is given, this temperature will be used for all temperatures.
+    Plist : list, Optional, default: 101325.0 
+        [Pa] Pressure of the system corresponding to Tlist. If one value is given, this pressure will be used for all temperatures.
+    MultiprocessingObject : obj, Optional
+        Multiprocessing object, :class:`~despasito.utils.parallelization.MultiprocessingJob`
+    kwargs, Optional
+        Keyword arguments for :func:`~despasito.thermodynamics.calc.calc_liquid_fugacity_coefficient`
 
     Returns
     -------
     output_dict : dict
         Output of dictionary containing given and calculated values
+
+        - T: Temperature array generated from given instructions
+        - P: Pressure array generated from given instructions
+        - xi: Composition generated from given instructions
+        - rhol: Evaluated liquid density
+        - phil: Evaluated liquid fugacity coefficient
+        - flagl: Phase flag for liquid given temperature and calculated pressure, a value of 0 is vapor, 1 is liquid, 2 mean a critical fluid, 3 means that neither is true, 4 means we should assume ideal gas
+
     """
 
     ## Extract and check input data
@@ -559,7 +596,7 @@ def liquid_properties(eos, **sys_dict):
         del sys_dict['xilist']
         logger.info("Using xilist")
     else:
-        if eos.number_of_components == 1:
+        if Eos.number_of_components == 1:
             logger.info("Array xilist wasn't specified, assume one component system")
             xi_list = [[1.0] for i in T_list]
         else:
@@ -591,18 +628,18 @@ def liquid_properties(eos, **sys_dict):
         P_list = constants.standard_pressure * np.ones_like(T_list)
         logger.info("Assuming atmospheric pressure.")
 
-    if 'mpObj' in sys_dict:
-        mpObj = sys_dict['mpObj']
-        del sys_dict['mpObj']
+    if 'MultiprocessingObject' in sys_dict:
+        MultiprocessingObject = sys_dict['MultiprocessingObject']
+        del sys_dict['MultiprocessingObject']
         flag_use_mp_object = True
     else:
         flag_use_mp_object = False
 
     opts = sys_dict.copy()
 
-    inputs = [(P_list[i], T_list[i], xi_list[i], eos, opts) for i in range(len(T_list))]
+    inputs = [(P_list[i], T_list[i], xi_list[i], Eos, opts) for i in range(len(T_list))]
     if flag_use_mp_object:
-        rhol, phil, flagl = mpObj.pool_job(_liquid_properties_wrapper, inputs)
+        rhol, phil, flagl = MultiprocessingObject.pool_job(_liquid_properties_wrapper, inputs)
     else:
         rhol, phil, flagl = MultiprocessingJob.serial_job(_liquid_properties_wrapper, inputs)
 
@@ -611,27 +648,25 @@ def liquid_properties(eos, **sys_dict):
     return {"P":P_list,"T":T_list,"xi":xi_list,"rhol":rhol,"phil":phil,"flagl":flagl}
 
 def _liquid_properties_wrapper(args):
+    r""" Wrapper for parallelized use of 'liquid_properties' calculation type.
+    """
 
-    P, T, xi, eos, opts = args
+    P, T, xi, Eos, opts = args
 
     logger.info("T (K), P (Pa), xi: {} {} {}, Let's Begin!".format(T, P, xi))
 
     try:
-        phil, rhol, flagl = calc.calc_phil(P, T, xi, eos, **opts)
+        phil, rhol, flagl = calc.calc_liquid_fugacity_coefficient(P, T, xi, Eos, **opts)
         logger.info("P {} Pa, T {} K, xi {}, rhol {}, phil {}, flagl {}".format(P, T, xi, rhol, phil, flagl))
     except:
         logger.warning('Failed to calculate rhol at {} K and {} Pa'.format(T,P))
         rhol, flagl = np.nan, 3
-        phil = np.nan*np.ones(eos.number_of_components)
+        phil = np.nan*np.ones(Eos.number_of_components)
 
     return rhol, phil, flagl
 
-######################################################################
-#                                                                    #
-#                Vapor density given yi, T, and P                    #
-#                                                                    #
-######################################################################
-def vapor_properties(eos, **sys_dict):
+
+def vapor_properties(Eos, **sys_dict):
 
     r"""
     Computes the vapor density and chemical potential given a temperature, pressure, and vapor mole fractions.
@@ -640,19 +675,31 @@ def vapor_properties(eos, **sys_dict):
     
     Parameters
     ----------
-    eos : obj
+    Eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
-    sys_dict: kwargs, Optional
-
-        - yilist: (list[list[float]]) - List of sets of component mole fraction, where sum(yi)=1.0 for each set. Each set of components corresponds to a temperature in Tlist, or if one set is given, this composition will be used for all temperatures.
-        - Tlist: (list[float]) Optional - default: 298.15 [K] Temperature of the system corresponding Plist. If one value is given, this temperature will be used for all temperatures.
-        - Plist: (list[float]) Optional - default: 101325.0 Pa. Pressure of the system corresponding to Tlist. If one value is given, this pressure will be used for all temperatures.
-        - density_dict: (dict) Optional - Other keyword options for density array :func:`~despasito.thermodynamics.calc.PvsRho` 
+    yilist: : list
+        List of sets of component mole fraction, where sum(yi)=1.0 for each set. Each set of components corresponds to a temperature in Tlist, or if one set is given, this composition will be used for all temperatures.
+    Tlist : list, Optional, default: 298.15 
+        [K] Temperature of the system corresponding Plist. If one value is given, this temperature will be used for all temperatures.
+    Plist : list, Optional, default: 101325.0
+        [Pa] Pressure of the system corresponding to Tlist. If one value is given, this pressure will be used for all temperatures.
+    MultiprocessingObject : obj, Optional
+        Multiprocessing object, :class:`~despasito.utils.parallelization.MultiprocessingJob`
+    kwargs, Optional
+        Keyword arguments for :func:`~despasito.thermodynamics.calc.calc_vapor_fugacity_coefficient`
 
     Returns
     -------
     output_dict : dict
         Output of dictionary containing given and calculated values
+
+        - T: Temperature array generated from given instructions
+        - P: Pressure array generated from given instructions
+        - yi: Composition generated from given instructions
+        - rhov: Evaluated vapor density
+        - phiv: Evaluated vapor fugacity coefficient
+        - flagv: Phase flag for vapor given temperature and calculated pressure, a value of 0 is vapor, 1 is liquid, 2 mean a critical fluid, 3 means that neither is true, 4 means we should assume ideal gas
+
     """
 
     ## Extract and check input data
@@ -669,7 +716,7 @@ def vapor_properties(eos, **sys_dict):
         del sys_dict['yilist']
         logger.info("Using yilist")
     else:
-        if eos.number_of_components == 1:
+        if Eos.number_of_components == 1:
             logger.info("Array yilist wasn't specified, assume one component system")
             yi_list = [[1.0] for i in T_list]
         else:
@@ -701,18 +748,18 @@ def vapor_properties(eos, **sys_dict):
         P_list = constants.standard_pressure * np.ones_like(T_list)
         logger.info("Assuming atmospheric pressure.")
 
-    if 'mpObj' in sys_dict:
-        mpObj = sys_dict['mpObj']
-        del sys_dict['mpObj']
+    if 'MultiprocessingObject' in sys_dict:
+        MultiprocessingObject = sys_dict['MultiprocessingObject']
+        del sys_dict['MultiprocessingObject']
         flag_use_mp_object = True
     else:
         flag_use_mp_object = False
 
     opts = sys_dict.copy()
 
-    inputs = [(P_list[i], T_list[i], yi_list[i], eos, opts) for i in range(len(T_list))]
+    inputs = [(P_list[i], T_list[i], yi_list[i], Eos, opts) for i in range(len(T_list))]
     if flag_use_mp_object:
-        rhov, phiv, flagv = mpObj.pool_job(_vapor_properties_wrapper, inputs)
+        rhov, phiv, flagv = MultiprocessingObject.pool_job(_vapor_properties_wrapper, inputs)
     else:
         rhov, phiv, flagv = MultiprocessingJob.serial_job(_vapor_properties_wrapper, inputs)
 
@@ -721,28 +768,25 @@ def vapor_properties(eos, **sys_dict):
     return {"P":P_list,"T":T_list,"yi":yi_list,"rhov":rhov,"phiv":phiv,"flagv":flagv}
 
 def _vapor_properties_wrapper(args):
+    r""" Wrapper for parallelized use of 'vapor_properties' calculation type.
+    """
 
-    P, T, yi, eos, opts = args
+    P, T, yi, Eos, opts = args
 
     logger.info("T (K), P (Pa), yi: {} {} {}, Let's Begin!".format(T, P, yi))
 
     try:
-        phiv, rhov, flagv = calc.calc_phiv(P, T, yi, eos, **opts)
+        phiv, rhov, flagv = calc.calc_vapor_fugacity_coefficient(P, T, yi, Eos, **opts)
         logger.info("P {} Pa, T {} K, yi {}, rhov {}, phiv {}, flagv {}".format(P, T, yi, rhov, phiv, flagv))
     except:
         logger.warning('Failed to calculate rhov at {} K and {} Pa'.format(T,P))
         rhov, flagv = np.nan, 3
-        phiv = np.nan*np.ones(eos.number_of_components)
+        phiv = np.nan*np.ones(Eos.number_of_components)
 
     return rhov, phiv, flagv
 
-######################################################################
-#                                                                    #
-#               Solubility Parameter given xi and T                  #
-#                                                                    #
-######################################################################
 
-def solubility_parameter(eos, **sys_dict):
+def solubility_parameter(Eos, **sys_dict):
 
     r"""
     Calculate the Hildebrand solubility parameter based on temperature and composition. This function is based on the method used in Zeng, Z., Y. Xi, and Y. Li "Calculation of Solubility Parameter Using Perturbed-Chain SAFT and Cubic-Plus-Association Equations of State" Ind. Eng. Chem. Res. 2008, 47, 9663–9669.
@@ -751,21 +795,30 @@ def solubility_parameter(eos, **sys_dict):
     
     Parameters
     ----------
-    eos : obj
+    Eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
-    sys_dict: kwargs, Optional
-
-        - Tlist: (list[float]) Optional - default: 298.15 [K] Temperature of the system corresponding Plist. If one value is given, this temperature will be used for all temperatures.
-        - xilist: (list[list[float]]) Optional - default: [1.0] assuming all of one component. List of sets of component mole fraction, where sum(xi)=1.0 for each set. Each set of components corresponds to a temperature in Tlist, or if one set is given, this composition will be used for all temperatures.
-        - Plist: (list[float]) Optional - default: 101325.0 Pa. Pressure of the system corresponding to Tlist. If one value is given, this pressure will be used for all temperatures.
-        - dT: (float) Optional - Change in temperature used in calculating the derivative with central difference method. See func:`~despasito.thermodynamics.calc.hildebrand_solubility` for default.
-        - tol: (float) Optional - This cutoff value evaluates the extent to which the integrand of the calculation has decayed. If the last value if the array is greater than tol, then the remaining area is estimated as a triangle, where the intercept is estimated from an interpolation of the previous four points. See func:`~despasito.thermodynamics.calc.hildebrand_solubility` for default.
-        - density_dict: (dict) Optional - Other keyword options for density array :func:`~despasito.thermodynamics.calc.PvsRho` 
+    Tlist : list, Optional, default: 298.15 
+        [K] Temperature of the system corresponding Plist. If one value is given, this temperature will be used for all temperatures.
+    xilist : list, Optional, default: [1.0] 
+        Default assumes all of one component. List of sets of component mole fraction, where sum(xi)=1.0 for each set. Each set of components corresponds to a temperature in Tlist, or if one set is given, this composition will be used for all temperatures.
+    Plist : list, Optional, default: 101325.0
+        [Pa] Pressure of the system corresponding to Tlist. If one value is given, this pressure will be used for all temperatures.
+    MultiprocessingObject : obj, Optional
+        Multiprocessing object, :class:`~despasito.utils.parallelization.MultiprocessingJob`
+    kwargs, Optional
+        Keyword arguments for :func:`~despasito.thermodynamics.calc.calc_liquid_density` and :func:`~despasito.thermodynamics.calc.calc_hildebrand_solubility`
 
     Returns
     -------
     output_dict : dict
         Output of dictionary containing given and calculated values
+
+        - T: Temperature array generated from given instructions
+        - P: Pressure array generated from given instructions
+        - xi: Composition generated from given instructions
+        - rhol: Evaluated liquid density
+        - delta: Hidebrand solubility parameter given system conditions
+
     """
 
     ## Extract and check input data
@@ -790,7 +843,7 @@ def solubility_parameter(eos, **sys_dict):
         logger.info("Using xilist")
         del sys_dict['xilist']
     else:
-        if eos.number_of_components == 1:
+        if Eos.number_of_components == 1:
             xi_list = np.array([[1.0] for x in range(len(T_list))])
             logger.info("Single mole fraction of one.")
         else:
@@ -816,9 +869,9 @@ def solubility_parameter(eos, **sys_dict):
         else:
             raise ValueError("The number of provided temperatures and pressure sets are different")
 
-    if 'mpObj' in sys_dict:
-        mpObj = sys_dict['mpObj']
-        del sys_dict['mpObj']
+    if 'MultiprocessingObject' in sys_dict:
+        MultiprocessingObject = sys_dict['MultiprocessingObject']
+        del sys_dict['MultiprocessingObject']
         flag_use_mp_object = True
     else:
         flag_use_mp_object = False
@@ -826,9 +879,9 @@ def solubility_parameter(eos, **sys_dict):
     opts = sys_dict.copy()
 
     ## Calculate solubility parameter
-    inputs = [(P_list[i], T_list[i], xi_list[i], eos, opts) for i in range(len(T_list))]
+    inputs = [(P_list[i], T_list[i], xi_list[i], Eos, opts) for i in range(len(T_list))]
     if flag_use_mp_object:
-        rhol, flagl, delta = mpObj.pool_job(_solubility_parameter_wrapper, inputs)
+        rhol, flagl, delta = MultiprocessingObject.pool_job(_solubility_parameter_wrapper, inputs)
     else:
         rhol, flagl, delta = MultiprocessingJob.serial_job(_solubility_parameter_wrapper, inputs)
 
@@ -837,14 +890,16 @@ def solubility_parameter(eos, **sys_dict):
     return {"P":P_list,"T":T_list,"xi":xi_list,"rhol":rhol,"delta":delta}
 
 def _solubility_parameter_wrapper(args):
+    r""" Wrapper for parallelized use of 'solubility_parameter' calculation type.
+    """
 
-    P, T, xi, eos, opts = args
+    P, T, xi, Eos, opts = args
 
     logger.info("T (K), P (Pa), xi: {} {} {}, Let's Begin!".format(T, P, xi))
 
     try:
-        rhol, flagl = calc.calc_rhol(P, T, xi, eos, **opts)
-        delta = calc.hildebrand_solubility(rhol, xi, T, eos, **opts)
+        rhol, flagl = calc.calc_liquid_density(P, T, xi, Eos, **opts)
+        delta = calc.hildebrand_solubility(rhol, xi, T, Eos, **opts)
         logger.info("P {} Pa, T {} K, xi {}, rhol {}, flagl {}, delta {}".format(P, T, xi, rhol, flagl, delta))
     except:
         logger.warning('Failed to calculate rhov at {} K and {} Pa'.format(T,P))
@@ -852,13 +907,8 @@ def _solubility_parameter_wrapper(args):
 
     return rhol, flagl, delta
 
-######################################################################
-#                                                                    #
-#               Solubility Parameter given xi and T                  #
-#                                                                    #
-######################################################################
 
-def verify_eos(eos, **sys_dict):
+def verify_eos(Eos, **sys_dict):
 
     r"""
     The following consistency checks are performed to ensure the calculated fugacity coefficients are thermodynamically consistent.
@@ -870,19 +920,36 @@ def verify_eos(eos, **sys_dict):
     
     Parameters
     ----------
-    eos : obj
+    Eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
-    sys_dict: kwargs, Optional
-
-        - Tlist: (list[float]) Optional - default: 298.15 [K] Temperature of the system corresponding Plist. If one value is given, this temperature will be used for all temperatures.
-        - xilist: (list[list[float]]) Optional - default: Array of 11 values from x1=0 to x1=1 for binary array. List of sets of component mole fraction, where sum(xi)=1.0 for each set. Each set of components corresponds to a temperature in Tlist, or if one set is given, this composition will be used for all temperatures.
-        - Plist: (list[float]) Optional - default: 101325.0 Pa. Pressure of the system corresponding to Tlist. If one value is given, this pressure will be used for all temperatures.
-        - density_dict: (dict) Optional - Other keyword options for density array :func:`~despasito.thermodynamics.calc.PvsRho` 
+    Tlist : list, Optional, default: 298.15 
+        [K] Temperature of the system corresponding Plist. If one value is given, this temperature will be used for all temperatures.
+    xilist : list, Optional
+        Default array of 11 values from x1=0 to x1=1 for binary array. List of sets of component mole fraction, where sum(xi)=1.0 for each set. Each set of components corresponds to a temperature in Tlist, or if one set is given, this composition will be used for all temperatures.
+    Plist : list, Optional, default: 101325.0 
+        [Pa] Pressure of the system corresponding to Tlist. If one value is given, this pressure will be used for all temperatures.
+    MultiprocessingObject : obj, Optional
+        Multiprocessing object, :class:`~despasito.utils.parallelization.MultiprocessingJob`
+    kwargs, Optional
+        Keyword arguments for :func:`~despasito.thermodynamics.calc.calc_vapor_density`, :func:`~despasito.thermodynamics.calc.calc_liquid_density`, :func:`~despasito.thermodynamics.calc.calc_fugacity_test_1`, and :func:`~despasito.thermodynamics.calc.calc_fugacity_test_2`,
 
     Returns
     -------
     output_dict : dict
         Output of dictionary containing given and calculated values
+
+        - T: Temperature array generated from given instructions
+        - P: Pressure array generated from given instructions
+        - xi: Composition generated from given instructions
+        - residual_v1: NoteHere
+        - residual_v2: NoteHere
+        - flagv: Phase flag for vapor given temperature and calculated pressure, a value of 0 is vapor, 1 is liquid, 2 mean a critical fluid, 3 means that neither is true, 4 means we should assume ideal gas
+        - log_phivi: Log of the partial vapor fugacity coefficient for each component
+        - residual_l1: NoteHere
+        - residual_l2: NoteHere
+        - flagl: Phase flag for liquid given temperature and calculated pressure, a value of 0 is vapor, 1 is liquid, 2 mean a critical fluid, 3 means that neither is true, 4 means we should assume ideal gas
+        - log_phili: Log of the partial liquid fugacity coefficient for each component
+
     """
 
     ## Extract and check input data
@@ -891,7 +958,7 @@ def verify_eos(eos, **sys_dict):
         xi_list = np.array(sys_dict['xilist'])
         logger.info("Using xilist")
         del sys_dict['xilist']
-    elif eos.number_of_components == 2:
+    elif Eos.number_of_components == 2:
         tmp = np.linspace(0,1,11)
         xi_list = np.array([[x, 1.0-x] for x in tmp])
         logger.info("Use array of mole fractions")
@@ -931,9 +998,9 @@ def verify_eos(eos, **sys_dict):
         else:
             raise ValueError("The number of provided temperatures and pressure sets are different")
 
-    if 'mpObj' in sys_dict:
-        mpObj = sys_dict['mpObj']
-        del sys_dict['mpObj']
+    if 'MultiprocessingObject' in sys_dict:
+        MultiprocessingObject = sys_dict['MultiprocessingObject']
+        del sys_dict['MultiprocessingObject']
         flag_use_mp_object = True
     else:
         flag_use_mp_object = False
@@ -941,9 +1008,9 @@ def verify_eos(eos, **sys_dict):
     opts = sys_dict.copy()
 
     ## Calculate solubility parameter
-    inputs = [(P_list[i], T_list[i], xi_list[i], eos, opts) for i in range(len(T_list))]
+    inputs = [(P_list[i], T_list[i], xi_list[i], Eos, opts) for i in range(len(T_list))]
     if flag_use_mp_object:
-        residual_v1, residual_v2, flagv, log_phiv, residual_l1, residual_l2, flagl, log_phil = mpObj.pool_job(_verify_eos_wrapper, inputs)
+        residual_v1, residual_v2, flagv, log_phiv, residual_l1, residual_l2, flagl, log_phil = MultiprocessingObject.pool_job(_verify_eos_wrapper, inputs)
     else:
         residual_v1, residual_v2, flagv, log_phiv, residual_l1, residual_l2, flagl, log_phil = MultiprocessingJob.serial_job(_verify_eos_wrapper, inputs)
 
@@ -952,31 +1019,33 @@ def verify_eos(eos, **sys_dict):
     return {"P":P_list, "T":T_list, "xi":xi_list, "residual_v1":residual_v1, "residual_v2":residual_v2, "flagv": flagv, "log_phivi":log_phiv, "residual_l1":residual_l1, "residual_l2":residual_l2, "flagl": flagl, "log_phili":log_phil}
 
 def _verify_eos_wrapper(args):
+    r""" Wrapper for parallelized use of 'verify_eos' calculation type.
+    """
 
-    P, T, xi, eos, opts = args
+    P, T, xi, Eos, opts = args
 
     logger.info("T (K), P (Pa), xi: {} {} {}, Let's Begin!".format(T, P, xi))
 
-    rhov, flagv = calc.calc_rhov(P, T, xi, eos, **opts)
+    rhov, flagv = calc.calc_vapor_density(P, T, xi, Eos, **opts)
     if np.isnan(rhov):
         logger.warning('Failed to calculate rhov at {} K and {} Pa'.format(T,P))
         log_phiv, residual_v1, residual_v2 = np.nan, np.nan, np.nan
     else:
-        phiv = eos.fugacity_coefficient(P, np.array([rhov]), xi, T)
+        phiv = Eos.fugacity_coefficient(P, np.array([rhov]), xi, T)
         log_phiv = np.log(phiv)
-        residual_v1 = calc.fugacity_test_1(P, T, xi, rhov, eos, **opts)
-        residual_v2 = calc.fugacity_test_2(P, T, xi, rhov, eos, **opts)
+        residual_v1 = calc.fugacity_test_1(P, T, xi, rhov, Eos, **opts)
+        residual_v2 = calc.fugacity_test_2(P, T, xi, rhov, Eos, **opts)
         logger.info("rhov {}, flagv {}, log_phiv {}, log_phiv {}, residual1 {}, residual2 {}".format(rhov, flagv, np.sum(xi*log_phiv), log_phiv, residual_v1, residual_v2))
 
-    rhol, flagl = calc.calc_rhol(P, T, xi, eos, **opts)
+    rhol, flagl = calc.calc_liquid_density(P, T, xi, Eos, **opts)
     if np.isnan(rhol):
         logger.warning('Failed to calculate rhol at {} K and {} Pa'.format(T,P))
         log_phil, residual_l1, residual_l2 = np.nan, np.nan, np.nan
     else:
-        phil = eos.fugacity_coefficient(P, np.array([rhol]), xi, T)
+        phil = Eos.fugacity_coefficient(P, np.array([rhol]), xi, T)
         log_phil = np.log(phil)
-        residual_l1 = calc.fugacity_test_1(P, T, xi, rhol, eos, **opts)
-        residual_l2 = calc.fugacity_test_2(P, T, xi, rhol, eos, **opts)
+        residual_l1 = calc.fugacity_test_1(P, T, xi, rhol, Eos, **opts)
+        residual_l2 = calc.fugacity_test_2(P, T, xi, rhol, Eos, **opts)
         logger.info("rhol {}, flagl {}, log_phil {}, log_phil {}, residual1 {}, residual2 {}".format(rhol, flagl, np.sum(xi*log_phil), log_phil, residual_l1, residual_l2))
 
     return residual_v1, residual_v2, flagv, log_phiv, residual_l1, residual_l2, flagl, log_phil

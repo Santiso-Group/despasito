@@ -26,25 +26,24 @@ class Data(ExpDataTemplate):
     data_dict : dict
         Dictionary of exp data of saturation properties.
 
-        * name : str, data type, in this case SatProps
         * calculation_type : str, Optional, default: 'saturation_properties
         * T : list, List of temperature values for calculation
         * xi : list, (or yi) List of liquid mole fractions used in saturation properties calculations, should be 1 for the molecule of focus and 0 for the rest.
         * weights : dict, A dictionary where each key is the header used in the exp. data file. The value associated with a header can be a list as long as the number of data points to multiply by the objective value associated with each point, or a float to multiply the objective value of this data set.
         * objective_method : str, The 'method' keyword in function despasito.parameter_fitting.fit_funcs.obj_function_form.
-        * density_dict : dict, Optional, default: {"minrhofrac":(1.0 / 60000.0), "rhoinc":10.0, "vspacemax":1.0E-4}, Dictionary of options used in calculating pressure vs. mole fraction curves.
+        * density_opts : dict, Optional, default: {"minrhofrac":(1.0 / 60000.0), "rhoinc":10.0, "vspacemax":1.0E-4}, Dictionary of options used in calculating pressure vs. mole fraction curves.
 
     Attributes
     ----------
     name : str
-        Data type, in this case SatProps
+        Data type, in this case saturation_properties
     weights : dict, Optional, deafault: {"some_property": 1.0 ...}
         Dicitonary corresponding to thermodict, with weighting factor or vector for each system property used in fitting
     thermodict : dict
         Dictionary of inputs needed for thermodynamic calculations
         
         - calculation_type (str) default: saturation_properties
-        - density_dict (dict) default: {"minrhofrac":(1.0 / 80000.0), "rhoinc":10.0, "vspacemax":1.0E-4}
+        - density_opts (dict) default: {"minrhofrac":(1.0 / 80000.0), "rhoinc":10.0, "vspacemax":1.0E-4}
         
     """
 
@@ -53,13 +52,14 @@ class Data(ExpDataTemplate):
         super().__init__(data_dict)
         
         # If required items weren't defined, set defaults
+        self.name = "saturation_properties"
         if self.thermodict["calculation_type"] == None:
             self.thermodict["calculation_type"] = "saturation_properties"
 
         tmp = {"minrhofrac":(1.0 / 80000.0), "rhoinc":10.0, "vspacemax":1.0E-4}
-        if 'density_dict' in self.thermodict:
-            tmp.update(self.thermodict["density_dict"])
-        self.thermodict["density_dict"] = tmp
+        if 'density_opts' in self.thermodict:
+            tmp.update(self.thermodict["density_opts"])
+        self.thermodict["density_opts"] = tmp
 
         # Extract system data
         if "xi" in data_dict:
@@ -83,7 +83,7 @@ class Data(ExpDataTemplate):
             self.thermodict["Tlist"] = np.ones(lx)*constants.standard_temperature
             logger.info("Assume {}K".format(constants.standard_temperature))
         if 'xilist' not in self.thermodict:
-            if self.eos.number_of_components > 1:
+            if self.Eos.number_of_components > 1:
                 raise ValueError("Ambiguous instructions. Include xi to define intended component to obtain saturation properties")
             else:
                 self.thermodict['xilist'] = np.array([[1.0] for x in range(lx)])
@@ -129,7 +129,7 @@ class Data(ExpDataTemplate):
     def _thermo_wrapper(self):
 
         """
-        Generate thermodynamic predictions from eos object
+        Generate thermodynamic predictions from Eos object
 
         Returns
         -------
@@ -146,10 +146,10 @@ class Data(ExpDataTemplate):
 
         # Run thermo calculations
         try:
-            output_dict = thermo(self.eos, **opts)
+            output_dict = thermo(self.Eos, **opts)
             output = [output_dict["Psat"],output_dict["rhol"],output_dict["rhov"]]
         except:
-            raise ValueError("Calculation of calc_Psat failed")
+            raise ValueError("Calculation of calc_saturation_properties failed")
 
         return output
 

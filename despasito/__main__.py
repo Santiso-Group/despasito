@@ -57,7 +57,7 @@ kwargs["cython"] = args.cython
 logging.info("Pure Python (no fortran): {}".format(args.python))
 kwargs["python"] = args.python
 
-kwargs["mpObj"] = MultiprocessingJob(ncores=args.ncores)
+kwargs["MultiprocessingObject"] = MultiprocessingJob(ncores=args.ncores)
 kwargs["path"] = args.path
 
 run(**kwargs)

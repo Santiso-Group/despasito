@@ -1,5 +1,5 @@
 {
-    "beadconfig": [[["acetone", 1]], [["chloroform", 1]]],
+    "bead_configuration": [[["acetone", 1]], [["chloroform", 1]]],
     "eos": "cubic.peng_robinson",
     "EOSgroup": "../../library/PRgroup.json",
     "EOScross": "PRcross.json",

@@ -5,7 +5,7 @@ Objects for storing and producing objective values for comparing experimental da
 import numpy as np
 import logging
 
-from despasito import fund_constants as constants
+from despasito import fundamental_constants as constants
 from despasito.thermodynamics import thermo
 from despasito.parameter_fitting import fit_funcs as ff
 from despasito.parameter_fitting.interface import ExpDataTemplate
@@ -25,27 +25,26 @@ class Data(ExpDataTemplate):
     Parameters
     ----------
     data_dict : dict
-        Dictionary of exp data of type rhol.
+        Dictionary of exp data of type liquid density.
 
-        * name : str, data type, in this case RhoL
         * calculation_type : str, Optional, default: 'liquid_properties'
         * T : list, List of temperature values for calculation
         * xi : list, List of liquid mole fractions used in liquid_properties calculations
         * weights : dict, A dictionary where each key is the header used in the exp. data file. The value associated with a header can be a list as long as the number of data points to multiply by the objective value associated with each point, or a float to multiply the objective value of this data set.
         * objective_method : str, The 'method' keyword in function despasito.parameter_fitting.fit_funcs.obj_function_form.
-        * density_dict : dict, Optional, default: {"minrhofrac":(1.0 / 60000.0), "rhoinc":10.0, "vspacemax":1.0E-4}, Dictionary of options used in calculating pressure vs. mole fraction curves.
+        * density_opts : dict, Optional, default: {"minrhofrac":(1.0 / 60000.0), "rhoinc":10.0, "vspacemax":1.0E-4}, Dictionary of options used in calculating pressure vs. mole fraction curves.
 
     Attributes
     ----------
     name : str
-        Data type, in this case rhol
+        Data type, in this case liquid_density
     weights : dict, Optional, deafault: {"some_property": 1.0 ...}
         Dicitonary corresponding to thermodict, with weighting factor or vector for each system property used in fitting
     thermodict : dict
         Dictionary of inputs needed for thermodynamic calculations
         
         - calculation_type (str) default: liquid_properties
-        - density_dict (dict) default: {"minrhofrac":(1.0 / 300000.0), "rhoinc":10.0, "vspacemax":1.0E-4}
+        - density_opts (dict) default: {"minrhofrac":(1.0 / 300000.0), "rhoinc":10.0, "vspacemax":1.0E-4}
         
     """
 
@@ -53,10 +52,11 @@ class Data(ExpDataTemplate):
 
         super().__init__(data_dict)
         
+        self.name = "liquid_density"
         tmp = {"minrhofrac":(1.0 / 300000.0), "rhoinc":10.0, "vspacemax":1.0E-4}
-        if 'density_dict' in self.thermodict:
-            tmp.update(self.thermodict["density_dict"])
-        self.thermodict["density_dict"] = tmp
+        if 'density_opts' in self.thermodict:
+            tmp.update(self.thermodict["density_opts"])
+        self.thermodict["density_opts"] = tmp
         
         if self.thermodict["calculation_type"] == None:
             self.thermodict["calculation_type"] = "liquid_properties"
@@ -84,7 +84,7 @@ class Data(ExpDataTemplate):
             self.thermodict["Plist"] = np.ones(lx)*constants.standard_pressure
             logger.info("Assume atmospheric pressure")
         if 'xilist' not in self.thermodict:
-            if self.eos.number_of_components > 1:
+            if self.Eos.number_of_components > 1:
                 raise ValueError("Ambiguous instructions. Include xi to define intended component to obtain saturation properties")
             else:
                 self.thermodict['xilist'] = np.array([[1.0] for x in range(lx)])
@@ -116,7 +116,7 @@ class Data(ExpDataTemplate):
     def _thermo_wrapper(self):
 
         """
-        Generate thermodynamic predictions from eos object
+        Generate thermodynamic predictions from Eos object
 
         Returns
         -------
@@ -132,10 +132,10 @@ class Data(ExpDataTemplate):
                 del opts[key]
 
         try:
-            output_dict = thermo(self.eos, **opts)
+            output_dict = thermo(self.Eos, **opts)
             output = [output_dict["rhol"]]
         except:
-            raise ValueError("Calculation of calc_rhol failed")
+            raise ValueError("Calculation of calc_liquid_density failed")
         return output
 
 
