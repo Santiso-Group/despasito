@@ -15,7 +15,7 @@ beads = ["acetone","chloroform"]
 beadlibrary = {'acetone': {'Tc': 508.1, 'Pc': 4690000.0, 'omega': 0.304}, 'chloroform': {'Tc': 536.4, 'Pc': 5471550.0, 'omega': 0.221902}}
 crosslibrary = {"acetone": {"chloroform": {"kij": -0.0605}}}
 
-Eos = despasito.equations_of_state.Eos(Eos="cubic.peng_robinson", xi=xi, beads=beads,nui=nui,beadlibrary=beadlibrary,crosslibrary=crosslibrary)
+Eos = despasito.equations_of_state.initiate_eos(eos="cubic.peng_robinson", xi=xi, beads=beads,nui=nui,beadlibrary=beadlibrary,crosslibrary=crosslibrary)
 T = 332.15 
 P = np.array([101330.0])
 yi = np.array([0.89, 0.11])
@@ -26,10 +26,10 @@ def test_peng_robinson_imported():
     assert "despasito.equations_of_state.cubic.peng_robinson" in sys.modules
 
 def test_PR_coefficients(xi=xi,beads=beads,nui=nui,beadlibrary=beadlibrary):  #   """Test ability to create EOS object without association sites"""
-    eos_class = despasito.equations_of_state.Eos(Eos="cubic.peng_robinson",xi=xi,beads=beads,nui=nui,beadlibrary=beadlibrary)
-    tmp = [eos_class.beadlibrary[beads[0]]['kappa'], eos_class.beadlibrary[beads[1]]['kappa']]
-    assert (eos_class.eos_dict['ai']==pytest.approx(np.array([1.73993846, 1.66217026]),abs=1e-4) and \
-            eos_class.eos_dict['bi']==pytest.approx(np.array([7.00758212e-05, 6.34118233e-05]),abs=1e-9) and \
+    Eos_class = despasito.equations_of_state.initiate_eos(eos="cubic.peng_robinson",xi=xi,beads=beads,nui=nui,beadlibrary=beadlibrary)
+    tmp = [Eos_class.beadlibrary[beads[0]]['kappa'], Eos_class.beadlibrary[beads[1]]['kappa']]
+    assert (Eos_class.eos_dict['ai']==pytest.approx(np.array([1.73993846, 1.66217026]),abs=1e-4) and \
+            Eos_class.eos_dict['bi']==pytest.approx(np.array([7.00758212e-05, 6.34118233e-05]),abs=1e-9) and \
             tmp==pytest.approx(np.array([0.81854211, 0.70357958]),abs=1e-4))
 
 def test_peng_robinson_pressure(xi=xi,T=T,Eos=Eos,rho=rho):

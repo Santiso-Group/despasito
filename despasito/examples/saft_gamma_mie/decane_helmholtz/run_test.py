@@ -21,8 +21,8 @@ beadlibrary  = {'CH3':
                         'Vks': 1,
                         'mass': 0.014027}}
 crosslibrary  = {'CH3': {'CH2': {'epsilon': 350.770}}}
-Eos = despasito.equations_of_state.Eos(
-      Eos="saft.gamma_mie",
+Eos = despasito.equations_of_state.initiate_eos(
+      eos="saft.gamma_mie",
       beads=beads,
       nui=beads_per_molecule,
       beadlibrary=beadlibrary,

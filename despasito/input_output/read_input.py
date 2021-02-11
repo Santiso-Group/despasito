@@ -35,7 +35,7 @@ def append_data_file_path(input_dict, path='.'):
       input_dict['EOScross'] = os.path.join(path, input_dict['EOScross'])
 
    for key, val in input_dict.items():
-      if type(val) is dict and 'file' in val:
+      if isinstance(val,dict) and 'file' in val:
          input_dict[key]['file'] = os.path.join(path, input_dict[key]['file'])
 
 ######################################################################
@@ -58,7 +58,7 @@ def extract_calc_data(input_fname, path='.', **thermo_dict):
     Returns
     -------
     eos_dict : dict
-        Dictionary of bead definitions and parameters used to later initialize Eos object. :func:`despasito.equations_of_state.Eos`
+        Dictionary of bead definitions and parameters used to later initialize Eos object. :func:`despasito.equations_of_state.initiate_eos`
     thermo_dict : dict
         Dictionary of instructions for thermodynamic calculations or parameter fitting. :func:`despasito.thermodynamics.thermo`
     """
@@ -102,9 +102,9 @@ def extract_calc_data(input_fname, path='.', **thermo_dict):
     # Extract relevant system state inputs
     EOS_dict_keys = ['bead_configuration', 'EOSgroup', 'EOScross',"output_file"]
     for key, value in input_dict.items():
-        if key.split("_")[0] == "Eos":
+        if key.split("_")[0] == "eos":
             if len(key.split("_")) == 1:
-                eos_dict['Eos'] = input_dict["Eos"]
+                eos_dict['eos'] = input_dict["eos"]
             else:
                 new_key = "_".join(key.split("_")[1:])
                 eos_dict[new_key] = input_dict[key]

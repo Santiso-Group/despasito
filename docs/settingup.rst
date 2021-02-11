@@ -28,7 +28,7 @@ For this example we focus on carbon dioxide and water modeled with the SAFT-:mat
 
 Notice that the name of this file doesn't really matter, but we use the prefix *input* to denote where these instructions are. This file is processed by the :func:`~despasito.input_output.read_input.extract_calc_data` function.
 
-The first three lines are used in producing our EOS object. The `bead_config` line is an list of system components. Each components is defined as a list of group (i.e. segment or bead) types. Each of those groups is then a list of the bead name followed by the number of beads in the components. Notice that connectivity isn't captured by SAFT in this way. The next file, `EOSgroup.json`, contains the self-interaction parameters of a certain group. The optional file, `EOScross.json`, then contains any cross interaction parameters. If it isn't provided, then the EOS object will estimate these interactions with the defined mixing rules. The default EOS is SAFT-:math:`\gamma`-Mie, but any other EOS can be added to DESPASITO using our class interface. Specifying another EOS is explained in, :func:`~despasito.equations_of_state.Eos`. That being said, because this package is based on SAFT, the `association_site_names` can also be defined as a line here.
+The first three lines are used in producing our EOS object. The `bead_config` line is an list of system components. Each components is defined as a list of group (i.e. segment or bead) types. Each of those groups is then a list of the bead name followed by the number of beads in the components. Notice that connectivity isn't captured by SAFT in this way. The next file, `EOSgroup.json`, contains the self-interaction parameters of a certain group. The optional file, `EOScross.json`, then contains any cross interaction parameters. If it isn't provided, then the EOS object will estimate these interactions with the defined mixing rules. The default EOS is SAFT-:math:`\gamma`-Mie, but any other EOS can be added to DESPASITO using our class interface. Specifying another EOS is explained in, :func:`~despasito.equations_of_state.initiate_eos`. That being said, because this package is based on SAFT, the `association_site_names` can also be defined as a line here.
 
 The last 4 lines for thermodynamic calculation instructions, although only `calculation_type` is actually required. The other lines depend on the calculation type being used. In this case, defining the pressure is optional, if it was missing DESPASITO would assume atmospheric pressure.
 
@@ -89,13 +89,13 @@ Other options for controlling the output are also available in the command line 
 Specifying Equation of State (EOS)
 ##################################
 
-By default, DESPASITO used the SAFT-:math:`\gamma`-Mie equation of state. However, you can change the EOS by adding the "Eos" option to the `input.json` file. This option is passed to the :func:`~despasito.equations_of_state.Eos` function, an example of this can be found in the Peng-Robinson calculations in the `examples` directory. The syntax for an equation of state is module.Eos, where module is the family the Eos belongs to, and Eos is the equation of state. For Peng-Robinson this entry would be,
+By default, DESPASITO used the SAFT-:math:`\gamma`-Mie equation of state. However, you can change the EOS by adding the "eos" option to the `input.json` file. This option is passed to the :func:`~despasito.equations_of_state.initiate_eos` function, an example of this can be found in the Peng-Robinson calculations in the `examples` directory. The syntax for an equation of state is module.eos, where module is the family the eos belongs to, and eos is the equation of state. For Peng-Robinson this entry would be,
 
-    "Eos": "cubic.peng_robinson"
+    "eos": "cubic.peng_robinson"
 
 and for SAFT-:math:`\gamma`-Mie,
 
-    "Eos": "saft.gamma_mie"
+    "eos": "saft.gamma_mie"
 
-See :ref:`Eos-types` for a list of available equations of state.
+See :ref:`eos-types` for a list of available equations of state.
 

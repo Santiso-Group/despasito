@@ -4,7 +4,7 @@ Equations of State
 
 Here we list list the available equations of state and the function used to access them. 
 
-.. autofunction:: despasito.equations_of_state.Eos
+.. autofunction:: despasito.equations_of_state.initiate_eos
 
 
 .. _eos-types:

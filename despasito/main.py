@@ -12,7 +12,7 @@ import argparse
 
 from .input_output import read_input
 from .input_output import write_output
-from .equations_of_state import Eos as eos_mod
+from .equations_of_state import initiate_eos
 from .thermodynamics import thermo
 from .parameter_fitting import fit
 
@@ -66,7 +66,7 @@ def run(filename="input.json", path=".", numba=False, cython=False, python=False
         for key,exp_dict in thermo_dict["exp_data"].items():
             eos_dict = exp_dict["eos_dict"]
             thermo_dict["exp_data"][key].pop("eos_dict", None)
-            thermo_dict["exp_data"][key]["eos_obj"] = eos_mod(**eos_dict)
+            thermo_dict["exp_data"][key]["eos_obj"] = initiate_eos(**eos_dict)
             for key2 in fitting_opts:
                 if key2 in thermo_dict:
                     thermo_dict["exp_data"][key][key2] = thermo_dict[key2]
@@ -76,7 +76,7 @@ def run(filename="input.json", path=".", numba=False, cython=False, python=False
         logger.info("Finished parametrization")
         write_output.writeout_fit_dict(output_dict,**file_dict)
     else:
-        Eos = eos_mod(**eos_dict)
+        Eos = initiate_eos(**eos_dict)
         logger.info("Initializing thermodynamic calculation")
         output_dict = thermo(Eos, **thermo_dict.copy())
         logger.info("Finished thermodynamic calculation")

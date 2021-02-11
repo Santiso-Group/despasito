@@ -15,7 +15,7 @@ class method_stat:
 
 logger = logging.getLogger(__name__)
 
-def Eos(Eos="saft.gamma_mie", numba=False, cython=False, python=False, **input_dict):
+def initiate_eos(eos="saft.gamma_mie", numba=False, cython=False, python=False, **input_dict):
     """
     Interface between the user and our library of equations of state (EOS).
 
@@ -26,7 +26,7 @@ def Eos(Eos="saft.gamma_mie", numba=False, cython=False, python=False, **input_d
     input_dict : dict, Optional
         A dictionary of inputs for the desired EOS. See specific EOS documentation for required inputs.
 
-        - Eos : str - Input should be in the form EOSfamily.EOSname (e.g. saft.gamme_mie). Note that the name of the class is EOSfamily_EOSname.
+        - eos : str - Input should be in the form EOSfamily.EOSname (e.g. saft.gamme_mie). Note that the name of the class is EOSfamily_EOSname.
                 
     Returns
     -------
@@ -40,10 +40,10 @@ def Eos(Eos="saft.gamma_mie", numba=False, cython=False, python=False, **input_d
 
     factory_families = ["saft"] # Eos families in this list have a general object with a factory to import relevent modules
 
-    logger.info("Using EOS: {}".format(Eos))
+    logger.info("Using EOS: {}".format(eos))
 
     try:
-        eos_fam, eos_type = Eos.split('.')
+        eos_fam, eos_type = eos.split('.')
     except Exception:
         raise ValueError("Input should be in the form EOSfamily.EOSname (e.g. saft.gamme_mie).")
 
@@ -57,10 +57,10 @@ def Eos(Eos="saft.gamma_mie", numba=False, cython=False, python=False, **input_d
             eos_module = import_module('.' + eos_type, package="despasito.equations_of_state." + eos_fam)
         eos_class = getattr(eos_module, class_name)
     except AttributeError:
-        raise ImportError("Based on your input, '{}', we expect the class, {}, in a module, {}, found in the package, {}, which indicates the EOS family.".format(Eos, class_name, eos_type, eos_fam))
+        raise ImportError("Based on your input, '{}', we expect the class, {}, in a module, {}, found in the package, {}, which indicates the EOS family.".format(eos, class_name, eos_type, eos_fam))
     instance = eos_class(**input_dict)
 
-    logger.info("Created {} Eos object".format(Eos))
+    logger.info("Created {} Eos object".format(eos))
 
     return instance
 

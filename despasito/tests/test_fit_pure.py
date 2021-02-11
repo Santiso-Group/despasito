@@ -16,7 +16,7 @@ import numpy as np
 beads = ['CH3OH']
 nui = np.array([[1.]])
 beadlibrary = {'CH3OH': {'epsilon': 375.01, 'lambdaa': 6.0, 'lambdar': 16.352, 'sigma': 3.463e-1, 'Sk': 1.0, 'Vks': 2, 'mass': 0.0310337}}
-Eos = despasito.equations_of_state.Eos(Eos="saft.gamma_mie",beads=beads,nui=nui,beadlibrary=beadlibrary)
+Eos = despasito.equations_of_state.initiate_eos(eos="saft.gamma_mie",beads=beads,nui=nui,beadlibrary=beadlibrary)
 
 ## Exp Data dict
 exp_data_sat = {'Wiley': {'data_class_type': 'saturation_properties', "eos_obj":Eos, 'calculation_type': 'saturation_properties', 'T': np.array([200.]), 'Psat': np.array([6.1000e+01]), 'rhol': np.array([27474.40699]), 'rhov': np.array([3.12109900e-03])}, 

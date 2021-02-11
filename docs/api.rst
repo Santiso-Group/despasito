@@ -33,8 +33,8 @@ ________________
  * **EOScross**: (str) - The filename of .json file containing a dictionary of group-group cross interaction parameters used in the desired equation of state (EOS).
  * **calculation_type**: (str) - Any :func:`calculation_type <despasito.thermodynamics.calculation_types>` that is supported by the thermodynamic module
  * **output_file**: (str) Optional - default: despasito_out.txt.
- * **Eos**: (str) Optional - default: ``saft.gamma_mie``. Supported :func:`EOS class <despasito.equations_of_state.Eos>` to be used in thermodynamic computations.
- * **Eos_\***: Optional - Any keyword that needs to be passed to an equation of state object should be preceded by "Eos\_" to be includes in the Eos dictionary. (e.g. num_rings for saft.gamma_mie should be included as Eos_num_rings)
+ * **eos**: (str) Optional - default: ``saft.gamma_mie``. Supported :func:`EOS class <despasito.equations_of_state.initiate_eos>` to be used in thermodynamic computations.
+ * **eos_\***: Optional - Any keyword that needs to be passed to an equation of state object should be preceded by "eos\_" to be includes in the eos dictionary. (e.g. num_rings for saft.gamma_mie should be included as eos_num_rings)
  * **\***: Required or optional keywords from the chosen :func:`calculation_type <despasito.thermodynamics.calculation_types>`. See appropriate doc string for more details.
 
 
