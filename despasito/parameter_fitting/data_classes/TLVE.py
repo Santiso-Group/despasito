@@ -155,14 +155,14 @@ class Data(ExpDataTemplate):
             try:
                 output_dict = thermo(self.Eos, **opts)
                 output = [output_dict['P'],output_dict["yi"]]
-            except:
+            except Exception:
                 raise ValueError("Calculation of calc_bubble_pressure failed")
 
         elif self.thermodict["calculation_type"] == "dew_pressure":
             try:
                 output_dict = thermo(self.Eos, **opts)
                 output = [output_dict['P'],output_dict["xi"]]
-            except:
+            except Exception:
                 raise ValueError("Calculation of calc_dew_pressure failed")
 
         return output

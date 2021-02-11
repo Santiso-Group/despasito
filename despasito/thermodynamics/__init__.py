@@ -44,12 +44,12 @@ def thermo(Eos, calculation_type=None, **thermo_dict):
     try:
         func = getattr(calculation_types, calculation_type)
 
-    except:
+    except Exception:
         raise ImportError("The calculation type, '{}', was not found\nThe following calculation types are supported: {}".format(calculation_type,", ".join(calc_list)))
 
     try:
         output_dict = func(Eos, **thermo_dict)
-    except:
+    except Exception:
         raise TypeError("The calculation type, '{}', failed".format(calculation_type))
 
     return output_dict

@@ -26,7 +26,7 @@ if not method_stat.cython and not method_stat.numba and not method_stat.python:
     try:
         from .compiled_modules import ext_Aassoc_fortran
         flag_fortran = True
-    except:
+    except Exception:
         logger.info("Fortran module failed to import, using pure python. Consider using 'numba' flag")
         from .compiled_modules.ext_Aassoc_python import calc_Xika
 elif method_stat.cython:

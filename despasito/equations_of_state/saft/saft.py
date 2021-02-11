@@ -88,7 +88,7 @@ class EosType(EosTemplate):
                     setattr(self, key, tmp)
                 else:
                     self.eos_dict[key] = tmp
-            except:
+            except Exception:
                 raise ValueError("SAFT type, {}, is missing the variable {}.".format(saft_name,key))
 
         for res in self.eos_dict["residual_helmholtz_contributions"]:

@@ -181,8 +181,8 @@ def multipole(beadA, beadB, parameter, temperature=None, mode="curve fit", scale
 
     try:
         import mapsci as mr
-    except:
-        raise ValueError("Multipole combining rules require 'mapsci' package, which is currently unavailable. Install it from: https://github.com/jaclark5/mapsci")
+    except Exception:
+        raise ImportError("Multipole combining rules require 'mapsci' package, which is currently unavailable. Install it from: https://github.com/jaclark5/mapsci")
 
     if scaled in [True, "True", "true", "yes", "Yes"]:
         shape_factor_scale = True

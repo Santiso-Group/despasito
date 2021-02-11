@@ -447,8 +447,8 @@ def basinhopping(beadparams0, bounds, fit_bead, fit_params, exp_dict, global_opt
         stepmag = np.transpose(np.array(bounds))[1]
         global_opts["take_step"] = _BasinStep(stepmag, stepsize=stepsize)
         custombounds = _BasinBounds(bounds)
-    except:
-            raise TypeError("Could not initialize BasinStep and/or BasinBounds")
+    except Exception:
+        raise TypeError("Could not initialize BasinStep and/or BasinBounds")
 
     logger.info("Basin Hopping Options: {}".format(global_opts))
     minimizer_kwargs={"args": (fit_bead, fit_params, exp_dict, bounds),**minimizer_opts}
@@ -476,7 +476,7 @@ def _grid_minimization_wrapper(args):
 
     try:
         result = gtb.solve_root( ff.compute_obj, args=obj_args, method=method, x0=x0, bounds=bounds, options=opts)
-    except:
+    except Exception:
         result = np.nan*np.ones(len(x0))
 
     if np.sum(np.abs(result-x0)) < 1e-6:

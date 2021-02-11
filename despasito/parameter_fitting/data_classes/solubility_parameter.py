@@ -139,7 +139,7 @@ class Data(ExpDataTemplate):
         try:
             output_dict = thermo(self.Eos, **opts)
             output = [output_dict["delta"],output_dict["rhol"]]
-        except:
+        except Exception:
             raise ValueError("Calculation of solubility_parameter failed")
 
         return output

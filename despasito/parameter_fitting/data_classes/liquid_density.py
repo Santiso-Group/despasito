@@ -134,7 +134,7 @@ class Data(ExpDataTemplate):
         try:
             output_dict = thermo(self.Eos, **opts)
             output = [output_dict["rhol"]]
-        except:
+        except Exception:
             raise ValueError("Calculation of calc_liquid_density failed")
         return output
 

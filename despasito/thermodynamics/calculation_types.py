@@ -172,7 +172,7 @@ def _bubble_pressure_wrapper(args):
                 opts['method'] = opts["pressure_options"]["method"]
                 del opts["pressure_options"]["method"]
             P, yi, flagv, flagl, obj = calc.calc_bubble_pressure(xi, T, Eos, **opts)
-    except:
+    except Exception:
         logger.warning("T (K), xi: {} {}, calculation did not produce a valid result.".format(T, xi))
         logger.debug("Calculation Failed:", exc_info=True)
         P, yi, flagl, flagv, obj = [np.nan, np.nan*np.ones(len(xi)), 3, 3, np.nan]
@@ -344,7 +344,7 @@ def _dew_pressure_wrapper(args):
                 opts['method'] = opts["pressure_options"]["method"]
                 del opts["pressure_options"]["method"]
             P, xi, flagl, flagv, obj = calc.calc_dew_pressure(yi, T, Eos, **opts)
-    except:
+    except Exception:
         logger.warning("T (K), yi: {} {}, calculation did not produce a valid result.".format(T, yi))
         logger.debug("Calculation Failed:", exc_info=True)
         P, xi, flagl, flagv, obj = [np.nan, np.nan*np.ones(len(yi)), 3, 3, np.nan]
@@ -448,7 +448,7 @@ def _flash_wrapper(args):
 
     try:
         xi, flagl, yi, flagv, obj = calc.calc_flash(P, T, Eos, **opts)
-    except:
+    except Exception:
         logger.warning("T (K), P (Pa): {} {}, calculation did not produce a valid result.".format(T, P))
         logger.debug("Calculation Failed:", exc_info=True)
         xi, yi, flagl, flagv, obj = [np.nan*np.ones(Eos.number_of_components), np.nan*np.ones(Eos.number_of_components), 3, 3, np.nan]
@@ -538,7 +538,7 @@ def _saturation_properties_wrapper(args):
             Psat, rholsat, rhovsat = [np.nan, np.nan, np.nan]
         else:
             logger.info("Psat {} Pa, rhol {}, rhov {}".format(Psat,rholsat,rhovsat))
-    except:
+    except Exception:
         logger.warning("T (K), xi: {} {}, calculation did not produce a valid result.".format(T, xi))
         logger.debug("Calculation Failed:", exc_info=True)
         Psat, rholsat, rhovsat = [np.nan, np.nan, np.nan]
@@ -658,7 +658,7 @@ def _liquid_properties_wrapper(args):
     try:
         phil, rhol, flagl = calc.calc_liquid_fugacity_coefficient(P, T, xi, Eos, **opts)
         logger.info("P {} Pa, T {} K, xi {}, rhol {}, phil {}, flagl {}".format(P, T, xi, rhol, phil, flagl))
-    except:
+    except Exception:
         logger.warning('Failed to calculate rhol at {} K and {} Pa'.format(T,P))
         rhol, flagl = np.nan, 3
         phil = np.nan*np.ones(Eos.number_of_components)
@@ -778,7 +778,7 @@ def _vapor_properties_wrapper(args):
     try:
         phiv, rhov, flagv = calc.calc_vapor_fugacity_coefficient(P, T, yi, Eos, **opts)
         logger.info("P {} Pa, T {} K, yi {}, rhov {}, phiv {}, flagv {}".format(P, T, yi, rhov, phiv, flagv))
-    except:
+    except Exception:
         logger.warning('Failed to calculate rhov at {} K and {} Pa'.format(T,P))
         rhov, flagv = np.nan, 3
         phiv = np.nan*np.ones(Eos.number_of_components)
@@ -901,7 +901,7 @@ def _solubility_parameter_wrapper(args):
         rhol, flagl = calc.calc_liquid_density(P, T, xi, Eos, **opts)
         delta = calc.hildebrand_solubility(rhol, xi, T, Eos, **opts)
         logger.info("P {} Pa, T {} K, xi {}, rhol {}, flagl {}, delta {}".format(P, T, xi, rhol, flagl, delta))
-    except:
+    except Exception:
         logger.warning('Failed to calculate rhov at {} K and {} Pa'.format(T,P))
         rhol, flagl, delta = np.nan, 3, np.nan
 

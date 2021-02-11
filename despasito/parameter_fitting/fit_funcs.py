@@ -169,7 +169,7 @@ def reformat_ouput(cluster):
         for i, val in enumerate(cluster):
             try:
                 matrix = np.zeros([len(val[0]), len(val)])
-            except:
+            except Exception:
                 matrix = np.zeros([1, len(val)])
             for j, tmp in enumerate(val): # yes, this is a simple transpose, but for some reason a numpy array of np arrays wouldn't transpose
                 matrix[:,j] = tmp
@@ -232,7 +232,7 @@ def global_minimization(global_method, *args, **kwargs):
     calc_list = [o[0] for o in getmembers(global_methods_mod) if (isfunction(o[1]) and o[0][0] is not "_")]
     try:
         func = getattr(global_methods_mod, global_method)
-    except:
+    except Exception:
         raise ImportError("The global minimization type, '{}', was not found\nThe following calculation types are supported: {}".format(function,", ".join(calc_list)))
 
     output = func(*args, **kwargs)
@@ -271,7 +271,7 @@ def initialize_constraints(constraints, constraint_type):
 
         try:
             func = getattr(constraints_mod, kwargs["function"])
-        except:
+        except Exception:
             raise ImportError("The constraint type, '{}', was not found\nThe following types are supported: {}".format(function,", ".join(calc_list)))
 
         if "args" not in kwargs:
@@ -344,7 +344,7 @@ def compute_obj(beadparams, fit_bead, fit_params, exp_dict, bounds):
         try:
             data_obj.update_parameters(fit_bead, fit_params, beadparams)
             obj_function.append(data_obj.objective())
-        except:
+        except Exception:
             logger.exception("Failed to evaluate objective function for {} of type {}.".format(key,data_obj.name))
             obj_function.append(np.inf)
 

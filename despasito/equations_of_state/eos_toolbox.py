@@ -228,7 +228,7 @@ def cross_interaction_from_dict(beads, beadlibrary, mixing_dict, crosslibrary={}
                             tmp =  mixing_rules( beadlibrary[beadname], beadlibrary[beadname2], key, **mixing_dict[key])
 #                            if mixing_dict[key]["function"]=="multipole":
 #                                logger.debug("Multipole: {} {}, {}".format(beadname,beadname2,tmp))
-                        except:
+                        except Exception:
                             raise ValueError("Unable to calculate '{}' with '{}' method, for beads: '{}' '{}'".format(key,mixing_dict[key]["function"], beadname,beadname2))
                         for k2, v2 in tmp.items():
                             output[k2][i, j] = v2
@@ -301,7 +301,7 @@ def mixing_rules( beadA, beadB, parameter, function="mean", **kwargs):
     try:
         if function != "None":
             func = getattr(combining_rule_types, function)
-    except:
+    except Exception:
         raise ImportError("The mixing rule type, '{}', was not found\nThe following calculation types are supported: {}".format(function,", ".join(calc_list)))
 
     if function != "None":

@@ -44,8 +44,8 @@ def Eos(Eos="saft.gamma_mie", numba=False, cython=False, python=False, **input_d
 
     try:
         eos_fam, eos_type = Eos.split('.')
-    except:
-        raise Exception("Input should be in the form EOSfamily.EOSname (e.g. saft.gamme_mie).")
+    except Exception:
+        raise ValueError("Input should be in the form EOSfamily.EOSname (e.g. saft.gamme_mie).")
 
     class_name = "EosType"
     try:
@@ -56,7 +56,7 @@ def Eos(Eos="saft.gamma_mie", numba=False, cython=False, python=False, **input_d
         else:
             eos_module = import_module('.' + eos_type, package="despasito.equations_of_state." + eos_fam)
         eos_class = getattr(eos_module, class_name)
-    except (AttributeError):
+    except AttributeError:
         raise ImportError("Based on your input, '{}', we expect the class, {}, in a module, {}, found in the package, {}, which indicates the EOS family.".format(Eos, class_name, eos_type, eos_fam))
     instance = eos_class(**input_dict)
 

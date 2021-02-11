@@ -115,7 +115,7 @@ def fit( optimization_parameters=None, exp_data=None, global_opts={}, minimizer_
         try:
             exp_module = import_module("."+fittype,package="despasito.parameter_fitting.data_classes")
             data_class = getattr(exp_module, "Data")
-        except:
+        except Exception:
             if not type_list:
                 raise ImportError("No fit types")
             elif len(type_list) == 1:
@@ -128,7 +128,7 @@ def fit( optimization_parameters=None, exp_data=None, global_opts={}, minimizer_
             instance = data_class(data_dict)
             exp_dict[key] = instance
             logger.info("Initiated exp. data object: {}".format(instance.name))
-        except:
+        except Exception:
             raise AttributeError("Data set, {}, did not properly initiate object".format(key))
 
     # Check global optimization method
@@ -148,7 +148,7 @@ def fit( optimization_parameters=None, exp_data=None, global_opts={}, minimizer_
         for i in range(len(optimization_parameters["fit_params"])):
             logger.info("    {} {}: {}".format(optimization_parameters["fit_bead"],optimization_parameters["fit_params"][i],result.x[i]))
 
-    except:
+    except Exception:
         raise TypeError("The parameter fitting failed")
 
     return {"fit_bead": optimization_parameters["fit_bead"], "fit_parameters":optimization_parameters["fit_params"], "final_parameters": result.x, "objective_value": result.fun} 

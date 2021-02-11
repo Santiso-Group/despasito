@@ -138,7 +138,7 @@ class Data(ExpDataTemplate):
         try:
             output_dict = thermo(self.Eos, **opts)
             output = [output_dict["yi"],output_dict['xi']]
-        except:
+        except Exception:
             raise ValueError("Calculation of flash failed")
 
         return output

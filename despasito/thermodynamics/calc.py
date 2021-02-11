@@ -182,7 +182,7 @@ def pressure_vs_volume_plot(vlist, Plist, Pvspline, markers=[], **kwargs):
         plt.legend(loc="best")
         plt.tight_layout()
         plt.show()
-    except:
+    except Exception:
         logger.error("Matplotlib package is not installed, could not plot")
 
 
@@ -368,7 +368,7 @@ def calc_vapor_density(P, T, xi, Eos, density_opts={}, **kwargs):
                 else:
                     flag = 1
                     logger.debug("    Flag 1: The T and yi, {} {}, combination produces a liquid at this pressure".format(T,xi))
-            except:
+            except Exception:
                 rho_tmp = np.nan
                 flag = 3
                 logger.warning("    Flag 3: The T and xi, {} {}, won't produce a fluid (vapor or liquid) at this pressure, without density greater than max, {}".format(T,xi,Eos.density_max(xi, T, maxpack=0.99)))
@@ -380,7 +380,7 @@ def calc_vapor_density(P, T, xi, Eos, density_opts={}, **kwargs):
                 rho_tmp = spo.least_squares(pressure_spline_error, 1/vroot, args=(P, T, xi, Eos), bounds=(np.finfo("float").eps, 1.0/(1.1*roots[-1])))
                 rho_tmp = rho_tmp.x
                 flag = 0
-            except:
+            except Exception:
                 rho_tmp = np.nan
                 flag = 4
 
@@ -417,7 +417,7 @@ def calc_vapor_density(P, T, xi, Eos, density_opts={}, **kwargs):
                 rho_tmp = spo.least_squares(pressure_spline_error, 1/vroot, args=(P, T, xi, Eos), bounds=(np.finfo("float").eps, 1.0/(1.1*roots[-1])))
                 rho_tmp = rho_tmp.x
                 flag = 0
-            except:
+            except Exception:
                 rho_tmp = np.nan
                 flag = 4
 
@@ -510,7 +510,7 @@ def calc_liquid_density(P, T, xi, Eos, density_opts={}, **kwargs):
                 else:
                     flag = 1
                     logger.debug("    Flag 1: The T and xi, {} {}, combination produces a liquid at this pressure".format(T,xi))
-            except:
+            except Exception:
                 rho_tmp = np.nan
                 flag = 3
                 logger.warning("    Flag 3: The T and xi, {} {}, won't produce a fluid (vapor or liquid) at this pressure, without density greater than max, {}".format(T,xi,Eos.density_max(xi, T, maxpack=0.99)))
@@ -522,7 +522,7 @@ def calc_liquid_density(P, T, xi, Eos, density_opts={}, **kwargs):
                 rho_tmp = spo.least_squares(pressure_spline_error, 1.0/vroot, args=(P, T, xi, Eos), bounds=(np.finfo("float").eps, 1.0/(1.1*roots[-1])))
                 rho_tmp = rho_tmp.x
                 flag = 0
-            except:
+            except Exception:
                 rho_tmp = np.nan
                 flag = 4
 

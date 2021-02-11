@@ -96,7 +96,7 @@ def extract_calc_data(input_fname, path='.', **thermo_dict):
             output = f.read()
         eos_dict['crosslibrary'] = json.loads(output)
         logger.info("Cross interaction parameters have been accepted")
-    except:
+    except Exception:
         logger.info("No EOScross file specified")
 
     # Extract relevant system state inputs
@@ -161,7 +161,7 @@ def file2paramdict(filename,delimiter=" "):
             if len(linearray) == 2:
                 try:
                     dictionary[linearray[0]] = eval(linearray[1])
-                except:
+                except Exception:
                     if line[1].isdigit():
                         dictionary[linearray[0]] = float(linearray[1])
                     else:
@@ -331,7 +331,7 @@ def process_exp_data(exp_data_dict):
     exp_data = {}
     for key, value in exp_data_dict.items():
         if key == "data_class_type":
-            exp_data["name"] = value
+            exp_data["data_class_type"] = value
         elif key == "file":
             file_dict = process_exp_data_file(value)
             exp_data.update(file_dict)
@@ -368,7 +368,7 @@ def process_exp_data_file(fname):
 
     try:
         data = np.transpose(np.genfromtxt(fname, delimiter=',',names=True,skip_header=1))
-    except:
+    except Exception:
         raise ValueError("Cannot import '{}', Check data file formatting.".format(fname))
     file_dict = {name:data[name] for name in data.dtype.names}
     

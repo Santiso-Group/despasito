@@ -148,7 +148,7 @@ class Data(ExpDataTemplate):
         try:
             output_dict = thermo(self.Eos, **opts)
             output = [output_dict["Psat"],output_dict["rhol"],output_dict["rhov"]]
-        except:
+        except Exception:
             raise ValueError("Calculation of calc_saturation_properties failed")
 
         return output
