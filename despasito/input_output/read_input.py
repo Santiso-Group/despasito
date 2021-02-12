@@ -102,12 +102,11 @@ def extract_calc_data(input_fname, path='.', **thermo_dict):
     # Extract relevant system state inputs
     EOS_dict_keys = ['bead_configuration', 'EOSgroup', 'EOScross',"output_file"]
     for key, value in input_dict.items():
-        if key.split("_")[0] == "eos":
-            if len(key.split("_")) == 1:
-                eos_dict['eos'] = input_dict["eos"]
-            else:
-                new_key = "_".join(key.split("_")[1:])
-                eos_dict[new_key] = input_dict[key]
+        if key.startswith("eos_"):
+            new_key = "_".join(key.split("_")[1:])
+            eos_dict[new_key] = input_dict[key]
+        elif  key == "eos":
+            eos_dict['eos'] = input_dict["eos"]
         elif key not in EOS_dict_keys:
             thermo_dict[key] = value
 
@@ -288,7 +287,7 @@ def process_param_fit_inputs(thermo_dict):
     new_thermo_dict = {"exp_data":{}}
 
     for key, value in thermo_dict.items():
-        if (type(value) == dict and "data_class_type" in value):
+        if (isinstance(value,dict) and "data_class_type" in value):
             new_thermo_dict["exp_data"][key] = process_exp_data(value)
         else:
             new_thermo_dict[key] = value

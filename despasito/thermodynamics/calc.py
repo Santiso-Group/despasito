@@ -63,13 +63,13 @@ def pressure_vs_volume_arrays(T, xi, Eos, minrhofrac=(1.0 / 500000.0), rhoinc=5.
     if np.any(np.isnan(xi)):
         raise ValueError("Given mole fractions are NaN")
 
-    if type(xi) == list:
+    if isinstance(xi,list):
         xi = np.array(xi)
 
     #estimate the maximum density based on the hard sphere packing fraction, part of EOS
     if not maxrho:
         maxrho = Eos.density_max(xi, T, **density_max_opts)
-    elif type(maxrho) in [list, np.ndarray]:
+    elif isinstance(maxrho,list) or isinstance(maxrho,np.ndarray):
         logger.error("Maxrho should be type float. Given value: {}".format(maxrho))
   
     if maxrho > 1e+5:
@@ -859,7 +859,7 @@ def calc_Prange_xi(T, xi, yi, Eos, density_opts={}, Pmin=None, Pmax=None, maxite
     flag_hard_min = False
     if Pmin != None:
         flag_hard_min = True
-        if type(Pmin) in [list, np.ndarray]:
+        if isinstance(Pmin,list) or isinstance(Pmin,np.ndarray):
             Pmin = Pmin[0]
     elif len(extrema):
         Pmin = min(Pvspline(extrema))
@@ -871,7 +871,7 @@ def calc_Prange_xi(T, xi, yi, Eos, density_opts={}, Pmin=None, Pmax=None, maxite
     flag_hard_max = False
     if Pmax != None:
         flag_hard_max = True
-        if type(Pmax) in [list, np.ndarray]:
+        if isinstance(Pmax,list) or isinstance(Pmax,np.ndarray):
             Pmax = Pmax[0]
     elif len(extrema):
         Pmax = max(Pvspline(extrema))
@@ -1293,7 +1293,7 @@ def calc_Prange_yi(T, xi, yi, Eos, density_opts={}, mole_fraction_options={}, Pm
     flag_hard_min = False
     if Pmin != None:
         flag_hard_min = True
-        if type(Pmin) in [list, np.ndarray]:
+        if isinstance(Pmin,list) or isinstance(Pmin,np.ndarray):
             Pmin = Pmin[0]
     elif len(extrema):
         Pmin = min(Pvspline(extrema))
@@ -1305,7 +1305,7 @@ def calc_Prange_yi(T, xi, yi, Eos, density_opts={}, mole_fraction_options={}, Pm
     flag_hard_max = False
     if Pmax != None:
         flag_hard_max = True
-        if type(Pmax) in [list, np.ndarray]:
+        if isinstance(Pmax,list) or isinstance(Pmax,np.ndarray):
             Pmax = Pmax[0]
     elif len(extrema):
         Pmax = max(Pvspline(extrema))
@@ -1992,7 +1992,7 @@ def find_new_yi(P, T, phil, xi, Eos, bounds=(0.01, 0.99), npoints=30, density_op
             obj_final = spline(yi_min[0])
         
     logger.info("    Found new guess in yi: {}, Obj: {}".format(yi_final,obj_final))
-    if type(yi_final) not in [list,np.ndarray]:
+    if not isinstance(yi_final,list) or not isinstance(yi_final,np.ndarray):
         yi_final = np.array([yi_final, 1-yi_final])
 
     return yi_final
@@ -2119,11 +2119,11 @@ def objective_find_yi(yi, P, T, phil, xi, Eos, density_opts={}, return_flag=Fals
     """
 
     if type(yi) == float or np.size(yi) == 1:
-        if type(yi) in [list, np.ndarray]:
+        if isinstance(yi,list) or isinstance(yi,np.ndarray):
             yi = np.array([yi[0], 1-yi[0]])
         else:
             yi = np.array([yi, 1-yi])
-    elif type(yi) == list:
+    elif isinstance(yi,list):
         yi = np.array(yi)
     yi /= np.sum(yi)
 
@@ -2230,7 +2230,7 @@ def find_new_xi(P, T, phiv, yi, Eos, density_opts={}, bounds=(0.001, .999), npoi
             obj_final = spline(xi_min[0])
         
     logger.info("    Found new guess in xi: {}, Obj: {}".format(xi_final,obj_final))
-    if type(xi_final) not in [list,np.ndarray]:
+    if not isinstance(xi_final,list) or not isinstance(xi_final,np.ndarray):
         xi_final = np.array([xi_final, 1-xi_final])
     
     return xi_final
@@ -2265,12 +2265,12 @@ def objective_find_xi(xi, P, T, phiv, yi, Eos, density_opts={}, return_flag=Fals
         Objective function for solving for liquid mole fractions
     """
     
-    if type(xi) == float or len(xi) == 1:
-        if type(xi) in [list, np.ndarray]:
+    if isinstance(xi,float) or len(xi) == 1:
+        if isinstance(xi,list) or isinstance(xi,np.ndarray):
             xi = np.array([xi[0], 1-xi[0]])
         else:
             xi = np.array([xi, 1-xi])
-    elif type(xi) == list:
+    elif isinstance(xi,list):
         xi = np.array(xi)
     xi /= np.sum(xi)
 
@@ -2546,7 +2546,7 @@ def calc_bubble_pressure(xi, T, Eos, density_opts={}, mole_fraction_options={}, 
             logger.warning("Component, {}, is above its critical point. Psat is assumed to be {}.".format(i+1,Psat[i]))
 
     # Estimate initial pressure
-    if Pguess is None:
+    if Pguess == None:
         P=1.0/np.sum(xi/Psat)
     else:
         P = Pguess
@@ -2562,7 +2562,7 @@ def calc_bubble_pressure(xi, T, Eos, density_opts={}, mole_fraction_options={}, 
     if np.any(np.isnan(Prange)):
         raise ValueError("Neither a suitable pressure range, or guess in pressure could be found nor was given.")
     else:
-        if Pguess is not None:
+        if Pguess != None:
             if Pguess > Prange[1] or Pguess < Prange[0]:
                  logger.warning("Given guess in pressure, {}, is outside of the identified pressure range, {}. Using estimated pressure, {}.".format(Pguess,Prange,Pestimate))
                  P = Pestimate
@@ -2619,7 +2619,7 @@ def hildebrand_solubility(rhol, xi, T, Eos, dT=.1, tol=1e-4, density_opts={}, **
     R = constants.Nav * constants.kb
     RT = T * R
 
-    if type(rhol) in [np.ndarray,list]:
+    if isinstance(rhol,list) or isinstance(rhol,np.ndarray):
         logger.info("rhol should be a float, not {}".format(rhol))
 
     # Find dZdT
@@ -2947,7 +2947,7 @@ def fugacity_test_1(P, T, xi, rho, Eos, step_size=1e-5, **kwargs):
     if len(kwargs) > 0:
         logger.debug("'fugacity_test_1' does not use the following keyword arguemnts: {}".format(", ".join(list(kwargs.keys()))))
 
-    if type(rho) not in [list, np.ndarray]:
+    if not isinstance(rho,list) or not isinstance(rho,np.ndarray):
         rho = np.array([rho])
 
     Z = P / (rho * T * constants.R)
@@ -2985,7 +2985,7 @@ def fugacity_test_2(P, T, xi, rho, Eos, fractional_change=1e-1, **kwargs):
         logger.debug("'fugacity_test_2' does not use the following keyword arguemnts: {}".format(", ".join(list(kwargs.keys()))))
 
     ncomp = len(xi)
-    if type(rho) not in [list, np.ndarray]:
+    if isinstance(rho,list) or not isinstance(rho,np.ndarray):
         rho = np.array([rho])
 
 #    drho = rho * step_size

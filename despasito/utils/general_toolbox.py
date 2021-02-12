@@ -162,12 +162,12 @@ def central_difference(x, func, step_size=1E-5, args=None):
         Array of derivative of y with respect to x, given an array of independent variables.
     """
 
-    if type(x) != np.ndarray:
+    if not isinstance(x, np.ndarray):
         x = np.array(x)
     
     lx = np.size(x)
     step = x * step_size
-    if type(step) not in [list, np.ndarray]:
+    if not isinstance(step, list) and not isinstance(step,np.ndarray):
         step = np.array([step])
     step = np.array([2*np.finfo(float).eps if xx < np.finfo(float).eps else xx for xx in step])
 

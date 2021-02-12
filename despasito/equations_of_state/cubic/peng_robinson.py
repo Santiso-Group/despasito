@@ -173,7 +173,7 @@ class EosType(EosTemplate):
         
         if np.isscalar(rho):
             rho = np.array([rho])
-        elif type(rho) != np.ndarray:
+        elif not isinstance(rho,np.ndarray):
             rho = np.array(rho)
 
         P = constants.R*self.T * rho / (1-self.eos_dict['bij']*rho) - rho**2*self.eos_dict['aij']/((1+self.eos_dict['bij']*rho)+rho*self.eos_dict['bij']*(1-self.eos_dict['bij']*rho))

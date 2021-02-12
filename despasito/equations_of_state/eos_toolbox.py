@@ -306,7 +306,7 @@ def mixing_rules( beadA, beadB, parameter, function="mean", **kwargs):
 
     if function != "None":
         output = func(beadA, beadB, parameter, **kwargs)
-        if type(output) != dict:
+        if not isinstance(output,dict):
             tmp = {parameter: output}
             output = tmp
     else:

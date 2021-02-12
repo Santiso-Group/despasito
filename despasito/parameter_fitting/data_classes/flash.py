@@ -69,7 +69,7 @@ class Data(ExpDataTemplate):
                 self.weights['xilist'] = self.weights.pop('xi')
                 key = 'xilist'
                 if key in self.weights:
-                    if type(self.weights[key]) != float and len(self.weights[key]) != len(self.thermodict[key]):
+                    if  not isinstance(self.weights[key],float) and len(self.weights[key]) != len(self.thermodict[key]):
                         raise ValueError("Array of weights for '{}' values not equal to number of experimental values given.".format(key))
             else:
                 self.weights["xilist"] = 1.0
@@ -81,7 +81,7 @@ class Data(ExpDataTemplate):
                 self.weights['yilist'] = self.weights.pop('yi')
                 key = 'yilist'
                 if key in self.weights:
-                    if type(self.weights[key]) != float and len(self.weights[key]) != len(self.thermodict[key]):
+                    if isinstance(self.weights[key],float) and len(self.weights[key]) != len(self.thermodict[key]):
                         raise ValueError("Array of weights for '{}' values not equal to number of experimental values given.".format(key))
             else:
                 self.weights["yilist"] = 1.0
@@ -156,7 +156,7 @@ class Data(ExpDataTemplate):
 
         # objective function
         phase_list = self._thermo_wrapper()
-        phase_list, len_cluster = ff.reformat_ouput(phase_list)
+        phase_list, len_cluster = ff.reformat_output(phase_list)
         phase_list = np.transpose(np.array(phase_list))
 
         obj_value = np.zeros(2)

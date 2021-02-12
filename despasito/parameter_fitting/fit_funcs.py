@@ -123,7 +123,7 @@ def consolidate_bounds(optimization_parameters):
 
     return new_optimization_parameters
 
-def reformat_ouput(cluster):
+def reformat_output(cluster):
     r"""
     Takes a list of lists that contain thermo output of lists and floats and reformats it into a 2D numpy array.
  
@@ -141,13 +141,10 @@ def reformat_ouput(cluster):
         
     """
 
-    # Arrange data
-    type_cluster = [type(x[0]) for x in cluster]
-
     # if input is a list or array
     if len(cluster) == 1:
         matrix = np.transpose(np.array(cluster[0]))
-        if cluster[0][0] not in [list,np.ndarray,tuple]:
+        if not (isinstance(cluster[0],list) or isinstance(cluster[0],np.ndarray) or isinstance(cluster[0],tuple)):
             len_cluster = [1]
         else:
             len_cluster = [len(cluster[0][0])]
@@ -157,9 +154,9 @@ def reformat_ouput(cluster):
 
         # Obtain dimensions of final matrix
         len_cluster = []
-        for i,typ in enumerate(type_cluster):
-            if typ in [list,np.ndarray,tuple]:
-                len_cluster.append(len(cluster[i][0]))
+        for i,tmp_cluster in enumerate(cluster):
+            if isinstance(tmp_cluster[0],list) or isinstance(tmp_cluster[0],np.ndarray) or isinstance(tmp_cluster[0],tuple):
+                len_cluster.append(len(tmp_cluster[0]))
             else:
                 len_cluster.append(1)
         matrix_tmp = np.zeros([len(cluster[0]), sum(len_cluster)])

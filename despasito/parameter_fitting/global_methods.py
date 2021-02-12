@@ -547,7 +547,8 @@ class _BasinStep(object):
                 # If a value of x is negative, don't  break the cycle
                 if x[i] < 0.0:
                     breakloop = False
-            if breakloop: break
+            if breakloop:
+                break
             logger.info("Basin Step after {} iterations:\n    {}".format(j,x))
         return x
 
@@ -623,12 +624,12 @@ class _WriteParameterResults(object):
             
         """
 
-        if obj_cut is None:
+        if obj_cut == None:
             self.obj_cut = np.inf
         else:
             self.obj_cut = obj_cut
 
-        if filename is None:
+        if filename == None:
             filename = "parameters.txt"
 
         if os.path.isfile(filename):

@@ -136,7 +136,7 @@ def initiate_assoc_matrices(beads, beadlibrary, nui):
     for i, bead in enumerate(beads):
         nk[i] = [0 for x in sitenames]
         for key, value in beadlibrary[bead].items():
-            if "Nk" in key:
+            if key.startswith("Nk"):
                 tmp = key.split("-")
                 if len(tmp) < 2:
                     raise ValueError("Association site names should be defined with hyphens (e.g. Nk-H)")
@@ -216,7 +216,7 @@ def calc_assoc_matrices(beads, beadlibrary, nui, crosslibrary={}, nk=None, siten
     """
 
     nbeads = len(beads)
-    if sitenames is None or nk is None:
+    if np.any(sitenames == None) or np.any(nk == None):
         sitenames, nk, _ = initiate_assoc_matrices(beadlibrary, beads, nui)
     else:
         nsitesmax = len(sitenames)
@@ -361,7 +361,7 @@ def calc_bonding_volume(rc_klab, dij_bar, rd_klab=None, reduction_ratio=0.25):
                     for a in range(nsite):
                         for b in range(nsite):
                             if rc_klab[k,l,a,b] != 0:
-                                if rd_klab is None:
+                                if rd_klab == None:
                                     rd = reduction_ratio*dij_bar[i,j]
                                 else:
                                     rd = rd_klab[k,l,a,b]

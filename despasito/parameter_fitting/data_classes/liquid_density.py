@@ -95,7 +95,7 @@ class Data(ExpDataTemplate):
                 self.thermodict[key] = data_dict[key]
                 del data_dict[key]
                 if key in self.weights:
-                    if type(self.weights[key]) != float and len(self.weights[key]) != len(self.thermodict[key]):
+                    if isinstance(self.weights[key],float) and len(self.weights[key]) != len(self.thermodict[key]):
                         raise ValueError("Array of weights for '{}' values not equal to number of experimental values given.".format(key))
                 else:
                     self.weights[key] = 1.0
@@ -153,7 +153,7 @@ class Data(ExpDataTemplate):
         phase_list = self._thermo_wrapper()
 
         # Reformat array of results
-        phase_list, len_list = ff.reformat_ouput(phase_list) 
+        phase_list, len_list = ff.reformat_output(phase_list) 
         phase_list = np.transpose(np.array(phase_list))
 
         # objective function

@@ -107,7 +107,7 @@ def fit( optimization_parameters=None, exp_data=None, global_opts={}, minimizer_
     # Reformat exp. data into formatted dictionary
     exp_dict = {}
     pkgpath = os.path.dirname(data_classes.__file__)
-    type_list = [f for f in os.listdir(pkgpath) if ".py" in f]
+    type_list = [f for f in os.listdir(pkgpath) if f.endswith(".py")]
     type_list = type_list.remove("__init__.py")
 
     for key, data_dict in exp_data.items():
