@@ -52,9 +52,9 @@ def partial_density_central_difference(xi, rho, T, func, step_size=1E-2, log_met
         Temperature of the system [K]
     func : function
         Function used in job to calculate dependent factor. This function should have a single output. Inputs arguements should be (rho, T, xi)
-    step_size : float, Optional, default: 1E-4
+    step_size : float, Optional, default=1E-4
         Step size used in central difference method
-    log_method : bool, Optional, default: False
+    log_method : bool, Optional, default=False
         Choose to use a log transform in central difference method. This allows easier calulations for very small numbers.
         
     Returns
@@ -125,15 +125,15 @@ def _partial_density_wrapper(rhoi, T, func):
     
     return Ares
 
-def calc_massi(nui, beadlibrary, beads):
+def calc_massi(molecular_composition, bead_library, beads):
     r"""
     This function extracted the mass of each component
     
     Parameters
     ----------
-    nui : numpy.ndarray
+    molecular_composition : numpy.ndarray
         :math:`\\nu_{i,k}/k_B`. Array of number of components by number of bead types. Defines the number of each type of group in each component.
-    beadlibrary : dict
+    bead_library : dict
         A dictionary where bead names are the keys to access EOS self interaction parameters:
         
         - mass: Bead mass [kg/mol]
@@ -146,25 +146,25 @@ def calc_massi(nui, beadlibrary, beads):
     massi : numpy.ndarray
         Bead mass corresponding to array 'beads' [kg/mol]
     """
-    massi = np.zeros(len(nui))
-    for i in range(len(nui)):
+    massi = np.zeros(len(molecular_composition))
+    for i in range(len(molecular_composition)):
         for k, bead in enumerate(beads):
-            if "mass" in beadlibrary[bead]:
-                massi[i] += nui[i, k] * beadlibrary[bead]["mass"]
+            if "mass" in bead_library[bead]:
+                massi[i] += molecular_composition[i, k] * bead_library[bead]["mass"]
             else:
                 raise ValueError("The mass for bead, {}, was not provided.".format(bead))
 
     return massi
 
-def extract_property(prop, beadlibrary, beads):
+def extract_property(prop, bead_library, beads):
     r"""
     
     
     Parameters
     ----------
     property : str
-        Name of property in beadlibrary
-    beadlibrary : dict
+        Name of property in bead_library
+    bead_library : dict
         A dictionary where bead names are the keys to access EOS self interaction parameters:
     beads : list[str]
         List of unique bead names used among components
@@ -176,26 +176,26 @@ def extract_property(prop, beadlibrary, beads):
     """
     prop_array = np.zeros(len(beads))
     for i , bead in enumerate(beads):
-        if prop in beadlibrary[bead]:
-                prop_array[i] += beadlibrary[bead][prop]
+        if prop in bead_library[bead]:
+                prop_array[i] += bead_library[bead][prop]
         else:
             raise ValueError("The property {} for bead, {}, was not provided.".format(prop,bead))
 
     return prop_array
 
-def cross_interaction_from_dict(beads, beadlibrary, mixing_dict, crosslibrary={}):
+def cross_interaction_from_dict(beads, bead_library, mixing_dict, cross_library={}):
     r"""
-    Computes matrices of cross interaction parameters defined as the keys in the mixing dict parameter are extracted from the beadlibrary and then the cross library.
+    Computes matrices of cross interaction parameters defined as the keys in the mixing dict parameter are extracted from the bead_library and then the cross library.
         
     Parameters
     ----------
     beads : list[str]
         List of unique bead names used among components
-    beadlibrary : dict
+    bead_library : dict
         A dictionary where bead names are the keys to access EOS self interaction parameters. Those to be calculated are defined by the keys of mixing_dict
     mixing_dict : dict
         This dictionary contains those bead parameters that should be placed in a matrix and the mixing rules for the cross parameters
-    crosslibrary : dict, Optional, default: {}
+    cross_library : dict, Optional, default={}
         Optional library of bead cross interaction parameters. As many or as few of the desired parameters may be defined for whichever group combinations are desired. If this matrix isn't provided, the SAFT mixing rules are used.
         
     Returns
@@ -212,20 +212,20 @@ def cross_interaction_from_dict(beads, beadlibrary, mixing_dict, crosslibrary={}
     for key in mixing_dict:
         output[key] = np.zeros((nbeads,nbeads))
         for k in range(nbeads):
-            output[key][k,k] = beadlibrary[beads[k]][key]
+            output[key][k,k] = bead_library[beads[k]][key]
 
     # Put Crosslibrary in output matrices 
     for (i, beadname) in enumerate(beads):
         for (j, beadname2) in enumerate(beads):
             if j > i:
                 for key in mixing_dict:
-                    if crosslibrary.get(beadname, {}).get(beadname2, {}).get(key, None) is not None:
-                        output[key][i, j] = crosslibrary[beadname][beadname2][key]
-                    elif crosslibrary.get(beadname2, {}).get(beadname, {}).get(key, None) is not None:
-                        output[key][i, j] = crosslibrary[beadname2][beadname][key]
+                    if cross_library.get(beadname, {}).get(beadname2, {}).get(key, None) is not None:
+                        output[key][i, j] = cross_library[beadname][beadname2][key]
+                    elif cross_library.get(beadname2, {}).get(beadname, {}).get(key, None) is not None:
+                        output[key][i, j] = cross_library[beadname2][beadname][key]
                     else:
                         try:
-                            tmp =  mixing_rules( beadlibrary[beadname], beadlibrary[beadname2], key, **mixing_dict[key])
+                            tmp =  mixing_rules( bead_library[beadname], bead_library[beadname2], key, **mixing_dict[key])
 #                            if mixing_dict[key]["function"]=="multipole":
 #                                logger.debug("Multipole: {} {}, {}".format(beadname,beadname2,tmp))
                         except Exception:
@@ -237,9 +237,9 @@ def cross_interaction_from_dict(beads, beadlibrary, mixing_dict, crosslibrary={}
 
     return output
 
-def construct_dummy_beadlibrary(input_dict, keys=None):
+def construct_dummy_bead_library(input_dict, keys=None):
     r"""
-    Using arrays of values, a dictionary is populated like a beadlibrary. If keys are included, they are used, otherwise, integers are used.
+    Using arrays of values, a dictionary is populated like a bead_library. If keys are included, they are used, otherwise, integers are used.
         
     Parameters
     ----------

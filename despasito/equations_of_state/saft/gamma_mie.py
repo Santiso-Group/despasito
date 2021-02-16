@@ -42,7 +42,7 @@ class SaftType():
     ----------
     beads : list[str]
         List of unique bead names used among components
-    beadlibrary : dict
+    bead_library : dict
         A dictionary where bead names are the keys to access EOS self interaction parameters:
     
         - epsilon: :math:`\epsilon_{k,k}/k_B`, Energy well depth scaled by Boltzmann constant
@@ -53,9 +53,9 @@ class SaftType():
         
     Attributes
     ----------
-    T : float, default: numpy.nan
+    T : float, default=numpy.nan
         Temperature value is initially defined as NaN for a placeholder until temperature dependent attributes are initialized by using a method of this class.
-    crosslibrary : dict, Optional, default: {}
+    cross_library : dict, Optional, default={}
         Optional library of bead cross interaction parameters. As many or as few of the desired parameters may be defined for whichever group combinations are desired. If this matrix isn't provided, the SAFT mixing rules are used.
         
         - epsilon: :math:`\epsilon_{k,l}/k_B`, Energy parameter scaled by Boltzmann Constant
@@ -82,27 +82,27 @@ class SaftType():
         if not hasattr(self, 'eos_dict'):
             self.eos_dict = {}
         
-        needed_attributes = ['nui','beads','beadlibrary']
+        needed_attributes = ['molecular_composition','beads','bead_library']
         for key in needed_attributes:
             if key not in kwargs:
                 raise ValueError("The one of the following inputs is missing: {}".format(", ".join(tmp)))
             elif not hasattr(self, key):
-                if key == "nui":
+                if key == "molecular_composition":
                     self.eos_dict[key] = kwargs[key]
                 else:
                     setattr(self, key, kwargs[key])
 
-        if 'crosslibrary' not in kwargs:
-            self.crosslibrary = {}
+        if 'cross_library' not in kwargs:
+            self.cross_library = {}
         else:
-            self.crosslibrary = kwargs['crosslibrary']
+            self.cross_library = kwargs['cross_library']
 
         if not hasattr(self, 'massi'):
-            self.eos_dict['massi'] = tb.calc_massi(self.eos_dict['nui'],self.beadlibrary,self.beads)
+            self.eos_dict['massi'] = tb.calc_massi(self.eos_dict['molecular_composition'],self.bead_library,self.beads)
         if not hasattr(self, 'Vks'):
-            self.eos_dict['Vks'] = tb.extract_property("Vks",self.beadlibrary,self.beads)
+            self.eos_dict['Vks'] = tb.extract_property("Vks",self.bead_library,self.beads)
         if not hasattr(self, 'Sk'):
-            self.eos_dict['Sk'] = tb.extract_property("Sk",self.beadlibrary,self.beads)
+            self.eos_dict['Sk'] = tb.extract_property("Sk",self.bead_library,self.beads)
 
         # Initialize temperature attribute
         if not hasattr(self, 'T'):
@@ -111,10 +111,10 @@ class SaftType():
             self.xi = np.nan
 
         if not hasattr(self, 'nbeads'):
-            self.ncomp, self.nbeads = np.shape(self.eos_dict['nui'])
+            self.ncomp, self.nbeads = np.shape(self.eos_dict['molecular_composition'])
 
         # Intiate cross interaction terms
-        output = tb.cross_interaction_from_dict( self.beads, self.beadlibrary, self.mixing_rules, crosslibrary=self.crosslibrary)
+        output = tb.cross_interaction_from_dict( self.beads, self.bead_library, self.mixing_rules, cross_library=self.cross_library)
         self.eos_dict["sigmakl"] = output["sigma"]
         self.eos_dict["epsilonkl"] = output["epsilon"]
         self.eos_dict["lambdaakl"] = output["lambdaa"]
@@ -127,7 +127,7 @@ class SaftType():
             self.eos_dict['num_rings'] = kwargs['num_rings']
             logger.info("Accepted component ring structure: {}".format(kwargs["num_rings"]))
         else:
-            self.eos_dict['num_rings'] = np.zeros(len(self.eos_dict['nui']))
+            self.eos_dict['num_rings'] = np.zeros(len(self.eos_dict['molecular_composition']))
         
         # compute alphakl eq. 33
         self.eos_dict['Ckl'] = prefactor(self.eos_dict['lambdarkl'], self.eos_dict['lambdaakl'])
@@ -148,7 +148,7 @@ class SaftType():
     
         """
     
-        ncomp, nbeads = np.shape(self.eos_dict['nui'])
+        ncomp, nbeads = np.shape(self.eos_dict['molecular_composition'])
         zki = np.zeros((ncomp, nbeads), float)
         zkinorm = np.zeros(ncomp, float)
     
@@ -161,7 +161,7 @@ class SaftType():
         #compute zki
         for i in range(ncomp):
             for k in range(nbeads):
-                zki[i, k] = self.eos_dict['nui'][i, k] * self.eos_dict['Vks'][k] * self.eos_dict['Sk'][k]
+                zki[i, k] = self.eos_dict['molecular_composition'][i, k] * self.eos_dict['Vks'][k] * self.eos_dict['Sk'][k]
                 zkinorm[i] += zki[i, k]
     
         for i in range(ncomp):
@@ -230,7 +230,7 @@ class SaftType():
             Temperature of the system [K]
         xi : numpy.ndarray
             Mole fraction of each component, sum(xi) should equal 1.0
-        zetax : numpy.ndarray, Optional, default: None
+        zetax : numpy.ndarray, Optional, default=None
             Matrix of hypothetical packing fraction based on hard sphere diameter for groups (k,l)
         
         Returns
@@ -267,11 +267,11 @@ class SaftType():
             Temperature of the system [K]
         xi : numpy.ndarray
             Mole fraction of each component, sum(xi) should equal 1.0
-        zetaxstar : numpy.ndarray, Optional, default: None
+        zetaxstar : numpy.ndarray, Optional, default=None
             Matrix of hypothetical packing fraction based on sigma for groups (k,l)
-        zetax : numpy.ndarray, Optional, default: None
+        zetax : numpy.ndarray, Optional, default=None
             Matrix of hypothetical packing fraction based on hard sphere diameter for groups (k,l)
-        KHS : numpy.ndarray, Optional, default: None
+        KHS : numpy.ndarray, Optional, default=None
             (length of densities) isothermal compressibility of system with packing fraction zetax
         
         Returns
@@ -330,7 +330,7 @@ class SaftType():
             Temperature of the system [K]
         xi : numpy.ndarray
             Mole fraction of each component, sum(xi) should equal 1.0
-        zetaxstar : numpy.ndarray, Optional, default: None
+        zetaxstar : numpy.ndarray, Optional, default=None
             Matrix of hypothetical packing fraction based on sigma for groups (k,l)
         
         Returns
@@ -403,7 +403,7 @@ class SaftType():
             Temperature of the system [K]
         xi : numpy.ndarray
             Mole fraction of each component, sum(xi) should equal 1.0
-        zetax : numpy.ndarray, Optional, default: None
+        zetax : numpy.ndarray, Optional, default=None
             Matrix of hypothetical packing fraction based on hard sphere diameter for groups (k,l)
         
         Returns
@@ -444,7 +444,7 @@ class SaftType():
             Temperature of the system [K]
         xi : numpy.ndarray
             Mole fraction of each component, sum(xi) should equal 1.0
-        zetax : numpy.ndarray, Optional, default: None
+        zetax : numpy.ndarray, Optional, default=None
             Matrix of hypothetical packing fraction based on hard sphere diameter for groups (k,l)
         
         Returns
@@ -492,7 +492,7 @@ class SaftType():
             Temperature of the system [K]
         xi : numpy.ndarray
             Mole fraction of each component, sum(xi) should equal 1.0
-        zetax : numpy.ndarray, Optional, default: None
+        zetax : numpy.ndarray, Optional, default=None
             Matrix of hypothetical packing fraction based on hard sphere diameter for groups (k,l)
         
         Returns
@@ -579,7 +579,7 @@ class SaftType():
         for i in range(self.ncomp):
             beadsum = -1.0 + self.eos_dict['num_rings'][i]
             for k in range(self.nbeads):
-                beadsum += (self.eos_dict['nui'][i, k] * self.eos_dict["Vks"][k] * self.eos_dict["Sk"][k])
+                beadsum += (self.eos_dict['molecular_composition'][i, k] * self.eos_dict["Vks"][k] * self.eos_dict["Sk"][k])
             Achain -= xi[i] * beadsum * np.log(gii[:, i])
 
         if np.any(np.isnan(Achain)):
@@ -598,12 +598,12 @@ class SaftType():
             Mole fraction of each component
         T : float
             Temperature of the system [K]
-        maxpack : float, Optional, default: 0.65
+        maxpack : float, Optional, default=0.65
             Maximum packing fraction
         
         Returns
         -------
-        maxrho : float
+        max_density : float
             Maximum molar density [mol/m^3]
         """
 
@@ -613,9 +613,9 @@ class SaftType():
         # estimate the maximum density based on the hard sphere packing fraction
         # etax, assuming a maximum packing fraction specified by maxpack
 
-        maxrho = maxpack * 6.0 / (self.eos_dict['Cmol2seg'] * np.pi * np.sum(self.eos_dict['xskl'] * (self.eos_dict['dkl']**3))) / constants.molecule_per_nm3
+        max_density = maxpack * 6.0 / (self.eos_dict['Cmol2seg'] * np.pi * np.sum(self.eos_dict['xskl'] * (self.eos_dict['dkl']**3))) / constants.molecule_per_nm3
 
-        return maxrho
+        return max_density
 
     @staticmethod
     def calc_fm(alphakl, mlist):
@@ -769,17 +769,17 @@ class SaftType():
 
         return Kijklab
 
-    def parameter_refresh(self, beadlibrary, crosslibrary):
+    def parameter_refresh(self, bead_library, cross_library):
         r""" 
         To refresh dependent parameters
         
-        Those parameters that are dependent on beadlibrary and crosslibrary attributes **must** be updated by running this function after all parameters from update_parameters method have been changed.
+        Those parameters that are dependent on bead_library and cross_library attributes **must** be updated by running this function after all parameters from update_parameters method have been changed.
         """
 
-        self.beadlibrary.update(beadlibrary)
-        self.crosslibrary.update(crosslibrary)
+        self.bead_library.update(bead_library)
+        self.cross_library.update(cross_library)
 
-        output = tb.cross_interaction_from_dict( self.beads, self.beadlibrary, self.mixing_rules, crosslibrary=self.crosslibrary)
+        output = tb.cross_interaction_from_dict( self.beads, self.bead_library, self.mixing_rules, cross_library=self.cross_library)
         self.eos_dict["sigmakl"] = output["sigma"]
         self.eos_dict["epsilonkl"] = output["epsilon"]
         self.eos_dict["lambdaakl"] = output["lambdaa"]
@@ -795,7 +795,7 @@ class SaftType():
         self.calc_component_averaged_properties()
 
         if not np.any(np.isnan(self.xi)):
-            self.eos_dict['Cmol2seg'], self.eos_dict['xskl'] = stb.calc_composition_dependent_variables(self.xi, self.eos_dict['nui'], self.beadlibrary, self.beads)
+            self.eos_dict['Cmol2seg'], self.eos_dict['xskl'] = stb.calc_composition_dependent_variables(self.xi, self.eos_dict['molecular_composition'], self.bead_library, self.beads)
     
         self.eos_dict['Ckl'] = prefactor(self.eos_dict['lambdarkl'], self.eos_dict['lambdaakl'])
         self.eos_dict['alphakl'] = self.eos_dict['Ckl'] * ((1.0 / (self.eos_dict['lambdaakl'] - 3.0)) - (1.0 / (self.eos_dict['lambdarkl'] - 3.0)))
@@ -859,14 +859,14 @@ class SaftType():
                         self.mixing_rules[key]["temperature"] = T
 
             if self.mixing_temp_dependence:
-                output = tb.cross_interaction_from_dict( self.beads, self.beadlibrary, self.mixing_rules, crosslibrary=self.crosslibrary)
+                output = tb.cross_interaction_from_dict( self.beads, self.bead_library, self.mixing_rules, cross_library=self.cross_library)
                 self.eos_dict["sigmakl"] = output["sigma"]
                 self.eos_dict["epsilonkl"] = output["epsilon"]
                 self.eos_dict["lambdaakl"] = output["lambdaa"]
                 self.eos_dict["lambdarkl"] = output["lambdar"]
                 self.calc_component_averaged_properties()
 
-            self.eos_dict['dkl'], self.eos_dict['x0kl'] = stb.calc_hard_sphere_matricies(T, self.eos_dict['sigmakl'], self.beadlibrary, self.beads, prefactor)
+            self.eos_dict['dkl'], self.eos_dict['x0kl'] = stb.calc_hard_sphere_matricies(T, self.eos_dict['sigmakl'], self.bead_library, self.beads, prefactor)
             self._update_chain_temperature_dependent_variables(T)
 
     def _check_composition_dependent_parameters(self, xi):
@@ -889,7 +889,7 @@ class SaftType():
         """
         xi = np.array(xi)
         if not np.all(self.xi == xi):
-            self.eos_dict['Cmol2seg'], self.eos_dict['xskl'] = stb.calc_composition_dependent_variables(xi, self.eos_dict['nui'], self.beadlibrary, self.beads)
+            self.eos_dict['Cmol2seg'], self.eos_dict['xskl'] = stb.calc_composition_dependent_variables(xi, self.eos_dict['molecular_composition'], self.bead_library, self.beads)
             self.xi = xi
 
     def _update_chain_temperature_dependent_variables(self, T):
@@ -913,7 +913,7 @@ class SaftType():
         #compute zki
         for i in range(self.ncomp):
             for k in range(self.nbeads):
-                zki[i, k] = self.eos_dict['nui'][i, k] * self.eos_dict['Vks'][k] * self.eos_dict['Sk'][k]
+                zki[i, k] = self.eos_dict['molecular_composition'][i, k] * self.eos_dict['Vks'][k] * self.eos_dict['Sk'][k]
                 zkinorm[i] += zki[i, k]
 
         for i in range(self.ncomp):

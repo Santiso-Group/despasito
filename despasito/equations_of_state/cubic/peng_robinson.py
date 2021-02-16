@@ -10,6 +10,7 @@ import logging
 
 from despasito.equations_of_state import constants
 from despasito.equations_of_state.interface import EosTemplate
+import despasito.utils.general_toolbox as gtb
 
 logger = logging.getLogger(__name__)
 
@@ -25,21 +26,21 @@ class EosType(EosTemplate):
         Mole fraction of component, only relevant for parameter fitting
     beads : list[str]
         List of unique component names
-    beadlibrary : dict
+    bead_library : dict
         A dictionary where bead names are the keys to access EOS self interaction parameters:
 
         - Tc: :math:`T_{C}`, Critical temperature [K]
         - Pc: :math:`P_{C}`, Critical pressure [Pa]
         - omega: :math:`\omega`, Acentric factor 
 
-    crosslibrary : dict, Optional, default: {}
+    cross_library : dict, Optional, default={}
         Optional library of bead cross interaction parameters. As many or as few of the desired parameters may be defined for whichever group combinations are desired.
 
         - kij: :math:`k_{ij}`, binary interaction parameter
         
     Attributes
     ----------
-    T : float, default: numpy.nan
+    T : float, default=numpy.nan
         Temperature value is initially defined as NaN for a placeholder until temperature dependent attributes are initialized by using a method of this class.
     
     """
@@ -53,27 +54,27 @@ class EosType(EosTemplate):
 
         # Self interaction parameters
         self.beads = kwargs['beads']
-        self.beadlibrary = kwargs['beadlibrary']
+        self.bead_library = kwargs['bead_library']
         self.number_of_components = len(self.beads)
 
         self._test_kappa = [False for _ in self.beads]
         self._test_critical = [False for _ in self.beads]
         self._test_parameters = [False for _ in self.beads]
         for i, bead in enumerate(self.beads):
-            if "omega" in self.beadlibrary[bead] and "kappa" not in self.beadlibrary[bead]:
+            if "omega" in self.bead_library[bead] and "kappa" not in self.bead_library[bead]:
                 self._test_kappa[i] = True
 
-            self._test_critical[i] = "Tc" in self.beadlibrary[bead] and "Pc" in self.beadlibrary[bead]
-            self._test_parameters[i] = "ai" in self.beadlibrary[bead] and "bi" in self.beadlibrary[bead]
+            self._test_critical[i] = "Tc" in self.bead_library[bead] and "Pc" in self.bead_library[bead]
+            self._test_parameters[i] = "ai" in self.bead_library[bead] and "bi" in self.bead_library[bead]
 
             if not self._test_critical[i] and not self._test_parameters[i]:
                 raise ValueError("Either 'Tc' or 'Pc' was not provided for component: {}".format(bead))
 
         # Cross interaction parameters
-        if 'crosslibrary' in kwargs:
-            self.crosslibrary = kwargs['crosslibrary']
+        if 'cross_library' in kwargs:
+            self.cross_library = kwargs['cross_library']
         else:
-            self.crosslibrary = {}
+            self.cross_library = {}
 
         self.eos_dict = {
             "ai": np.zeros(self.number_of_components),
@@ -108,8 +109,8 @@ class EosType(EosTemplate):
             self.T = T
 
         for i,bead in enumerate(self.beads): 
-            if "kappa" in self.beadlibrary[bead]:
-                self.eos_dict['alpha'][i] = (1+self.beadlibrary[bead]['kappa']*(1-np.sqrt(T/self.beadlibrary[bead]['Tc'])))**2
+            if "kappa" in self.bead_library[bead]:
+                self.eos_dict['alpha'][i] = (1+self.bead_library[bead]['kappa']*(1-np.sqrt(T/self.bead_library[bead]['Tc'])))**2
             else:
                 self.eos_dict['alpha'][i] = 1.0
 
@@ -171,7 +172,7 @@ class EosType(EosTemplate):
 
         self._calc_mixed_parameters(xi,T)
         
-        if np.isscalar(rho):
+        if not gtb.isiterable(rho):
             rho = np.array([rho])
         elif not isinstance(rho,np.ndarray):
             rho = np.array(rho)
@@ -241,12 +242,12 @@ class EosType(EosTemplate):
             Mole fraction of each component
         T : float
             Temperature of the system [K]
-        maxpack : float, Optional, default: 0.65
+        maxpack : float, Optional, default=0.65
             Maximum packing fraction
         
         Returns
         -------
-        maxrho : float
+        max_density : float
             Maximum molar density [mol/m^3]
         """
 
@@ -256,15 +257,15 @@ class EosType(EosTemplate):
 
         self._calc_mixed_parameters(xi,T)
 
-        maxrho = maxpack /self.eos_dict['bij']
+        max_density = maxpack /self.eos_dict['bij']
 
-        return maxrho
+        return max_density
 
     def update_parameter(self, param_name, bead_names, param_value):
         r"""
         Update a single parameter value during parameter fitting process.
 
-        To refresh those parameters that are dependent on to beadlibrary or crosslibrary, use method "parameter refresh".
+        To refresh those parameters that are dependent on to bead_library or cross_library, use method "parameter refresh".
         
         Parameters
         ----------
@@ -284,30 +285,30 @@ class EosType(EosTemplate):
         r""" 
         To refresh dependent parameters
         
-        Those parameters that are dependent on beadlibrary and crosslibrary attributes **must** be updated by running this function after all parameters from update_parameters method have been changed.
+        Those parameters that are dependent on bead_library and cross_library attributes **must** be updated by running this function after all parameters from update_parameters method have been changed.
         """
       
         for i, bead in enumerate(self.beads):
-            if "omega" in self.beadlibrary[bead] and "kappa" not in self.beadlibrary[bead]:
-                self.beadlibrary[bead]["kappa"] = 0.37464 + 1.54226*self.beadlibrary[bead]["omega"] - 0.26992*self.beadlibrary[bead]["omega"]**2
+            if "omega" in self.bead_library[bead] and "kappa" not in self.bead_library[bead]:
+                self.bead_library[bead]["kappa"] = 0.37464 + 1.54226*self.bead_library[bead]["omega"] - 0.26992*self.bead_library[bead]["omega"]**2
 
             if self._test_critical[i] and not self._test_parameters[i]:
-                self.beadlibrary[bead]['ai'] = 0.45723553*(constants.R*self.beadlibrary[bead]['Tc'])**2/self.beadlibrary[bead]['Pc']
-                self.beadlibrary[bead]['bi'] = 0.07779607*(constants.R*self.beadlibrary[bead]['Tc']/self.beadlibrary[bead]['Pc'])
+                self.bead_library[bead]['ai'] = 0.45723553*(constants.R*self.bead_library[bead]['Tc'])**2/self.bead_library[bead]['Pc']
+                self.bead_library[bead]['bi'] = 0.07779607*(constants.R*self.bead_library[bead]['Tc']/self.bead_library[bead]['Pc'])
 
             parameters = ["ai", "bi"]
             for key in parameters:
-                self.eos_dict[key][i] = self.beadlibrary[bead][key]
+                self.eos_dict[key][i] = self.bead_library[bead][key]
             
             parameters = ["kij"]
             for key in parameters:
                 for j, bead2 in enumerate(self.beads):
-                    if bead in self.crosslibrary and bead2 in self.crosslibrary[bead] and key in self.crosslibrary[bead][bead2]:
-                        tmp = self.crosslibrary[bead][bead2][key]
+                    if bead in self.cross_library and bead2 in self.cross_library[bead] and key in self.cross_library[bead][bead2]:
+                        tmp = self.cross_library[bead][bead2][key]
                         self.eos_dict[key][i][j] = tmp
                         self.eos_dict[key][j][i] = tmp
-                    elif bead2 in self.crosslibrary and bead in self.crosslibrary[bead2] and key in self.crosslibrary[bead2][bead]:
-                        tmp = self.crosslibrary[bead2][bead][key]
+                    elif bead2 in self.cross_library and bead in self.cross_library[bead2] and key in self.cross_library[bead2][bead]:
+                        tmp = self.cross_library[bead2][bead][key]
                         self.eos_dict[key][j][i] = tmp
                         self.eos_dict[key][i][j] = tmp
 

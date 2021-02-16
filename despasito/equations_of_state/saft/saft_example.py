@@ -37,9 +37,9 @@ class saft_example():
     ----------
     beads : list[str]
         List of unique bead names used among components
-    beadlibrary : dict
+    bead_library : dict
         A dictionary where bead names are the keys to access EOS self interaction parameters
-    crosslibrary : dict, Optional, default: {}
+    cross_library : dict, Optional, default={}
         Optional library of bead cross interaction parameters. As many or as few of the desired parameters may be defined for whichever group combinations are desired. If this matrix isn't provided, the SAFT mixing rules are used.
         
     Attributes
@@ -76,29 +76,29 @@ class saft_example():
     
         # Now we start processing the given variables. The following three attributes are always needs for the saft.py class. If other inputs are needed for the specific SAFT type at hand, feel free to add them to this list.
         self.eos_dict = {}
-        needed_attributes = ['nui','beads','beadlibrary']
+        needed_attributes = ['molecular_composition','beads','bead_library']
         for key in needed_attributes:
             if key not in kwargs:
                 raise ValueError("The one of the following inputs is missing: {}".format(", ".join(tmp)))
             elif not hasattr(self, key):
                 self.eos_dict[key] = kwargs[key]
 
-        if 'crosslibrary' not in kwargs:
-            self.eos_dict['crosslibrary'] = {}
+        if 'cross_library' not in kwargs:
+            self.eos_dict['cross_library'] = {}
         else:
-            self.eos_dict['crosslibrary'] = kwargs['crosslibrary']
+            self.eos_dict['cross_library'] = kwargs['cross_library']
 
         ###### The following lines are *OPTIONAL* and are completely for internal use for this specific SAFT type and aren't mandatory 
 
         # This is an optional line that processes the mass of beads for the Aideal method, Abroglie
         if not hasattr(self, 'massi'):
-            self.eos_dict['massi'] = tb.calc_massi(self.eos_dict['nui'],self.eos_dict['beadlibrary'],self.eos_dict['beads'])
+            self.eos_dict['massi'] = tb.calc_massi(self.eos_dict['molecular_composition'],self.eos_dict['bead_library'],self.eos_dict['beads'])
 
         # The following terms are used by SAFT-gamma variations 
         if not hasattr(self, 'Vks'):
-            self.eos_dict['Vks'] = tb.extract_property("Vks",self.eos_dict['beadlibrary'],self.eos_dict['beads'])
+            self.eos_dict['Vks'] = tb.extract_property("Vks",self.eos_dict['bead_library'],self.eos_dict['beads'])
         if not hasattr(self, 'Sk'):
-            self.eos_dict['Sk'] = tb.extract_property("Sk",self.eos_dict['beadlibrary'],self.eos_dict['beads'])
+            self.eos_dict['Sk'] = tb.extract_property("Sk",self.eos_dict['bead_library'],self.eos_dict['beads'])
 
         # Initialize composition attribute. This is for composition dependent properties. By recording this, we can avoid recalculating those parameters unnecessarily. In saft-gamma-mie we also have temperature dependent parameters and so self.T is included.
         if not hasattr(self, 'xi'):
@@ -106,10 +106,10 @@ class saft_example():
 
         # These are initialized for loops used in some of the methods below. Depending on how you choose to break things up, these might not be needed.
         if not hasattr(self, 'nbeads'):
-            self.ncomp, self.nbeads = np.shape(self.eos_dict['nui'])
+            self.ncomp, self.nbeads = np.shape(self.eos_dict['molecular_composition'])
 
         # Intiate cross interaction terms, as mentioned above, some mixing rules use a particular combination of parameters and these are handled here.
-        output = tb.cross_interaction_from_dict( self.eos_dict['beads'], self.eos_dict['beadlibrary'], self.mixing_rules, crosslibrary=self.eos_dict['crosslibrary'])
+        output = tb.cross_interaction_from_dict( self.eos_dict['beads'], self.eos_dict['bead_library'], self.mixing_rules, cross_library=self.eos_dict['cross_library'])
         self.eos_dict["sigma_kl"] = output["sigma"]
         self.calc_sw_cross_interaction_parameters()
 
@@ -118,7 +118,7 @@ class saft_example():
             self.eos_dict['num_rings'] = kwargs['num_rings']
             logger.info("Accepted component ring structure: {}".format(kwargs["num_rings"]))
         else:
-            self.eos_dict['num_rings'] = np.zeros(len(self.eos_dict['nui']))
+            self.eos_dict['num_rings'] = np.zeros(len(self.eos_dict['molecular_composition']))
 
         # Initiate average interaction terms
         self.calc_component_averaged_properties()
@@ -129,7 +129,7 @@ class saft_example():
   
         Parameters
         ----------
-        mode : str, Optional, default: "normal"
+        mode : str, Optional, default="normal"
             This indicates whether group or effective component parameters are used. Options include: "normal" and "effective"
         """
 
@@ -174,9 +174,9 @@ class saft_example():
             Number density of system [mol/m^3]
         xi : numpy.ndarray
             Mole fraction of each component, sum(xi) should equal 1.0
-        zetax : numpy.ndarray, Optional, default: None
+        zetax : numpy.ndarray, Optional, default=None
             Matrix of hypothetical packing fraction based on hard sphere diameter for groups (k,l)
-        mode : str, Optional, default: "normal"
+        mode : str, Optional, default="normal"
             This indicates whether group or effective component parameters are used. Options include: "normal" and "effective"
         
         Returns
@@ -202,9 +202,9 @@ class saft_example():
             Number density of system [mol/m^3]
         xi : numpy.ndarray
             Mole fraction of each component, sum(xi) should equal 1.0
-        zetax : numpy.ndarray, Optional, default: None
+        zetax : numpy.ndarray, Optional, default=None
             Matrix of hypothetical packing fraction based on hard sphere diameter for groups (k,l)
-        mode : str, Optional, default: "normal"
+        mode : str, Optional, default="normal"
             This indicates whether group or effective component parameters are used. Options include: "normal" and "effective"
         
         Returns
@@ -261,7 +261,7 @@ class saft_example():
             Temperature of the system [K]
         xi : numpy.ndarray
             Mole fraction of each component, sum(xi) should equal 1.0
-        zetax : numpy.ndarray, Optional, default: None
+        zetax : numpy.ndarray, Optional, default=None
             Matrix of hypothetical packing fraction based on hard sphere diameter for groups (k,l)
         
         Returns
@@ -296,9 +296,9 @@ class saft_example():
             Temperature of the system [K]
         xi : numpy.ndarray
             Mole fraction of each component, sum(xi) should equal 1.0
-        zetax : numpy.ndarray, Optional, default: None
+        zetax : numpy.ndarray, Optional, default=None
             Matrix of hypothetical packing fraction based on hard sphere diameter for groups (k,l)
-        KHS : numpy.ndarray, Optional, default: None
+        KHS : numpy.ndarray, Optional, default=None
             (length of densities) isothermal compressibility of system with packing fraction zetax
         
         Returns
@@ -378,9 +378,9 @@ class saft_example():
             Number density of system [mol/m^3]
         xi : numpy.ndarray
             Mole fraction of each component, sum(xi) should equal 1.0
-        zetax : numpy.ndarray, Optional, default: None
+        zetax : numpy.ndarray, Optional, default=None
             Matrix of hypothetical packing fraction based on hard sphere diameter for groups (k,l)
-        mode : str, Optional, default: "normal"
+        mode : str, Optional, default="normal"
             This indicates whether group or effective component parameters are used. Options include: "normal" and "effective", where normal used bead interaction matricies, and effective uses component averaged parameters.
         
         Returns
@@ -411,7 +411,7 @@ class saft_example():
             Number density of system [mol/m^3]
         xi : numpy.ndarray
             Mole fraction of each component, sum(xi) should equal 1.0
-        zetax : numpy.ndarray, Optional, default: None
+        zetax : numpy.ndarray, Optional, default=None
             Matrix of hypothetical packing fraction based on hard sphere diameter for groups (k,l)
         
         Returns
@@ -449,7 +449,7 @@ class saft_example():
             Temperature of the system [K]
         xi : numpy.ndarray
             Mole fraction of each component, sum(xi) should equal 1.0
-        zetax : numpy.ndarray, Optional, default: None
+        zetax : numpy.ndarray, Optional, default=None
             Matrix of hypothetical packing fraction based on hard sphere diameter for groups (k,l)
         
         Returns
@@ -515,7 +515,7 @@ class saft_example():
         for i in range(self.ncomp):
             beadsum = -1.0 + self.eos_dict['num_rings'][i]
             for k in range(self.nbeads):
-                beadsum += (self.eos_dict['nui'][i, k] * self.eos_dict["Vks"][k] * self.eos_dict["Sk"][k])
+                beadsum += (self.eos_dict['molecular_composition'][i, k] * self.eos_dict["Vks"][k] * self.eos_dict["Sk"][k])
             Achain -= xi[i] * beadsum * np.log(gii[:, i,i])
 
         if np.any(np.isnan(Achain)):
@@ -536,12 +536,12 @@ class saft_example():
             Mole fraction of each component
         T : float
             Temperature of the system [K]
-        maxpack : float, Optional, default: 0.65
+        maxpack : float, Optional, default=0.65
             Maximum packing fraction
         
         Returns
         -------
-        maxrho : float
+        max_density : float
             Maximum molar density [mol/m^3]
         """
 
@@ -549,9 +549,9 @@ class saft_example():
 
         # estimate the maximum density based on the hard sphere packing fraction
         # etax, assuming a maximum packing fraction specified by maxpack
-        maxrho = maxpack * 6.0 / (self.eos_dict['Cmol2seg'] * np.pi * np.sum(self.eos_dict['xskl'] * (self.eos_dict['sigma_kl']**3))) / constants.molecule_per_nm3
+        max_density = maxpack * 6.0 / (self.eos_dict['Cmol2seg'] * np.pi * np.sum(self.eos_dict['xskl'] * (self.eos_dict['sigma_kl']**3))) / constants.molecule_per_nm3
 
-        return maxrho
+        return max_density
 
     def calc_gr_assoc(self, rho, T, xi): ############## *MANDATORY*
         r"""
@@ -578,24 +578,24 @@ class saft_example():
 
         return gSW
 
-    def parameter_refresh(self, beadlibrary, crosslibrary): ############## *MANDATORY*
+    def parameter_refresh(self, bead_library, cross_library): ############## *MANDATORY*
         r""" 
         To refresh dependent parameters
         
-        Those parameters that are dependent on _beadlibrary and _crosslibrary attributes **must** be updated by running this function after all parameters from update_parameters method have been changed.
+        Those parameters that are dependent on _bead_library and _cross_library attributes **must** be updated by running this function after all parameters from update_parameters method have been changed.
         """
 
-        self.eos_dict["beadlibrary"].update(beadlibrary)
-        self.eos_dict["crosslibrary"].update(crosslibrary)
+        self.eos_dict["bead_library"].update(bead_library)
+        self.eos_dict["cross_library"].update(cross_library)
 
         # Update Non bonded matrices
-        output = tb.cross_interaction_from_dict( self.eos_dict['beads'], self.eos_dict['beadlibrary'], self.mixing_rules, crosslibrary=self.eos_dict['crosslibrary'])
+        output = tb.cross_interaction_from_dict( self.eos_dict['beads'], self.eos_dict['bead_library'], self.mixing_rules, cross_library=self.eos_dict['cross_library'])
         self.eos_dict["sigma_kl"] = output["sigma"]
         self.calc_sw_cross_interaction_parameters()
         self.calc_component_averaged_properties()
 
         if not np.isnan(self.xi):
-            self.eos_dict['Cmol2seg'], self.eos_dict['xskl'] = stb.calc_composition_dependent_variables(xi, self.eos_dict['nui'], self.eos_dict['beadlibrary'], self.eos_dict['beads'])
+            self.eos_dict['Cmol2seg'], self.eos_dict['xskl'] = stb.calc_composition_dependent_variables(xi, self.eos_dict['molecular_composition'], self.eos_dict['bead_library'], self.eos_dict['beads'])
 
     def _check_density(self, rho): # *OPTIONAL*
         r"""
@@ -643,7 +643,7 @@ class saft_example():
         """
         xi = np.array(xi)
         if not np.all(self.xi == xi):
-            self.eos_dict['Cmol2seg'], self.eos_dict['xskl'] = stb.calc_composition_dependent_variables(xi, self.eos_dict['nui'], self.eos_dict['beadlibrary'], self.eos_dict['beads'])
+            self.eos_dict['Cmol2seg'], self.eos_dict['xskl'] = stb.calc_composition_dependent_variables(xi, self.eos_dict['molecular_composition'], self.eos_dict['bead_library'], self.eos_dict['beads'])
             self.xi = xi
 
     def __str__(self):

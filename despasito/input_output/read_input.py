@@ -78,8 +78,8 @@ def extract_calc_data(input_fname, path='.', **thermo_dict):
     ## Make bead data dictionary for EOS
     #process input file
     if 'bead_configuration' in input_dict:
-        beads, nui = process_bead_data(input_dict['bead_configuration'])
-        eos_dict = {'beads':beads, 'nui':nui}
+        beads, molecular_composition = process_bead_data(input_dict['bead_configuration'])
+        eos_dict = {'beads':beads, 'molecular_composition':molecular_composition}
     elif "optimization_parameters" in input_dict:
         eos_dict = {}
     else:
@@ -88,13 +88,13 @@ def extract_calc_data(input_fname, path='.', **thermo_dict):
     #read EOS groups file
     with open(input_dict['EOSgroup'], 'r') as f:
         output = f.read()
-    eos_dict['beadlibrary'] = json.loads(output)
+    eos_dict['bead_library'] = json.loads(output)
 
     #read EOS cross file
     try:
         with open(input_dict['EOScross'], 'r') as f:
             output = f.read()
-        eos_dict['crosslibrary'] = json.loads(output)
+        eos_dict['cross_library'] = json.loads(output)
         logger.info("Cross interaction parameters have been accepted")
     except Exception:
         logger.info("No EOScross file specified")
@@ -123,7 +123,7 @@ def extract_calc_data(input_fname, path='.', **thermo_dict):
         tmp = ""
         for key, value in thermo_dict["exp_data"].items():
             tmp += " {} ({}),".format(key,value["data_class_type"])
-        logger.info("The bead, {}, will have the parameters {}, fit using the following data:\n {}".format(thermo_dict["optimization_parameters"]["fit_bead"],thermo_dict["optimization_parameters"]["fit_params"],tmp))
+        logger.info("The bead, {}, will have the parameters {}, fit using the following data:\n {}".format(thermo_dict["optimization_parameters"]["fit_bead"],thermo_dict["optimization_parameters"]["fit_parameter_names"],tmp))
 
     return eos_dict, thermo_dict, output_file
 
@@ -143,7 +143,7 @@ def file2paramdict(filename,delimiter=" "):
     ----------
     filename : str
         File of keys and values
-    delimiter : str, Optional, default: " "
+    delimiter : str, Optional, default=" "
         String separating key and value within file
 
     Returns
@@ -189,14 +189,14 @@ def make_xi_matrix(filename):
         Mole fraction of component, only relevant for parameter fitting
     beads : list[str]
         List of unique bead names used among components
-    nui : numpy.ndarray
+    molecular_composition : numpy.ndarray
         Array of number of components by number of bead types. Defines the number of each type of group in each component.
     """
 
     f = open(filename, 'r').read()
     comp = json.loads(f)
-    beads, nui = process_bead_data(comp)
-    return xi, beads, nui
+    beads, molecular_composition = process_bead_data(comp)
+    return xi, beads, molecular_composition
 
 
 ######################################################################
@@ -218,7 +218,7 @@ def process_bead_data(bead_data):
     -------
     beads : list[str]
         List of unique bead names used among components
-    nui : numpy.ndarray
+    molecular_composition : numpy.ndarray
         Array of number of components by number of bead types. Defines the number of each type of group in each component.
     """
 
@@ -230,13 +230,13 @@ def process_bead_data(bead_data):
                 beads.append(bead_data[i][j][0])
     beads.sort()
 
-    nui = np.zeros((len(bead_data), len(beads)))
+    molecular_composition = np.zeros((len(bead_data), len(beads)))
     for i in range(len(bead_data)):
         for j in range(len(bead_data[i])):
             for k in range(np.size(beads)):
                 if bead_data[i][j][0] == beads[k]:
-                    nui[i, k] = bead_data[i][j][1]
-    return beads, nui
+                    molecular_composition[i, k] = bead_data[i][j][1]
+    return beads, molecular_composition
 
 ######################################################################
 #                                                                    #
@@ -256,9 +256,9 @@ def process_param_fit_inputs(thermo_dict):
         - optimization_parameters (dict) - Parameters used in basin fitting algorithm
 
             - fit_bead (str) - Name of bead whose parameters are being fit, should be in bead list of bead_configuration
-            - fit_params (list[str]) - This list of contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
-            - \*_bounds (list[float]), Optional - This list contains the minimum and maximum of the parameter from a parameter listed in fit_params, represented in place of the asterisk. See input file instructions for more information.
-            - beadparams0 (list[float]), Optional - Initial guess in parameters being fit. Should be the same length at fit_params and contain a reasonable guess for each parameter. If this is not provided, a guess is made based on the type of parameter from Eos object.
+            - fit_parameter_names (list[str]) - This list of contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
+            - \*_bounds (list[float]), Optional - This list contains the minimum and maximum of the parameter from a parameter listed in fit_parameter_names, represented in place of the asterisk. See input file instructions for more information.
+            - parameters_guess (list[float]), Optional - Initial guess in parameters being fit. Should be the same length at fit_parameter_names and contain a reasonable guess for each parameter. If this is not provided, a guess is made based on the type of parameter from Eos object.
 
         - *name* (dict) - Dictionary of a data set that the parameters are fit to. Each dictionary is added to the exp_data dictionary before being passed to the fitting algorithm. Each *name* is used as the key in exp_data. *name* is an arbitrary string used to identify the data set and used later in reporting objective function values during the fitting process. See data type objects for more details.
 
@@ -274,9 +274,9 @@ def process_param_fit_inputs(thermo_dict):
         - optimization_parameters (dict) - Parameters used in basin fitting algorithm
 
             - fit_bead (str) - Name of bead whose parameters are being fit, should be in bead list of bead_configuration
-            - fit_params (list[str]) - This list of contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
-            - beadparams0 (list[float]), Optional - Initial guess in parameter. If one is not provided, a guess is made based on the type of parameter from Eos object.
-            - \*_bounds (list[float]), Optional - This list contains the minimum and maximum of the parameter from a parameter listed in fit_params, represented in place of the asterisk. See input file instructions for more information.
+            - fit_parameter_names (list[str]) - This list of contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
+            - parameters_guess (list[float]), Optional - Initial guess in parameter. If one is not provided, a guess is made based on the type of parameter from Eos object.
+            - \*_bounds (list[float]), Optional - This list contains the minimum and maximum of the parameter from a parameter listed in fit_parameter_names, represented in place of the asterisk. See input file instructions for more information.
 
         - exp_data (dict) - This dictionary is made up of a dictionary for each data set that the parameters are fit to. Each key is an arbitrary string used to identify the data set and used later in reporting objective function values during the fitting process. See data type objects for more details.
 
@@ -293,9 +293,9 @@ def process_param_fit_inputs(thermo_dict):
             new_thermo_dict[key] = value
 
     test1 = set(["exp_data","optimization_parameters"]).issubset(list(new_thermo_dict.keys()))
-    test2 = set(["fit_bead","fit_params"]).issubset(list(new_thermo_dict["optimization_parameters"].keys()))
+    test2 = set(["fit_bead","fit_parameter_names"]).issubset(list(new_thermo_dict["optimization_parameters"].keys()))
     if not all([test1,test2]):
-        raise ValueError("An exp_data dictionary as well as an optimization_parameters dictionary with fit_beads and fit_params must be provided.")
+        raise ValueError("An exp_data dictionary as well as an optimization_parameters dictionary with fit_beads and fit_parameter_names must be provided.")
 
     return new_thermo_dict
 
@@ -335,8 +335,8 @@ def process_exp_data(exp_data_dict):
             file_dict = process_exp_data_file(value)
             exp_data.update(file_dict)
         elif key == "bead_configuration":
-            beads, nui = process_bead_data(value)
-            exp_data["eos_dict"] = {'beads':beads,'nui':nui}
+            beads, molecular_composition = process_bead_data(value)
+            exp_data["eos_dict"] = {'beads':beads,'molecular_composition':molecular_composition}
         else:
             exp_data[key] = value
 

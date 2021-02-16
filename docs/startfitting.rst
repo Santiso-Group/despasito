@@ -21,7 +21,7 @@ Parameters can be fit for one component at a time, and for as many parameters as
         "EOSgroup": "SAFTgroup.json",
         "optimization_parameters": {
             "fit_bead" : "CH3OH",
-            "fit_params": ["epsilon"],
+            "fit_parameter_names": ["epsilon"],
             "epsilon_bounds" : [150.0, 400.0]
         },
         "Wiley": {
@@ -44,8 +44,8 @@ Note that the name of this file doesn't really matter, but we use the standard p
 The order of these items does not matter, but the first three items must be included, plus one of the follow dictionaries discussed below. The `bead_configuration` and `EOSgroup` are described in our basic thermodynamic calculation tutorial. Our new entry, `optimization_parameters` defines this as a parameter fitting job and outlines the basic instructions.
 
 * `fit_bead`: One bead type may have parameters fit at a time, and must be present in the `bead_configuration` definition.
-* `fit_params`: At least one parameter must be listed here. Allowed parameter names are EOS specific. Any of the self-interaction parameters may be listed, in this case its 'epsilon', but another can be added to this vector. If one wants to fit a cross-interaction parameter, use the parameter name followed by an underscore and another bead type used in `bead_configuration`. For example, let's say we were fitting one heavy atom per bead for methanol. Then `"bead_configuration": [[["CH3",1],["OH",1]]]` and if we wanted to fit self interaction parameter, epsilon, for "CH3" as well as the cross-interaction with "OH", then `"fit_params": ["epsilon","epsilon_OH"]`.
-* `beadparams0`: This optional array contains the initial guess for each respective parameter in `fit_params` and is the same length. If this vector is not provided, then the initial guess is taken from `EOSgroup`.
+* `fit_parameter_names`: At least one parameter must be listed here. Allowed parameter names are EOS specific. Any of the self-interaction parameters may be listed, in this case its 'epsilon', but another can be added to this vector. If one wants to fit a cross-interaction parameter, use the parameter name followed by an underscore and another bead type used in `bead_configuration`. For example, let's say we were fitting one heavy atom per bead for methanol. Then `"bead_configuration": [[["CH3",1],["OH",1]]]` and if we wanted to fit self interaction parameter, epsilon, for "CH3" as well as the cross-interaction with "OH", then `"fit_parameter_names": ["epsilon","epsilon_OH"]`.
+* `parameters_guess`: This optional array contains the initial guess for each respective parameter in `fit_parameter_names` and is the same length. If this vector is not provided, then the initial guess is taken from `EOSgroup`.
 * `*_bounds`: This optional array is always of length two, containing the high and low limits for the parameter that replaces the asterisk in this definition. Notice above that "epsilon_bounds" defines the bounds of our chosen fit_param in this example.
 
 Experimental data is the last mandatory entry in the input file. In our example we have two sets of experimental data, "Wiley" and "Gibbard". The dictionary name doesn't matter. If the entry "data_class_type" is in this dictionary, then DESPASITO will identify it as experimental data. These arbitrary names provide flexibility and are used in the output to allow you to identify if a particular data set has a high penalty compared to other data sets when fitting these parameters. This dictionary has a few entries.

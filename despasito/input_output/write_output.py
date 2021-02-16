@@ -24,11 +24,9 @@ def write_EOSparameters(library, filename):
     ----------
     library : dict
         Dictionary of parameters to be sorted and exported 
-
-    Returns
-    -------
     filename : str
         Filename (with or without path) of .json file of parameters
+
     """
 
     #logger = logging.getLogger(__name__)
@@ -56,12 +54,9 @@ def writeout_thermo_dict(output_dict,calctype,output_file="thermo_output.txt"):
         Dictionary of given and calculated information from thermodynamic module
     calculation_type : str
         Thermodynamic calculation type used
-    output_file : str, Optional, default: thermo_output.txt
+    output_file : str, Optional, default=thermo_output.txt
         Name of output file
 
-    Returns
-    -------
-    File of data saved to current directory
     """
 
     # Define units
@@ -123,21 +118,15 @@ def writeout_fit_dict(output_dict,output_file="fit_output.txt"):
     ----------
     output_dict : dict
         Dictionary of given and calculated information from thermodynamic module.
-    output_file : str, Optional, default: thermo_output.txt
+    output_file : str, Optional, default=thermo_output.txt
         Name of output file
 
-    Returns
-    -------
-    File of data saved to current directory
     """
 
     header = "DESPASITO was used to fit parameters for the bead {} Obj. Value: {}\n".format(output_dict["fit_bead"],output_dict["objective_value"]) + "Parameter, Value\n"
     with open(output_file,"w") as f:
         f.write(header)
-        for i in range(len(output_dict["fit_parameters"])):
-            f.write("{}, {}\n".format(output_dict["fit_parameters"][i],output_dict["final_parameters"][i]))
+        for i in range(len(output_dict["fit_parameter_names"])):
+            f.write("{}, {}\n".format(output_dict["fit_parameter_names"][i],output_dict["parameters_final"][i]))
 
-    # Add function to sort through and write out values
-    # step 1, Update parameters for EOS object
-    # step 2, write out libraries
 

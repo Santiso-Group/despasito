@@ -4,8 +4,8 @@
     "EOScross": "../../library/SAFTcross.json",
     "optimization_parameters": {
         "fit_bead" : "CO2m",
-        "fit_params": ["epsilon_H2O353"],
-        "beadparams0" : [432.69]
+        "fit_parameter_names": ["epsilon_H2O353"],
+        "parameters_guess" : [432.69]
     },
     "Wiley": {
         "data_class_type": "TLVE",

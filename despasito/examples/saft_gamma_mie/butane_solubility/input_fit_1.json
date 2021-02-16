@@ -12,8 +12,8 @@
     "Knovel": {
         "data_class_type": "solubility_parameter",
         "calculation_type": "solubility_parameter",
-        "file": "butane_solubility.csv",
-        "weights": { "delta" : [0.75, 0.75, 0.75], "rhol" : 0.25 
+        "file": "butane_solubility_1.csv",
+        "weights": { "delta" : [0.75], "rhol" : 0.25 
         }
     }
 }

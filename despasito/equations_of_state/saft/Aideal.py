@@ -34,7 +34,7 @@ def Aideal_contribution(rho, T, xi, massi, method="Abroglie"):
         Mole fraction of each component, sum(xi) should equal 1.0
     massi : numpy.ndarray
         Vector of component masses that correspond to the mole fractions in xi [kg/mol]
-    method : str, Optional, default: Abroglie
+    method : str, Optional, default=Abroglie
         The function name of the method to calculate the ideal contribution of the helmholtz energy. To add a new one, add a function to: despasito.equations_of_state,helholtz.Aideal.py
     
     Returns

@@ -6,24 +6,24 @@ import scipy.optimize as spo
 from inspect import getmembers
 
 from despasito.utils.parallelization import MultiprocessingJob
-from . import fit_funcs as ff
+from . import fit_functions as ff
 import despasito.utils.general_toolbox as gtb
 
 logger = logging.getLogger(__name__)
 
-def single_objective(beadparams0, bounds, fit_bead, fit_params, exp_dict, global_opts={}):
+def single_objective(parameters_guess, bounds, fit_bead, fit_parameter_names, exp_dict, global_opts={}):
     r"""
     Evaluate parameter set for equation of state with given experimental data
 
     Parameters
     ----------
-    beadparams0 : numpy.ndarray 
+    parameters_guess : numpy.ndarray 
         An array of initial guesses for parameters, these will be optimized throughout the process.
     bounds : list[tuple]
-        List of length equal to fit_params with lists of pairs for minimum and maximum bounds of parameter being fit. Defaults are broad, recommend specification.
+        List of length equal to fit_parameter_names with lists of pairs for minimum and maximum bounds of parameter being fit. Defaults are broad, recommend specification.
     fit_bead : str
         Name of bead whose parameters are being fit, should be in bead list of bead_configuration
-    fit_params : list[str]
+    fit_parameter_names : list[str]
         This list of contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
     exp_dict : dict
         Dictionary of experimental data objects.
@@ -37,9 +37,9 @@ def single_objective(beadparams0, bounds, fit_bead, fit_params, exp_dict, global
     if len(global_opts) > 0:
         logger.info("The fitting method 'single_objective' does not have further options")
 
-    obj_value = ff.compute_obj(beadparams0, fit_bead, fit_params, exp_dict, bounds)
+    obj_value = ff.compute_obj(parameters_guess, fit_bead, fit_parameter_names, exp_dict, bounds)
 
-    result = spo.OptimizeResult(x=beadparams0,
+    result = spo.OptimizeResult(x=parameters_guess,
                                 fun=obj_value,
                                 success=True,
                                 nit=0,
@@ -47,26 +47,26 @@ def single_objective(beadparams0, bounds, fit_bead, fit_params, exp_dict, global
 
     return result
 
-def differential_evolution(beadparams0, bounds, fit_bead, fit_params, exp_dict, global_opts={}, constraints=None):
+def differential_evolution(parameters_guess, bounds, fit_bead, fit_parameter_names, exp_dict, global_opts={}, constraints=None):
     r"""
     Fit defined parameters for equation of state object using scipy.optimize.differential_evolution with given experimental data. 
 
     Parameters
     ----------
-    beadparams0 : numpy.ndarray 
+    parameters_guess : numpy.ndarray 
         An array of initial guesses for parameters, these will be optimized throughout the process.
     bounds : list[tuple]
-        List of length equal to fit_params with lists of pairs for minimum and maximum bounds of parameter being fit. Defaults are broad, recommend specification.
+        List of length equal to fit_parameter_names with lists of pairs for minimum and maximum bounds of parameter being fit. Defaults are broad, recommend specification.
     fit_bead : str
         Name of bead whose parameters are being fit, should be in bead list of bead_configuration
-    fit_params : list[str]
+    fit_parameter_names : list[str]
         This list of contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
     exp_dict : dict
         Dictionary of experimental data objects.
     global_opts : dict, Optional
 
         - init (str) - type of initiation for population, Optional, default="random" 
-        - write_intermediate_file (str) - If True, an intermediate file will be written from the method callback, default: False
+        - write_intermediate_file (str) - If True, an intermediate file will be written from the method callback, default=False
         - filename (str) - filename for callback output, if provided, `write_intermediate_file` will be set to True, Optional, default=None
         - obj_cut (float) - Cut-off objective value to write the parameters, if provided, `write_intermediate_file` will be set to True, Optional, default=None
         - etc. Other keywords for scipy.optimize.differential_evolution use the function defaults
@@ -94,7 +94,7 @@ def differential_evolution(beadparams0, bounds, fit_bead, fit_params, exp_dict, 
         filename = None
 
     if "write_intermediate_file" in global_opts and global_opts["write_intermediate_file"]:
-        global_opts["callback"] = _WriteParameterResults(fit_params, obj_cut=obj_cut, filename=filename)
+        global_opts["callback"] = _WriteParameterResults(fit_parameter_names, obj_cut=obj_cut, filename=filename)
 
     # Options for differential evolution, set defaults in new_global_opts
     new_global_opts = {"init": "random"}
@@ -114,30 +114,30 @@ def differential_evolution(beadparams0, bounds, fit_bead, fit_params, exp_dict, 
         global_opts["constraints"] = ff.initialize_constraints(constraints, "class")
     logger.info("Differential Evolution Options: {}".format(global_opts))
 
-    result = spo.differential_evolution(ff.compute_obj, bounds, args=(fit_bead, fit_params, exp_dict, bounds), **global_opts)
+    result = spo.differential_evolution(ff.compute_obj, bounds, args=(fit_bead, fit_parameter_names, exp_dict, bounds), **global_opts)
 
     return result
 
-def shgo(beadparams0, bounds, fit_bead, fit_params, exp_dict, global_opts={}, minimizer_opts={}, constraints=None):
+def shgo(parameters_guess, bounds, fit_bead, fit_parameter_names, exp_dict, global_opts={}, minimizer_opts={}, constraints=None):
     r"""
     Fit defined parameters for equation of state object using scipy.optimize.shgo with given experimental data. 
 
     Parameters
     ----------
-    beadparams0 : numpy.ndarray 
+    parameters_guess : numpy.ndarray 
         An array of initial guesses for parameters, these will be optimized throughout the process.
     bounds : list[tuple]
-        List of length equal to fit_params with lists of pairs for minimum and maximum bounds of parameter being fit. Defaults are broad, recommend specification.
+        List of length equal to fit_parameter_names with lists of pairs for minimum and maximum bounds of parameter being fit. Defaults are broad, recommend specification.
     fit_bead : str
         Name of bead whose parameters are being fit, should be in bead list of bead_configuration
-    fit_params : list[str]
+    fit_parameter_names : list[str]
         This list of contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
     exp_dict : dict
         Dictionary of experimental data objects.
     global_opts : dict, Optional
 
         - init (str) - type of initiation for population, Optional, default="random" 
-        - write_intermediate_file (str) - If True, an intermediate file will be written from the method callback, default: False
+        - write_intermediate_file (str) - If True, an intermediate file will be written from the method callback, default=False
         - filename (str) - filename for callback output, if provided, `write_intermediate_file` will be set to True, Optional, default=None
         - obj_cut (float) - Cut-off objective value to write the parameters, if provided, `write_intermediate_file` will be set to True, Optional, default=Non
         - etc. Other keywords for scipy.optimize.differential_evolution use the function defaults
@@ -171,7 +171,7 @@ def shgo(beadparams0, bounds, fit_bead, fit_params, exp_dict, global_opts={}, mi
         filename = None
 
     if "write_intermediate_file" in global_opts and global_opts["write_intermediate_file"]:
-        global_opts["callback"] = _WriteParameterResults(fit_params, obj_cut=obj_cut, filename=filename)
+        global_opts["callback"] = _WriteParameterResults(fit_parameter_names, obj_cut=obj_cut, filename=filename)
 
     # Options for differential evolution, set defaults in new_global_opts
     new_global_opts = {"sampling_method": "sobol"}
@@ -203,23 +203,23 @@ def shgo(beadparams0, bounds, fit_bead, fit_params, exp_dict, global_opts={}, mi
     if minimizer_opts:
         logger.warning("Minimization options were given but aren't used in this method.")
 
-    result = spo.shgo(ff.compute_obj, bounds, args=(fit_bead, fit_params, exp_dict, bounds), **global_opts)
+    result = spo.shgo(ff.compute_obj, bounds, args=(fit_bead, fit_parameter_names, exp_dict, bounds), **global_opts)
 
     return result
 
-def grid_minimization(beadparams0, bounds, fit_bead, fit_params, exp_dict, global_opts={}, minimizer_opts={}, constraints=None):
+def grid_minimization(parameters_guess, bounds, fit_bead, fit_parameter_names, exp_dict, global_opts={}, minimizer_opts={}, constraints=None):
     r"""
     Fit defined parameters for equation of state object using a custom adaptation of scipy.optimize.brute with given experimental data. 
 
     Parameters
     ----------
-    beadparams0 : numpy.ndarray 
+    parameters_guess : numpy.ndarray 
         An array of initial guesses for parameters, these will be optimized throughout the process.
     bounds : list[tuple]
-        List of length equal to fit_params with lists of pairs for minimum and maximum bounds of parameter being fit. Defaults are broad, recommend specification.
+        List of length equal to fit_parameter_names with lists of pairs for minimum and maximum bounds of parameter being fit. Defaults are broad, recommend specification.
     fit_bead : str
         Name of bead whose parameters are being fit, should be in bead list of bead_configuration
-    fit_params : list[str]
+    fit_parameter_names : list[str]
         This list of contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
     exp_dict : dict
         Dictionary of experimental data objects.
@@ -278,7 +278,7 @@ def grid_minimization(beadparams0, bounds, fit_bead, fit_params, exp_dict, globa
     minimizer_opts = new_minimizer_opts
     logger.info("    Minimizer Options: {}".format( minimizer_opts))
 
-    args = (fit_bead, fit_params, exp_dict, bounds)
+    args = (fit_bead, fit_parameter_names, exp_dict, bounds)
 
     # Set up inputs
     if "initial_guesses" in global_opts:
@@ -309,7 +309,7 @@ def grid_minimization(beadparams0, bounds, fit_bead, fit_params, exp_dict, globa
 
     # Choose final output
     result = [fval[0], results[0]]
-    logger.info("For bead: {} and parameters {}".format(fit_bead,fit_params))
+    logger.info("For bead: {} and parameters {}".format(fit_bead,fit_parameter_names))
     for i in range(len(x0_array)):
         tmp_result = results[i]
         logger.info("x0: {}, xf: {}, obj: {}".format(x0_array[i], results[i], fval[i]))
@@ -324,19 +324,19 @@ def grid_minimization(beadparams0, bounds, fit_bead, fit_params, exp_dict, globa
 
     return result
 
-def brute(beadparams0, bounds, fit_bead, fit_params, exp_dict, global_opts={}):
+def brute(parameters_guess, bounds, fit_bead, fit_parameter_names, exp_dict, global_opts={}):
     r"""
     Fit defined parameters for equation of state object using scipy.optimize.brute with given experimental data. 
 
     Parameters
     ----------
-    beadparams0 : numpy.ndarray 
+    parameters_guess : numpy.ndarray 
         An array of initial guesses for parameters, these will be optimized throughout the process.
     bounds : list[tuple]
-        List of length equal to fit_params with lists of pairs for minimum and maximum bounds of parameter being fit. Defaults are broad, recommend specification.
+        List of length equal to fit_parameter_names with lists of pairs for minimum and maximum bounds of parameter being fit. Defaults are broad, recommend specification.
     fit_bead : str
         Name of bead whose parameters are being fit, should be in bead list of bead_configuration
-    fit_params : list[str]
+    fit_parameter_names : list[str]
         This list of contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
     exp_dict : dict
         Dictionary of experimental data objects.
@@ -374,7 +374,7 @@ def brute(beadparams0, bounds, fit_bead, fit_params, exp_dict, global_opts={}):
     global_opts["full_output"] = True
 
     logger.info("Brute Options: {}".format(global_opts))
-    x0, fval, grid, Jount = spo.brute(ff.compute_obj, bounds, args=(fit_bead, fit_params, exp_dict, bounds), **global_opts)
+    x0, fval, grid, Jount = spo.brute(ff.compute_obj, bounds, args=(fit_bead, fit_parameter_names, exp_dict, bounds), **global_opts)
     result = spo.OptimizeResult(x=x0,
                                 fun=fval,
                                 success=True,
@@ -383,19 +383,19 @@ def brute(beadparams0, bounds, fit_bead, fit_params, exp_dict, global_opts={}):
 
     return result
 
-def basinhopping(beadparams0, bounds, fit_bead, fit_params, exp_dict, global_opts={}, minimizer_opts={}):
+def basinhopping(parameters_guess, bounds, fit_bead, fit_parameter_names, exp_dict, global_opts={}, minimizer_opts={}):
     r"""
     Fit defined parameters for equation of state object using scipy.optimize.basinhopping with given experimental data. 
 
     Parameters
     ----------
-    beadparams0 : numpy.ndarray 
+    parameters_guess : numpy.ndarray 
         An array of initial guesses for parameters, these will be optimized throughout the process.
     bounds : list[tuple]
-        List of length equal to fit_params with lists of pairs for minimum and maximum bounds of parameter being fit. Defaults are broad, recommend specification.
+        List of length equal to fit_parameter_names with lists of pairs for minimum and maximum bounds of parameter being fit. Defaults are broad, recommend specification.
     fit_bead : str
         Name of bead whose parameters are being fit, should be in bead list of bead_configuration
-    fit_params : list[str]
+    fit_parameter_names : list[str]
         This list of contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
     exp_dict : dict
         Dictionary of experimental data objects.
@@ -451,11 +451,11 @@ def basinhopping(beadparams0, bounds, fit_bead, fit_params, exp_dict, global_opt
         raise TypeError("Could not initialize BasinStep and/or BasinBounds")
 
     logger.info("Basin Hopping Options: {}".format(global_opts))
-    minimizer_kwargs={"args": (fit_bead, fit_params, exp_dict, bounds),**minimizer_opts}
+    minimizer_kwargs={"args": (fit_bead, fit_parameter_names, exp_dict, bounds),**minimizer_opts}
     if "minimizer_kwargs" in global_opts:
         minimizer_kwargs.update(global_opts["minimizer_kwargs"])
         del global_opts["minimizer_kwargs"]
-    result = spo.basinhopping(ff.compute_obj, beadparams0, **global_opts, accept_test=custombounds, minimizer_kwargs=minimizer_kwargs)
+    result = spo.basinhopping(ff.compute_obj, parameters_guess, **global_opts, accept_test=custombounds, minimizer_kwargs=minimizer_kwargs)
 
     return result
 
@@ -617,9 +617,9 @@ class _WriteParameterResults(object):
         ----------
         beadnames : list[str]
             List of bead names for filename header
-        obj_cut : float, Optional, default: np.inf
+        obj_cut : float, Optional, default=np.inf
             Cut-off objective value to write the parameters
-        filename : str, Optional, default: parameters.txt
+        filename : str, Optional, default=parameters.txt
             File to which parameters are written
             
         """

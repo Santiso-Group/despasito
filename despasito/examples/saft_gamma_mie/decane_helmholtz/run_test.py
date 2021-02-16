@@ -4,7 +4,7 @@ import despasito
 
 beads  = ['CH3', 'CH2']
 beads_per_molecule  = np.array([[2., 8.]])
-beadlibrary  = {'CH3':
+bead_library  = {'CH3':
                   {'epsilon': 256.7662,
                         'lambdaa': 6.0,
                         'lambdar': 15.04982,
@@ -20,13 +20,13 @@ beadlibrary  = {'CH3':
                         'Sk': 0.2293202,
                         'Vks': 1,
                         'mass': 0.014027}}
-crosslibrary  = {'CH3': {'CH2': {'epsilon': 350.770}}}
+cross_library  = {'CH3': {'CH2': {'epsilon': 350.770}}}
 Eos = despasito.equations_of_state.initiate_eos(
       eos="saft.gamma_mie",
       beads=beads,
-      nui=beads_per_molecule,
-      beadlibrary=beadlibrary,
-      crosslibrary=crosslibrary,
+      molecular_composition=beads_per_molecule,
+      bead_library=bead_library,
+      cross_library=cross_library,
       numba=True
       )
 

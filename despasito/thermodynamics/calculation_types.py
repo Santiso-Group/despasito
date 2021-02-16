@@ -11,6 +11,7 @@ import logging
 from despasito.utils.parallelization import MultiprocessingJob
 from . import calc
 from despasito import fundamental_constants as constants
+import despasito.utils.general_toolbox as gtb
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +26,7 @@ def bubble_pressure(Eos, **sys_dict):
         An instance of the defined EOS class to be used in thermodynamic computations.
     xilist : list
         List of sets of component mole fraction, where sum(xi)=1.0 for each set. Each set of components corresponds to a temperature in Tlist, or if one set is given, this composition will be used for all temperatures.
-    Tlist : list, Optional, default: 298.15
+    Tlist : list, Optional, default=298.15
         [K] Temperature of the system corresponding to composition in xilist. If one set is given, this temperature will be used for all compositions.
     Pguess : list/float, Optional
         [Pa] Guess the system pressure at the bubble point. If a list of length 1 is provided, that value is used for all temperature-composition sets given.
@@ -53,21 +54,29 @@ def bubble_pressure(Eos, **sys_dict):
 
     """
 
-    ## Extract and check input data
-    if 'Tlist' in sys_dict:
-        T_list = np.array(sys_dict['Tlist'],float)
-        logger.info("Using Tlist") 
-        del sys_dict['Tlist']
-    else:
-        T_list = np.array([constants.standard_temperature])
-        logger.info("Assuming standard temperature")
-
-    if 'xilist' in sys_dict:
-        xi_list = np.array(sys_dict['xilist'],float)
-        logger.info("Using xilist")
-        del sys_dict['xilist']
-    else:
+    if "xilist" not in sys_dict:
         raise ValueError('Mole fractions, xilist, are not specified')
+    elif not gtb.isiterable(sys_dict["xilist"][0]):
+        sys_dict["xilist"] = np.array([sys_dict["xilist"]],float)
+
+    ## Extract and check input data
+    thermo_keys = ['Tlist', 'xilist']
+    thermo_dict = gtb.check_length(sys_dict,thermo_keys)
+    npoints = len(thermo_dict["xilist"])
+
+    thermo_defaults = [constants.standard_temperature]
+    thermo_dict.update(gtb.set_defaults(thermo_dict, "Tlist", thermo_defaults, lx=npoints))
+
+    ## Optional values
+    optional_keys = ["Pguess", "Pmin", "Pmax"]
+    opts = gtb.check_length(sys_dict, optional_keys, lx=npoints)
+    if opts:
+        logger.info("Accepted user defined variables: {}".format(", ".join(list(opts.keys()))))
+
+    # Delete processed keys
+    for key in thermo_keys+optional_keys:
+        if key in sys_dict:
+            del sys_dict[key]
 
     if 'MultiprocessingObject' in sys_dict:
         MultiprocessingObject = sys_dict['MultiprocessingObject']
@@ -76,76 +85,17 @@ def bubble_pressure(Eos, **sys_dict):
     else:
         flag_use_mp_object = False
 
-    if np.size(T_list) != np.size(xi_list, axis=0):
-        if len(T_list) == 1:
-            T_list = np.ones(len(xi_list))*T_list[0]
-            logger.info("The same temperature, {}, was used for all mole fraction values".format(T_list[0]))
-        elif len(xi_list) == 1:
-            xi_list = np.array([xi_list[0] for i in range(len(T_list))])
-            logger.info("The same composition, {}, was used for all temperature values".format(xi_list[0]))
-        else:
-            raise ValueError("The number of provided temperatures and mole fraction sets are different")
-
-    ## Optional values
-    opts = {}
-
-    # Process initial guess in pressure
-    if 'Pguess' in sys_dict:
-        Pguess = np.array(sys_dict['Pguess'],float)
-        del sys_dict['Pguess']
-        if not len(np.shape(Pguess)):
-            Pguess = np.array([Pguess])
-        if np.size(T_list) != np.size(Pguess):
-            if len(Pguess) == 1:
-                opts["Pguess"] = np.ones(len(T_list))*float(Pguess[0])
-                logger.info("The same pressure, {}, was used for all mole fraction values".format(Pguess))
-            else:
-                raise ValueError("The number of provided pressure and mole fraction sets are different")
-        else:
-            opts["Pguess"] = Pguess
-        logger.info("Using user defined initial guess has been provided")
-
-    if 'Pmin' in sys_dict:
-        Pmin = np.array(sys_dict['Pmin'],float)
-        del sys_dict['Pmin']
-        if not len(np.shape(Pmin)):
-            Pmin = np.array([Pmin])
-        if np.size(T_list) != np.size(Pmin):
-            if len(Pmin) == 1:
-                opts["Pmin"] = np.ones(len(T_list))*float(Pmin[0])
-                logger.info("The same min pressure, {}, was used for all mole fraction values".format(Pmin))
-            else:
-                raise ValueError("The number of provided pressure and mole fraction sets are different")
-        else:
-            opts["Pmin"] = Pmin
-        logger.info("Using user defined min pressure")
-
-    if 'Pmax' in sys_dict:
-        Pmax = np.array(sys_dict['Pmax'],float)
-        del sys_dict['Pmax']
-        if not len(np.shape(Pmax)):
-            Pmax = np.array([Pmax])
-        if np.size(T_list) != np.size(Pmax):
-            if len(Pmax) == 1:
-                opts["Pmax"] = np.ones(len(T_list))*float(Pmax[0])
-                logger.info("The same max pressure, {}, was used for all mole fraction values".format(Pmax))
-            else:
-                raise ValueError("The number of provided pressure and mole fraction sets are different")
-        else:
-            opts["Pmax"] = Pmax
-        logger.info("Using user defined max pressure")
-
     opts.update(sys_dict) # Add unprocessed options
 
     ## Calculate P and yi
     per_job_var = ["Pmin","Pmax","Pguess"]
     inputs = []
-    for i in range(len(T_list)):
+    for i in range(npoints):
         opts_tmp = opts.copy()
         for key in per_job_var:
             if key in opts_tmp:
                 opts_tmp[key] = opts_tmp[key][i]
-        inputs.append((T_list[i], xi_list[i], Eos, opts_tmp))
+        inputs.append((thermo_dict["Tlist"][i], thermo_dict["xilist"][i], Eos, opts_tmp))
 
     if flag_use_mp_object:
         P_list, yi_list, flagv_list, flagl_list, obj_list = MultiprocessingObject.pool_job(_bubble_pressure_wrapper, inputs)
@@ -154,7 +104,7 @@ def bubble_pressure(Eos, **sys_dict):
 
     logger.info("--- Calculation bubble_pressure Complete ---")
 
-    return {"T":T_list, "xi":xi_list, "P":P_list, "yi":yi_list, "flagl":flagl_list, "flagv":flagv_list, "obj":obj_list}
+    return {"T":thermo_dict["Tlist"], "xi":thermo_dict["xilist"], "P":P_list, "yi":yi_list, "flagl":flagl_list, "flagv":flagv_list, "obj":obj_list}
 
 def _bubble_pressure_wrapper(args):
     r""" Wrapper for parallelized use of 'bubble_pressure' calculation type.
@@ -193,7 +143,7 @@ def dew_pressure(Eos, **sys_dict):
         An instance of the defined EOS class to be used in thermodynamic computations.
     yilist : list
         List of sets of component mole fraction, where sum(yi)=1.0 for each set. Each set of components corresponds to a temperature in Tlist, or if one set is given, this composition will be used for all temperatures.
-    Tlist : list, Optional, default: 298.15
+    Tlist : list, Optional, default=298.15
         [K] Temperature of the system corresponding to composition in yilist. If one set is given, this pressure will be used for all compositions.
     Pguess : list/float, Optional
         [Pa] Guess the system pressure at the dew point. If a list of length 1 is provided, that value is used for all temperature-composition sets given.
@@ -221,31 +171,30 @@ def dew_pressure(Eos, **sys_dict):
 
     """
 
-    ## Extract and check input data
-    if 'Tlist' in sys_dict:
-        T_list = np.array(sys_dict['Tlist'],float)
-        del sys_dict['Tlist']
-        logger.info("Using Tlist")
-    else:
-        T_list = np.array([constants.standard_temperature])
-        logger.info("Assuming standard temperature")
-
-    if 'yilist' in sys_dict:
-        yi_list = np.array(sys_dict['yilist'],float)
-        del sys_dict['yilist']
-        logger.info("Using yilist")
-    else:
+    if "yilist" not in sys_dict:
         raise ValueError('Mole fractions, yilist, are not specified')
+    elif not gtb.isiterable(sys_dict["yilist"][0]):
+        sys_dict["yilist"] = np.array([sys_dict["yilist"]],float)
 
-    if np.size(T_list) != np.size(yi_list, axis=0):
-        if len(T_list) == 1:
-            T_list = np.ones(len(yi_list))*T_list[0]
-            logger.info("The same temperature, {}, was used for all mole fraction values".format(T_list[0]))
-        elif len(yi_list) == 1:
-            yi_list = np.array([yi_list[0] for i in range(len(T_list))])
-            logger.info("The same composition, {}, was used for all temperature values".format(yi_list[0]))
-        else:
-            raise ValueError("The number of provided temperatures and mole fraction sets are different")
+    ## Extract and check input data
+    thermo_keys = ['Tlist', 'yilist']
+    thermo_dict = gtb.check_length(sys_dict,thermo_keys)
+    npoints = len(thermo_dict[list(thermo_dict.keys())[0]])
+    npoints = len(thermo_dict["yilist"])
+
+    thermo_defaults = [constants.standard_temperature]
+    thermo_dict.update(gtb.set_defaults(thermo_dict, "Tlist", thermo_defaults, lx=npoints))
+
+    ## Optional values
+    optional_keys = ["Pguess", "Pmin", "Pmax"]
+    opts = gtb.check_length(sys_dict, optional_keys, lx=npoints)
+    if opts:
+        logger.info("Accepted user defined variables: {}".format(", ".join(list(opts.keys()))))
+
+    # Delete processed keys
+    for key in thermo_keys+optional_keys:
+        if key in sys_dict:
+            del sys_dict[key]
 
     if 'MultiprocessingObject' in sys_dict:
         MultiprocessingObject = sys_dict['MultiprocessingObject']
@@ -254,70 +203,17 @@ def dew_pressure(Eos, **sys_dict):
     else:
         flag_use_mp_object = False
 
-    ## Optional values
-    opts = {}
-
-    # Process initial guess in pressure
-    if 'Pguess' in sys_dict:
-        Pguess = np.array(sys_dict['Pguess'],float)
-        del sys_dict['Pguess']
-        if not len(np.shape(Pguess)):
-            Pguess = np.array([Pguess])
-        if np.size(T_list) != np.size(Pguess):
-            if len(Pguess) == 1:
-                opts["Pguess"] = np.ones(len(T_list))*float(Pguess[0])
-                logger.info("The same pressure, {}, was used for all mole fraction values".format(Pguess))
-            else:
-                raise ValueError("The number of provided pressure and mole fraction sets are different")
-        else:
-            opts["Pguess"] = Pguess
-        logger.info("Using user defined initial guess has been provided")
-
-    if 'Pmin' in sys_dict:
-        Pmin = np.array(sys_dict['Pmin'],float)
-        del sys_dict['Pmin']
-        if not len(np.shape(Pmin)):
-            Pmin = np.array([Pmin])
-        if np.size(T_list) != np.size(Pmin):
-            if len(Pmin) == 1:
-                opts["Pmin"] = np.ones(len(T_list))*float(Pmin[0])
-                logger.info("The same min pressure, {}, was used for all mole fraction values".format(Pmin))
-            else:
-                raise ValueError("The number of provided pressure and mole fraction sets are different")
-        else:
-            opts["Pmin"] = Pmin
-        logger.info("Using user defined min pressure")
-
-    if 'Pmax' in sys_dict:
-        Pmax = np.array(sys_dict['Pmax'],float)
-        del sys_dict['Pmax']
-        if not len(np.shape(Pmax)):
-            Pmax = np.array([Pmax])
-        if np.size(T_list) != np.size(Pmax):
-            if len(Pmax) == 1:
-                opts["Pmax"] = np.ones(len(T_list))*float(Pmax[0])
-                logger.info("The same max pressure, {}, was used for all mole fraction values".format(Pmax))
-            else:
-                raise ValueError("The number of provided pressure and mole fraction sets are different")
-        else:
-            opts["Pmax"] = Pmax
-        logger.info("Using user defined max pressure")
-
     opts.update(sys_dict) # Add unprocessed options
 
     ## Calculate P and yi
     per_job_var = ["Pguess", "Pmin", "Pmax"]
     inputs = []
-    for i in range(len(T_list)):
+    for i in range(npoints):
         opts_tmp = opts.copy()
         for key in per_job_var:
             if key in opts_tmp:
                 opts_tmp[key] = opts_tmp[key][i]
-        inputs.append((T_list[i], yi_list[i], Eos, opts_tmp))
-
-    ## Calculate P and xi
-    T_list = np.array(T_list)
-    inputs = [(T_list[i], yi_list[i], Eos, opts) for i in range(len(T_list))]
+        inputs.append((thermo_dict["Tlist"][i], thermo_dict["yilist"][i], Eos, opts_tmp))
 
     if flag_use_mp_object:
         P_list, xi_list, flagv_list, flagl_list, obj_list = MultiprocessingObject.pool_job(_dew_pressure_wrapper, inputs)
@@ -326,7 +222,7 @@ def dew_pressure(Eos, **sys_dict):
 
     logger.info("--- Calculation dew_pressure Complete ---")
 
-    return {"T":T_list,"xi":xi_list,"P":P_list,"yi":yi_list,"flagl":flagl_list,"flagv":flagv_list, "obj":obj_list}
+    return {"T":thermo_dict["Tlist"],"xi":xi_list,"P":P_list,"yi":thermo_dict["yilist"],"flagl":flagl_list,"flagv":flagv_list, "obj":obj_list}
 
 def _dew_pressure_wrapper(args):
     r""" Wrapper for parallelized use of 'dew_pressure' calculation type.
@@ -365,9 +261,9 @@ def flash(Eos, **sys_dict):
     ----------
     Eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
-    Tlist : list, Optional, default: 298.15
+    Tlist : list, Optional, default=298.15
         [K] Temperature of the system corresponding Plist. If one value is given, this temperature will be used for all temperatures.
-    Plist : list, Optional, default: 101325.0
+    Plist : list, Optional, default=101325.0
         [Pa] Pressure of the system corresponding to Tlist. If one value is given, this pressure will be used for all temperatures.
     MultiprocessingObject : obj, Optional
         Multiprocessing object, :class:`~despasito.utils.parallelization.MultiprocessingJob`
@@ -390,31 +286,17 @@ def flash(Eos, **sys_dict):
     """
 
     ## Extract and check input data
-    if 'Tlist' in sys_dict:
-        T_list = np.array(sys_dict['Tlist'],float)
-        del sys_dict['Tlist']
-        logger.info("Using Tlist")
-    else:
-        T_list = np.array([constants.standard_temperature])
-        logger.info("Assuming standard temperature")
+    thermo_keys = ['Tlist', 'Plist']
+    thermo_dict = gtb.check_length(sys_dict,thermo_keys)
+    npoints = len(thermo_dict[list(thermo_dict.keys())[0]])
 
-    if 'Plist' in sys_dict:
-        P_list = np.array(sys_dict['Plist'],float)
-        del sys_dict['Plist']
-        logger.info("Using Plist")
-    else:
-        P_list = constants.standard_pressure * np.ones_like(T_list)
-        logger.info("Assuming atmospheric pressure.")
+    thermo_defaults = [constants.standard_temperature, constants.standard_pressure]
+    thermo_dict.update(gtb.set_defaults(thermo_dict, thermo_keys, thermo_defaults, lx=npoints))
 
-    if np.size(T_list) != np.size(P_list, axis=0):
-        if len(T_list) == 1:
-            T_list = np.ones(len(P_list))*T_list[0]
-            logger.info("The same temperature, {}, was used for all pressure values".format(T_list[0]))
-        elif len(P_list) == 1:
-            P_list = np.ones(len(T_list))*P_list[0]
-            logger.info("The same pressure, {}, was used for all temperature values".format(P_list[0]))
-        else:
-            raise ValueError("The number of provided temperatures and pressure values are different")
+    # Delete processed keys
+    for key in thermo_keys:
+        if key in sys_dict:
+            del sys_dict[key]
 
     if 'MultiprocessingObject' in sys_dict:
         MultiprocessingObject = sys_dict['MultiprocessingObject']
@@ -425,11 +307,10 @@ def flash(Eos, **sys_dict):
 
     opts = sys_dict.copy()
 
-    # Initialize Variables
     if Eos.number_of_components != 2:
         raise ValueError("Only binary systems are currently supported for flash calculations, {} were given.".format(Eos.number_of_components))
 
-    inputs = [(T_list[i], P_list[i], Eos, opts) for i in range(len(T_list))]
+    inputs = [(thermo_dict["Tlist"][i], thermo_dict["Plist"][i], Eos, opts) for i in range(npoints)]
 
     if flag_use_mp_object:
         xi_list, yi_list, flagv_list, flagl_list, obj_list = MultiprocessingObject.pool_job(_flash_wrapper, inputs)
@@ -438,7 +319,7 @@ def flash(Eos, **sys_dict):
 
     logger.info("--- Calculation flash Complete ---")
 
-    return {"T":T_list,"xi":xi_list,"P":P_list,"yi":yi_list,"flagl":flagl_list,"flagv":flagv_list, "obj":obj_list}
+    return {"T":thermo_dict["Tlist"],"xi":xi_list,"P":thermo_dict["Plist"],"yi":yi_list,"flagl":flagl_list,"flagv":flagv_list, "obj":obj_list}
 
 def _flash_wrapper(args):
     r""" Wrapper for parallelized use of 'flash' calculation type.
@@ -469,7 +350,7 @@ def saturation_properties(Eos, **sys_dict):
     ----------
     Eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
-    Tlist : list, Optional, default: 298.15 
+    Tlist : list, Optional, default=298.15 
         [K] Temperature of the system corresponding Plist. If one value is given, this temperature will be used for all temperatures.
     MultiprocessingObject : obj, Optional
         Multiprocessing object, :class:`~despasito.utils.parallelization.MultiprocessingJob`
@@ -489,19 +370,20 @@ def saturation_properties(Eos, **sys_dict):
     """
 
     ## Extract and check input data
-    if 'Tlist' in sys_dict:
-        T_list = np.array(sys_dict['Tlist'],float)
-        del sys_dict['Tlist']
-        logger.info("Using Tlist")
-    else:
-        T_list = np.array([constants.standard_temperature])
-        logger.info("Using standard temperature")
+    thermo_keys = ['Tlist', 'xilist']
+    thermo_dict = gtb.check_length(sys_dict,thermo_keys)
+    if "Tlist" not in thermo_dict:
+        thermo_dict["Tlist"] = np.array([constants.standard_temperature])
+        logger.info("Assuming standard temperature, {}".format(constants.standard_temperature))
+    npoints = len(thermo_dict["Tlist"])
 
-    if 'xilist' in sys_dict:
-        xi_list = np.array(sys_dict['xilist'],float)
-        del sys_dict['xilist']
-    else:
-        xi_list = np.array([[1.0] for x in range(len(T_list))])
+    thermo_defaults = [constants.standard_temperature, np.array([[1.0] for x in range(npoints)])]
+    thermo_dict.update(gtb.set_defaults(thermo_dict, thermo_keys, thermo_defaults, lx=npoints))
+
+    # Delete processed keys
+    for key in thermo_keys:
+        if key in sys_dict:
+            del sys_dict[key]
 
     if 'MultiprocessingObject' in sys_dict:
         MultiprocessingObject = sys_dict['MultiprocessingObject']
@@ -512,7 +394,7 @@ def saturation_properties(Eos, **sys_dict):
 
     opts = sys_dict.copy()
 
-    inputs = [(T_list[i], xi_list[i], Eos, opts) for i in range(len(T_list))]
+    inputs = [(thermo_dict["Tlist"][i], thermo_dict["xilist"][i], Eos, opts) for i in range(npoints)]
     if flag_use_mp_object:
         Psat, rholsat, rhovsat = MultiprocessingObject.pool_job(_saturation_properties_wrapper, inputs)
     else:
@@ -520,7 +402,7 @@ def saturation_properties(Eos, **sys_dict):
 
     logger.info("--- Calculation saturation_properties Complete ---")
 
-    return {"T":T_list,"Psat":Psat,"rhol":rholsat,"rhov":rhovsat}
+    return {"T":thermo_dict["Tlist"],"Psat":Psat,"rhol":rholsat,"rhov":rhovsat}
 
 def _saturation_properties_wrapper(args):
     r""" Wrapper for parallelized use of 'saturation_properties' calculation type.
@@ -559,9 +441,9 @@ def liquid_properties(Eos, **sys_dict):
         An instance of the defined EOS class to be used in thermodynamic computations.
     xilist : list
         List of sets of component mole fraction, where sum(xi)=1.0 for each set. Each set of components corresponds to a temperature in Tlist, or if one set is given, this composition will be used for all temperatures.
-    Tlist : list, Optional default: 298.15 
+    Tlist : list, Optional default=298.15 
         [K] Temperature of the system corresponding Plist. If one value is given, this temperature will be used for all temperatures.
-    Plist : list, Optional, default: 101325.0 
+    Plist : list, Optional, default=101325.0 
         [Pa] Pressure of the system corresponding to Tlist. If one value is given, this pressure will be used for all temperatures.
     MultiprocessingObject : obj, Optional
         Multiprocessing object, :class:`~despasito.utils.parallelization.MultiprocessingJob`
@@ -583,50 +465,20 @@ def liquid_properties(Eos, **sys_dict):
     """
 
     ## Extract and check input data
-    if 'Tlist' in sys_dict:
-        T_list = np.array(sys_dict['Tlist'],float)
-        del sys_dict['Tlist']
-        logger.info("Using Tlist")
-    else:
-        T_list = np.array([constants.standard_temperature])
-        logger.info("Assuming standard temperature")
+    thermo_keys = ['Tlist', 'xilist', "Plist"]
+    thermo_dict = gtb.check_length(sys_dict,thermo_keys)
+    npoints = len(thermo_dict[list(thermo_dict.keys())[0]])
 
-    if 'xilist' in sys_dict:
-        xi_list = np.array(sys_dict['xilist'],float)
-        del sys_dict['xilist']
-        logger.info("Using xilist")
-    else:
-        if Eos.number_of_components == 1:
-            logger.info("Array xilist wasn't specified, assume one component system")
-            xi_list = [[1.0] for i in T_list]
-        else:
-            raise ValueError("With more than one component, xilist must be provided.")
+    if 'xilist' not in thermo_dict and Eos.number_of_components > 1:
+        raise ValueError("Ambiguous mixture composition. Define xilist")
 
-    if np.size(T_list) != np.size(xi_list, axis=0):
-        if len(T_list) == 1:
-            T_list = np.ones(len(xi_list))*T_list[0]
-            logger.info("The same temperature, {}, was used for all mole fraction values".format(T_list[0]))
-        elif len(xi_list) == 1:
-            xi_list = [xi_list[0] for i in T_list]
-            logger.info("The same mole fraction set, {}, was used for all temperature values".format(xi_list[0]))
-        else:
-            raise ValueError("The number of provided temperatures and mole fraction sets are different")
+    thermo_defaults = [constants.standard_temperature, np.array([[1.0] for x in range(npoints)]), constants.standard_pressure]
+    thermo_dict.update(gtb.set_defaults(thermo_dict, thermo_keys, thermo_defaults, lx=npoints))
 
-    if "Plist" in sys_dict:
-        P_list = np.array(sys_dict['Plist'])
-        del sys_dict['Plist']
-        if np.size(T_list) != np.size(P_list, axis=0):
-            if len(P_list)==1:
-                P_list = P_list[0] * np.ones_like(T_list)
-            elif len(T_list)==1:
-                T_list = T_list[0] * np.ones_like(P_list)
-                xi_list = np.array([xi_list[0] for i in T_list])
-            else:
-                raise ValueError("The number of provided temperatures and pressure sets are different")
-        logger.info("Using Plist")
-    else:
-        P_list = constants.standard_pressure * np.ones_like(T_list)
-        logger.info("Assuming atmospheric pressure.")
+    # Delete processed keys
+    for key in thermo_keys:
+        if key in sys_dict:
+            del sys_dict[key]
 
     if 'MultiprocessingObject' in sys_dict:
         MultiprocessingObject = sys_dict['MultiprocessingObject']
@@ -637,7 +489,7 @@ def liquid_properties(Eos, **sys_dict):
 
     opts = sys_dict.copy()
 
-    inputs = [(P_list[i], T_list[i], xi_list[i], Eos, opts) for i in range(len(T_list))]
+    inputs = [(thermo_dict["Plist"][i], thermo_dict["Tlist"][i], thermo_dict["xilist"][i], Eos, opts) for i in range(npoints)]
     if flag_use_mp_object:
         rhol, phil, flagl = MultiprocessingObject.pool_job(_liquid_properties_wrapper, inputs)
     else:
@@ -645,7 +497,7 @@ def liquid_properties(Eos, **sys_dict):
 
     logger.info("--- Calculation liquid_properties Complete ---")
 
-    return {"P":P_list,"T":T_list,"xi":xi_list,"rhol":rhol,"phil":phil,"flagl":flagl}
+    return {"P":thermo_dict["Plist"],"T":thermo_dict["Tlist"],"xi":thermo_dict["xilist"],"rhol":rhol,"phil":phil,"flagl":flagl}
 
 def _liquid_properties_wrapper(args):
     r""" Wrapper for parallelized use of 'liquid_properties' calculation type.
@@ -679,9 +531,9 @@ def vapor_properties(Eos, **sys_dict):
         An instance of the defined EOS class to be used in thermodynamic computations.
     yilist: : list
         List of sets of component mole fraction, where sum(yi)=1.0 for each set. Each set of components corresponds to a temperature in Tlist, or if one set is given, this composition will be used for all temperatures.
-    Tlist : list, Optional, default: 298.15 
+    Tlist : list, Optional, default=298.15 
         [K] Temperature of the system corresponding Plist. If one value is given, this temperature will be used for all temperatures.
-    Plist : list, Optional, default: 101325.0
+    Plist : list, Optional, default=101325.0
         [Pa] Pressure of the system corresponding to Tlist. If one value is given, this pressure will be used for all temperatures.
     MultiprocessingObject : obj, Optional
         Multiprocessing object, :class:`~despasito.utils.parallelization.MultiprocessingJob`
@@ -703,50 +555,20 @@ def vapor_properties(Eos, **sys_dict):
     """
 
     ## Extract and check input data
-    if 'Tlist' in sys_dict:
-        T_list = np.array(sys_dict['Tlist'],float)
-        del sys_dict['Tlist']
-        logger.info("Using Tlist")
-    else:
-        logger.info("Assuming standard temperature")
-        T_list = np.array([constants.standard_temperature])
+    thermo_keys = ['Tlist', 'yilist', "Plist"]
+    thermo_dict = gtb.check_length(sys_dict,thermo_keys)
+    npoints = len(thermo_dict[list(thermo_dict.keys())[0]])
 
-    if 'yilist' in sys_dict:
-        yi_list = np.array(sys_dict['yilist'],float)
-        del sys_dict['yilist']
-        logger.info("Using yilist")
-    else:
-        if Eos.number_of_components == 1:
-            logger.info("Array yilist wasn't specified, assume one component system")
-            yi_list = [[1.0] for i in T_list]
-        else:
-            raise ValueError("With more than one component, yilist must be provided.")
+    if 'yilist' not in thermo_dict and Eos.number_of_components > 1:
+        raise ValueError("Ambiguous mixture composition. Define yilist")
 
-    if np.size(T_list) != np.size(yi_list, axis=0):
-        if len(T_list) == 1:
-            T_list = np.ones(len(yi_list))*T_list[0]
-            logger.info("The same temperature, {}, was used for all mole fraction values".format(T_list[0]))
-        elif len(yi_list) == 1:
-            yi_list = [yi_list[0] for i in T_list]
-            logger.info("The same mole fraction set, {}, was used for all temperature values".format(yi_list[0]))
-        else:
-            raise ValueError("The number of provided temperatures and mole fraction sets are different")
+    thermo_defaults = [constants.standard_temperature, np.array([[1.0] for x in range(npoints)]), constants.standard_pressure]
+    thermo_dict.update(gtb.set_defaults(thermo_dict, thermo_keys, thermo_defaults, lx=npoints))
 
-    if "Plist" in sys_dict:
-        P_list = np.array(sys_dict['Plist'])
-        del sys_dict['Plist']
-        if np.size(T_list) != np.size(P_list, axis=0):
-            if len(P_list)==1:
-                P_list = P_list[0] * np.ones_like(T_list)
-            elif len(T_list)==1:
-                T_list = T_list[0] * np.ones_like(P_list)
-                yi_list = np.array([yi_list[0] for i in T_list])
-            else:
-                raise ValueError("The number of provided temperatures and pressure sets are different")
-        logger.info("Using Plist")
-    else:
-        P_list = constants.standard_pressure * np.ones_like(T_list)
-        logger.info("Assuming atmospheric pressure.")
+    # Delete processed keys
+    for key in thermo_keys:
+        if key in sys_dict:
+            del sys_dict[key]
 
     if 'MultiprocessingObject' in sys_dict:
         MultiprocessingObject = sys_dict['MultiprocessingObject']
@@ -757,7 +579,7 @@ def vapor_properties(Eos, **sys_dict):
 
     opts = sys_dict.copy()
 
-    inputs = [(P_list[i], T_list[i], yi_list[i], Eos, opts) for i in range(len(T_list))]
+    inputs = [(thermo_dict["Plist"][i], thermo_dict["Tlist"][i], thermo_dict["yilist"][i], Eos, opts) for i in range(npoints)]
     if flag_use_mp_object:
         rhov, phiv, flagv = MultiprocessingObject.pool_job(_vapor_properties_wrapper, inputs)
     else:
@@ -765,7 +587,7 @@ def vapor_properties(Eos, **sys_dict):
 
     logger.info("--- Calculation vapor_properties Complete ---")
 
-    return {"P":P_list,"T":T_list,"yi":yi_list,"rhov":rhov,"phiv":phiv,"flagv":flagv}
+    return {"P":thermo_dict["Plist"],"T":thermo_dict["Tlist"],"yi":thermo_dict["yilist"],"rhov":rhov,"phiv":phiv,"flagv":flagv}
 
 def _vapor_properties_wrapper(args):
     r""" Wrapper for parallelized use of 'vapor_properties' calculation type.
@@ -797,11 +619,11 @@ def solubility_parameter(Eos, **sys_dict):
     ----------
     Eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
-    Tlist : list, Optional, default: 298.15 
+    Tlist : list, Optional, default=298.15 
         [K] Temperature of the system corresponding Plist. If one value is given, this temperature will be used for all temperatures.
-    xilist : list, Optional, default: [1.0] 
+    xilist : list, Optional, default=[1.0] 
         Default assumes all of one component. List of sets of component mole fraction, where sum(xi)=1.0 for each set. Each set of components corresponds to a temperature in Tlist, or if one set is given, this composition will be used for all temperatures.
-    Plist : list, Optional, default: 101325.0
+    Plist : list, Optional, default=101325.0
         [Pa] Pressure of the system corresponding to Tlist. If one value is given, this pressure will be used for all temperatures.
     MultiprocessingObject : obj, Optional
         Multiprocessing object, :class:`~despasito.utils.parallelization.MultiprocessingJob`
@@ -822,52 +644,23 @@ def solubility_parameter(Eos, **sys_dict):
     """
 
     ## Extract and check input data
-    if 'Tlist' in sys_dict:
-        T_list = np.array(sys_dict['Tlist'],float)
-        logger.info("Using Tlist")
-        del sys_dict['Tlist']
+    thermo_keys = ['Tlist', 'xilist', "Plist"]
+    if any([x in sys_dict for x in thermo_keys]):
+        thermo_dict = gtb.check_length(sys_dict,thermo_keys)
+        npoints = len(thermo_dict[list(thermo_dict.keys())[0]])
     else:
-        logger.info("Assuming standard temperature")
-        T_list = np.array([constants.standard_temperature])
+        npoints = 1
 
-    if "Plist" in sys_dict:
-        P_list = np.array(sys_dict['Plist'])
-        logger.info("Using Plist")
-        del sys_dict['Plist']
-    else:
-        P_list = constants.standard_pressure * np.ones_like(T_list)
-        logger.info("Assuming atmospheric pressure.")
+    if 'xilist' not in thermo_dict and Eos.number_of_components > 1:
+        raise ValueError("Ambiguous mixture composition. Define xilist")
 
-    if "xilist" in sys_dict:
-        xi_list = np.array(sys_dict['xilist'])
-        logger.info("Using xilist")
-        del sys_dict['xilist']
-    else:
-        if Eos.number_of_components == 1:
-            xi_list = np.array([[1.0] for x in range(len(T_list))])
-            logger.info("Single mole fraction of one.")
-        else:
-            raise ValueError("Mole fractions, xilist, must be specified")
+    thermo_defaults = [constants.standard_temperature, np.array([[1.0] for x in range(npoints)]), constants.standard_pressure]
+    thermo_dict.update(gtb.set_defaults(thermo_dict, thermo_keys, thermo_defaults, lx=npoints))
 
-    if np.size(T_list) != np.size(xi_list, axis=0):
-        if len(T_list) == 1:
-            T_list = np.ones(len(xi_list))*T_list[0]
-            logger.info("The same temperature, {}, was used for all mole fraction values".format(T_list[0]))
-        elif len(xi_list) == 1:
-            xi_list = np.array([xi_list[0] for x in range(len(T_list))])
-            logger.info("The same mole fraction values, {}, were used for all temperature values".format(xi_list[0]))
-        else:
-            raise ValueError("The number of provided temperatures and mole fraction sets are different")
-
-    if np.size(T_list) != np.size(P_list, axis=0):
-        if len(P_list) == 1:
-            P_list = np.ones(len(T_list))*P_list[0]
-            logger.info("The same pressure, {}, was used for all temperature values".format(P_list[0]))
-        elif len(T_list)==1:
-            T_list = T_list[0] * np.ones_like(P_list)
-            xi_list = np.array([xi_list[0] for i in T_list])
-        else:
-            raise ValueError("The number of provided temperatures and pressure sets are different")
+    # Delete processed keys
+    for key in thermo_keys:
+        if key in sys_dict:
+            del sys_dict[key]
 
     if 'MultiprocessingObject' in sys_dict:
         MultiprocessingObject = sys_dict['MultiprocessingObject']
@@ -879,7 +672,7 @@ def solubility_parameter(Eos, **sys_dict):
     opts = sys_dict.copy()
 
     ## Calculate solubility parameter
-    inputs = [(P_list[i], T_list[i], xi_list[i], Eos, opts) for i in range(len(T_list))]
+    inputs = [(thermo_dict["Plist"][i], thermo_dict["Tlist"][i], thermo_dict["xilist"][i], Eos, opts) for i in range(npoints)]
     if flag_use_mp_object:
         rhol, flagl, delta = MultiprocessingObject.pool_job(_solubility_parameter_wrapper, inputs)
     else:
@@ -887,7 +680,7 @@ def solubility_parameter(Eos, **sys_dict):
 
     logger.info("--- Calculation solubility_parameter Complete ---")
 
-    return {"P":P_list,"T":T_list,"xi":xi_list,"rhol":rhol,"delta":delta}
+    return {"P":thermo_dict["Plist"],"T":thermo_dict["Tlist"],"xi":thermo_dict["xilist"],"rhol":rhol,"delta":delta}
 
 def _solubility_parameter_wrapper(args):
     r""" Wrapper for parallelized use of 'solubility_parameter' calculation type.
@@ -922,11 +715,11 @@ def verify_eos(Eos, **sys_dict):
     ----------
     Eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
-    Tlist : list, Optional, default: 298.15 
+    Tlist : list, Optional, default=298.15 
         [K] Temperature of the system corresponding Plist. If one value is given, this temperature will be used for all temperatures.
     xilist : list, Optional
         Default array of 11 values from x1=0 to x1=1 for binary array. List of sets of component mole fraction, where sum(xi)=1.0 for each set. Each set of components corresponds to a temperature in Tlist, or if one set is given, this composition will be used for all temperatures.
-    Plist : list, Optional, default: 101325.0 
+    Plist : list, Optional, default=101325.0 
         [Pa] Pressure of the system corresponding to Tlist. If one value is given, this pressure will be used for all temperatures.
     MultiprocessingObject : obj, Optional
         Multiprocessing object, :class:`~despasito.utils.parallelization.MultiprocessingJob`
@@ -953,50 +746,24 @@ def verify_eos(Eos, **sys_dict):
     """
 
     ## Extract and check input data
-
-    if "xilist" in sys_dict:
-        xi_list = np.array(sys_dict['xilist'])
-        logger.info("Using xilist")
-        del sys_dict['xilist']
-    elif Eos.number_of_components == 2:
+    if "xilist" not in sys_dict and Eos.number_of_components == 2:
         tmp = np.linspace(0,1,11)
         xi_list = np.array([[x, 1.0-x] for x in tmp])
         logger.info("Use array of mole fractions")
     else:
         raise ValueError("Must have at least 2 components. With more that 2 components, the mole fractions need to be specified")
 
-    if 'Tlist' in sys_dict:
-        T_list = np.array(sys_dict['Tlist'],float)
-        logger.info("Using Tlist")
-        del sys_dict['Tlist']
-    else:
-        T_list = constants.standard_temperature*np.ones(len(xi_list))
-        logger.info("Assume 298.15 K")
+    thermo_keys = ['Tlist', 'xilist', "Plist"]
+    thermo_dict = gtb.check_length(sys_dict,thermo_keys)
+    npoints = len(thermo_dict[list(thermo_dict.keys())[0]])
 
-    if "Plist" in sys_dict:
-        P_list = np.array(sys_dict['Plist'])
-        logger.info("Using Plist")
-        del sys_dict['Plist']
-    else:
-        P_list = constants.standard_pressure * np.ones_like(T_list)
-        logger.info("Assuming atmospheric pressure.")
+    thermo_defaults = [constants.standard_temperature, constants.standard_pressure]
+    thermo_dict.update(gtb.set_defaults(thermo_dict, ['Tlist', "Plist"], thermo_defaults, lx=npoints))
 
-    if np.size(T_list) != np.size(xi_list, axis=0):
-        if len(T_list) == 1:
-            T_list = np.ones(len(xi_list))*T_list[0]
-            logger.info("The same temperature, {}, was used for all mole fraction values".format(T_list[0]))
-        elif len(xi_list) == 1:
-            xi_list = np.array([xi_list[0] for x in range(len(T_list))])
-            logger.info("The same mole fraction values, {}, were used for all temperature values".format(xi_list[0]))
-        else:
-            raise ValueError("The number of provided temperatures and mole fraction sets are different")
-
-    if np.size(T_list) != np.size(P_list, axis=0):
-        if len(P_list) == 1:
-            P_list = np.ones(len(T_list))*P_list[0]
-            logger.info("The same pressure, {}, was used for all temperature values".format(P_list[0]))
-        else:
-            raise ValueError("The number of provided temperatures and pressure sets are different")
+    # Delete processed keys
+    for key in thermo_keys:
+        if key in sys_dict:
+            del sys_dict[key]
 
     if 'MultiprocessingObject' in sys_dict:
         MultiprocessingObject = sys_dict['MultiprocessingObject']
@@ -1007,8 +774,7 @@ def verify_eos(Eos, **sys_dict):
 
     opts = sys_dict.copy()
 
-    ## Calculate solubility parameter
-    inputs = [(P_list[i], T_list[i], xi_list[i], Eos, opts) for i in range(len(T_list))]
+    inputs = [(thermo_dict["Plist"], thermo_dict["Tlist"][i], thermo_dict["xilist"][i], Eos, opts) for i in range(npoints)]
     if flag_use_mp_object:
         residual_v1, residual_v2, flagv, log_phiv, residual_l1, residual_l2, flagl, log_phil = MultiprocessingObject.pool_job(_verify_eos_wrapper, inputs)
     else:
@@ -1016,7 +782,7 @@ def verify_eos(Eos, **sys_dict):
 
     logger.info("--- Calculation verify_eos Complete ---")
 
-    return {"P":P_list, "T":T_list, "xi":xi_list, "residual_v1":residual_v1, "residual_v2":residual_v2, "flagv": flagv, "log_phivi":log_phiv, "residual_l1":residual_l1, "residual_l2":residual_l2, "flagl": flagl, "log_phili":log_phil}
+    return {"P":thermo_dict["Plist"], "T":thermo_dict["Tlist"], "xi":thermo_dict["xilist"], "residual_v1":residual_v1, "residual_v2":residual_v2, "flagv": flagv, "log_phivi":log_phiv, "residual_l1":residual_l1, "residual_l2":residual_l2, "flagl": flagl, "log_phili":log_phil}
 
 def _verify_eos_wrapper(args):
     r""" Wrapper for parallelized use of 'verify_eos' calculation type.

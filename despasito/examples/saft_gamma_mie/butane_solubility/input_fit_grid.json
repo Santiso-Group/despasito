@@ -3,9 +3,9 @@
     "EOSgroup": "../../library/SAFTgroup.json",
     "optimization_parameters": {
         "fit_bead" : "CH3",
-        "fit_params": ["epsilon_CH2"],
+        "fit_parameter_names": ["epsilon_CH2"],
         "epsilon_bounds" : [150.0, 400.0],
-        "beadparams0" : [300.0, 0.35]
+        "parameters_guess" : [300.0, 0.35]
     },
     "Knovel": {
         "bead_configuration": [[["CH3", 2],["CH2", 4]]],

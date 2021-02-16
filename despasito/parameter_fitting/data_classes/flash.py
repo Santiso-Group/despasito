@@ -6,8 +6,10 @@ import numpy as np
 import logging
 
 from despasito.thermodynamics import thermo
-from despasito.parameter_fitting import fit_funcs as ff
+from despasito.parameter_fitting import fit_functions as ff
 from despasito.parameter_fitting.interface import ExpDataTemplate
+from despasito import fundamental_constants as constants
+import despasito.utils.general_toolbox as gtb
 
 logger = logging.getLogger(__name__)
 
@@ -28,11 +30,11 @@ class Data(ExpDataTemplate):
     data_dict : dict
         Dictionary of exp data of type flash.
 
-        * calculation_type : str, Optional, default: 'bubble_pressure', 'dew_pressure' is also acceptable
+        * calculation_type : str, Optional, default='flash'
         * T : list, List of temperature values for calculation
         * P : list, List of pressure values for calculation
         * weights : dict, A dictionary where each key is the header used in the exp. data file. The value associated with a header can be a list as long as the number of data points to multiply by the objective value associated with each point, or a float to multiply the objective value of this data set.
-        * density_opts : dict, Optional, default: {"minrhofrac":(1.0 / 300000.0), "rhoinc":10.0, "vspacemax":1.0E-4}, Dictionary of options used in calculating pressure vs. mole fraction curves.
+        * density_opts : dict, Optional, default={"min_density_fraction":(1.0 / 300000.0), "density_increment":10.0, "max_volume_increment":1.0E-4}, Dictionary of options used in calculating pressure vs. mole fraction curves.
 
     Attributes
     ----------
@@ -43,8 +45,8 @@ class Data(ExpDataTemplate):
     thermodict : dict
         Dictionary of inputs needed for thermodynamic calculations
         
-        - calculation_type (str) default: flash
-        - density_opts (dict) default: {"minrhofrac":(1.0 / 300000.0), "rhoinc":10.0, "vspacemax":1.0E-4}
+        - calculation_type (str) default=flash
+        - density_opts (dict) default={"min_density_fraction":(1.0 / 300000.0), "density_increment":10.0, "max_volume_increment":1.0E-4}
     
     """
 
@@ -57,7 +59,7 @@ class Data(ExpDataTemplate):
             logger.warning("No calculation type has been provided.")
             self.thermodict["calculation_type"] = "flash"
     
-        tmp = {"minrhofrac":(1.0 / 300000.0), "rhoinc":10.0, "vspacemax":1.0E-4}
+        tmp = {"min_density_fraction":(1.0 / 300000.0), "density_increment":10.0, "max_volume_increment":1.0E-4}
         if 'density_opts' in self.thermodict:
             tmp.update(self.thermodict["density_opts"])
         self.thermodict["density_opts"] = tmp
@@ -67,53 +69,38 @@ class Data(ExpDataTemplate):
             del data_dict["xi"]
             if 'xi' in self.weights:
                 self.weights['xilist'] = self.weights.pop('xi')
-                key = 'xilist'
-                if key in self.weights:
-                    if  not isinstance(self.weights[key],float) and len(self.weights[key]) != len(self.thermodict[key]):
-                        raise ValueError("Array of weights for '{}' values not equal to number of experimental values given.".format(key))
-            else:
-                self.weights["xilist"] = 1.0
-
         if "yi" in data_dict:
             self.thermodict["yilist"] = data_dict["yi"]
             del data_dict["yi"]
             if 'yi' in self.weights:
                 self.weights['yilist'] = self.weights.pop('yi')
-                key = 'yilist'
-                if key in self.weights:
-                    if isinstance(self.weights[key],float) and len(self.weights[key]) != len(self.thermodict[key]):
-                        raise ValueError("Array of weights for '{}' values not equal to number of experimental values given.".format(key))
-            else:
-                self.weights["yilist"] = 1.0
-
         if "T" in data_dict:
             self.thermodict["Tlist"] = data_dict["T"]
             del data_dict["T"]
-
         if "P" in data_dict: 
             self.thermodict["Plist"] = data_dict["P"]
             del data_dict["P"]
+
+        self.thermodict.update(data_dict)
+
+        thermo_keys = ["Plist", "Tlist"]
+        self.result_keys = ['xilist', 'yilist']
+
+        key_list = list(set(thermo_keys + self.result_keys))
+        self.thermodict.update(gtb.check_length(self.thermodict, key_list))
+        self.npoints = np.size(self.thermodict["Tlist"])
+
+        thermo_defaults = [constants.standard_pressure, constants.standard_temperature]
+        self.thermodict.update(gtb.set_defaults(self.thermodict, thermo_keys, thermo_defaults, lx=self.npoints))
+
+        self.weights.update(gtb.check_length(self.weights, self.result_keys, lx=self.npoints))
+        self.weights.update(gtb.set_defaults(self.weights, self.result_keys, 1.0))
 
         if 'Plist' not in self.thermodict and 'Tlist' not in self.thermodict:
             raise ImportError("Given flash data, values for P and T should have been provided.")
 
         if 'xilist' not in self.thermodict or 'yilist' not in self.thermodict:
             raise ImportError("Given flash data, mole fractions should have been provided.")
-
-        thermo_keys = ["xilist", "yilist", "Plist", "Tlist"]
-        lx = max([len(self.thermodict[key]) for key in thermo_keys if key in self.thermodict])
-        for key in thermo_keys:
-            if key in self.thermodict and len(self.thermodict[key]) == 1:
-                self.thermodict[key] = np.array([self.thermodict[key][0] for x in range(lx)])
-
-        self.npoints = len(self.thermodict["Tlist"])
-        self.result_keys = ["Plist", 'xilist', 'yilist']
-        for key in self.result_keys:
-            if key in self.thermodict and len(self.thermodict[key]) != self.npoints:
-                raise ValueError("T, P, yi, and xi are not all the same length.")
-        self.result_keys.remove("Plist")
-
-        self.thermodict.update(data_dict)
 
         logger.info("Data type 'flash' initiated with calculation_type, {}, and data types: {}.\nWeight data by: {}".format(self.thermodict["calculation_type"],", ".join(self.result_keys),self.weights))
 
@@ -130,7 +117,7 @@ class Data(ExpDataTemplate):
 
         # Remove results
         opts = self.thermodict.copy()
-        tmp = self.result_keys + ["name", "beadparams0"]
+        tmp = self.result_keys + ["name", "parameters_guess"]
         for key in tmp:
             if key in opts:
                 del opts[key]

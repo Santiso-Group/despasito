@@ -6,7 +6,7 @@ from despasito.equations_of_state import constants
 
 logger = logging.getLogger(__name__)
 
-def calc_hard_sphere_matricies(T, sigmakl, beadlibrary, beads, Cprefactor_funcion):
+def calc_hard_sphere_matricies(T, sigmakl, bead_library, beads, Cprefactor_funcion):
     r"""
     Computes matrix of hard sphere interaction parameters dkk, dkl, and x0kl.
     
@@ -18,7 +18,7 @@ def calc_hard_sphere_matricies(T, sigmakl, beadlibrary, beads, Cprefactor_funcio
         Temperature of the system [K]
     sigmakl : numpy.ndarray
         Matrix of Mie diameter for groups (k,l)
-    beadlibrary : dict
+    bead_library : dict
         A dictionary where bead names are the keys to access EOS self interaction parameters:
         
         - epsilon: :math:`\epsilon_{k,k}/k_B`, Energy well depth scaled by Boltzmann constant
@@ -43,8 +43,8 @@ def calc_hard_sphere_matricies(T, sigmakl, beadlibrary, beads, Cprefactor_funcio
     nbeads = np.size(beads)
     dkk = np.zeros(nbeads)
     for i in np.arange(nbeads):
-        prefactor = Cprefactor_funcion(beadlibrary[beads[i]]["lambdar"], beadlibrary[beads[i]]["lambdaa"])
-        dkk[i] = calc_dkk(beadlibrary[beads[i]]["epsilon"], beadlibrary[beads[i]]["sigma"], T, prefactor, beadlibrary[beads[i]]["lambdar"], beadlibrary[beads[i]]["lambdaa"])
+        prefactor = Cprefactor_funcion(bead_library[beads[i]]["lambdar"], bead_library[beads[i]]["lambdaa"])
+        dkk[i] = calc_dkk(bead_library[beads[i]]["epsilon"], bead_library[beads[i]]["sigma"], T, prefactor, bead_library[beads[i]]["lambdar"], bead_library[beads[i]]["lambdaa"])
     dkl = np.zeros((nbeads, nbeads))
     for k in range(nbeads):
         for l in range(nbeads):
@@ -99,7 +99,7 @@ def calc_dkk(epsilon, sigma, T, Cprefactor, lambdar, lambdaa=6.0):
         Prefactor for chosen potential
     lambdar : float
         :math:`\lambda^{r}_{k,k}`, Exponent of repulsive term between groups of type k
-    lambdaa : float, Optional, default: 6.0
+    lambdaa : float, Optional, default=6.0
         :math:`\lambda^{r}_{k,k}`, Exponent of repulsive term between groups of type k
     
     Returns
@@ -146,17 +146,17 @@ def calc_dkk(epsilon, sigma, T, Cprefactor, lambdar, lambdaa=6.0):
     
     return dkk
 
-def calc_composition_dependent_variables(xi, nui, beadlibrary, beads):
+def calc_composition_dependent_variables(xi, molecular_composition, bead_library, beads):
     r"""
     
     Parameters
     ----------
     xi : numpy.ndarray
         Mole fraction of each component, sum(xi) should equal 1.0
-    nui : numpy.array
+    molecular_composition : numpy.array
         :math:`\nu_{i,k}/k_B`, Array of number of components by number of bead types. Defines the number of each type of group in each component.
         Defined for eq. 11. Note that indices are flipped from definition in reference.
-    beadlibrary : dict
+    bead_library : dict
         A dictionary where bead names are the keys to access EOS self interaction parameters:
     
         - Vks: :math:`V_{k,s}`, Number of groups, k, in component
@@ -177,14 +177,14 @@ def calc_composition_dependent_variables(xi, nui, beadlibrary, beads):
     Cmol2seg = 0.0
     for i in range(np.size(xi)):
         for j in range(np.size(beads)):
-            Cmol2seg += xi[i] * nui[i, j] * beadlibrary[beads[j]]["Vks"] * beadlibrary[beads[j]]["Sk"]
+            Cmol2seg += xi[i] * molecular_composition[i, j] * bead_library[beads[j]]["Vks"] * bead_library[beads[j]]["Sk"]
 
     # initialize variables and arrays
     nbeads = len(beads)
     xsk = np.zeros(nbeads, float)
     # compute xsk
     for k in range(nbeads):
-        xsk[k] = np.sum(xi * nui[:, k]) * beadlibrary[beads[k]]["Vks"] * beadlibrary[beads[k]]["Sk"]
+        xsk[k] = np.sum(xi * molecular_composition[:, k]) * bead_library[beads[k]]["Vks"] * bead_library[beads[k]]["Sk"]
     xsk /= Cmol2seg
 
     # calculate  xskl matrix

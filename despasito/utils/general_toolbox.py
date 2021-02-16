@@ -14,15 +14,15 @@ def solve_root( func, args=None, method="bisect", x0=None, bounds=None, options=
     ----------
     func : function
         Function used in job. Can be any of the following scipy methods: "brent", "least_squares", "TNC", "L-BFGS-B", "SLSQP", 'hybr', 'lm', 'linearmixing', 'diagbroyden', 'excitingmixing', 'krylov', 'df-sane', 'anderson', 'hybr_broyden1', 'hybr_broyden2', 'broyden1', 'broyden2', 'bisect'.
-    args : list, Optional, default: None
+    args : list, Optional, default=None
         Each entry of this list contains the input arguements for each job
-    method : str, Optional, default: "bisect"
+    method : str, Optional, default="bisect"
         Choose the method used to solve the dew point calculation
-    x0 : float, Optional, default: None
+    x0 : float, Optional, default=None
         Initial guess in parameter to be optimized
-    bounds : tuple, Optional, default: None
+    bounds : tuple, Optional, default=None
          Parameter boundaries
-    options : dict, Optional, default: {}
+    options : dict, Optional, default={}
         These options are used in the scipy method
 
     Returns
@@ -33,7 +33,7 @@ def solve_root( func, args=None, method="bisect", x0=None, bounds=None, options=
     """
 
     if method not in ["brentq", "least_squares", "TNC", "L-BFGS-B", "SLSQP", 'hybr', 'lm', 'linearmixing', 'diagbroyden', 'excitingmixing', 'krylov', 'df-sane', 'anderson', 'hybr_broyden1', 'hybr_broyden2', 'broyden1', 'broyden2', 'bisect']:
-        logger.error("Optimization method, {}, not supported.".format(method))
+        raise ValueError("Optimization method, {}, not supported.".format(method))
 
     if x0 is None:
         logger.debug("Initial guess in optimization not provided")
@@ -44,7 +44,7 @@ def solve_root( func, args=None, method="bisect", x0=None, bounds=None, options=
         if np.any(bounds is None):
             raise ValueError("Optimization method, {}, requires x0. Because bounds were not provided, so problem cannot be solved.".format(method))
         else:
-            logger.error("Optimization method, {}, requires x0, using bisect".format(method))
+            logger.error("Optimization method, {}, requires x0, using bisect instead".format(method))
             method = "bisect"
 
     if np.size(x0) > 1 and method in ["brentq", "bisect"]:
@@ -152,9 +152,9 @@ def central_difference(x, func, step_size=1E-5, args=None):
         Independent variable to take derivative with respect too, using the central difference method.
     func : function
         Function used in job to calculate dependent factor. This function should have a single output.
-    step_size : float, Optional, default: 1E-4
+    step_size : float, Optional, default=1E-5
         This function calculates a relative step size for each independent variable. Each step is equal x * step_size.
-    args : list, Optional, default: None
+    args : list, Optional, default=None
         Each entry of this list contains the input arguements for each job
     Returns
     -------
@@ -167,7 +167,7 @@ def central_difference(x, func, step_size=1E-5, args=None):
     
     lx = np.size(x)
     step = x * step_size
-    if not isinstance(step, list) and not isinstance(step,np.ndarray):
+    if not isiterable(step):
         step = np.array([step])
     step = np.array([2*np.finfo(float).eps if xx < np.finfo(float).eps else xx for xx in step])
 
@@ -175,4 +175,130 @@ def central_difference(x, func, step_size=1E-5, args=None):
     dydx = (y[:lx]-y[lx:])/(2.0*step)
 
     return dydx
+
+def isiterable(array):
+    """
+    Check if variable is an iterable type with a length (e.g. np.array or list). Note that this could be tested with isinstance(array, Iterable), however array=np.array(1.0) would pass that test and then fail in len(array).
+
+    Parameters
+    ----------
+    array
+        Variable of some type, that should be iterable
+
+    Returns
+    -------
+    isiterable : bool
+        Will be True if indexing is possible and False if not.
+    """
+
+    tmp = np.shape(array)
+    if tmp:
+        isiterable = True
+    else:
+        isiterable = False
+
+    return isiterable
+
+def check_length(dictionary, keys, lx=None):
+
+    """
+    This function compared the entries in the provided dictionary to ensure they're the same length. All entries will be made into numpy arrays. If a float or array of length one is provided, it will be expanded to the length of other arrays.
+
+    Parameters
+    ----------
+    dictionary : dict
+        Dictionary of what should be arrays of identical size.
+    keys : list
+        Keys for array entries
+    lx : int, Optional, default=None
+        The size that arrays should conform to
+
+    Returns
+    -------
+    new_dictionary : dict
+        Dictionary of arrays of identical size.
+
+    """
+
+    if lx == None:
+        lx_array = []
+        for key in keys:
+            if key in dictionary:
+                tmp = dictionary[key]
+                if np.shape(tmp):
+                    lx_array.append(len(tmp))
+                else:
+                    lx_array.append(1)
+        if not len(lx_array):
+            raise ValueError("None of the provided keys are found in the given dictionary")
+        lx = max(lx_array)
+
+    new_dictionary = {}
+    for key in keys:
+        if key in dictionary:
+            tmp = dictionary[key]
+            if isiterable(tmp):
+                l_tmp = len(tmp)
+                if l_tmp == 1:
+                    new_dictionary[key] = np.array([tmp[0] for x in range(lx)], float)
+                elif l_tmp == lx:
+                    new_dictionary[key] = np.array(tmp, float)
+                else:
+                    raise ValueError("Entry, {}, should be length {}, not {}".format(key, lx, l_tmp))
+            else:
+                new_dictionary[key] = np.array([tmp for x in range(lx)], float)
+
+    return new_dictionary
+
+def set_defaults(dictionary, keys, values, lx=None):
+
+    """
+    This function checks a dictionary for the given keys, and if a given key isn't present, the appropriate value is added to the dictionary.
+
+    Parameters
+    ----------
+    dictionary : dict
+        Dictionary of data
+    keys : list
+        Keys that should be present (of the same length as `lx`)
+    values : list
+        Default values for the keys that aren't in dictionary
+    lx : int, Optional, default=None
+        If not None, and values[i] is a float, the key will be set to an array of length, lx, populated by values[i] 
+
+    Returns
+    -------
+    new_dictionary : dict
+        Dictionary of arrays of identical size.
+
+    """
+
+    new_dictionary = dictionary.copy()
+
+    key_iterable = isiterable(keys)
+    if not isiterable(values):
+        if key_iterable:
+            values = np.ones(len(keys))*values
+        else:
+            values = np.array([values])
+            keys = np.array([keys])
+    else:
+        if key_iterable and len(keys) != len(values):
+            raise ValueError("Length of given keys and values must be equivalent.")
+        elif not key_iterable:
+            if len(values) != 1:
+                raise ValueError("Multiple default values for given key, {}, is ambiguous".format(keys)) 
+            else:
+                keys = [keys]
+
+    for i,key in enumerate(keys):
+        if key not in dictionary:
+            tmp = values[i]
+            if not isiterable(tmp) and lx != None:
+                new_dictionary[key] = np.ones(lx)*tmp
+            else:
+                new_dictionary[key] = tmp
+            logger.info("Entry, {}, set to default: {}".format(key,tmp))
+
+    return new_dictionary
 

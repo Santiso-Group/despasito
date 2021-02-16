@@ -5,9 +5,12 @@ Objects for storing and producing objective values for comparing experimental da
 import numpy as np
 import logging
 
+from despasito import fundamental_constants as constants
 from despasito.thermodynamics import thermo
-from despasito.parameter_fitting import fit_funcs as ff
+from despasito.parameter_fitting import fit_functions as ff
 from despasito.parameter_fitting.interface import ExpDataTemplate
+from despasito import fundamental_constants as constants
+import despasito.utils.general_toolbox as gtb
 
 logger = logging.getLogger(__name__)
 
@@ -26,12 +29,12 @@ class Data(ExpDataTemplate):
     data_dict : dict
         Dictionary of exp data of saturation properties.
 
-        * calculation_type : str, Optional, default: 'saturation_properties
+        * calculation_type : str, Optional, default='saturation_properties
         * T : list, List of temperature values for calculation
         * xi : list, (or yi) List of liquid mole fractions used in saturation properties calculations, should be 1 for the molecule of focus and 0 for the rest.
         * weights : dict, A dictionary where each key is the header used in the exp. data file. The value associated with a header can be a list as long as the number of data points to multiply by the objective value associated with each point, or a float to multiply the objective value of this data set.
-        * objective_method : str, The 'method' keyword in function despasito.parameter_fitting.fit_funcs.obj_function_form.
-        * density_opts : dict, Optional, default: {"minrhofrac":(1.0 / 60000.0), "rhoinc":10.0, "vspacemax":1.0E-4}, Dictionary of options used in calculating pressure vs. mole fraction curves.
+        * objective_method : str, The 'method' keyword in function despasito.parameter_fitting.fit_functions.obj_function_form.
+        * density_opts : dict, Optional, default={"min_density_fraction":(1.0 / 60000.0), "density_increment":10.0, "max_volume_increment":1.0E-4}, Dictionary of options used in calculating pressure vs. mole fraction curves.
 
     Attributes
     ----------
@@ -42,8 +45,8 @@ class Data(ExpDataTemplate):
     thermodict : dict
         Dictionary of inputs needed for thermodynamic calculations
         
-        - calculation_type (str) default: saturation_properties
-        - density_opts (dict) default: {"minrhofrac":(1.0 / 80000.0), "rhoinc":10.0, "vspacemax":1.0E-4}
+        - calculation_type (str) default=saturation_properties
+        - density_opts (dict) default={"min_density_fraction":(1.0 / 80000.0), "density_increment":10.0, "max_volume_increment":1.0E-4}
         
     """
 
@@ -56,7 +59,7 @@ class Data(ExpDataTemplate):
         if self.thermodict["calculation_type"] == None:
             self.thermodict["calculation_type"] = "saturation_properties"
 
-        tmp = {"minrhofrac":(1.0 / 80000.0), "rhoinc":10.0, "vspacemax":1.0E-4}
+        tmp = {"min_density_fraction":(1.0 / 80000.0), "density_increment":10.0, "max_volume_increment":1.0E-4}
         if 'density_opts' in self.thermodict:
             tmp.update(self.thermodict["density_opts"])
         self.thermodict["density_opts"] = tmp
@@ -72,57 +75,41 @@ class Data(ExpDataTemplate):
         if "T" in data_dict:
             self.thermodict["Tlist"] = data_dict["T"]
             del data_dict["T"]
-
-        thermo_keys = ["xilist", "Tlist"]
-        lx = max([len(self.thermodict[key]) for key in thermo_keys if key in self.thermodict])
-        for key in thermo_keys:
-            if key in self.thermodict and len(self.thermodict[key]) == 1:
-                self.thermodict[key] = np.array([self.thermodict[key][0] for x in range(lx)])
-
-        if "Tlist" not in self.thermodict:
-            self.thermodict["Tlist"] = np.ones(lx)*constants.standard_temperature
-            logger.info("Assume {}K".format(constants.standard_temperature))
-        if 'xilist' not in self.thermodict:
-            if self.Eos.number_of_components > 1:
-                raise ValueError("Ambiguous instructions. Include xi to define intended component to obtain saturation properties")
-            else:
-                self.thermodict['xilist'] = np.array([[1.0] for x in range(lx)])
-
-        self.result_keys = ["rhol", "rhov", "Psat"]
-        for key in self.result_keys:
-            if key in data_dict:
-                self.thermodict[key] = data_dict[key]
-                del data_dict[key]
-                if key in self.weights:
-                    if isinstance(self.weights[key],float) and len(self.weights[key]) != len(self.thermodict[key]):
-                        raise ValueError("Array of weights for '{}' values not equal to number of experimental values given.".format(key))
-                else:
-                    self.weights[key] = 1.0
-
         if "P" in data_dict:
             self.thermodict["Psat"] = data_dict["P"]
             del data_dict["P"]
             if 'P' in self.weights:
-                if isinstance(self.weights["P"],float) and len(self.weights["P"]) != len(self.thermodict["P"]):
+                if gtb.isiterable(self.weights["P"]) and len(self.weights["P"]) != len(self.thermodict["Psat"]):
                     raise ValueError("Array of weights for '{}' values not equal to number of experimental values given.".format("P"))
                 else:
                     self.weights['Psat'] = self.weights.pop('P')
 
-        tmp = ["Tlist"]
-        if not all([x in self.thermodict.keys() for x in tmp]):
+        self.thermodict.update(data_dict)
+
+        thermo_keys = ["xilist", "Tlist"]
+        self.result_keys = ["rhol", "rhov", "Psat"]
+
+        key_list = list(set(thermo_keys + self.result_keys))
+        self.thermodict.update(gtb.check_length(self.thermodict, key_list))
+        for key in self.result_keys:
+            if key in self.thermodict:
+                self.npoints = np.size(self.thermodict[key])
+                break
+
+        if 'xilist' not in self.thermodict and self.Eos.number_of_components > 1:
+            raise ValueError("Ambiguous instructions. Include xi to define intended component to obtain saturation properties")
+        thermo_defaults = [np.array([[1.0] for x in range(self.npoints)]), constants.standard_temperature]
+        self.thermodict.update(gtb.set_defaults(self.thermodict, thermo_keys, thermo_defaults, lx=self.npoints))
+
+        self.weights.update(gtb.check_length(self.weights, self.result_keys, lx=self.npoints))
+        self.weights.update(gtb.set_defaults(self.weights, self.result_keys, 1.0))
+
+        if "Tlist" not in self.thermodict:
             raise ImportError("Given saturation data, value(s) for T should have been provided.")
 
         tmp = ["Psat","rhol","rhov"]
-        if not any([x in self.thermodict.keys() for x in tmp]):
+        if not any([x in self.thermodict for x in tmp]):
             raise ImportError("Given saturation data, values for Psat, rhol, and/or rhov should have been provided.")
-
-        self.npoints = len(self.thermodict["Tlist"])
-        thermo_keys = ["Plist", "rhol", "rhov", "Tlist", "xilist"]
-        for key in thermo_keys:
-            if key in self.thermodict and len(self.thermodict[key]) != self.npoints:
-                raise ValueError("T, P, rhov, xi, and rhol are not all the same length.")
-
-        self.thermodict.update(data_dict)
 
         logger.info("Data type 'saturation_properties' initiated with calculation_type, {}, and data types: {}.\nWeight data by: {}".format(self.thermodict["calculation_type"],", ".join(self.result_keys),self.weights))
 
@@ -139,7 +126,7 @@ class Data(ExpDataTemplate):
 
         # Remove results
         opts = self.thermodict.copy()
-        tmp = self.result_keys + ["name", "beadparams0"]
+        tmp = self.result_keys + ["name", "parameters_guess"]
         for key in tmp:
             if key in opts:
                 del opts[key]

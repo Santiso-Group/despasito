@@ -5,9 +5,9 @@
     "EOScross": "../../library/SWcross.json",
     "optimization_parameters": {
         "fit_bead" : "aCCH2",
-        "fit_params": ["epsilon"],
+        "fit_parameter_names": ["epsilon"],
         "epsilon_bounds" : [150.0, 400.0],
-        "beadparams0" : [300.0]
+        "parameters_guess" : [300.0]
     },
     "Yaws": {
         "data_class_type": "liquid_density",

@@ -6,7 +6,7 @@
     "output_file": "out_fit.txt",
     "optimization_parameters": {
         "fit_bead" : "acetone",
-        "fit_params": ["kij_chloroform", "omega"]
+        "fit_parameter_names": ["kij_chloroform", "omega"]
     },
     "Knovel": {
         "data_class_type": "liquid_density",

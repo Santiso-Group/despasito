@@ -4,7 +4,7 @@ import numba
 
 from despasito.equations_of_state import constants
 
-def calc_Xika(indices, rho, xi, nui, nk, Fklab, Kklab, gr_assoc):
+def calc_Xika(indices, rho, xi, molecular_composition, nk, Fklab, Kklab, gr_assoc):
     r""" 
     A wrapper to calculate the fraction of molecules of component i that are not bonded at a site of type a on group k. Switched between functions for different Kklab
 
@@ -16,7 +16,7 @@ def calc_Xika(indices, rho, xi, nui, nk, Fklab, Kklab, gr_assoc):
         Number density of system [mol/m^3]
     xi : numpy.ndarray
         Mole fraction of each component, sum(xi) should equal 1.0
-    nui : numpy.array
+    molecular_composition : numpy.array
         :math:`\nu_{i,k}/k_B`, Array of number of components by number of bead types. Defines the number of each type of group in each component. 
     nk : numpy.ndarray
         For each bead the number of each type of site
@@ -37,14 +37,14 @@ def calc_Xika(indices, rho, xi, nui, nk, Fklab, Kklab, gr_assoc):
 
     l_K = len(np.shape(Kklab))
     if l_K == 4:
-        Xika_final, err_array = calc_Xika_4(indices, rho, xi, nui, nk, Fklab, Kklab, gr_assoc)
+        Xika_final, err_array = calc_Xika_4(indices, rho, xi, molecular_composition, nk, Fklab, Kklab, gr_assoc)
     if l_K == 6:
-        Xika_final, err_array = calc_Xika_6(indices, rho, xi, nui, nk, Fklab, Kklab, gr_assoc)
+        Xika_final, err_array = calc_Xika_6(indices, rho, xi, molecular_composition, nk, Fklab, Kklab, gr_assoc)
 
     return Xika_final, err_array
 
 @numba.njit(numba.types.Tuple((numba.f8[:,:], numba.f8[:]))(numba.i8[:,:], numba.f8[:], numba.f8[:], numba.f8[:,:], numba.i8[:,:], numba.f8[:,:,:,:], numba.f8[:,:,:,:], numba.f8[:,:,:]))
-def calc_Xika_4(indices, rho, xi, nui, nk, Fklab, Kklab, gr_assoc): # , maxiter=500, tol=1e-12, damp=.1
+def calc_Xika_4(indices, rho, xi, molecular_composition, nk, Fklab, Kklab, gr_assoc): # , maxiter=500, tol=1e-12, damp=.1
     r""" 
     Calculate the fraction of molecules of component i that are not bonded at a site of type a on group k.
 
@@ -56,7 +56,7 @@ def calc_Xika_4(indices, rho, xi, nui, nk, Fklab, Kklab, gr_assoc): # , maxiter=
         Number density of system [mol/m^3]
     xi : numpy.ndarray
         Mole fraction of each component, sum(xi) should equal 1.0
-    nui : numpy.array
+    molecular_composition : numpy.array
         :math:`\nu_{i,k}/k_B`, Array of number of components by number of bead types. Defines the number of each type of group in each component. 
     nk : numpy.ndarray
         For each bead the number of each type of site
@@ -79,7 +79,7 @@ def calc_Xika_4(indices, rho, xi, nui, nk, Fklab, Kklab, gr_assoc): # , maxiter=
     tol=1e-12
     damp=.1
 
-    ncomp, nbeads = np.shape(nui)
+    ncomp, nbeads = np.shape(molecular_composition)
     nsitesmax = np.shape(nk)[1]
     nrho = len(rho)
     l_ind = len(indices)
@@ -102,7 +102,7 @@ def calc_Xika_4(indices, rho, xi, nui, nk, Fklab, Kklab, gr_assoc): # , maxiter=
                 for jjnd in range(l_ind):
                     j, l, b = indices[jjnd]
                     delta = Fklab[k, l, a, b] * Kklab[k, l, a, b] * gr_assoc[r,i, j]
-                    Xika_elements_new[ind] += constants.molecule_per_nm3 * rho[r] * xi[j] * nui[j,l] * nk[l,b] * Xika_elements[jnd] * delta
+                    Xika_elements_new[ind] += constants.molecule_per_nm3 * rho[r] * xi[j] * molecular_composition[j,l] * nk[l,b] * Xika_elements[jnd] * delta
                     jnd += 1
                 ind += 1
             Xika_elements_new = 1./Xika_elements_new
@@ -126,7 +126,7 @@ def calc_Xika_4(indices, rho, xi, nui, nk, Fklab, Kklab, gr_assoc): # , maxiter=
     return Xika_final, err_array
 
 @numba.njit(numba.types.Tuple((numba.f8[:,:], numba.f8[:]))(numba.i8[:,:], numba.f8[:], numba.f8[:], numba.f8[:,:], numba.i8[:,:], numba.f8[:,:,:,:], numba.f8[:,:,:,:,:,:], numba.f8[:,:,:]))
-def calc_Xika_6(indices, rho, xi, nui, nk, Fklab, Kklab, gr_assoc): # , maxiter=500, tol=1e-12, damp=.1
+def calc_Xika_6(indices, rho, xi, molecular_composition, nk, Fklab, Kklab, gr_assoc): # , maxiter=500, tol=1e-12, damp=.1
     r""" 
     Calculate the fraction of molecules of component i that are not bonded at a site of type a on group k.
 
@@ -138,7 +138,7 @@ def calc_Xika_6(indices, rho, xi, nui, nk, Fklab, Kklab, gr_assoc): # , maxiter=
         Number density of system [mol/m^3]
     xi : numpy.ndarray
         Mole fraction of each component, sum(xi) should equal 1.0
-    nui : numpy.array
+    molecular_composition : numpy.array
         :math:`\nu_{i,k}/k_B`, Array of number of components by number of bead types. Defines the number of each type of group in each component. 
     nk : numpy.ndarray
         For each bead the number of each type of site
@@ -161,7 +161,7 @@ def calc_Xika_6(indices, rho, xi, nui, nk, Fklab, Kklab, gr_assoc): # , maxiter=
     tol=1e-12
     damp=.1
 
-    ncomp, nbeads = np.shape(nui)
+    ncomp, nbeads = np.shape(molecular_composition)
     nsitesmax = np.shape(nk)[1]
     nrho = len(rho)
     l_ind = len(indices)
@@ -184,7 +184,7 @@ def calc_Xika_6(indices, rho, xi, nui, nk, Fklab, Kklab, gr_assoc): # , maxiter=
                 for jjnd in range(l_ind):
                     j, l, b = indices[jjnd]
                     delta = Fklab[k, l, a, b] * Kklab[i, j, k, l, a, b] * gr_assoc[r,i, j]
-                    Xika_elements_new[ind] += constants.molecule_per_nm3 * rho[r] * xi[j] * nui[j,l] * nk[l,b] * Xika_elements[jnd] * delta
+                    Xika_elements_new[ind] += constants.molecule_per_nm3 * rho[r] * xi[j] * molecular_composition[j,l] * nk[l,b] * Xika_elements[jnd] * delta
                     jnd += 1
                 ind += 1
             Xika_elements_new = 1./Xika_elements_new

@@ -22,7 +22,7 @@ class EosTemplate(ABC):
     By using this template, all EOS objects are then easily exchanged.
     """
 
-    def __init__(self, beads, beadlibrary, **kwargs):
+    def __init__(self, beads, bead_library, **kwargs):
 
 
         self.parameter_types = None
@@ -30,12 +30,12 @@ class EosTemplate(ABC):
 
         self.number_of_components = None
         for bead in beads:
-            if bead not in beadlibrary:
+            if bead not in bead_library:
                 raise ValueError("The group, '{}', was not found in parameter library".format(bead))
 
         self.beads = None
-        self.beadlibrary = None
-        self.crosslibrary = None
+        self.bead_library = None
+        self.cross_library = None
 
     @abstractmethod
     def pressure(self, rho, T, xi):
@@ -58,7 +58,7 @@ class EosTemplate(ABC):
         """
         pass
 
-    def param_guess(self, param_name, bead_names):
+    def guess_parameters(self, param_name, bead_names):
         """
         Output a guess for the given parameter type.
         """
@@ -89,14 +89,14 @@ class EosTemplate(ABC):
         param_value = None
         # Self interaction parameter
         if len(bead_names) == 1:
-            if bead_names[0] in self.beadlibrary:
-                param_value = self.beadlibrary[bead_names[0]][param_name]
+            if bead_names[0] in self.bead_library:
+                param_value = self.bead_library[bead_names[0]][param_name]
         # Cross interaction parameter
         elif len(bead_names) == 2:
-            if bead_names[1] in self.crosslibrary and bead_names[0] in self.crosslibrary[bead_names[1]]:
-                param_value = self.crosslibrary[bead_names[1]][bead_names[0]][param_name]
-            elif bead_names[0] in self.crosslibrary and bead_names[1] in self.crosslibrary[bead_names[0]]:
-                param_value = self.crosslibrary[bead_names[0]][bead_names[1]][param_name]
+            if bead_names[1] in self.cross_library and bead_names[0] in self.cross_library[bead_names[1]]:
+                param_value = self.cross_library[bead_names[1]][bead_names[0]][param_name]
+            elif bead_names[0] in self.cross_library and bead_names[1] in self.cross_library[bead_names[0]]:
+                param_value = self.cross_library[bead_names[0]][bead_names[1]][param_name]
 
         if param_value == None:
             bounds = self.check_bounds(bead_names[0], param_name, np.empty(2))
@@ -123,8 +123,8 @@ class EosTemplate(ABC):
             A screened and possibly corrected low and a high value for the parameter, param_name
         """
 
-        fit_params_list = param_name.split("_")
-        parameter = fit_params_list[0]
+        fit_parameter_names_list = param_name.split("_")
+        parameter = fit_parameter_names_list[0]
 
         bounds_new = np.zeros(2)
         # Non bonded parameters
@@ -175,21 +175,21 @@ class EosTemplate(ABC):
         if param_name in self.parameter_types:
             # Self interaction parameter
             if len(bead_names) == 1:
-                if bead_names[0] in self.beadlibrary:
-                    self.beadlibrary[bead_names[0]][param_name] = param_value
+                if bead_names[0] in self.bead_library:
+                    self.bead_library[bead_names[0]][param_name] = param_value
                 else:
-                    self.beadlibrary[bead_names[0]] = {param_name: param_value}
+                    self.bead_library[bead_names[0]] = {param_name: param_value}
             # Cross interaction parameter
             elif len(bead_names) == 2:
-                if bead_names[1] in self.crosslibrary and bead_names[0] in self.crosslibrary[bead_names[1]]:
-                    self.crosslibrary[bead_names[1]][bead_names[0]][param_name] = param_value
-                elif bead_names[0] in self.crosslibrary:
-                    if bead_names[1] in self.crosslibrary[bead_names[0]]:
-                        self.crosslibrary[bead_names[0]][bead_names[1]][param_name] = param_value
+                if bead_names[1] in self.cross_library and bead_names[0] in self.cross_library[bead_names[1]]:
+                    self.cross_library[bead_names[1]][bead_names[0]][param_name] = param_value
+                elif bead_names[0] in self.cross_library:
+                    if bead_names[1] in self.cross_library[bead_names[0]]:
+                        self.cross_library[bead_names[0]][bead_names[1]][param_name] = param_value
                     else:
-                        self.crosslibrary[bead_names[0]][bead_names[1]] = {param_name: param_value}
+                        self.cross_library[bead_names[0]][bead_names[1]] = {param_name: param_value}
                 else:
-                    self.crosslibrary[bead_names[0]] = {bead_names[1]: {param_name: param_value}}
+                    self.cross_library[bead_names[0]] = {bead_names[1]: {param_name: param_value}}
 
         else:
             raise ValueError("The parameter name {} is not found in the allowed parameter types: {}".format(param_name,", ".join(self.parameter_types)))

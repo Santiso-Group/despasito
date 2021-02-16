@@ -2,7 +2,7 @@
     "EOSgroup": "SAFTgroup.json",
     "optimization_parameters": {
         "fit_bead" : "CH3",
-        "fit_params": ["epsilon", "sigma", "lambdar", "Sk"],
+        "fit_parameter_names": ["epsilon", "sigma", "lambdar", "Sk"],
         "lambdar_bounds" : [8.0, 60.0],
         "epsilon_bounds" : [150.0, 1000.0],
         "epsilon_CH3CH2_bounds" : [150.0, 1000.0],

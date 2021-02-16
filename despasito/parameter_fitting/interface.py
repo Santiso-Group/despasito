@@ -62,7 +62,7 @@ class ExpDataTemplate(ABC):
         r"""
         Update a single parameter value during parameter fitting process.
 
-        To refresh those parameters that are dependent on to beadlibrary or crosslibrary, use method "parameter refresh".
+        To refresh those parameters that are dependent on to bead_library or cross_library, use method "parameter refresh".
         
         Parameters
         ----------
@@ -76,15 +76,15 @@ class ExpDataTemplate(ABC):
 
         for i, param in enumerate(param_names):
             bead_names = [fit_bead]
-            fit_params_list = param.split("_")
-            param = fit_params_list[0]
-            if len(fit_params_list) > 1:
-                bead_names.append(fit_params_list[1])
+            fit_parameter_names_list = param.split("_")
+            param = fit_parameter_names_list[0]
+            if len(fit_parameter_names_list) > 1:
+                bead_names.append(fit_parameter_names_list[1])
 
-            if len(fit_params_list) == 1:
-                self.Eos.update_parameter(fit_params_list[0], [fit_bead], param_values[i])
-            elif len(fit_params_list) == 2:
-                self.Eos.update_parameter(fit_params_list[0], [fit_bead, fit_params_list[1]], param_values[i])
+            if len(fit_parameter_names_list) == 1:
+                self.Eos.update_parameter(fit_parameter_names_list[0], [fit_bead], param_values[i])
+            elif len(fit_parameter_names_list) == 2:
+                self.Eos.update_parameter(fit_parameter_names_list[0], [fit_bead, fit_parameter_names_list[1]], param_values[i])
             else:
                 raise ValueError("Parameters for only one bead are allowed to be fit. Multiple underscores in a parameter name suggest more than one bead type in your fit parameter name, {}".format(param))
 

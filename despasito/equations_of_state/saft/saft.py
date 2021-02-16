@@ -44,9 +44,9 @@ class EosType(EosTemplate):
     ----------
     beads : list[str]
         List of unique bead names used among components
-    nui : numpy.ndarray
+    molecular_composition : numpy.ndarray
         :math:`\\nu_{i,k}/k_B`. Array of number of components by number of bead types. Defines the number of each type of group in each component.
-    beadlibrary : dict
+    bead_library : dict
         A dictionary where bead names are the keys to access EOS self interaction parameters:
 
         - mass: Bead mass [kg/mol]
@@ -55,7 +55,7 @@ class EosType(EosTemplate):
         - rc**: Optional, Bonding distance between each association site. Asterisk represents two strings from sitenames.
         - Nk*: Optional, The number of sites of from list sitenames. Asterisk represents string from sitenames.
 
-    crosslibrary : dict, Optional, default: {}
+    cross_library : dict, Optional, default={}
         Optional library of bead cross interaction parameters. As many or as few of the desired parameters may be defined for whichever group combinations are desired.
 
         - epsilon*: Optional, Interaction energy between each bead and association site. Asterisk represents string from sitenames.
@@ -64,7 +64,7 @@ class EosType(EosTemplate):
 
     Attributes
     ----------
-    eos_dict : dict, default: keys = ['beadlibrary', 'beads', 'nui', 'massi']
+    eos_dict : dict, default=keys = ['bead_library', 'beads', 'molecular_composition', 'massi']
         Temperature value is initially defined as NaN for a placeholder until temperature dependent attributes are initialized by using a method of this class.
     
     """
@@ -99,33 +99,33 @@ class EosType(EosTemplate):
             self.eos_dict["Aideal_method"] = Aideal_method
 
         # Extract needed values from kwargs
-        needed_attributes = ['beadlibrary',"nui","beads"]
+        needed_attributes = ['bead_library',"molecular_composition","beads"]
         for key in needed_attributes:
             if key not in kwargs:
                 raise ValueError("The one of the following inputs is missing: {}".format(", ".join(tmp)))
 
-            if key == "nui":
+            if key == "molecular_composition":
                 self.eos_dict[key] = kwargs[key]
             else:
                 setattr(self, key, kwargs[key])
-        self.number_of_components = len(self.eos_dict["nui"])
+        self.number_of_components = len(self.eos_dict["molecular_composition"])
 
-        if 'crosslibrary' not in kwargs:
-            self.crosslibrary = {}
+        if 'cross_library' not in kwargs:
+            self.cross_library = {}
         else:
-            self.crosslibrary = kwargs['crosslibrary']
-            self.crosslibrary = self.crosslibrary
+            self.cross_library = kwargs['cross_library']
+            self.cross_library = self.cross_library
 
         if not hasattr(self, 'massi'):
-            self.eos_dict['massi'] = tb.calc_massi(self.eos_dict["nui"],self.beadlibrary,self.beads)
+            self.eos_dict['massi'] = tb.calc_massi(self.eos_dict["molecular_composition"],self.bead_library,self.beads)
 
         if "reduction_ratio" in kwargs:
             self.eos_dict['reduction_ratio'] = kwargs["reduction_ratio"]
             
 
         # Initiate association site terms
-        self.eos_dict['sitenames'], self.eos_dict['nk'], self.eos_dict['flag_assoc'] = Aassoc.initiate_assoc_matrices(self.beads,self.beadlibrary,self.eos_dict["nui"])
-        assoc_output = Aassoc.calc_assoc_matrices(self.beads,self.beadlibrary,self.eos_dict["nui"],sitenames=self.eos_dict['sitenames'],crosslibrary=self.crosslibrary,nk=self.eos_dict['nk'])
+        self.eos_dict['sitenames'], self.eos_dict['nk'], self.eos_dict['flag_assoc'] = Aassoc.initiate_assoc_matrices(self.beads,self.bead_library,self.eos_dict["molecular_composition"])
+        assoc_output = Aassoc.calc_assoc_matrices(self.beads,self.bead_library,self.eos_dict["molecular_composition"],sitenames=self.eos_dict['sitenames'],cross_library=self.cross_library,nk=self.eos_dict['nk'])
         self.eos_dict.update(assoc_output)
         if np.size(np.where(self.eos_dict['epsilonHB']!=0.0))==0:
             self.eos_dict['flag_assoc'] = False
@@ -218,7 +218,7 @@ class EosType(EosTemplate):
             Mole fraction of each component, sum(xi) should equal 1.0
         massi : numpy.ndarray
             Vector of component masses that correspond to the mole fractions in xi [kg/mol]
-        method : str, Optional, default: Abroglie
+        method : str, Optional, default=Abroglie
             The function name of the method to calculate the ideal contribution of the helmholtz energy. To add a new one, add a function to: despasito.equations_of_state,helholtz.Aideal.py
     
         Returns
@@ -276,8 +276,8 @@ class EosType(EosTemplate):
         gr_assoc = self.saft_source.calc_gr_assoc(rho, T, xi, Ktype=Ktype)
 
         # Compute Xika: with python with numba  {BottleNeck}
-        indices = Aassoc.assoc_site_indices(self.eos_dict['nk'], self.eos_dict["nui"], xi=xi)
-        Xika = Aassoc.calc_Xika_wrap(indices, rho, xi, self.eos_dict["nui"], self.eos_dict['nk'], Fklab, Kklab, gr_assoc)
+        indices = Aassoc.assoc_site_indices(self.eos_dict['nk'], self.eos_dict["molecular_composition"], xi=xi)
+        Xika = Aassoc.calc_Xika_wrap(indices, rho, xi, self.eos_dict["molecular_composition"], self.eos_dict['nk'], Fklab, Kklab, gr_assoc)
 
         # Compute A_assoc
         Assoc_contribution = np.zeros(np.size(rho)) 
@@ -285,7 +285,7 @@ class EosType(EosTemplate):
             if self.eos_dict['nk'][k, a] != 0.0:
                 #tmp = (np.log(Xika[:, i, k, a]) + ((1.0 - Xika[:, i, k, a]) / 2.0))
                 tmp = (np.log(Xika[:,ind]) + ((1.0 - Xika[:,ind]) / 2.0))
-                Assoc_contribution += xi[i] * self.eos_dict["nui"][i, k] * self.eos_dict['nk'][k, a] * tmp
+                Assoc_contribution += xi[i] * self.eos_dict["molecular_composition"][i, k] * self.eos_dict['nk'][k, a] * tmp
 
         return Assoc_contribution
 
@@ -332,7 +332,7 @@ class EosType(EosTemplate):
             Temperature of the system [K]
         xi : list[float]
             Mole fraction of each component
-        log_method : bool, Optional, default: False
+        log_method : bool, Optional, default=False
             Choose to use a log transform in central difference method. This allows easier calulations for very small numbers.
     
         Returns
@@ -363,23 +363,23 @@ class EosType(EosTemplate):
             Mole fraction of each component
         T : float
             Temperature of the system [K]
-        maxpack : float, Optional, default: 0.65
+        maxpack : float, Optional, default=0.65
             Maximum packing fraction
         
         Returns
         -------
-        maxrho : float
+        max_density : float
             Maximum molar density [mol/m^3]
         """
         if len(xi) != self.number_of_components:
             raise ValueError("Number of components in mole fraction list, {}, doesn't match self.number_of_components, {}".format(len(xi),self.number_of_components))
 
-        maxrho = self.saft_source.density_max(xi, T, maxpack=maxpack)
+        max_density = self.saft_source.density_max(xi, T, maxpack=maxpack)
 
 
-        return maxrho
+        return max_density
 
-    def param_guess(self, parameter, bead_names):
+    def guess_parameters(self, parameter, bead_names):
         """
         Generate initial guesses for the parameters to be fit.
 
@@ -397,7 +397,7 @@ class EosType(EosTemplate):
         """
 
         param_name = parameter.split("-")[0]
-        param_value = super().param_guess(param_name, bead_names)
+        param_value = super().guess_parameters(param_name, bead_names)
 
         return param_value
 
@@ -429,7 +429,7 @@ class EosType(EosTemplate):
         r"""
         Update a single parameter value during parameter fitting process.
 
-        To refresh those parameters that are dependent on to beadlibrary or crosslibrary, use method "parameter refresh".
+        To refresh those parameters that are dependent on to bead_library or cross_library, use method "parameter refresh".
         
         Parameters
         ----------
@@ -451,14 +451,14 @@ class EosType(EosTemplate):
         r""" 
         To refresh dependent parameters
         
-        Those parameters that are dependent on beadlibrary and crosslibrary attributes **must** be updated by running this function after all parameters from update_parameters method have been changed.
+        Those parameters that are dependent on bead_library and cross_library attributes **must** be updated by running this function after all parameters from update_parameters method have been changed.
         """
 
-        self.saft_source.parameter_refresh(self.beadlibrary,self.crosslibrary)
+        self.saft_source.parameter_refresh(self.bead_library,self.cross_library)
 
         # Update Association site matrices
         if self.eos_dict["flag_assoc"]: 
-            assoc_output = Aassoc.calc_assoc_matrices(self.beads,self.beadlibrary,self.eos_dict["nui"],sitenames=self.eos_dict['sitenames'],crosslibrary=self.crosslibrary,nk=self.eos_dict['nk'])
+            assoc_output = Aassoc.calc_assoc_matrices(self.beads,self.bead_library,self.eos_dict["molecular_composition"],sitenames=self.eos_dict['sitenames'],cross_library=self.cross_library,nk=self.eos_dict['nk'])
             self.eos_dict.update(assoc_output)
 
     def _check_density(self,rho):

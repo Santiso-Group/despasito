@@ -46,8 +46,8 @@ During parameter fitting, **calculation_type** and **bead_configuration** are op
  * **optimization_parameters**: The presence of this keyword signifies that a parameter fitting calculation is requested.
 
       * **fit_bead**: (str) - Name of bead whose parameters are being fit, must be in bead list of bead_configuration
-      * **fit_params**: (list[str]) - This list contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
-      * **beadparams0**: (list[float]), Optional - Initial guess in parameter. If one is not provided, a guess is made based on the type of parameter from Eos object.
+      * **fit_parameter_names**: (list[str]) - This list contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
+      * **parameters_guess**: (list[float]), Optional - Initial guess in parameter. If one is not provided, a guess is made based on the type of parameter from Eos object.
       * **\*_bounds**: (list[float]) Optional, default is provided by Eos object. By putting a parameter name before the "bounds" suffix, the lower and upper limit of the parameter is defined for the fitting process. Defining the bounds is recommended for rapid convergence.
 
  * **\***: Experimental data dictionaries may be defined using any keyword, although this key is later used in distinguishing the respective objective function value. Any number of experimental data dictionaries may be included. A keyword is specified as an experimental data structure with the presence of the keyword "data_class_type" and an entry.
@@ -61,7 +61,7 @@ During parameter fitting, **calculation_type** and **bead_configuration** are op
 
  * **global_opts**: (dict), Optional - Specify details of global optimization method.
 
-      * **method**: (str), default: 'differential_evolution', Global optimization method used to fit parameters. See :func:`~despasito.parameter_fitting.fit_funcs.global_minimization`.
+      * **method**: (str), default: 'differential_evolution', Global optimization method used to fit parameters. See :func:`~despasito.parameter_fitting.fit_functions.global_minimization`.
       * **\***: any keyword used by the defined global optimization method.
 
  * minimizer_opts: (dict), Optional - Dictionary used to define minimization type used by the global optimization method

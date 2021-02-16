@@ -16,7 +16,7 @@ class MultiprocessingJob:
 
     Parameters
     ----------
-    ncores : int, Optional, default: -1
+    ncores : int, Optional, default=-1
         Number of processes used. If the default value of -1, the system cpu count is used.
 
     Attributes
@@ -190,9 +190,9 @@ def batch_jobs( func, inputs, ncores=1, logger=None):
         Function used in job
     inputs : list
         Each entry of this list contains the input arguements for each job
-    ncores : int, Optional, default: 1
+    ncores : int, Optional, default=1
         Number of processes used.
-    logger : class, Optional, default: None
+    logger : class, Optional, default=None
         The logger object used.
 
     Returns

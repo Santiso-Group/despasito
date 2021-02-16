@@ -13,11 +13,12 @@ import logging
 
 import despasito.utils.general_toolbox as gtb
 from despasito import fundamental_constants as constants
+import despasito.utils.general_toolbox as gtb
 
 logger = logging.getLogger(__name__)
 
 
-def pressure_vs_volume_arrays(T, xi, Eos, minrhofrac=(1.0 / 500000.0), rhoinc=5.0, vspacemax=1.0E-4, pressure_min=100, maxiter=25, multfactor=2, extended_npts=20, maxrho=None, density_max_opts={}, **kwargs):
+def pressure_vs_volume_arrays(T, xi, Eos, min_density_fraction=(1.0 / 500000.0), density_increment=5.0, max_volume_increment=1.0E-4, pressure_min=100, maxiter=25, multfactor=2, extended_npts=20, max_density=None, density_max_opts={}, **kwargs):
 
     r"""
     Give arrays with specific volume and pressure calculated from the given an EOS. Options for this functions are provided in other functions with the keyword variable `density_opts`
@@ -30,11 +31,11 @@ def pressure_vs_volume_arrays(T, xi, Eos, minrhofrac=(1.0 / 500000.0), rhoinc=5.
         Mole fraction of each component, sum(xi) should equal 1.0
     Eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
-    minrhofrac : float, Optional, default: (1.0/500000.0)
+    min_density_fraction : float, Optional, default=(1.0/500000.0)
         Fraction of the maximum density used to calculate, and is equal to, the minimum density of the density array. The minimum density is the reciprocal of the maximum specific volume used to calculate the roots.
-    rhoinc : float, Optional, default: 5.0
+    density_increment : float, Optional, default=5.0
         The increment between density values in the density array.
-    vspacemax : float, Optional, default: 1.0E-4
+    max_volume_increment : float, Optional, default=1.0E-4
         Maximum increment between specific volume array values. After conversion from density to specific volume, the increment values are compared to this value.
     pressure_min : float, Optional, default=100
         Ensure pressure curve reaches down to this value
@@ -44,7 +45,7 @@ def pressure_vs_volume_arrays(T, xi, Eos, minrhofrac=(1.0 / 500000.0), rhoinc=5.
         Number of points in extended range
     maxiter : int, Optional, default=25
         Number of times to multiply range by to obtain full pressure vs. specific volume curve
-    maxrho : float, Optional, default: None
+    max_density : float, Optional, default=None
         [mol/m^3] Maximum molar density defined, if default of None is used then the Eos object method, density_max is used.
     density_max_opts : dict, Optional, default={}
         Keyword arguments for density_max method for EOS object
@@ -67,26 +68,26 @@ def pressure_vs_volume_arrays(T, xi, Eos, minrhofrac=(1.0 / 500000.0), rhoinc=5.
         xi = np.array(xi)
 
     #estimate the maximum density based on the hard sphere packing fraction, part of EOS
-    if not maxrho:
-        maxrho = Eos.density_max(xi, T, **density_max_opts)
-    elif isinstance(maxrho,list) or isinstance(maxrho,np.ndarray):
-        logger.error("Maxrho should be type float. Given value: {}".format(maxrho))
+    if not max_density:
+        max_density = Eos.density_max(xi, T, **density_max_opts)
+    elif gtb.isiterable(max_density):
+        logger.error("Maxrho should be type float. Given value: {}".format(max_density))
   
-    if maxrho > 1e+5:
-        raise ValueError("Max density of {} mol/m^3 is not feasible, check parameters.".format(maxrho))
+    if max_density > 1e+5:
+        raise ValueError("Max density of {} mol/m^3 is not feasible, check parameters.".format(max_density))
 
     #min rho is a fraction of max rho, such that minrho << rhogassat
-    minrho = maxrho * minrhofrac
+    minrho = max_density * min_density_fraction
     #list of densities for P,rho and P,v
-    if (maxrho-minrho) < rhoinc:
-        raise ValueError("Density range, {}, is less than incement, {}. Check parameters used in Eos.density_max().".format((maxrho-minrho),rhoinc))
+    if (max_density-minrho) < density_increment:
+        raise ValueError("Density range, {}, is less than incement, {}. Check parameters used in Eos.density_max().".format((max_density-minrho),density_increment))
 
-    rholist = np.arange(minrho, maxrho, rhoinc)
+    rholist = np.arange(minrho, max_density, density_increment)
     #check rholist to see when the spacing
     vspace = (1.0 / rholist[:-1]) - (1.0 / rholist[1:])
-    if np.amax(vspace) > vspacemax:
-        vspaceswitch = np.where(vspace > vspacemax)[0][-1]
-        rholist_2 = 1.0 / np.arange(1.0 / rholist[vspaceswitch + 1], 1.0 / minrho, vspacemax)[::-1]
+    if np.amax(vspace) > max_volume_increment:
+        vspaceswitch = np.where(vspace > max_volume_increment)[0][-1]
+        rholist_2 = 1.0 / np.arange(1.0 / rholist[vspaceswitch + 1], 1.0 / minrho, max_volume_increment)[::-1]
         rholist = np.append(rholist_2, rholist[vspaceswitch + 2:])
 
     #compute Pressures (Plist) for rholist
@@ -162,7 +163,7 @@ def pressure_vs_volume_plot(vlist, Plist, Pvspline, markers=[], **kwargs):
         [Pa] Pressure associated with specific volume of system with given temperature and composition
     Pvspline : obj
         Function object of pressure vs. specific volume
-    markers : list, Optional, default: []
+    markers : list, Optional, default=[]
         List of plot markers used in plot
     """
 
@@ -198,7 +199,7 @@ def calc_saturation_properties(T, xi, Eos, density_opts={}, tol=1e-6, Pconverged
         Mole fraction of each component, sum(xi) should equal 1.0
     Eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
-    density_opts : dict, Optional, default: {}
+    density_opts : dict, Optional, default={}
         Dictionary of options used in calculating pressure vs. mole in :func:`~despasito.thermodynamics.calc.pressure_vs_volume_arrays`
     tol : float, Optional, default=1e-6
         Tolerance to accept pressure value
@@ -311,7 +312,7 @@ def objective_saturation_pressure(shift, Pv, vlist):
     elif np.any(np.isnan(roots)):
         raise ValueError("Pressure curve without cubic properties has wrongly been accepted. Try decreasing pressure.")
     else:
-        raise ValueError("Pressure curve without cubic properties has wrongly been accepted. Try decreasing minrhofrac")
+        raise ValueError("Pressure curve without cubic properties has wrongly been accepted. Try decreasing min_density_fraction")
     #pressure_vs_volume_plot(vlist, Pv-shift, Pvspline, markers=extrema)
 
     return (a + b)**2
@@ -331,7 +332,7 @@ def calc_vapor_density(P, T, xi, Eos, density_opts={}, **kwargs):
         Mole fraction of each component, sum(xi) should equal 1.0
     Eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
-    density_opts : dict, Optional, default: {}
+    density_opts : dict, Optional, default={}
         Dictionary of options used in calculating pressure vs. mole in :func:`~despasito.thermodynamics.calc.pressure_vs_volume_arrays`
 
     Returns
@@ -466,7 +467,7 @@ def calc_liquid_density(P, T, xi, Eos, density_opts={}, **kwargs):
         Mole fraction of each component, sum(xi) should equal 1.0
     Eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
-    density_opts : dict, Optional, default: {}
+    density_opts : dict, Optional, default={}
         Dictionary of options used in calculating pressure vs. mole in :func:`~despasito.thermodynamics.calc.pressure_vs_volume_arrays`
 
     Returns
@@ -620,7 +621,7 @@ def calc_vapor_fugacity_coefficient(P, T, yi, Eos, density_opts={}, **kwargs):
         Mole fraction of each component, sum(xi) should equal 1.0
     Eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
-    density_opts : dict, Optional, default: {}
+    density_opts : dict, Optional, default={}
         Dictionary of options used in calculating pressure vs. mole in :func:`~despasito.thermodynamics.calc.pressure_vs_volume_arrays`
 
     Returns
@@ -665,7 +666,7 @@ def calc_liquid_fugacity_coefficient(P, T, xi, Eos, density_opts={}, **kwargs):
         Mole fraction of each component, sum(xi) should equal 1.0
     Eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
-    density_opts : dict, Optional, default: {}
+    density_opts : dict, Optional, default={}
         Dictionary of options used in calculating pressure vs. mole in :func:`~despasito.thermodynamics.calc.pressure_vs_volume_arrays`
 
     Returns
@@ -820,25 +821,25 @@ def calc_Prange_xi(T, xi, yi, Eos, density_opts={}, Pmin=None, Pmax=None, maxite
         Vapor mole fraction of each component, sum(xi) should equal 1.0
     Eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
-    density_opts : dict, Optional, default: {}
+    density_opts : dict, Optional, default={}
         Dictionary of options used in calculating pressure vs. mole in :func:`~despasito.thermodynamics.calc.pressure_vs_volume_arrays`
-    maxiter : float, Optional, default: 200
+    maxiter : float, Optional, default=200
         Maximum number of iterations in both the loop to find Pmin and the loop to find Pmax
-    Pmin : float, Optional, default: 1000.0
+    Pmin : float, Optional, default=1000.0
         [Pa] Minimum pressure in pressure range that restricts searched space.
-    Pmax : float, Optional, default: 100000
+    Pmax : float, Optional, default=100000
         If no local minima or maxima are identified for the liquid composition at this temperature, this value is used as an initial estimate of the maximum pressure range.
-    Pmin_allowed : float, Optional, default: 100
+    Pmin_allowed : float, Optional, default=100
         Minimum allowed pressure in search, before looking for a super critical fluid
-    mole_fraction_options : dict, Optional, default: {}
+    mole_fraction_options : dict, Optional, default={}
         Options used to solve the inner loop in the solving algorithm
-    ptol : float, Optional, default: 1e-2
+    ptol : float, Optional, default=1e-2
         If two iterations in the search for the maximum pressure are within this tolerance, the search is discontinued
-    xytol : float, Optional, default: 0.01
+    xytol : float, Optional, default=0.01
         If the sum of absolute relative difference between the vapor and liquid mole fractions are less than this total, the pressure is assumed to be super critical and the maximum pressure is sought at a lower value.
-    maxfactor : float, Optional, default: 2
+    maxfactor : float, Optional, default=2
         Factor to multiply by the pressure if it is too low (produces liquid or positive objective value). Not used if an unfeasible maximum pressure is found to bound the problem (critical for NaN result).
-    minfactor : float, Optional, default: 0.5
+    minfactor : float, Optional, default=0.5
         Factor to multiply by the minimum pressure if it is too high (produces critical value).
 
     Returns
@@ -859,7 +860,7 @@ def calc_Prange_xi(T, xi, yi, Eos, density_opts={}, Pmin=None, Pmax=None, maxite
     flag_hard_min = False
     if Pmin != None:
         flag_hard_min = True
-        if isinstance(Pmin,list) or isinstance(Pmin,np.ndarray):
+        if gtb.isiterable(Pmin):
             Pmin = Pmin[0]
     elif len(extrema):
         Pmin = min(Pvspline(extrema))
@@ -871,7 +872,7 @@ def calc_Prange_xi(T, xi, yi, Eos, density_opts={}, Pmin=None, Pmax=None, maxite
     flag_hard_max = False
     if Pmax != None:
         flag_hard_max = True
-        if isinstance(Pmax,list) or isinstance(Pmax,np.ndarray):
+        if gtb.isiterable(Pmax):
             Pmax = Pmax[0]
     elif len(extrema):
         Pmax = max(Pvspline(extrema))
@@ -1253,25 +1254,25 @@ def calc_Prange_yi(T, xi, yi, Eos, density_opts={}, mole_fraction_options={}, Pm
         Vapor mole fraction of each component, sum(xi) should equal 1.0
     Eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
-    density_opts : dict, Optional, default: {}
+    density_opts : dict, Optional, default={}
         Dictionary of options used in calculating pressure vs. mole in :func:`~despasito.thermodynamics.calc.pressure_vs_volume_arrays`
-    maxiter : float, Optional, default: 200
+    maxiter : float, Optional, default=200
         Maximum number of iterations in both the loop to find Pmin and the loop to find Pmax
-    Pmin : float, Optional, default: 1000.0
+    Pmin : float, Optional, default=1000.0
         [Pa] Minimum pressure in pressure range that restricts searched space. Used if local minimum isn't available for pressure curve for vapor composition.
-    Pmax : float, Optional, default: 100000
+    Pmax : float, Optional, default=100000
         If no local minima or maxima are identified for the liquid composition at this temperature, this value is used as an initial estimate of the maximum pressure range.
-    Pmin_allowed : float, Optional, default: 100
+    Pmin_allowed : float, Optional, default=100
         Minimum allowed pressure in search, before looking for a super critical fluid
-    mole_fraction_options : dict, Optional, default: {}
+    mole_fraction_options : dict, Optional, default={}
         Options used to solve the inner loop in the solving algorithm
-    ptol : float, Optional, default: 1e-2
+    ptol : float, Optional, default=1e-2
         If two iterations in the search for the maximum pressure are within this tolerance, the search is discontinued
-    xytol : float, Optional, default: 0.01
+    xytol : float, Optional, default=0.01
         If the sum of absolute relative difference between the vapor and liquid mole fractions are less than this total, the pressure is assumed to be super critical and the maximum pressure is sought at a lower value.
-    maxfactor : float, Optional, default: 2
+    maxfactor : float, Optional, default=2
         Factor to multiply by the pressure if it is too low (produces liquid or positive objective value). Not used if an unfeasible maximum pressure is found to bound the problem (critical for NaN result).
-    minfactor : float, Optional, default: 0.5
+    minfactor : float, Optional, default=0.5
         Factor to multiply by the minimum pressure if it is too high (produces critical value).
 
     Returns
@@ -1293,7 +1294,7 @@ def calc_Prange_yi(T, xi, yi, Eos, density_opts={}, mole_fraction_options={}, Pm
     flag_hard_min = False
     if Pmin != None:
         flag_hard_min = True
-        if isinstance(Pmin,list) or isinstance(Pmin,np.ndarray):
+        if gtb.isiterable(Pmin):
             Pmin = Pmin[0]
     elif len(extrema):
         Pmin = min(Pvspline(extrema))
@@ -1305,7 +1306,7 @@ def calc_Prange_yi(T, xi, yi, Eos, density_opts={}, mole_fraction_options={}, Pm
     flag_hard_max = False
     if Pmax != None:
         flag_hard_max = True
-        if isinstance(Pmax,list) or isinstance(Pmax,np.ndarray):
+        if gtb.isiterable(Pmax):
             Pmax = Pmax[0]
     elif len(extrema):
         Pmax = max(Pvspline(extrema))
@@ -1619,13 +1620,13 @@ def calc_vapor_composition(yi, xi, phil, P, T, Eos, density_opts={}, maxiter=50,
         [K] Temperature of the system
     Eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
-    density_opts : dict, Optional, default: {}
+    density_opts : dict, Optional, default={}
         Dictionary of options used in calculating pressure vs. mole in :func:`~despasito.thermodynamics.calc.pressure_vs_volume_arrays`
-    maxiter : int, Optional, default: 30
+    maxiter : int, Optional, default=30
         Maximum number of iteration for both the outer pressure and inner vapor mole fraction loops
-    tol : float, Optional, default: 1e-6
+    tol : float, Optional, default=1e-6
         Tolerance in sum of predicted yi "mole numbers"
-    tol_trivial : float, Optional, default: 0.05
+    tol_trivial : float, Optional, default=0.05
         If the vapor and liquid mole fractions are within this tolerance, search for a different composition
     kwargs : NA, Optional
         Other other keyword arguments for :func:`~despasito.thermodynamics.calc.find_new_yi`
@@ -1779,13 +1780,13 @@ def calc_liquid_composition(xi, yi, phiv, P, T, Eos, density_opts={}, maxiter=20
         [K] Temperature of the system
     Eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
-    density_opts : dict, Optional, default: {}
+    density_opts : dict, Optional, default={}
         Dictionary of options used in calculating pressure vs. mole in :func:`~despasito.thermodynamics.calc.pressure_vs_volume_arrays`
-    maxiter : int, Optional, default: 20
+    maxiter : int, Optional, default=20
         Maximum number of iteration for both the outer pressure and inner vapor mole fraction loops
-    tol : float, Optional, default: 1e-6
+    tol : float, Optional, default=1e-6
         Tolerance in sum of predicted xi "mole numbers"
-    tol_trivial : float, Optional, default: 0.05
+    tol_trivial : float, Optional, default=0.05
         If the vapor and liquid mole fractions are within this tolerance, search for a different composition
     kwargs : dict, Optional
         Optional keywords for :func:`~despasito.thermodynamics.calc.find_new_xi`
@@ -1907,11 +1908,11 @@ def find_new_yi(P, T, phil, xi, Eos, bounds=(0.01, 0.99), npoints=30, density_op
         Liquid mole fraction of each component, sum(xi) should equal 1.0
     Eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
-    bounds : tuple, Optional, default: (0.01, 0.99)
+    bounds : tuple, Optional, default=(0.01, 0.99)
         These bounds dictate the lower and upper boundary for the first component in a binary system.
-    npoints : float, Optional, default: 30
+    npoints : float, Optional, default=30
         Number of points to test between the bounds.
-    density_opts : dict, Optional, default: {}
+    density_opts : dict, Optional, default={}
         Dictionary of options used in calculating pressure vs. mole in :func:`~despasito.thermodynamics.calc.pressure_vs_volume_arrays`
 
     Returns
@@ -1992,7 +1993,7 @@ def find_new_yi(P, T, phil, xi, Eos, bounds=(0.01, 0.99), npoints=30, density_op
             obj_final = spline(yi_min[0])
         
     logger.info("    Found new guess in yi: {}, Obj: {}".format(yi_final,obj_final))
-    if not isinstance(yi_final,list) or not isinstance(yi_final,np.ndarray):
+    if not gtb.isiterable(yi_final):
         yi_final = np.array([yi_final, 1-yi_final])
 
     return yi_final
@@ -2014,13 +2015,13 @@ def bracket_bounding_yi(P, T, phil, xi, Eos, bounds=(0.01, 0.99), maxiter=50, to
         Liquid mole fraction of each component, sum(xi) should equal 1.0
     Eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
-    bounds : tuple, Optional, default: (0.01, 0.99)
+    bounds : tuple, Optional, default=(0.01, 0.99)
         These bounds dictate the lower and upper boundary for the first component in a binary system.
-    maxiter : int, Optional, default: 50
+    maxiter : int, Optional, default=50
         Maximum number of iterations
-    tol : float, Optional, default: 1e-7
+    tol : float, Optional, default=1e-7
         Tolerance to quit search for yi
-    density_opts : dict, Optional, default: {}
+    density_opts : dict, Optional, default={}
         Dictionary of options used in calculating pressure vs. mole in :func:`~despasito.thermodynamics.calc.pressure_vs_volume_arrays`
 
     Returns
@@ -2107,9 +2108,9 @@ def objective_find_yi(yi, P, T, phil, xi, Eos, density_opts={}, return_flag=Fals
         Liquid mole fraction of each component, sum(xi) should equal 1.0
     Eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
-    density_opts : dict, Optional, default: {}
+    density_opts : dict, Optional, default={}
         Dictionary of options used in calculating pressure vs. mole in :func:`~despasito.thermodynamics.calc.pressure_vs_volume_arrays`
-    return_flag : bool, Optional, default: False
+    return_flag : bool, Optional, default=False
         If True, the objective value and flagv is returned, otherwise, just the objective value is returned
 
     Returns
@@ -2119,7 +2120,7 @@ def objective_find_yi(yi, P, T, phil, xi, Eos, density_opts={}, return_flag=Fals
     """
 
     if type(yi) == float or np.size(yi) == 1:
-        if isinstance(yi,list) or isinstance(yi,np.ndarray):
+        if gtb.isiterable(yi):
             yi = np.array([yi[0], 1-yi[0]])
         else:
             yi = np.array([yi, 1-yi])
@@ -2162,11 +2163,11 @@ def find_new_xi(P, T, phiv, yi, Eos, density_opts={}, bounds=(0.001, .999), npoi
         Vapor mole fraction of each component, sum(yi) should equal 1.0
     Eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
-    density_opts : dict, Optional, default: {}
+    density_opts : dict, Optional, default={}
         Dictionary of options used in calculating pressure vs. mole in :func:`~despasito.thermodynamics.calc.pressure_vs_volume_arrays`
-    bounds : tuple, Optional, default: (0.01, 0.99)
+    bounds : tuple, Optional, default=(0.01, 0.99)
         These bounds dictate the lower and upper boundary for the first component in a binary system.
-    npoints : float, Optional, default: 30
+    npoints : float, Optional, default=30
         Number of points to test between the bounds.
         
     Returns
@@ -2230,7 +2231,7 @@ def find_new_xi(P, T, phiv, yi, Eos, density_opts={}, bounds=(0.001, .999), npoi
             obj_final = spline(xi_min[0])
         
     logger.info("    Found new guess in xi: {}, Obj: {}".format(xi_final,obj_final))
-    if not isinstance(xi_final,list) or not isinstance(xi_final,np.ndarray):
+    if not gtb.isiterable(xi_final):
         xi_final = np.array([xi_final, 1-xi_final])
     
     return xi_final
@@ -2254,9 +2255,9 @@ def objective_find_xi(xi, P, T, phiv, yi, Eos, density_opts={}, return_flag=Fals
         Vapor mole fraction of each component, sum(yi) should equal 1.0
     Eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
-    density_opts : dict, Optional, default: {}
+    density_opts : dict, Optional, default={}
         Dictionary of options used in calculating pressure vs. mole in :func:`~despasito.thermodynamics.calc.pressure_vs_volume_arrays`
-    return_flag : bool, Optional, default: False
+    return_flag : bool, Optional, default=False
         If True, the objective value and flagl is returned, otherwise, just the objective value is returned
         
     Returns
@@ -2266,7 +2267,7 @@ def objective_find_xi(xi, P, T, phiv, yi, Eos, density_opts={}, return_flag=Fals
     """
     
     if isinstance(xi,float) or len(xi) == 1:
-        if isinstance(xi,list) or isinstance(xi,np.ndarray):
+        if gtb.isiterable(xi):
             xi = np.array([xi[0], 1-xi[0]])
         else:
             xi = np.array([xi, 1-xi])
@@ -2307,9 +2308,9 @@ def objective_bubble_pressure(P, xi, T, Eos, density_opts={}, mole_fraction_opti
         [K] Temperature of the system
     Eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
-    density_opts : dict, Optional, default: {}
+    density_opts : dict, Optional, default={}
         Dictionary of options used in calculating pressure vs. mole in :func:`~despasito.thermodynamics.calc.pressure_vs_volume_arrays`
-    mole_fraction_options : dict, Optional, default: {}
+    mole_fraction_options : dict, Optional, default={}
         Options used to solve the inner loop in the solving algorithm
     
 
@@ -2359,9 +2360,9 @@ def objective_dew_pressure(P, yi, T, Eos, density_opts={}, mole_fraction_options
         [K] Temperature of the system
     Eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
-    density_opts : dict, Optional, default: {}
+    density_opts : dict, Optional, default={}
         Dictionary of options used in calculating pressure vs. mole in :func:`~despasito.thermodynamics.calc.pressure_vs_volume_arrays`
-    mole_fraction_options : dict, Optional, default: {}
+    mole_fraction_options : dict, Optional, default={}
         Options used to solve the inner loop in the solving algorithm
 
     Returns
@@ -2406,19 +2407,19 @@ def calc_dew_pressure(yi, T, Eos, density_opts={}, mole_fraction_options={}, Pgu
         [K] Temperature of the system
     Eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
-    density_opts : dict, Optional, default: {}
+    density_opts : dict, Optional, default={}
         Dictionary of options used in calculating pressure vs. mole in :func:`~despasito.thermodynamics.calc.pressure_vs_volume_arrays`
-    mole_fraction_options : dict, Optional, default: {}
+    mole_fraction_options : dict, Optional, default={}
         Options used to solve the inner loop in the solving algorithm
-    Pguess : float, Optional, default: None
+    Pguess : float, Optional, default=None
         [Pa] Guess the system pressure at the dew point. A negative value will force an estimation based on the saturation pressure of each component.
-    Psat_set : float, Optional, default: 1e+7
+    Psat_set : float, Optional, default=1e+7
         [Pa] Set the saturation pressure if the pure component is above the critical point in these conditions
-    Pmin : float, Optional, default: 10000
+    Pmin : float, Optional, default=10000
         [Pa] Guess the minimum system pressure at the dew point. A value of None will used the calc_Prange_xi default.
-    method : str, Optional, default: "broyden1"
+    method : str, Optional, default="broyden1"
         Choose the method used to solve the dew point calculation
-    pressure_options : dict, Optional, default: {}
+    pressure_options : dict, Optional, default={}
         Options used in the given method, "method", to solve the outer loop in the solving algorithm
 
     Returns
@@ -2504,17 +2505,17 @@ def calc_bubble_pressure(xi, T, Eos, density_opts={}, mole_fraction_options={}, 
         [K] Temperature of the system
     Eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
-    density_opts : dict, Optional, default: {}
+    density_opts : dict, Optional, default={}
         Dictionary of options used in calculating pressure vs. mole in :func:`~despasito.thermodynamics.calc.pressure_vs_volume_arrays`
-    mole_fraction_options : dict, Optional, default: {}
+    mole_fraction_options : dict, Optional, default={}
         Options used to solve the inner loop in the solving algorithm
-    Pguess : float, Optional, default: None
+    Pguess : float, Optional, default=None
         [Pa] Guess the system pressure at the dew point. A value of None will force an estimation based on the saturation pressure of each component.
-    Psat_set : float, Optional, default: 1e+7
+    Psat_set : float, Optional, default=1e+7
         [Pa] Set the saturation pressure if the pure component is above the critical point in these conditions
-    method : str, Optional, default: "bisect"
+    method : str, Optional, default="bisect"
         Choose the method used to solve the dew point calculation
-    pressure_options : dict, Optional, default: {}
+    pressure_options : dict, Optional, default={}
         Options used in the given method, "method", to solve the outer loop in the solving algorithm
 
     Returns
@@ -2605,7 +2606,7 @@ def hildebrand_solubility(rhol, xi, T, Eos, dT=.1, tol=1e-4, density_opts={}, **
         Change in temperature used in calculating the derivative with central difference method 
     tol : float
         This cutoff value evaluates the extent to which the integrand of the calculation has decayed. If the last value if the array is greater than tol, then the remaining area is estimated as a triangle, where the intercept is estimated from an interpolation of the previous four points.
-    density_opts : dict, Optional, default: {}
+    density_opts : dict, Optional, default={}
         Dictionary of options used in calculating pressure vs. mole in :func:`~despasito.thermodynamics.calc.pressure_vs_volume_arrays`
 
     Returns
@@ -2619,13 +2620,13 @@ def hildebrand_solubility(rhol, xi, T, Eos, dT=.1, tol=1e-4, density_opts={}, **
     R = constants.Nav * constants.kb
     RT = T * R
 
-    if isinstance(rhol,list) or isinstance(rhol,np.ndarray):
+    if gtb.isiterable(rhol):
         logger.info("rhol should be a float, not {}".format(rhol))
 
     # Find dZdT
-    vlist, Plist1 = pressure_vs_volume_arrays(T-dT, xi, Eos, **density_opts, maxrho=rhol)
-    vlist2, Plist2 = pressure_vs_volume_arrays(T+dT, xi, Eos, **density_opts, maxrho=rhol)
-    vlist, Plist = pressure_vs_volume_arrays(T, xi, Eos, **density_opts, maxrho=rhol)
+    vlist, Plist1 = pressure_vs_volume_arrays(T-dT, xi, Eos, **density_opts, max_density=rhol)
+    vlist2, Plist2 = pressure_vs_volume_arrays(T+dT, xi, Eos, **density_opts, max_density=rhol)
+    vlist, Plist = pressure_vs_volume_arrays(T, xi, Eos, **density_opts, max_density=rhol)
     if any(vlist != vlist2):
         logger.error("Dependant variable vectors must be identical.")
 
@@ -2663,9 +2664,9 @@ def calc_flash(P, T, Eos, density_opts={}, maxiter=200, tol=1e-9, max_mole_fract
         Temperature of the system [K]
     Eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
-    density_opts : dict, Optional, default: {}
+    density_opts : dict, Optional, default={}
         Dictionary of options used in calculating pressure vs. mole in :func:`~despasito.thermodynamics.calc.pressure_vs_volume_arrays`
-    maxiter : int, Optional, default: 50
+    maxiter : int, Optional, default=50
         Maximum number of iterations in updating Ki values
     tol : float, Optional, tol: 1e-09
         Tolerance to break loop. The error is defined as the absolute value of the summed difference in Ki values between iterations.
@@ -2673,7 +2674,7 @@ def calc_flash(P, T, Eos, density_opts={}, maxiter=200, tol=1e-9, max_mole_fract
         Set the vapor and liquid mole fraction of component one to be greater than this number. Useful for diagrams with multiple solutions, such as those with an azeotrope.
     max_mole_fraction0 : float, Optional, default=1
         Set the vapor and liquid mole fraction of component one to be less than this number. Useful for diagrams with multiple solutions, such as those with an azeotrope.
-    Psat_set : float, Optional, default: 1e+7
+    Psat_set : float, Optional, default=1e+7
         [Pa] Set the saturation pressure if the pure component is above the critical point in these conditions
 
     Returns
@@ -2947,7 +2948,7 @@ def fugacity_test_1(P, T, xi, rho, Eos, step_size=1e-5, **kwargs):
     if len(kwargs) > 0:
         logger.debug("'fugacity_test_1' does not use the following keyword arguemnts: {}".format(", ".join(list(kwargs.keys()))))
 
-    if not isinstance(rho,list) or not isinstance(rho,np.ndarray):
+    if not gtb.isiterable(rho):
         rho = np.array([rho])
 
     Z = P / (rho * T * constants.R)
@@ -2985,7 +2986,7 @@ def fugacity_test_2(P, T, xi, rho, Eos, fractional_change=1e-1, **kwargs):
         logger.debug("'fugacity_test_2' does not use the following keyword arguemnts: {}".format(", ".join(list(kwargs.keys()))))
 
     ncomp = len(xi)
-    if isinstance(rho,list) or not isinstance(rho,np.ndarray):
+    if not gtb.isiterable(rho):
         rho = np.array([rho])
 
 #    drho = rho * step_size

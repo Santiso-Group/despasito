@@ -31,7 +31,7 @@ Supporting Thermodynamic Functions
 .. autosummary::
    :toctree: _autosummary
 
-   fit_funcs
+   fit_functions
    global_methods
    constraint_types
 
