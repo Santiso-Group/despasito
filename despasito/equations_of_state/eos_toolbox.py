@@ -51,11 +51,11 @@ def partial_density_central_difference(xi, rho, T, func, step_size=1E-2, log_met
     T : float
         Temperature of the system [K]
     func : function
-        Function used in job to calculate dependent factor. This function should have a single output. Inputs arguements should be (rho, T, xi)
-    step_size : float, Optional, default=1E-4
+        Function used in job to calculate dependent factor. This function should have a single output. Inputs arguments should be (rho, T, xi)
+    step_size : float, Optional, default=1E-2
         Step size used in central difference method
     log_method : bool, Optional, default=False
-        Choose to use a log transform in central difference method. This allows easier calulations for very small numbers.
+        Choose to use a log transform in central difference method. This allows easier calculations for very small numbers.
         
     Returns
     -------
@@ -100,7 +100,7 @@ def partial_density_central_difference(xi, rho, T, func, step_size=1E-2, log_met
 
 def _partial_density_wrapper(rhoi, T, func):
     """
-    Compute derivative of Helmholtz energy wrt to density.
+    Compute derivative of Helmholtz energy with respect to density.
     
     Parameters
     ----------
@@ -158,7 +158,9 @@ def calc_massi(molecular_composition, bead_library, beads):
 
 def extract_property(prop, bead_library, beads):
     r"""
-    
+    Extract single property or key from a dictionary within a dictionary (e.g. bead parameters) and into a single array of the same length and order as a list of bead names.
+
+    The expected structure is a dictionary of dictionaries, such as a parameter library.
     
     Parameters
     ----------
@@ -174,6 +176,7 @@ def extract_property(prop, bead_library, beads):
     prop_array : numpy.ndarray
         array of desired property
     """
+
     prop_array = np.zeros(len(beads))
     for i , bead in enumerate(beads):
         if prop in bead_library[bead]:
@@ -214,7 +217,7 @@ def cross_interaction_from_dict(beads, bead_library, mixing_dict, cross_library=
         for k in range(nbeads):
             output[key][k,k] = bead_library[beads[k]][key]
 
-    # Put Crosslibrary in output matrices 
+    # Put cross_library in output matrices 
     for (i, beadname) in enumerate(beads):
         for (j, beadname2) in enumerate(beads):
             if j > i:
@@ -225,7 +228,7 @@ def cross_interaction_from_dict(beads, bead_library, mixing_dict, cross_library=
                         output[key][i, j] = cross_library[beadname2][beadname][key]
                     else:
                         try:
-                            tmp =  mixing_rules( bead_library[beadname], bead_library[beadname2], key, **mixing_dict[key])
+                            tmp =  combining_rules( bead_library[beadname], bead_library[beadname2], key, **mixing_dict[key])
 #                            if mixing_dict[key]["function"]=="multipole":
 #                                logger.debug("Multipole: {} {}, {}".format(beadname,beadname2,tmp))
                         except Exception:
@@ -239,7 +242,9 @@ def cross_interaction_from_dict(beads, bead_library, mixing_dict, cross_library=
 
 def construct_dummy_bead_library(input_dict, keys=None):
     r"""
-    Using arrays of values, a dictionary is populated like a bead_library. If keys are included, they are used, otherwise, integers are used.
+    Using arrays of values, a dictionary is populated like a bead_library. 
+
+    If keys are included, they are used, otherwise, integers are used.
         
     Parameters
     ----------
@@ -274,9 +279,9 @@ def construct_dummy_bead_library(input_dict, keys=None):
     else:
         return output
 
-def mixing_rules( beadA, beadB, parameter, function="mean", **kwargs):
+def combining_rules( beadA, beadB, parameter, function="mean", **kwargs):
     r"""
-    Calculates cross interaction parameter according to the calculation method provided.
+    Calculates cross interaction parameter according to the calculation method defined.
     
     Parameters
     ----------
@@ -289,7 +294,7 @@ def mixing_rules( beadA, beadB, parameter, function="mean", **kwargs):
     function : str, Optional, default=mean
         Mixing rule function found in `despasito.equations_of_state.combining_rule_types.py`
     kwargs : dict, Optional, default={}
-        Keyword arguements used in other averaging function
+        Keyword arguments used in other averaging function
         
     Returns
     -------

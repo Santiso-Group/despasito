@@ -72,7 +72,12 @@ class MultiprocessingJob:
     def _initialize_mp_handler(level,logformat):
         """Wraps the handlers in the given Logger with an MultiProcessingHandler.
 
-        :param logger: whose handlers to wrap. By default, the root logger.
+        Parameters
+        ----------
+        level : int
+            The verbosity level of logging information can be set to any supported representation of the `logging level <https://docs.python.org/3/library/logging.html#logging-levels>`_. 
+        logformat : str
+            Formating of logging information can be set to any supported representation of the `formatting class <https://docs.python.org/3/library/logging.html#logging.Formatter>`_. 
         """
 
         logger = logging.getLogger()
@@ -97,7 +102,7 @@ class MultiprocessingJob:
         func : function
             Function used in job
         inputs : list
-            Each entry of this list contains the input arguements for each job
+            Each entry of this list contains the input arguments for each job
 
         Returns
         -------
@@ -125,7 +130,7 @@ class MultiprocessingJob:
         func : function
             Function used in job
         inputs : list
-            Each entry of this list contains the input arguements for each job
+            Each entry of this list contains the input arguments for each job
 
         Returns
         -------
@@ -164,9 +169,14 @@ class MultiprocessingJob:
             self._remove_mp_logs()
 
 def initialize_mp_handler(level,logformat):
-    """Wraps the handlers in the given Logger with an MultiProcessingHandler.
+    """ Wraps the handlers in the given Logger with an MultiProcessingHandler.
 
-    :param logger: whose handlers to wrap. By default, the root logger.
+    Parameters
+    ----------
+    level : int
+        The verbosity level of logging information can be set to any supported representation of the `logging level <https://docs.python.org/3/library/logging.html#logging-levels>`_. 
+    logformat : str
+        Formating of logging information can be set to any supported representation of the `formatting class <https://docs.python.org/3/library/logging.html#logging.Formatter>`_. 
     """
 
     logger = logging.getLogger()
@@ -189,7 +199,7 @@ def batch_jobs( func, inputs, ncores=1, logger=None):
     func : function
         Function used in job
     inputs : list
-        Each entry of this list contains the input arguements for each job
+        Each entry of this list contains the input arguments for each job
     ncores : int, Optional, default=1
         Number of processes used.
     logger : class, Optional, default=None

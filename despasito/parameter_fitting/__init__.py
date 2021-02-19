@@ -28,34 +28,45 @@ def fit( optimization_parameters=None, exp_data=None, global_opts={}, minimizer_
 
     Parameters
     ----------
+    optimization_parameters : dict, Optional, default=None
+        Parameters used in global fitting algorithm.
+
+        - fit_bead (str) - Name of bead whose parameters are being fit, should be in bead list of bead_configuration
+        - fit_parameter_names (list[str]) - This list of contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
+        - parameters_guess (list[float]), Optional - Initial guess in parameter. If one is not provided, a guess is made based on the type of parameter from Eos object.
+        - \*_bounds (list[float]), Optional - This list contains the minimum and maximum of the parameter from a parameter listed in fit_parameter_names, represented in place of the asterisk. See input file instructions for more information.
+
+    exp_data : dict, Optional, default=None
+        This dictionary is made up of a dictionary for each data set that the parameters are fit to. Each dictionary is converted into an object and saved back to this structure before parameter fitting begins. Each key is an arbitrary string used to identify the data set and used later in reporting objective function values during the fitting process. See data type objects for more details.
+
+        - data_class_type (str) - One of the supported data type objects to fit parameters
+        - eos_obj (obj) - Equation of state output that writes pressure, max density, chemical potential, updates parameters, and evaluates objective functions. For parameter fitting algorithm See equation of state documentation for more details.
+
+    global_opts : dict, Optional, default={}
+        Method and kwargs used in global optimization method. See :func:`~despasito.parameter_fitting.fit_functions.global_minimization`.
+
+        - method (str), Optional - default='differential_evolution', Global optimization method used to fit parameters. See :func:`~despasito.parameter_fitting.fit_functions.global_minimization`.
+        - Additional options, specific to global_optimizaiton method
+
+    minimizer_opts : dict, Optional, default=None
+        Dictionary used to define minimization type and the associated options.
+
+        - method (str) - Method available to scipy.optimize.minimize
+        - options (dict) - This dictionary contains the kwargs available to the chosen method
+
+    MultiprocessingObject : obj, Optional
+        Multiprocessing object, :class:`~despasito.utils.parallelization.MultiprocessingJob`
     thermo_dict : dict
-        Dictionary of instructions for thermodynamic calculations and parameter fitting.
-
-        - optimization_parameters (dict) - Parameters used in global fitting algorithm.
-
-            - fit_bead (str) - Name of bead whose parameters are being fit, should be in bead list of bead_configuration
-            - fit_parameter_names (list[str]) - This list of contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
-            - parameters_guess (list[float]), Optional - Initial guess in parameter. If one is not provided, a guess is made based on the type of parameter from Eos object.
-            - \*_bounds (list[float]), Optional - This list contains the minimum and maximum of the parameter from a parameter listed in fit_parameter_names, represented in place of the asterisk. See input file instructions for more information.
-
-        - exp_data (dict) - This dictionary is made up of a dictionary for each data set that the parameters are fit to. Each dictionary is converted into an object and saved back to this structure before parameter fitting begins. Each key is an arbitrary string used to identify the data set and used later in reporting objective function values during the fitting process. See data type objects for more details.
-
-            - data_class_type (str) - One of the supported data type objects to fit parameters
-            - eos_obj (obj) - Equation of state output that writes pressure, max density, chemical potential, updates parameters, and evaluates objective functions. For parameter fitting algorithm See equation of state documentation for more details.
-
-        - global_opts (dict), Optional - kwargs used in global optimization method. See :func:`~despasito.parameter_fitting.fit_functions.global_minimization`.
-
-            - method (str), Optional - default='differential_evolution', Global optimization method used to fit parameters. See :func:`~despasito.parameter_fitting.fit_functions.global_minimization`.
-            - Additional options, specific to global_optimizaiton method
-
-        - minimizer_opts (dict), Optional - Dictionary used to define minimization type and the associated options.
-
-            - method (str) - Method available to scipy.optimize.minimize
-            - options (dict) - This dictionary contains the kwargs available to the chosen method
+        Other keywords of instructions for thermodynamic calculations and parameter fitting.
   
     Returns
     -------
-    Output file saved in current working directory
+    output : dict
+        Results from parameter optimization
+
+        - parameters_final (numpy.ndarray) -  Array of the same length as `fit_parameter_names` containing the parameters resulting from the chosen global optimization method.
+        - objective_value (float) - Objective value resulting from `parameters_final`
+        
     """
 
     # Extract relevant quantities from thermo_dict
@@ -151,5 +162,8 @@ def fit( optimization_parameters=None, exp_data=None, global_opts={}, minimizer_
     except Exception:
         raise TypeError("The parameter fitting failed")
 
-    return {"fit_bead": optimization_parameters["fit_bead"], "fit_parameter_names":optimization_parameters["fit_parameter_names"], "parameters_final": result.x, "objective_value": result.fun} 
+    return {"fit_bead": optimization_parameters["fit_bead"], 
+            "fit_parameter_names":optimization_parameters["fit_parameter_names"], 
+            "parameters_final": result.x, 
+            "objective_value": result.fun} 
 

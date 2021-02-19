@@ -1,20 +1,14 @@
-"""
-
-Routines for writing .txt and .json output files files from dictionaries.
-
+""" Routines for writing .txt and .json output files files from dictionaries.
 """
 
 #import logging
 import json
 import collections
 import numpy as np
-#import os
 
-######################################################################
-#                                                                    #
-#                  Extract Saft Parameters                           #
-#                                                                    #
-######################################################################
+#logger = logging.getLogger(__name__)
+
+
 def write_EOSparameters(library, filename):
 
     """
@@ -29,19 +23,13 @@ def write_EOSparameters(library, filename):
 
     """
 
-    #logger = logging.getLogger(__name__)
-
     #sort and write SAFT dict
     for i in library:
         library[i] = collections.OrderedDict(sorted(list(library[i].items()), key=lambda tup: tup[0].lower()))
     f = open(filename, 'w')
     json.dump(library, f, indent=4)
 
-######################################################################
-#                                                                    #
-#                  Write Thermodynamic Output                         #
-#                                                                    #
-######################################################################
+
 def writeout_thermo_dict(output_dict,calctype,output_file="thermo_output.txt"):
     """
     Write out result of thermodynamic calculation.
@@ -54,7 +42,7 @@ def writeout_thermo_dict(output_dict,calctype,output_file="thermo_output.txt"):
         Dictionary of given and calculated information from thermodynamic module
     calculation_type : str
         Thermodynamic calculation type used
-    output_file : str, Optional, default=thermo_output.txt
+    output_file : str, Optional, default="thermo_output.txt"
         Name of output file
 
     """
@@ -63,7 +51,7 @@ def writeout_thermo_dict(output_dict,calctype,output_file="thermo_output.txt"):
     units = {"T":"K","P":"Pa","Psat":"Pa","rhol":"mol/m^3","rhov":"mol/m^3","delta":"Pa^(1/2)"}
 
     # Make comment line
-    comment = "# This data was generated in DESPASITO using the thermodynamic calculation: "+calctype
+    comment = "# This data was generated in DESPASITO using the thermodynamic calculation: {}".format(calctype)
     
     # Make results matrix
     keys = []
@@ -103,11 +91,6 @@ def writeout_thermo_dict(output_dict,calctype,output_file="thermo_output.txt"):
             f.write((' {},' * len(row)).format(*row)+"\n")
 
 
-######################################################################
-#                                                                    #
-#                  Write Parameter Fitting Output                    #
-#                                                                    #
-######################################################################
 def writeout_fit_dict(output_dict,output_file="fit_output.txt"):
     """
     Write out result of fitting calculation.
@@ -118,7 +101,7 @@ def writeout_fit_dict(output_dict,output_file="fit_output.txt"):
     ----------
     output_dict : dict
         Dictionary of given and calculated information from thermodynamic module.
-    output_file : str, Optional, default=thermo_output.txt
+    output_file : str, Optional, default="fit_output.txt"
         Name of output file
 
     """

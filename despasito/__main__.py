@@ -1,5 +1,4 @@
-"""
-Process command line argparse and initiate logging settings.
+""" Process command line argparse and initiate logging settings.
 """
 
 from .main import run, get_parser
@@ -54,7 +53,7 @@ logging.info("Use Numba JIT: {}".format(args.numba))
 kwargs["numba"] = args.numba
 logging.info("Use Cython: {}".format(args.cython))
 kwargs["cython"] = args.cython
-logging.info("Pure Python (no fortran): {}".format(args.python))
+logging.info("Pure Python (no Fortran): {}".format(args.python))
 kwargs["python"] = args.python
 
 kwargs["MultiprocessingObject"] = MultiprocessingJob(ncores=args.ncores)

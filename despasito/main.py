@@ -19,6 +19,8 @@ from .parameter_fitting import fit
 logger = logging.getLogger(__name__)
 
 def get_parser():
+    """ Process line arguments
+    """
 
     ## Define parser functions and arguments
     parser = argparse.ArgumentParser(description=r"DESPASITO: Determining Equilibrium State and Parametrization Application for SAFT, Intended for Thermodynamic Output.  This is an open-source application for thermodynamic calculations and parameter fitting for the Statistical Associating Fluid Theory (SAFT) EOS and SAFT-𝛾-Mie coarse-grained simulations.")
@@ -28,13 +30,24 @@ def get_parser():
     parser.add_argument("-n", "--ncores", dest="ncores", type=int, help="Set the number of cores used. A value of -1 will request all possible resources.",default=1)
     parser.add_argument("-p", "--path", default=".", help="Set the location of the data/library files (e.g. SAFTcross, etc.) for despasito to look for")
     parser.add_argument("--numba", action='store_true', help="Turn on Numba's JIT compilation for accelerated computation")
-    parser.add_argument("--python", action='store_true', help="Remove default fortran module for association site calculations.")
+    parser.add_argument("--python", action='store_true', help="Remove default Fortran module for association site calculations.")
     parser.add_argument("--cython", action='store_true', help="Turn on Cython for accelerated computation")
 
     return parser
 
-def run(filename="input.json", path=".", numba=False, cython=False, python=False, **kwargs):
-    """ Main function for running despasito calculations. All inputs and settings should be in the supplied JSON file(s).
+def run(filename="input.json", path=".", **kwargs):
+    """ Main function for running despasito calculations.
+
+    All inputs and settings should be in the supplied JSON file(s).
+
+    Parameters
+    ----------
+    filename : str, Optional, default="input.json"
+        Input file containing instructions for various aspects of the calculation
+    path : str, Optional, default="."
+        Path to input file
+    kwargs
+        Keywords for other aspects of calculation
     """
 
     #read input file (need to add command line specification)
@@ -42,9 +55,6 @@ def run(filename="input.json", path=".", numba=False, cython=False, python=False
     eos_dict, thermo_dict, output_file = read_input.extract_calc_data(filename, path, **kwargs)
 
     thermo_dict['MultiprocessingObject'] = kwargs['MultiprocessingObject']
-    eos_dict["numba"] = numba
-    eos_dict["cython"] = cython
-    eos_dict["python"] = python
 
     if output_file:
         file_dict = {"output_file":output_file}
@@ -73,6 +83,8 @@ def run(filename="input.json", path=".", numba=False, cython=False, python=False
         logger.info("Initializing parametrization procedure")
 
         output_dict = fit(**thermo_dict.copy())
+        output_dict.update({"fit_bead": thermo_dict["optimization_parameters"]["fit_bead"],
+                            "fit_parameter_names":thermo_dict["optimization_parameters"]["fit_parameter_names"]})
         logger.info("Finished parametrization")
         write_output.writeout_fit_dict(output_dict,**file_dict)
     else:

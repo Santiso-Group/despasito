@@ -1,3 +1,5 @@
+""" General functions that can be used by multiple modules
+"""
 
 import sys
 import numpy as np
@@ -15,7 +17,7 @@ def solve_root( func, args=None, method="bisect", x0=None, bounds=None, options=
     func : function
         Function used in job. Can be any of the following scipy methods: "brent", "least_squares", "TNC", "L-BFGS-B", "SLSQP", 'hybr', 'lm', 'linearmixing', 'diagbroyden', 'excitingmixing', 'krylov', 'df-sane', 'anderson', 'hybr_broyden1', 'hybr_broyden2', 'broyden1', 'broyden2', 'bisect'.
     args : list, Optional, default=None
-        Each entry of this list contains the input arguements for each job
+        Each entry of this list contains the input arguments for each job
     method : str, Optional, default="bisect"
         Choose the method used to solve the dew point calculation
     x0 : float, Optional, default=None
@@ -155,7 +157,7 @@ def central_difference(x, func, step_size=1E-5, args=None):
     step_size : float, Optional, default=1E-5
         This function calculates a relative step size for each independent variable. Each step is equal x * step_size.
     args : list, Optional, default=None
-        Each entry of this list contains the input arguements for each job
+        Each entry of this list contains the input arguments for each job
     Returns
     -------
     dydx : numpy.ndarray
@@ -178,7 +180,9 @@ def central_difference(x, func, step_size=1E-5, args=None):
 
 def isiterable(array):
     """
-    Check if variable is an iterable type with a length (e.g. np.array or list). Note that this could be tested with isinstance(array, Iterable), however array=np.array(1.0) would pass that test and then fail in len(array).
+    Check if variable is an iterable type with a length (e.g. np.array or list).
+
+    Note that this could be tested with isinstance(array, Iterable), however array=np.array(1.0) would pass that test and then fail in len(array).
 
     Parameters
     ----------
@@ -202,7 +206,9 @@ def isiterable(array):
 def check_length(dictionary, keys, lx=None):
 
     """
-    This function compared the entries in the provided dictionary to ensure they're the same length. All entries will be made into numpy arrays. If a float or array of length one is provided, it will be expanded to the length of other arrays.
+    This function compared the entries in the provided dictionary to ensure they're the same length.
+
+    All entries will be made into numpy arrays. If a float or array of length one is provided, it will be expanded to the length of other arrays.
 
     Parameters
     ----------

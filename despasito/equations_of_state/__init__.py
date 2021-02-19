@@ -9,13 +9,14 @@ from importlib import import_module
 import logging
 
 class method_stat:
+
     numba = False
     cython = False
     python = False
 
 logger = logging.getLogger(__name__)
 
-def initiate_eos(eos="saft.gamma_mie", numba=False, cython=False, python=False, **input_dict):
+def initiate_eos(eos="saft.gamma_mie", numba=None, cython=None, python=None, **input_dict):
     """
     Interface between the user and our library of equations of state (EOS).
 
@@ -34,11 +35,14 @@ def initiate_eos(eos="saft.gamma_mie", numba=False, cython=False, python=False, 
         An instance of the defined EOS class to be used in thermodynamic computations.
     """
 
-    method_stat.numba = numba
-    method_stat.cython = cython
-    method_stat.python = python
+    if numba != None:
+        method_stat.numba = numba
+    if cython != None:
+        method_stat.cython = cython
+    if python != None:
+        method_stat.python = python
 
-    factory_families = ["saft"] # Eos families in this list have a general object with a factory to import relevent modules
+    factory_families = ["saft"] # Eos families in this list have a general object with a factory to import relevant modules
 
     logger.info("Using EOS: {}".format(eos))
 

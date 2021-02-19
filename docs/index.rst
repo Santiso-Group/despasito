@@ -30,6 +30,7 @@ The second facet is parameterization, not only of the equation of state (EOS) bu
    eos
    thermo
    fitparams
+   utils
 
 .. toctree::
    :maxdepth: 1

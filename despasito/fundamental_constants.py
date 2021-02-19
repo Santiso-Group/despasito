@@ -1,5 +1,4 @@
-"""
-    This file contains constants that are generally used by the program
+""" Constants that are generally used by the program
 """
 
 #physical constants

@@ -514,6 +514,7 @@ def _liquid_properties_wrapper(args):
         logger.warning('Failed to calculate rhol at {} K and {} Pa'.format(T,P))
         rhol, flagl = np.nan, 3
         phil = np.nan*np.ones(Eos.number_of_components)
+        logger.debug("Calculation Failed:", exc_info=True)
 
     return rhol, phil, flagl
 
@@ -604,6 +605,7 @@ def _vapor_properties_wrapper(args):
         logger.warning('Failed to calculate rhov at {} K and {} Pa'.format(T,P))
         rhov, flagv = np.nan, 3
         phiv = np.nan*np.ones(Eos.number_of_components)
+        logger.debug("Calculation Failed:", exc_info=True)
 
     return rhov, phiv, flagv
 
@@ -613,7 +615,7 @@ def solubility_parameter(Eos, **sys_dict):
     r"""
     Calculate the Hildebrand solubility parameter based on temperature and composition. This function is based on the method used in Zeng, Z., Y. Xi, and Y. Li "Calculation of Solubility Parameter Using Perturbed-Chain SAFT and Cubic-Plus-Association Equations of State" Ind. Eng. Chem. Res. 2008, 47, 9663–9669.
 
-    Input and system information are assessed first. An output file is generated with T, xi, :math:`\rho_{l}, and :math:`\detla.
+    Input and system information are assessed first. An output file is generated with T, xi, :math:`\rho_{l}`, and :math:`\delta`.
     
     Parameters
     ----------
@@ -697,6 +699,7 @@ def _solubility_parameter_wrapper(args):
     except Exception:
         logger.warning('Failed to calculate rhov at {} K and {} Pa'.format(T,P))
         rhol, flagl, delta = np.nan, 3, np.nan
+        logger.debug("Calculation Failed:", exc_info=True)
 
     return rhol, flagl, delta
 
@@ -796,6 +799,7 @@ def _verify_eos_wrapper(args):
     if np.isnan(rhov):
         logger.warning('Failed to calculate rhov at {} K and {} Pa'.format(T,P))
         log_phiv, residual_v1, residual_v2 = np.nan, np.nan, np.nan
+        logger.debug("Calculation Failed:", exc_info=True)
     else:
         phiv = Eos.fugacity_coefficient(P, np.array([rhov]), xi, T)
         log_phiv = np.log(phiv)
@@ -807,6 +811,7 @@ def _verify_eos_wrapper(args):
     if np.isnan(rhol):
         logger.warning('Failed to calculate rhol at {} K and {} Pa'.format(T,P))
         log_phil, residual_l1, residual_l2 = np.nan, np.nan, np.nan
+        logger.debug("Calculation Failed:", exc_info=True)
     else:
         phil = Eos.fugacity_coefficient(P, np.array([rhol]), xi, T)
         log_phil = np.log(phil)

@@ -1,7 +1,4 @@
-"""
-
-Routines for parsing input .json files to dictionaries for program use.
-
+""" Routines for parsing input .json files to dictionaries for program use.
 """
 
 import logging
@@ -10,12 +7,6 @@ import numpy as np
 import os
 
 logger = logging.getLogger(__name__)
-
-######################################################################
-#                                                                    #
-#                   Appends path to find data files                  #
-#                                                                    #
-######################################################################
 
 def append_data_file_path(input_dict, path='.'):
    r"""
@@ -38,11 +29,7 @@ def append_data_file_path(input_dict, path='.'):
       if isinstance(val,dict) and 'file' in val:
          input_dict[key]['file'] = os.path.join(path, input_dict[key]['file'])
 
-######################################################################
-#                                                                    #
-#                  Extract Bead Data                                 #
-#                                                                    #
-######################################################################
+
 def extract_calc_data(input_fname, path='.', **thermo_dict):
 
     r"""
@@ -54,6 +41,10 @@ def extract_calc_data(input_fname, path='.', **thermo_dict):
     ----------
     input_fname : str
         The file name of a .json file in the current directory containing (1) the paths to equation of state parameters, (2) :mod:`~despasito.thermodynamics.calculation_types` and inputs for thermodynamic calculations (e.g. density options for :func:`~despasito.thermodynamics.calc.pressure_vs_volume_arrays`).
+    path : str, Optional, default="."
+        Path to `input_fname`
+    thermo_dict
+        Additional keyword arguments
 
     Returns
     -------
@@ -61,6 +52,8 @@ def extract_calc_data(input_fname, path='.', **thermo_dict):
         Dictionary of bead definitions and parameters used to later initialize Eos object. :func:`despasito.equations_of_state.initiate_eos`
     thermo_dict : dict
         Dictionary of instructions for thermodynamic calculations or parameter fitting. :func:`despasito.thermodynamics.thermo`
+    output_file : str
+        Output from calculation. Default is None, but an alternative can be defined as output_file keyword argument.
     """
 
     ## Extract dictionary from input file
@@ -100,7 +93,7 @@ def extract_calc_data(input_fname, path='.', **thermo_dict):
         logger.info("No EOScross file specified")
 
     # Extract relevant system state inputs
-    EOS_dict_keys = ['bead_configuration', 'EOSgroup', 'EOScross',"output_file"]
+    EOS_dict_keys = ['bead_configuration', 'EOSgroup', 'EOScross',"output_file", "numba", "cython", "python"]
     for key, value in input_dict.items():
         if key.startswith("eos_"):
             new_key = "_".join(key.split("_")[1:])
@@ -127,11 +120,7 @@ def extract_calc_data(input_fname, path='.', **thermo_dict):
 
     return eos_dict, thermo_dict, output_file
 
-######################################################################
-#                                                                    #
-#                  Extract Density Plot  Parameters                  #
-#                                                                    #
-######################################################################
+
 def file2paramdict(filename,delimiter=" "):
 
     r"""
@@ -168,11 +157,7 @@ def file2paramdict(filename,delimiter=" "):
     
     return dictionary
 
-######################################################################
-#                                                                    #
-#                  Make Mole Frac. Matrix                            #
-#                                                                    #
-######################################################################
+
 def make_xi_matrix(filename):
 
     r"""
@@ -196,14 +181,10 @@ def make_xi_matrix(filename):
     f = open(filename, 'r').read()
     comp = json.loads(f)
     beads, molecular_composition = process_bead_data(comp)
+
     return xi, beads, molecular_composition
 
 
-######################################################################
-#                                                                    #
-#                  Process Bead Data                                 #
-#                                                                    #
-######################################################################
 def process_bead_data(bead_data):
 
     r"""
@@ -238,11 +219,7 @@ def process_bead_data(bead_data):
                     molecular_composition[i, k] = bead_data[i][j][1]
     return beads, molecular_composition
 
-######################################################################
-#                                                                    #
-#                  Parameter Fitting Data                            #
-#                                                                    #
-######################################################################
+
 def process_param_fit_inputs(thermo_dict):
 
     r"""
@@ -299,11 +276,7 @@ def process_param_fit_inputs(thermo_dict):
 
     return new_thermo_dict
 
-######################################################################
-#                                                                    #
-#                  Process Experimental Data                         #
-#                                                                    #
-######################################################################
+
 def process_exp_data(exp_data_dict):
 
     r"""
@@ -342,11 +315,7 @@ def process_exp_data(exp_data_dict):
 
     return exp_data
 
-######################################################################
-#                                                                    #
-#                  Process Experimental Data                         #
-#                                                                    #
-######################################################################
+
 def process_exp_data_file(fname):
 
     r"""

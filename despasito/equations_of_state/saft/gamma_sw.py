@@ -1,9 +1,8 @@
 # -- coding: utf8 --
 r"""
+    EOS object for SAFT-:math:`\gamma`-SW
     
-    EOS object for SAFT-:math:`\gamma`-Mie
-    
-    Equations referenced in this code are from V. Papaioannou et al J. Chem. Phys. 140 054107 2014
+    Equations referenced in this code are from Lymperiadis, A. et. al, J. Chem. Phys. 127, 234903 (2007)
     
 """
 
@@ -11,7 +10,6 @@ import numpy as np
 import logging
 import os
 import sys
-#np.set_printoptions(threshold=sys.maxsize)
 
 
 import despasito.equations_of_state.eos_toolbox as tb
@@ -34,43 +32,94 @@ ckl_coef = np.array([[2.25855, -1.50349, 0.249434], [-0.669270, 1.40049, -0.8277
 class SaftType():
 
     r"""
-    
+    Object of SAFT-𝛾-SW (for square well potential)
     
     Parameters
     ----------
     beads : list[str]
         List of unique bead names used among components
+    molecular_composition : numpy.ndarray
+        :math:`\\nu_{i,k}/k_B`. Array of number of components by number of bead types. Defines the number of each type of group in each component.
     bead_library : dict
         A dictionary where bead names are the keys to access EOS self interaction parameters:
     
         - epsilon: :math:`\epsilon_{k,k}/k_B`, Energy well depth scaled by Boltzmann constant
-        - sigma: :math:`\sigma_{k,k}`, Size parameter [nm]
-        - mass: Bead mass [kg/mol]
-        - l_r: :math:`\lambda^{r}_{k,k}`, Exponent of repulsive term between groups of type k
-        - l_a: :math:`\lambda^{a}_{k,k}`, Exponent of attractive term between groups of type k
+        - sigma: :math:`\sigma_{k,k}`, Size parameter, contact distance [nm]
+        - lambda: :math:`\lambda_{k,k}`, Range of the attractive interaction of well depth, epsilon
+        - Sk: Optional, default=1, Shape factor, reflects the proportion which a given segment contributes to the total free energy
+        - Vks: Optional, default=1, Number of segments in this molecular group
 
     cross_library : dict, Optional, default={}
         Optional library of bead cross interaction parameters. As many or as few of the desired parameters may be defined for whichever group combinations are desired. If this matrix isn't provided, the SAFT mixing rules are used.
         
-        - epsilon: :math:`\epsilon_{k,l}/k_B`, Energy parameter scaled by Boltzmann Constant
-        - sigma: :math:`\sigma_{k,k}`, Size parameter [nm]
-        - l_r: :math:`\lambda^{r}_{k,l}`, Exponent of repulsive term between groups of type k and l
-        - l_a: :math:`\lambda^{a}_{k,l}`, Exponent of attractive term between groups of type k and l
+        - epsilon: :math:`\epsilon_{k,l}/k_B`, Energy parameter, well depth, scaled by Boltzmann Constant
+        - sigma: :math:`\sigma_{k,k}`, Size parameter, contact distance [nm]
+        - lambda: :math:`\lambda_{k,l}`, Range of the attractive interaction of well depth, epsilon
+
+    num_rings : list
+        Number of rings in each molecule. This will impact the chain contribution to the Helmholtz energy.
         
     Attributes
     ----------
-    alpha : np.array
-        van der Waals attractive parameter for square-well segments, equal to :math:`\alpha_{k,l}/k_B`.
-    
+    beads : list[str]
+        List of unique bead names used among components
+    bead_library : dict
+        A dictionary where bead names are the keys to access EOS self interaction parameters. See **Parameters** section.
+    cross_library : dict
+        Library of bead cross interaction parameters. As many or as few of the desired parameters may be defined for whichever group combinations are desired. See **Parameters** section.
+    Aideal_method : str
+        "Abroglie" the default functional form of the ideal gas contribution of the Helmholtz energy
+    residual_helmholtz_contributions : list[str]
+        List of methods from the specified saft_source representing contributions to the Helmholtz energy that are functions of density, temperature, and composition. For this variant, [`Amonomer`, `Achain`]
+    parameter_types : list[str]
+        This list of parameter names for the association site calculation, "epsilon", "lambda", "sigma", and/or "Sk" as well as parameters for the specific SAFT variant. 
+    parameter_bound_extreme : dict
+        With each parameter names as an entry representing a list with the minimum and maximum feasible parameter value.
+
+        - epsilon: [10.,1000.]
+        - lambda: [1.0,10.]
+        - sigma: [0.1,10.0]
+        - Sk: [0.1,1.0]
+
+    combining_rules : dict
+        Contains functional form and additional information for calculating cross interaction parameters that are not found in `cross_library`. Function must be one of those contained in :mod:`~despasito.equations_of_state.combining_rule_types`. The default values are:
+
+        - sigma: {"function": "mean"}
+        - lambda: {"function": "weighted_mean","weighting_parameters": ["sigma"]}
+        - epsilon: {"function": "square_well_berthelot","weighting_parameters": ["sigma", "lambda"]}
+
+    eos_dict : dict
+        Dictionary of parameters and specific settings 
+
+        - molecular_composition (numpy.ndarray) - :math:`\\nu_{i,k}/k_B`. Array of number of components by number of bead types. Defines the number of each type of group in each component.
+        - num_rings (list) - Number of rings in each molecule. This will impact the chain contribution to the Helmholtz energy.
+        - Sk (numpy.ndarray) - Shape factor, reflects the proportion which a given segment contributes to the total free energy. Length of `beads` array.
+        - Vks (numpy.ndarray) - Number of segments in this molecular group. Length of `beads` array.
+        - epsilon_kl (numpy.ndarray) - Matrix of well depths for groups (k,l)
+        - sigma_kl (numpy.ndarray) - Matrix of bead diameters (k,l)
+        - lambda_kl (numpy.ndarray) - Matrix of range of potential well depth (k,l)
+        - Cmol2seg (float) - Conversion factor from from molecular number density, :math:`\rho`, to segment (i.e. group) number density, :math:`\rho_S`.
+        - epsilon_ij (numpy.ndarray) - Matrix of average molecular well depths (k,l)
+        - sigma_ij (numpy.ndarray) - Matrix of average molecular diameter (k,l)
+        - lambda_ij (numpy.ndarray) - Matrix of average molecular range of potential well depth (k,l)
+        - xskl (numpy.ndarray) - Matrix of mole fractions of bead (i.e. segment or group) k multiplied by that of bead l
+        - alphakl (np.array) - van der Waals attractive parameter for square-well segments, equal to :math:`\alpha_{k,l}/k_B`.
+        
+    ncomp : int
+        Number of components in the system
+    nbeads : int
+        Number of beads in system that are shared among components
+    xi : numpy.ndarray
+        Mole fraction of each molecule in mixture. Default initialization is np.nan
     """
 
     def __init__(self, **kwargs):
     
         self.Aideal_method = "Abroglie"
         self.residual_helmholtz_contributions = ["Amonomer","Achain"]
-        self.parameter_types = ["epsilon", "lambda", "epsilonHB", "sigma", "Sk", "K", "rc", "rd"]
-        self.parameter_bound_extreme = {"epsilon":[10.,1000.], "lambda":[1.0,10.0], "sigma":[0.1,10.0], "Sk":[0.1,1.], "epsilonHB":[100.,5000.], "K":[1e-5,10000.]}    
-        self.mixing_rules = {"sigma": {"function": "mean"},
+        self.parameter_types = ["epsilon", "lambda", "sigma", "Sk"]
+        self.parameter_bound_extreme = {"epsilon":[10.,1000.], "lambda":[1.0,10.0], "sigma":[0.1,10.0], "Sk":[0.1,1.]}    
+        self.combining_rules = {"sigma": {"function": "mean"},
                              "lambda": {"function": "weighted_mean", "weighting_parameters": ["sigma"]},
                              "epsilon": {"function": "square_well_berthelot", "weighting_parameters": ["sigma", "lambda"]}
                             } # Note in this EOS object, the mixing rules for the group parameters are also used for their corresponding molecular averaged parameters.
@@ -82,32 +131,30 @@ class SaftType():
         for key in needed_attributes:
             if key not in kwargs:
                 raise ValueError("The one of the following inputs is missing: {}".format(", ".join(tmp)))
-            elif not hasattr(self, key):
-                if key == "molecular_composition":
+            elif key == "molecular_composition":
+                if "molecular_composition" not in self.eos_dict:
                     self.eos_dict[key] = kwargs[key]
-                else:
-                    setattr(self, key, kwargs[key])
+            elif not hasattr(self, key):
+                setattr(self, key, kwargs[key])
 
         if 'cross_library' not in kwargs:
             self.cross_library = {}
         else:
             self.cross_library = kwargs['cross_library']
 
-        if not hasattr(self, 'massi'):
-            self.eos_dict['massi'] = tb.calc_massi(self.eos_dict['molecular_composition'],self.bead_library,self.beads)
-        if not hasattr(self, 'Vks'):
+        if 'Vks' not in self.eos_dict:
             self.eos_dict['Vks'] = tb.extract_property("Vks",self.bead_library,self.beads)
-        if not hasattr(self, 'Sk'):
+        if 'Sk' not in self.eos_dict:
             self.eos_dict['Sk'] = tb.extract_property("Sk",self.bead_library,self.beads)
 
         # Initialize component attribute
         if not hasattr(self, 'xi'):
             self.xi = np.nan
-        if not hasattr(self, 'nbeads'):
+        if not hasattr(self, 'nbeads') or not hasattr(self, 'ncomp'):
             self.ncomp, self.nbeads = np.shape(self.eos_dict['molecular_composition'])
 
-        # Intiate cross interaction terms
-        output = tb.cross_interaction_from_dict( self.beads, self.bead_library, self.mixing_rules, cross_library=self.cross_library)
+        # Initiate cross interaction terms
+        output = tb.cross_interaction_from_dict( self.beads, self.bead_library, self.combining_rules, cross_library=self.cross_library)
         self.eos_dict["sigma_kl"] = output["sigma"]
         self.eos_dict["epsilon_kl"] = output["epsilon"]
         self.eos_dict["lambda_kl"] = output["lambda"]
@@ -124,15 +171,16 @@ class SaftType():
 
     def calc_component_averaged_properties(self):
         r"""
+        Calculate component averaged properties specific to SAFT-𝛾-SW 
         
         Attributes
         ----------
-        output : dict
-            Dictionary of outputs, the following possibilities aer calculated if all relevant beads have those properties.
+        eos_dict : dict
+            Dictionary of outputs, the following possibilities are calculated if all relevant beads have those properties.
     
-            - epsilon_ij : numpy.ndarray, Matrix of well depths for groups (k,l)
-            - sigma_ij : numpy.ndarray, Matrix of Mie diameter for groups (k,l)
-            - lambda_ij : numpy.ndarray, Matrix of Mie potential attractive exponents for k,l groups
+            - epsilon_ij (numpy.ndarray) - Matrix of average molecular well depths (k,l)
+            - sigma_ij (numpy.ndarray) - Matrix of average molecular diameter (k,l)
+            - lambda_ij (numpy.ndarray) - Matrix of average molecular range of potential well depth (k,l)
     
         """
     
@@ -165,7 +213,7 @@ class SaftType():
 
         input_dict = {"sigma": sigmaii, "lambda": lambdaii, "epsilon": epsilonii}
         dummy_dict, dummy_labels = tb.construct_dummy_bead_library(input_dict)
-        output_dict = tb.cross_interaction_from_dict(dummy_labels, dummy_dict, self.mixing_rules)
+        output_dict = tb.cross_interaction_from_dict(dummy_labels, dummy_dict, self.combining_rules)
         self.eos_dict["sigma_ij"] = output_dict['sigma']
         self.eos_dict["lambda_ij"] = output_dict['lambda']
         self.eos_dict["epsilon_ij"] = output_dict['epsilon']
@@ -247,7 +295,7 @@ class SaftType():
 
     def _dzetaeff_dzetax(self, rho, xi, zetax=None, mode="normal"):
         r"""
-        Effective packing fraction for SAFT-gamma with a square-wave potential
+        Derivative of effective packing fraction with respect to the reduced density. Eq. 33
         
         Parameters
         ----------
@@ -262,8 +310,8 @@ class SaftType():
         
         Returns
         -------
-        zeta_eff : numpy.ndarray
-            Effective packing fraction (len(rho), Nbeads, Nbeads)
+        dzetakl : numpy.ndarray
+            Derivative of effective packing fraction (len(rho), Nbeads, Nbeads) with respect to the reduced density
         """
 
         self._check_density(rho)
@@ -293,7 +341,7 @@ class SaftType():
         
     def Ahard_sphere(self,rho, T, xi):
         r"""
-        Outputs :math:`A^{HS}`.
+        Outputs hard sphere approximation of Helmholtz free energy, :math:`A^{HS}/Nk_{b}T`.
         
         Parameters
         ----------
@@ -323,9 +371,9 @@ class SaftType():
 
         return AHS
     
-    def Afirst_order(self,rho, T, xi, zetax=None):
+    def Afirst_order(self, rho, T, xi, zetax=None):
         r"""
-        Outputs :math:`A^{1st order}`. This is the first order term in the high-temperature perturbation expansion
+        Outputs :math:`A^{1st order}/Nk_{b}T`. This is the first order term in the high-temperature perturbation expansion
         
         Parameters
         ----------
@@ -358,7 +406,7 @@ class SaftType():
 
     def Asecond_order(self, rho, T, xi, zetax=None, KHS=None):
         r"""
-        Outputs :math:`A^{2nd order}`. This is the second order term in the high-temperature perturbation expansion
+        Outputs :math:`A^{2nd order}/Nk_{b}T`. This is the second order term in the high-temperature perturbation expansion
         
         Parameters
         ----------
@@ -401,16 +449,14 @@ class SaftType():
 
         a2 = a2kl_tmp*(g0HS + zetax[:,np.newaxis,np.newaxis]*dzetakl*(2.5 - zeta_eff)/(1-zeta_eff)**4)
 
-        # Lymperiadis 2007 has a disconect where Eq. 24 != Eq. 30, as Eq. 24 is missing a minus sign. (Same in Lymperiadis 2008 for Eq. 32 and Eq. 38)
+        # Lymperiadis 2007 has a disconnect where Eq. 24 != Eq. 30, as Eq. 24 is missing a minus sign. (Same in Lymperiadis 2008 for Eq. 32 and Eq. 38)
         A2 = -(self.eos_dict['Cmol2seg'] / (T**2)) * np.sum(a2, axis=(1,2))
 
         return A2
     
     def Amonomer(self,rho, T, xi):
         r"""
-        Outputs :math:`A^{mono.}`. This is composed
-        
-        Outputs :math:`A^{HS}, A_1, A_2`, and :math:`A_3` (number of densities) :math:`A^{mono.}` components as well as some related quantities. Note these quantities are normalized by NkbT. Eta is really zeta
+        Outputs the monomer contribution of the Helmholtz energy :math:`A^{mono.}/Nk_{b}T`.
     
         Parameters
         ----------
@@ -437,8 +483,6 @@ class SaftType():
 
         Amonomer = self.Ahard_sphere(rho, T, xi) + self.Afirst_order(rho, T, xi, zetax=zetax) + self.Asecond_order(rho, T, xi, zetax=zetax)
 
-        #print("Amonomer",Amonomer)
-
         return Amonomer
 
     def calc_g0HS(self, rho, xi, zetax=None, mode="normal"):
@@ -454,7 +498,7 @@ class SaftType():
         zetax : numpy.ndarray, Optional, default=None
             Matrix of hypothetical packing fraction based on hard sphere diameter for groups (k,l)
         mode : str, Optional, default="normal"
-            This indicates whether group or effective component parameters are used. Options include: "normal" and "effective", where normal used bead interaction matricies, and effective uses component averaged parameters.
+            This indicates whether group or effective component parameters are used. Options include: "normal" and "effective", where normal used bead interaction matrices, and effective uses component averaged parameters.
         
         Returns
         -------
@@ -476,7 +520,9 @@ class SaftType():
 
     def calc_gHS(self, rho, xi):
         r"""
-        
+        Hypothetical pair correlation function of a hypothetical pure fluid.
+
+        This fluid is of diameter sigmax evaluated at contact and effective packing fraction zeta_eff.
         
         Parameters
         ----------
@@ -484,13 +530,11 @@ class SaftType():
             Number density of system [mol/m^3]
         xi : numpy.ndarray
             Mole fraction of each component, sum(xi) should equal 1.0
-        zetax : numpy.ndarray, Optional, default=None
-            Matrix of hypothetical packing fraction based on hard sphere diameter for groups (k,l)
         
         Returns
         -------
-        Afirst_order : numpy.ndarray
-            Helmholtz energy of monomers for each density given.
+        gHS : numpy.ndarray
+            Hypothetical pair correlation function of a hypothetical pure fluid of diameter sigmax evaluated at contact and effective packing fraction zeta_eff.
         """
 
         rho = self._check_density(rho)
@@ -512,7 +556,7 @@ class SaftType():
 
     def calc_gSW(self, rho, T, xi, zetax=None):
         r"""
-        
+        Calculate the square-well pair correlation function at the effective contact distance and the actual packing fraction of the mixture.
         
         Parameters
         ----------
@@ -527,8 +571,8 @@ class SaftType():
         
         Returns
         -------
-        Afirst_order : numpy.ndarray
-            Helmholtz energy of monomers for each density given.
+        gSW : numpy.ndarray
+            Square-well pair correlation function at the effective contact distance and the actual packing fraction of the mixture.
         """
 
         rho = self._check_density(rho)
@@ -561,7 +605,7 @@ class SaftType():
 
     def Achain(self, rho, T, xi):
         r"""
-        Outputs :math:`A^{chain}`.
+        Outputs chain contribution to the Helmholtz energy :math:`A^{chain}/Nk_{b}T`.
     
         Parameters
         ----------
@@ -581,8 +625,6 @@ class SaftType():
         rho = self._check_density(rho)
 
         gii = self.calc_gSW(rho, T, xi)
-   
-        #print("gii", gii)
         
         Achain = 0.0
         for i in range(self.ncomp):
@@ -593,8 +635,6 @@ class SaftType():
 
         if np.any(np.isnan(Achain)):
             logger.error("Some Helmholtz values are NaN, check energy parameters.")
-
-        #print("Achain",Achain)
 
         return Achain
 
@@ -628,7 +668,6 @@ class SaftType():
 
     def calc_gr_assoc(self, rho, T, xi, Ktype="ijklab"):
         r"""
-            
         Reference fluid pair correlation function used in calculating association sites
         
         Parameters
@@ -655,7 +694,6 @@ class SaftType():
 
     def calc_Kijklab(self, T, rc_klab, rd_klab=None, reduction_ratio=0.25):
         r"""
-            
         Calculation of association site bonding volume, dependent on molecule in addition to group
 
         Lymperiadis Fluid Phase Equilibria 274 (2008) 85–104
@@ -664,11 +702,17 @@ class SaftType():
         ----------
         T : float
             Temperature of the system [K], Note used in this version of saft, but included to allow saft.py to be general
+        rc_klab : numpy.ndarray
+            This matrix of cutoff distances for association sites for each site type in each group type
+        rd_klab : numpy.ndarray, Optional, default=None
+            Position of association site in each group (nbead, nbead, nsite, nsite)
+        reduction_ratio : float, Optional, default=0.25
+            Reduced distance of the sites from the center of the sphere of interaction. This value is used when site position, rd_klab is None
     
         Returns
         -------
-        gr : numpy.ndarray
-            This matrix is (len(rho) x Ncomp x Ncomp)
+        Kijklab : numpy.ndarray
+            Matrix of binding volumes
         """
 
         dij_bar = np.zeros((self.ncomp,self.ncomp))
@@ -684,14 +728,28 @@ class SaftType():
         r""" 
         To refresh dependent parameters
         
-        Those parameters that are dependent on _bead_library and _cross_library attributes **must** be updated by running this function after all parameters from update_parameters method have been changed.
+        Those parameters that are dependent on bead_library and cross_library attributes **must** be updated by running this function after all parameters from update_parameters method have been changed.
+
+        Attributes
+        ----------
+        alpha : np.array
+            van der Waals attractive parameter for square-well segments, equal to :math:`\alpha_{k,l}/k_B`.
+        eos_dict : dict
+            The following entries are updated:
+
+            - epsilon_kl (numpy.ndarray) - Matrix of well depths for groups (k,l)
+            - sigma_kl (numpy.ndarray) - Matrix of bead diameters (k,l)
+            - lambda_kl (numpy.ndarray) - Matrix of range of potential well depth (k,l)
+            - xskl (numpy.ndarray) - Matrix of mole fractions of bead (i.e. segment or group) k multiplied by that of bead l
+            - Cmol2seg (float) - Conversion factor from from molecular number density, :math:`\rho`, to segment (i.e. group) number density, :math:`\rho_S`.
+
         """
 
         self.bead_library.update(bead_library)
         self.cross_library.update(cross_library)
 
         # Update Non bonded matrices
-        output = tb.cross_interaction_from_dict( self.beads, self.bead_library, self.mixing_rules, cross_library=self.cross_library)
+        output = tb.cross_interaction_from_dict( self.beads, self.bead_library, self.combining_rules, cross_library=self.cross_library)
         self.eos_dict["sigma_kl"] = output["sigma"]
         self.eos_dict["epsilon_kl"] = output["epsilon"]
         self.eos_dict["lambda_kl"] = output["lambda"]
@@ -703,10 +761,15 @@ class SaftType():
 
     def _check_density(self, rho):
         r"""
-        This function checks the attritutes of the density array
+        This function checks that the density array is in the correct format for further calculations.
         
         Parameters
         ----------
+        rho : numpy.ndarray
+            Number density of system [mol/m^3]
+
+        Returns
+        -------
         rho : numpy.ndarray
             Number density of system [mol/m^3]
         """
@@ -721,7 +784,7 @@ class SaftType():
         if any(np.isnan(rho)):
             raise ValueError("NaN was given as a value of density, rho")
         elif rho.size == 0:
-                raise ValueError("No value of density, rho, was given")
+                raise ValueError("No value of density was given")
         elif any(rho < 0.):
             raise ValueError("Density values cannot be negative.")
 
@@ -729,21 +792,23 @@ class SaftType():
 
     def _check_composition_dependent_parameters(self, xi):
         r"""
-        This function checks the attritutes of
+        This function updates composition dependent variables
         
         Parameters
         ----------
-        rho : numpy.ndarray
-            Number density of system [mol/m^3]
-        T : float
-            Temperature of the system [K]
         xi : numpy.ndarray
             Mole fraction of each component, sum(xi) should equal 1.0
         
-        Atributes
-        ---------
+        Attributes
+        ----------
+        xi : numpy.ndarray
+            Mole fraction of each component, sum(xi) should equal 1.0
         eos_dict : dict
-            The following entries are updated: Cmol2seg, xskl
+            The following entries are updated:
+
+            - xskl (numpy.ndarray) - Matrix of mole fractions of bead (i.e. segment or group) k multiplied by that of bead l
+            - Cmol2seg (float) - Conversion factor from from molecular number density, :math:`\rho`, to segment (i.e. group) number density, :math:`\rho_S`.
+
         """
         xi = np.array(xi)
         if not np.all(self.xi == xi):

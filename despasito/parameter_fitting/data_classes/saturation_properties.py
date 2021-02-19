@@ -40,8 +40,8 @@ class Data(ExpDataTemplate):
     ----------
     name : str
         Data type, in this case saturation_properties
-    weights : dict, Optional, deafault: {"some_property": 1.0 ...}
-        Dicitonary corresponding to thermodict, with weighting factor or vector for each system property used in fitting
+    weights : dict, Optional, default: {"some_property": 1.0 ...}
+        Dictionary corresponding to thermodict, with weighting factor or vector for each system property used in fitting
     thermodict : dict
         Dictionary of inputs needed for thermodynamic calculations
         

@@ -18,6 +18,16 @@ Available EOS
    saft
    peng-robinson
 
+Supporting Modules
+---------------------
+
+.. autosummary::
+   :toctree: _autosummary
+
+   despasito.equations_of_state.eos_toolbox
+   despasito.equations_of_state.combining_rule_types
+   despasito.equations_of_state.constants
+
 
 Adding an EOS
 -------------

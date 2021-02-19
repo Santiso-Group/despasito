@@ -12,7 +12,7 @@ from despasito.equations_of_state import constants
 from despasito.equations_of_state.interface import EosTemplate
 import despasito.utils.general_toolbox as gtb
 
-logger = logging.getLogger(__name__)
+#logger = logging.getLogger(__name__)
 
 class EosType(EosTemplate):
     r"""
@@ -22,8 +22,6 @@ class EosType(EosTemplate):
     
     Parameters
     ----------
-    xi : list[float]
-        Mole fraction of component, only relevant for parameter fitting
     beads : list[str]
         List of unique component names
     bead_library : dict
@@ -40,6 +38,26 @@ class EosType(EosTemplate):
         
     Attributes
     ----------
+    beads : list[str]
+        List of component names
+    bead_library : dict
+        A dictionary where bead names are the keys to access EOS self interaction parameters. See description under *Parameters*
+    cross_library : dict
+        Library of bead cross interaction parameters. See description under *Parameters*
+    parameter_types : list[str]
+        List of parameter names used Peng-Robinson EOS: ["ai", "bi", "kij", "Tc", "Pc", "omega"]. Used in parameter fitting. 
+    parameter_bound_extreme : dict
+        With each parameter names as an entry representing a list with the minimum and maximum feasible parameter value. For the Peng-Robinson EOS:
+
+        - ai: [0., 50.]
+        - bi: [0., 1e-3]
+        - kij: [-1.,1.]
+        - omega: [0,1]
+        - Tc: [0, 1000] [K]
+        - Pc: [1, 1e+8] [Pa]
+
+    number_of_components : int
+        Number of components in mixture represented by given EOS object.
     T : float, default=numpy.nan
         Temperature value is initially defined as NaN for a placeholder until temperature dependent attributes are initialized by using a method of this class.
     
@@ -198,8 +216,8 @@ class EosType(EosTemplate):
     
         Returns
         -------
-        mui : numpy.ndarray
-            :math:`\mu_i`, Array of chemical potential values for each component
+        fugacity_coefficient : numpy.ndarray
+            :math:`\mu_i`, Array of fugacity coefficient values for each component
         """
 
         if T != self.T:
@@ -242,7 +260,7 @@ class EosType(EosTemplate):
             Mole fraction of each component
         T : float
             Temperature of the system [K]
-        maxpack : float, Optional, default=0.65
+        maxpack : float, Optional, default=0.9
             Maximum packing fraction
         
         Returns
@@ -270,7 +288,7 @@ class EosType(EosTemplate):
         Parameters
         ----------
         param_name : str
-            Parameter to be fit. See EOS mentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. kij_CO2).
+            Parameter to be fit. See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. kij_CO2).
         bead_names : list
             Bead names to be changed. For a self interaction parameter, the length will be 1, for a cross interaction parameter, the length will be two.
         param_value : float

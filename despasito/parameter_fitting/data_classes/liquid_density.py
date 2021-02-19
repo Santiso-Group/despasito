@@ -40,8 +40,8 @@ class Data(ExpDataTemplate):
     ----------
     name : str
         Data type, in this case liquid_density
-    weights : dict, Optional, deafault: {"some_property": 1.0 ...}
-        Dicitonary corresponding to thermodict, with weighting factor or vector for each system property used in fitting
+    weights : dict, Optional, default: {"some_property": 1.0 ...}
+        Dictionary corresponding to thermodict, with weighting factor or vector for each system property used in fitting
     thermodict : dict
         Dictionary of inputs needed for thermodynamic calculations
         
@@ -140,6 +140,8 @@ class Data(ExpDataTemplate):
 
         # objective function
         obj_value = ff.obj_function_form(phase_list, self.thermodict['rhol'], weights=self.weights['rhol'], **self.obj_opts)
+
+        logger.debug("Obj. breakdown for {}: rhol {}".format(self.name,obj_value))
 
         if (np.isnan(obj_value) or obj_value==0.0):
             obj_value = np.inf

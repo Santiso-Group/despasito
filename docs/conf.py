@@ -63,7 +63,6 @@ extensions = [
 ]
 
 autosummary_generate = True
-autosummary_imported_members = True
 add_module_names = False
 napoleon_google_docstring = False
 napoleon_use_param = False

@@ -2,9 +2,7 @@
 
 r"""
     
-    EOS object for SAFT-:math:`\gamma`-Mie
-    
-    Equations referenced in this code are from V. Papaioannou et al J. Chem. Phys. 140 054107 2014
+EOS object for SAFT association sites contributions to the Helmholtz energy
     
 """
 
@@ -27,9 +25,10 @@ if not method_stat.cython and not method_stat.numba and not method_stat.python:
         from .compiled_modules import ext_Aassoc_fortran
         flag_fortran = True
     except Exception:
-        logger.info("Fortran module failed to import, using pure python. Consider using 'numba' flag")
+        logger.info("Fortran module failed to import, using numba for association sites")
         from .compiled_modules.ext_Aassoc_python import calc_Xika
-elif method_stat.cython:
+
+if method_stat.cython:
     from .compiled_modules.ext_Aassoc_cython import calc_Xika
 elif method_stat.numba:
     from .compiled_modules.ext_Aassoc_numba import calc_Xika
@@ -37,7 +36,7 @@ elif method_stat.python:
     logger.info("Using pure python. Consider using 'numba' flag")
     from .compiled_modules.ext_Aassoc_python import calc_Xika
 
-def calc_Xika_wrap(*args, maxiter=500, tol=1e-12, damp=0.1):
+def _calc_Xika_wrap(*args, maxiter=500, tol=1e-12, damp=0.1):
     r""" This function wrapper allows difference types of compiled functions to be referenced.
     """
     indices, rho, xi, molecular_composition, nk, Fklab, Kklab, gr_assoc = args
@@ -115,7 +114,7 @@ def initiate_assoc_matrices(beads, bead_library, molecular_composition):
     bead_library : dict
         A dictionary where bead names are the keys to access EOS self interaction parameters:
 
-        - Nk*: Optional, The number of sites of from list sitenames. Asterisk represents string from sitenames.
+        - Nk\*: Optional, The number of sites of from list sitenames. Asterisk represents string from sitenames.
 
     molecular_composition : numpy.ndarray
         :math:`\\nu_{i,k}/k_B`. Array of number of components by number of bead types. Defines the number of each type of group in each component.
@@ -171,7 +170,7 @@ def calc_assoc_matrices(beads, bead_library, molecular_composition, cross_librar
     
     Generate matrices used for association site calculations.
     
-    Compute epsilonHB (interaction energy for association term),Kklab (association interaction bonding volume,nk (number of sites )
+    Compute epsilonHB (interaction energy for association term),Kklab (association interaction bonding volume, nk (number of sites )
 
     Note: Some papers use r instead of Kklab, provide function to calculate Kklab in that case (see Papaioannou 2014)
 
@@ -182,26 +181,26 @@ def calc_assoc_matrices(beads, bead_library, molecular_composition, cross_librar
     bead_library : dict
         A dictionary where bead names are the keys to access EOS self interaction parameters:
 
-        - epsilon*: Optional, Interaction energy between each bead and association site. Asterisk represents string from sitenames.
-        - K-*-*: Optional, Bonding volume between each association site. Asterisk represents two strings from sitenames.
-        - rc-*-*: Optional, Cutoff distance for association sites. Asterisk represents two strings from sitenames.
-        - rd-*-*: Optional, Site position. Asterisk represents two strings from sitenames.
-        - Nk-*: Optional, The number of sites of from list sitenames. Asterisk represents string from sitenames.
+        - epsilonHB-\*: Optional, Interaction energy between each bead and association site. Asterisk represents string from sitenames.
+        - K-\*-\*: Optional, Bonding volume between each association site. Asterisk represents two strings from sitenames.
+        - rc-\*-\*: Optional, Cutoff distance for association sites. Asterisk represents two strings from sitenames.
+        - rd-\*-\*: Optional, Site position. Asterisk represents two strings from sitenames.
+        - Nk-\*: Optional, The number of sites of from list sitenames. Asterisk represents string from sitenames.
 
     molecular_composition : numpy.ndarray
         :math:`\\nu_{i,k}/k_B`. Array of number of components by number of bead types. Defines the number of each type of group in each component.
-    cross_library : dict
+    cross_library : dict, Optional, default={}
         A dictionary where bead names are the keys to access a dictionary of a second tier of bead names. This structure contains the EOS cross interaction parameters:
 
-        - epsilon*: Optional, Interaction energy between each bead and association site. Asterisk represents string from sitenames.
-        - K**: Optional, Bonding volume between each association site. Asterisk represents two strings from sitenames.
-        - rc-*-*: Optional, Cutoff distance for association sites. Asterisk represents two strings from sitenames.
-        - rd-*-*: Optional, Site position. Asterisk represents two strings from sitenames.
-        - Nk*: Optional, The number of sites of from list sitenames. Asterisk represents string from sitenames.
+        - epsilonHB-\*: Optional, Interaction energy between each bead and association site. Asterisk represents string from sitenames.
+        - K-\*-\*: Optional, Bonding volume between each association site. Asterisk represents two strings from sitenames.
+        - rc-\*-\*: Optional, Cutoff distance for association sites. Asterisk represents two strings from sitenames.
+        - rd-\*-\*: Optional, Site position. Asterisk represents two strings from sitenames.
 
-    nk : numpy.ndarray
+    nk : numpy.ndarray, Optional, default=None
         A matrix of (Nbeads x Nsites) Contains for each bead the number of each type of site
-    sitenames : list
+    }
+    sitenames : list, Optional, default=None
         This list shows the names of the various association types found
     
     Returns
@@ -213,6 +212,7 @@ def calc_assoc_matrices(beads, bead_library, molecular_composition, cross_librar
         - Kklab, Optional: Bonding volume between each association site
         - rc_klab, Optional: Cutoff distance for association sites
         - rd_klab, Optional: Association site position
+
     """
 
     nbeads = len(beads)
@@ -331,7 +331,9 @@ def calc_assoc_matrices(beads, bead_library, molecular_composition, cross_librar
 
 def calc_bonding_volume(rc_klab, dij_bar, rd_klab=None, reduction_ratio=0.25):
     """
-    Calculate the association site bonding volume matrix (ncomp, ncomp, nbeads, nbeads, nsite, nsite)
+    Calculate the association site bonding volume matrix 
+
+    Dimensions of (ncomp, ncomp, nbeads, nbeads, nsite, nsite)
 
     Parameters
     ----------

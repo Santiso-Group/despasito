@@ -21,7 +21,9 @@ logger = logging.getLogger(__name__)
 def pressure_vs_volume_arrays(T, xi, Eos, min_density_fraction=(1.0 / 500000.0), density_increment=5.0, max_volume_increment=1.0E-4, pressure_min=100, maxiter=25, multfactor=2, extended_npts=20, max_density=None, density_max_opts={}, **kwargs):
 
     r"""
-    Give arrays with specific volume and pressure calculated from the given an EOS. Options for this functions are provided in other functions with the keyword variable `density_opts`
+    Give arrays with specific volume and pressure calculated from the given an EOS. 
+
+    Options for this functions are provided in other functions with the keyword variable `density_opts`
     
     Parameters
     ----------
@@ -59,7 +61,7 @@ def pressure_vs_volume_arrays(T, xi, Eos, min_density_fraction=(1.0 / 500000.0),
     """
 
     if len(kwargs) > 0:
-        logger.debug("'pressure_vs_volume_arrays' does not use the following keyword arguments: {}".format(", ".join(list(kwargs.keys()))))
+        logger.debug("    'pressure_vs_volume_arrays' does not use the following keyword arguments: {}".format(", ".join(list(kwargs.keys()))))
 
     if np.any(np.isnan(xi)):
         raise ValueError("Given mole fractions are NaN")
@@ -71,7 +73,8 @@ def pressure_vs_volume_arrays(T, xi, Eos, min_density_fraction=(1.0 / 500000.0),
     if not max_density:
         max_density = Eos.density_max(xi, T, **density_max_opts)
     elif gtb.isiterable(max_density):
-        logger.error("Maxrho should be type float. Given value: {}".format(max_density))
+        logger.error("    Maxrho should be type float. Given value: {}".format(max_density))
+        max_density = max_density[0]
   
     if max_density > 1e+5:
         raise ValueError("Max density of {} mol/m^3 is not feasible, check parameters.".format(max_density))
@@ -80,7 +83,7 @@ def pressure_vs_volume_arrays(T, xi, Eos, min_density_fraction=(1.0 / 500000.0),
     minrho = max_density * min_density_fraction
     #list of densities for P,rho and P,v
     if (max_density-minrho) < density_increment:
-        raise ValueError("Density range, {}, is less than incement, {}. Check parameters used in Eos.density_max().".format((max_density-minrho),density_increment))
+        raise ValueError("Density range, {}, is less than increment, {}. Check parameters used in Eos.density_max().".format((max_density-minrho),density_increment))
 
     rholist = np.arange(minrho, max_density, density_increment)
     #check rholist to see when the spacing
@@ -93,7 +96,7 @@ def pressure_vs_volume_arrays(T, xi, Eos, min_density_fraction=(1.0 / 500000.0),
     #compute Pressures (Plist) for rholist
     Plist = Eos.pressure(rholist, T, xi)
 
-    # Make sure enough of the presure curve is obtained
+    # Make sure enough of the pressure curve is obtained
     for i in range(maxiter):
         if Plist[0] > pressure_min:
             rhotmp = np.linspace(rholist[0]/2,rholist[0],extended_npts)[:-1]
@@ -168,7 +171,7 @@ def pressure_vs_volume_plot(vlist, Plist, Pvspline, markers=[], **kwargs):
     """
 
     if len(kwargs) > 0:
-        logger.debug("'pressure_vs_volume_plot' does not use the following keyword arguments: {}".format(", ".join(list(kwargs.keys()))))
+        logger.debug("    'pressure_vs_volume_plot' does not use the following keyword arguments: {}".format(", ".join(list(kwargs.keys()))))
 
     try:
         import matplotlib.pyplot as plt
@@ -203,7 +206,7 @@ def calc_saturation_properties(T, xi, Eos, density_opts={}, tol=1e-6, Pconverged
         Dictionary of options used in calculating pressure vs. mole in :func:`~despasito.thermodynamics.calc.pressure_vs_volume_arrays`
     tol : float, Optional, default=1e-6
         Tolerance to accept pressure value
-    Pconverged : float, Optional, default=0.1
+    Pconverged : float, Optional, default=1.0
         If the pressure is negative (under tension), we search from a value just above vacuum
 
     Returns
@@ -217,7 +220,7 @@ def calc_saturation_properties(T, xi, Eos, density_opts={}, tol=1e-6, Pconverged
     """
 
     if len(kwargs) > 0:
-        logger.debug("'calc_saturation_properties' does not use the following keyword arguments: {}".format(", ".join(list(kwargs.keys()))))
+        logger.debug("    'calc_saturation_properties' does not use the following keyword arguments: {}".format(", ".join(list(kwargs.keys()))))
 
     if np.count_nonzero(xi) != 1:
         if np.count_nonzero(xi>0.1) != 1:
@@ -230,7 +233,7 @@ def calc_saturation_properties(T, xi, Eos, density_opts={}, tol=1e-6, Pconverged
     Pvspline, roots, extrema = pressure_vs_volume_spline(vlist, Plist)
 
     if (not extrema or len(extrema)<2 or np.any(np.isnan(roots))):
-        logger.warning('The component is above its critical point')
+        logger.warning('    The component is above its critical point')
         Psat, rhol, rhov = np.nan, np.nan, np.nan
 
     else:
@@ -252,7 +255,6 @@ def calc_saturation_properties(T, xi, Eos, density_opts={}, tol=1e-6, Pconverged
   #      pressure_vs_volume_plot(vlist, Plist, Pvspline, markers=extrema)
 
         if obj_value < tol:
-
             logger.debug("    Psat found: {} Pa, obj value: {}, with {} roots and {} extrema".format(Psat,obj_value,np.size(roots),np.size(extrema)))
 
             if len(roots) ==2:
@@ -272,14 +274,13 @@ def calc_saturation_properties(T, xi, Eos, density_opts={}, tol=1e-6, Pconverged
 
     tmpv, _, _ = calc_vapor_fugacity_coefficient(Psat, T, xi, Eos, density_opts=density_opts)
     tmpl, _, _ = calc_liquid_fugacity_coefficient(Psat, T, xi, Eos, density_opts=density_opts)
-    logger.debug("phiv: {}, phil: {}".format(tmpv,tmpl))
+    logger.debug("    phiv: {}, phil: {}".format(tmpv,tmpl))
 
     return Psat, rhol, rhov
 
 
 def objective_saturation_pressure(shift, Pv, vlist):
     r"""
-
     Objective function used to calculate the saturation pressure. Note that if 
 
     Parameters
@@ -344,7 +345,7 @@ def calc_vapor_density(P, T, xi, Eos, density_opts={}, **kwargs):
     """
 
     if len(kwargs) > 0:
-        logger.debug("'calc_vapor_density' does not use the following keyword arguments: {}".format(", ".join(list(kwargs.keys()))))
+        logger.debug("    'calc_vapor_density' does not use the following keyword arguments: {}".format(", ".join(list(kwargs.keys()))))
 
     vlist, Plist = pressure_vs_volume_arrays(T, xi, Eos, **density_opts)
     Plist = Plist-P
@@ -440,12 +441,12 @@ def calc_vapor_density(P, T, xi, Eos, density_opts={}, **kwargs):
             rho_tmp = spo.brentq(pressure_spline_error, tmp[0], tmp[1], args=(P, T, xi, Eos), rtol=0.0000001)
         else:
             if Plist[0] < 0:
-                logger.warning("Density value could not be bounded with (rhomin,rhomax), {}. Using approximate density value".format(tmp))
+                logger.warning("    Density value could not be bounded with (rhomin,rhomax), {}. Using approximate density value".format(tmp))
             elif not flag_NoOpt:
                 rho_tmp = spo.least_squares(pressure_spline_error, rho_tmp, args=(P, T, xi, Eos), bounds=(np.finfo("float").eps, Eos.density_max(xi, T, maxpack=0.99)))
                 rho_tmp = rho_tmp.x
 
-    logger.info("    Vapor Density: {} mol/m^3, flag {}".format(rho_tmp,flag))
+    logger.debug("    Vapor Density: {} mol/m^3, flag {}".format(rho_tmp,flag))
 
     #pressure_vs_volume_plot(vlist, Plist, Pvspline, markers=extrema)
 
@@ -479,7 +480,7 @@ def calc_liquid_density(P, T, xi, Eos, density_opts={}, **kwargs):
     """
 
     if len(kwargs) > 0:
-        logger.debug("'calc_liquid_density' does not use the following keyword arguments: {}".format(", ".join(list(kwargs.keys()))))
+        logger.debug("    'calc_liquid_density' does not use the following keyword arguments: {}".format(", ".join(list(kwargs.keys()))))
 
     # Get roots and local minima and maxima 
     vlist, Plist = pressure_vs_volume_arrays(T, xi, Eos, **density_opts)
@@ -569,11 +570,11 @@ def calc_liquid_density(P, T, xi, Eos, density_opts={}, **kwargs):
             rho_tmp = spo.brentq(pressure_spline_error, tmp[0], tmp[1], args=(P, T, xi, Eos), rtol=1e-7)
         else:
             if P_tmp[0] < 0:
-                logger.warning("Density value could not be bounded with (rhomin,rhomax), {}. Using approximate density value".format(tmp))
+                logger.warning("    Density value could not be bounded with (rhomin,rhomax), {}. Using approximate density value".format(tmp))
             elif not flag_NoOpt:
                 rho_tmp = spo.least_squares(pressure_spline_error, rho_tmp, args=(P, T, xi, Eos), bounds=(np.finfo("float").eps, Eos.density_max(xi, T, maxpack=0.99)))
                 rho_tmp = rho_tmp.x[0]
-    logger.info("    Liquid Density: {} mol/m^3, flag {}".format(rho_tmp,flag))
+    logger.debug("    Liquid Density: {} mol/m^3, flag {}".format(rho_tmp,flag))
 
     # Flag: 0 is vapor, 1 is liquid, 2 mean a critical fluid, 3 means that neither is true
     return rho_tmp, flag
@@ -581,7 +582,9 @@ def calc_liquid_density(P, T, xi, Eos, density_opts={}, **kwargs):
 
 def pressure_spline_error(rho, Pset, T, xi, Eos):
     """
-    Calculate difference between set point pressure and computed pressure for a given density. Used to ensure an accurate value from the EOS rather than an estimate from a spline.
+    Calculate difference between set point pressure and computed pressure for a given density. 
+
+    Used to ensure an accurate value from the EOS rather than an estimate from a spline.
     
     Parameters
     ----------
@@ -635,7 +638,7 @@ def calc_vapor_fugacity_coefficient(P, T, yi, Eos, density_opts={}, **kwargs):
     """
 
     if len(kwargs) > 0:
-        logger.debug("'calc_vapor_fugacity_coefficient' does not use the following keyword arguments: {}".format(", ".join(list(kwargs.keys()))))
+        logger.debug("    'calc_vapor_fugacity_coefficient' does not use the following keyword arguments: {}".format(", ".join(list(kwargs.keys()))))
 
     rhov, flagv = calc_vapor_density(P, T, yi, Eos, density_opts)
     if flagv == 4:
@@ -646,8 +649,6 @@ def calc_vapor_fugacity_coefficient(P, T, yi, Eos, density_opts={}, **kwargs):
         phiv = np.array([np.nan,np.nan])
     else:
         phiv = Eos.fugacity_coefficient(P, np.array([rhov]), yi, T)
-
-    #logger.debug("    Vapor Fugacity Coefficients {}".format(phiv))
 
     return phiv, rhov, flagv
 
@@ -680,15 +681,13 @@ def calc_liquid_fugacity_coefficient(P, T, xi, Eos, density_opts={}, **kwargs):
     """
 
     if len(kwargs) > 0:
-        logger.debug("'calc_liquid_fugacity_coefficient' does not use the following keyword arguments: {}".format(", ".join(list(kwargs.keys()))))
+        logger.debug("    'calc_liquid_fugacity_coefficient' does not use the following keyword arguments: {}".format(", ".join(list(kwargs.keys()))))
 
     rhol, flagl = calc_liquid_density(P, T, xi, Eos, density_opts)
     if flagl == 3:
         phil = np.array([np.nan,np.nan])
     else:
         phil = Eos.fugacity_coefficient(P, np.array([rhol]), xi, T)
-
-    #logger.debug("    Liquid Fugacity Coefficients {}".format(phil))
 
     return phil, rhol, flagl
 
@@ -712,7 +711,7 @@ def calc_new_mole_fractions(phase_1_mole_fraction, phil, phiv, phase=None):
     Returns
     -------
     phase_2_mole_fraction : numpy.ndarray
-        Mole fraction of each component computed from fugacity coefficients, sum(xi) should equal 1.0 when the solution is found, but the resulting values may not during an equlibrium calculation (e.g. bubble point).
+        Mole fraction of each component computed from fugacity coefficients, sum(xi) should equal 1.0 when the solution is found, but the resulting values may not during an equilibrium calculation (e.g. bubble point).
     """
 
     if phase == None or phase not in ["vapor", "liquid"]:
@@ -807,7 +806,7 @@ def _clean_plot_data(x_old, y_old):
 
 def calc_Prange_xi(T, xi, yi, Eos, density_opts={}, Pmin=None, Pmax=None, maxiter=200, mole_fraction_options={}, ptol=1e-2, xytol=0.01, maxfactor=2, minfactor=0.5, Pmin_allowed=100, **kwargs):
     r"""
-    Obtain min and max pressure values.
+    Obtain min and max pressure values for bubble point calculation.
 
     The liquid mole fraction is set and the objective function at each of those values is of opposite sign.
     
@@ -846,6 +845,8 @@ def calc_Prange_xi(T, xi, yi, Eos, density_opts={}, Pmin=None, Pmax=None, maxite
     -------
     Prange : list
         List of min and max pressure range
+    Pguess : float
+        An interpolated guess in the equilibrium pressure from Prange
     """
 
     if len(kwargs) > 0:
@@ -992,7 +993,7 @@ def calc_Prange_xi(T, xi, yi, Eos, density_opts={}, Pmin=None, Pmax=None, maxite
                             Prange[1] = p
                             ObjRange[1] = np.nan
 
-            # If 'vapor' phase is liquid or unatainable
+            # If 'vapor' phase is liquid or unattainable
             elif flagv_min not in [0,2,4]:
                 logger.info("Estimated minimum pressure produces liquid: {},  Obj. Func: {}, Range {}".format(p,obj,Prange))
                 if flag_hard_min and p <= Pmin:
@@ -1279,6 +1280,9 @@ def calc_Prange_yi(T, xi, yi, Eos, density_opts={}, mole_fraction_options={}, Pm
     -------
     Prange : list
         List of min and max pressure range
+    Pguess : float
+        An interpolated guess in the equilibrium pressure from Prange
+
     """
 
     if len(kwargs) > 0:
@@ -1622,7 +1626,7 @@ def calc_vapor_composition(yi, xi, phil, P, T, Eos, density_opts={}, maxiter=50,
         An instance of the defined EOS class to be used in thermodynamic computations.
     density_opts : dict, Optional, default={}
         Dictionary of options used in calculating pressure vs. mole in :func:`~despasito.thermodynamics.calc.pressure_vs_volume_arrays`
-    maxiter : int, Optional, default=30
+    maxiter : int, Optional, default=50
         Maximum number of iteration for both the outer pressure and inner vapor mole fraction loops
     tol : float, Optional, default=1e-6
         Tolerance in sum of predicted yi "mole numbers"
@@ -1662,7 +1666,7 @@ def calc_vapor_composition(yi, xi, phil, P, T, Eos, density_opts={}, maxiter=50,
         if ((any(np.isnan(phiv)) or flagv==1) and flag_check_vapor): # If vapor density doesn't exist
             flag_check_vapor = False
             if (all(yi_tmp != 0.) and len(yi_tmp)==2):
-                logger.info("    Composition doesn't produce a vapor, let's find one!")
+                logger.debug("    Composition doesn't produce a vapor, let's find one!")
                 yi_tmp = find_new_yi(P, T, phil, xi, Eos, density_opts=density_opts, **kwargs)
                 flag_trivial_sol = False
                 if np.any(np.isnan(yi_tmp)):
@@ -1673,16 +1677,16 @@ def calc_vapor_composition(yi, xi, phil, P, T, Eos, density_opts={}, maxiter=50,
                     phiv, rhov, flagv = calc_vapor_fugacity_coefficient(P, T, yi_tmp, Eos, density_opts=density_opts)
                     yinew = calc_new_mole_fractions(xi, phil, phiv, phase="vapor")
             else:
-                logger.info("    Composition doesn't produce a vapor, we need a function to search compositions for more than two components.")
+                logger.debug("    Composition doesn't produce a vapor, we need a function to search compositions for more than two components.")
                 yinew = yi
         elif (np.sum(np.abs(xi-yi_tmp)/xi) < tol_trivial and flag_trivial_sol):
             flag_trivial_sol = False
             if (all(yi_tmp != 0.) and len(yi_tmp)==2):
-                logger.info("    Composition produces trivial solution, let's find a different one!")
+                logger.debug("    Composition produces trivial solution, let's find a different one!")
                 yi_tmp = find_new_yi(P, T, phil, xi, Eos, density_opts=density_opts, **kwargs)
                 flag_check_vapor = False
             else:
-                logger.info("    Composition produces trivial solution, using random guess to reset")
+                logger.debug("    Composition produces trivial solution, using random guess to reset")
                 yi_tmp = np.random.rand(len(yi_tmp))
                 yi_tmp /= np.sum(yi_tmp)
 
@@ -1708,7 +1712,7 @@ def calc_vapor_composition(yi, xi, phil, P, T, Eos, density_opts={}, maxiter=50,
         if len(yi_total) > 3:
             tmp1 =  (np.abs(np.sum(yinew)-yi_total[-2]) + np.abs(yi_total[-1]-yi_total[-3]))
             if (tmp1 < np.abs(np.sum(yinew)-yi_total[-1]) and flagv != flagv2):
-                logger.info("    Composition bouncing between values, let's find the answer!")
+                logger.debug("    Composition bouncing between values, let's find the answer!")
                 bounds = np.sort([yi_tmp[0], yi2[0]])
                 yi2, obj = bracket_bounding_yi(P, T, phil, xi, Eos, bounds=bounds, density_opts=density_opts)
                 phiv2, _, flagv2 = calc_vapor_fugacity_coefficient(P, T, yi2, Eos, density_opts=density_opts)
@@ -1822,7 +1826,7 @@ def calc_liquid_composition(xi, yi, phiv, P, T, Eos, density_opts={}, maxiter=20
         if (any(np.isnan(phil)) or flagl in [0,4]) and flag_check_liquid:
             flag_check_liquid = False
             if (all(xi_tmp != 0.) and len(xi_tmp)==2):
-                logger.info("    Composition doesn't produce a liquid, let's find one!")
+                logger.debug("    Composition doesn't produce a liquid, let's find one!")
                 xi_tmp = find_new_xi(P, T, phiv, yi, Eos, density_opts=density_opts, **kwargs)
                 flag_trivial_sol = False
                 if np.any(np.isnan(xi_tmp)):
@@ -1833,16 +1837,16 @@ def calc_liquid_composition(xi, yi, phiv, P, T, Eos, density_opts={}, maxiter=20
                     phil, rhol, flagl = calc_liquid_fugacity_coefficient(P, T, xi_tmp, Eos, density_opts=density_opts)
                     xinew = calc_new_mole_fractions(yi, phil, phiv, phase="liquid")
             else:
-                logger.info("    Composition doesn't produce a liquid, we need a function to search compositions for more than two components.")
+                logger.debug("    Composition doesn't produce a liquid, we need a function to search compositions for more than two components.")
                 xinew = xi
         elif (np.sum(np.abs(yi-xi_tmp)/yi) < tol_trivial and flag_trivial_sol):
             flag_trivial_sol = False
             if (all(xi_tmp != 0.) and len(xi_tmp)==2):
-                logger.info("    Composition produces trivial solution, let's find a different one!")
+                logger.debug("    Composition produces trivial solution, let's find a different one!")
                 xi_tmp = find_new_xi(P, T, phiv, yi, Eos, density_opts=density_opts, **kwargs)
                 flag_check_vapor = False
             else:
-                logger.info("    Composition produces trivial solution, using random guess to reset")
+                logger.debug("    Composition produces trivial solution, using random guess to reset")
                 xi_tmp = np.random.rand(len(xi_tmp))
                 xi_tmp /= np.sum(xi_tmp)
 
@@ -1857,8 +1861,8 @@ def calc_liquid_composition(xi, yi, phiv, P, T, Eos, density_opts={}, maxiter=20
             xinew = calc_new_mole_fractions(yi, phil, phiv, phase="liquid")
         xinew[np.isnan(xinew)] = 0.
 
-        logger.info("    xi guess {}, xi calc {}, phil {}".format(xi_tmp,xinew/np.sum(xinew),phil))
-        logger.info("    Old xi_total: {}, New xi_total: {}, Change: {}".format(xi_total[-1],np.sum(xinew),np.sum(xinew)-xi_total[-1]))
+        logger.debug("    xi guess {}, xi calc {}, phil {}".format(xi_tmp,xinew/np.sum(xinew),phil))
+        logger.debug("    Old xi_total: {}, New xi_total: {}, Change: {}".format(xi_total[-1],np.sum(xinew),np.sum(xinew)-xi_total[-1]))
 
         # Check convergence
         if abs(np.sum(xinew)-xi_total[-1]) < tol:
@@ -1866,7 +1870,7 @@ def calc_liquid_composition(xi, yi, phiv, P, T, Eos, density_opts={}, maxiter=20
             xi2 = xinew/np.sum(xinew)
             if np.abs(xi2[ind_tmp] - xi_tmp[ind_tmp]) / xi_tmp[ind_tmp] < tol:
                 _xi_global = xi2
-                logger.info("    Found xi")
+                logger.info("    Inner Loop Final xi: {}, Final Error on Smallest Fraction: {}%".format(xi2,np.abs(xi2[ind_tmp] - xi_tmp[ind_tmp]) / xi_tmp[ind_tmp]*100))
                 break
 
         if z < maxiter-1:
@@ -1886,8 +1890,6 @@ def calc_liquid_composition(xi, yi, phiv, P, T, Eos, density_opts={}, maxiter=20
         xi_tmp = np.array([xi,1-xi])
         obj = objective_find_xi(xi_tmp, P, T, phiv, yi, Eos, density_opts=density_opts)
         logger.warning('    Find xi with root algorithm, xi {}, obj {}'.format(xi_tmp,obj))
-    else:
-        logger.info("    Inner Loop Final xi: {}, Final Error on Smallest Fraction: {}".format(xi_tmp,np.abs(xi2[ind_tmp] - xi_tmp[ind_tmp]) / xi_tmp[ind_tmp]*100))
 
     return xi_tmp, phil, flagl
 
@@ -1922,7 +1924,7 @@ def find_new_yi(P, T, phil, xi, Eos, bounds=(0.01, 0.99), npoints=30, density_op
     """
 
     if len(kwargs) > 0:
-        logger.debug("'find_new_yi' does not use the following keyword arguments: {}".format(", ".join(list(kwargs.keys()))))
+        logger.debug("    'find_new_yi' does not use the following keyword arguments: {}".format(", ".join(list(kwargs.keys()))))
 
     yi_ext = np.linspace(bounds[0],bounds[1],npoints) # Guess for yi
     obj_ext = np.zeros(len(yi_ext))
@@ -1992,7 +1994,7 @@ def find_new_yi(P, T, phil, xi, Eos, bounds=(0.01, 0.99), npoints=30, density_op
             yi_final = yi_min[0]
             obj_final = spline(yi_min[0])
         
-    logger.info("    Found new guess in yi: {}, Obj: {}".format(yi_final,obj_final))
+    logger.debug("    Found new guess in yi: {}, Obj: {}".format(yi_final,obj_final))
     if not gtb.isiterable(yi_final):
         yi_final = np.array([yi_final, 1-yi_final])
 
@@ -2028,10 +2030,12 @@ def bracket_bounding_yi(P, T, phil, xi, Eos, bounds=(0.01, 0.99), maxiter=50, to
     -------
     yi : numpy.ndarray
         Vapor mole fraction of each component, sum(yi) should equal 1.0
+    flag : int
+        Flag identifying the fluid type. A value of 0 is vapor, 1 is liquid, 2 mean a critical fluid, 3 means that neither is true, 4 means ideal gas is assumed
     """
 
     if len(kwargs) > 0:
-        logger.debug("'calc_saturation_properties' does not use the following keyword arguments: {}".format(", ".join(list(kwargs.keys()))))
+        logger.debug("    'calc_saturation_properties' does not use the following keyword arguments: {}".format(", ".join(list(kwargs.keys()))))
 
     if np.size(bounds) != 2:
         raise ValueError("Given bounds on y1 must be of length two.")
@@ -2082,11 +2086,10 @@ def bracket_bounding_yi(P, T, phil, xi, Eos, bounds=(0.01, 0.99), maxiter=50, to
 
     y1, flagv = bounds[ind], flag_bounds[ind]
     if i == maxiter - 1:
-        logger.info("    Bouncing mole fraction, max iterations ended with, y1={}, flagv={}".format(y1,flagv))
+        logger.debug("    Bouncing mole fraction, max iterations ended with, y1={}, flagv={}".format(y1,flagv))
     else:
-        logger.info("    Bouncing mole fractions converged to y1={}, flagv={}".format(y1,flagv))
+        logger.debug("    Bouncing mole fractions converged to y1={}, flagv={}".format(y1,flagv))
         
-
     return np.array([y1, 1-y1]), flagv
 
 
@@ -2117,6 +2120,8 @@ def objective_find_yi(yi, P, T, phil, xi, Eos, density_opts={}, return_flag=Fals
     -------
     obj : numpy.ndarray
         Objective function for solving for vapor mole fractions
+    flag : int, Optional
+        Flag identifying the fluid type. A value of 0 is vapor, 1 is liquid, 2 mean a critical fluid, 3 means that neither is true, 4 means ideal gas is assumed. Only outputted when `return_flag` is True
     """
 
     if type(yi) == float or np.size(yi) == 1:
@@ -2165,7 +2170,7 @@ def find_new_xi(P, T, phiv, yi, Eos, density_opts={}, bounds=(0.001, .999), npoi
         An instance of the defined EOS class to be used in thermodynamic computations.
     density_opts : dict, Optional, default={}
         Dictionary of options used in calculating pressure vs. mole in :func:`~despasito.thermodynamics.calc.pressure_vs_volume_arrays`
-    bounds : tuple, Optional, default=(0.01, 0.99)
+    bounds : tuple, Optional, default=(0.001, 0.999)
         These bounds dictate the lower and upper boundary for the first component in a binary system.
     npoints : float, Optional, default=30
         Number of points to test between the bounds.
@@ -2177,7 +2182,7 @@ def find_new_xi(P, T, phiv, yi, Eos, density_opts={}, bounds=(0.001, .999), npoi
     """
 
     if len(kwargs) > 0:
-        logger.debug("'find_new_xi' does not use the following keyword arguments: {}".format(", ".join(list(kwargs.keys()))))
+        logger.debug("    'find_new_xi' does not use the following keyword arguments: {}".format(", ".join(list(kwargs.keys()))))
     
     xi_ext = np.linspace(bounds[0],bounds[1],npoints) # Guess for yi
     obj_ext = np.zeros(len(xi_ext))
@@ -2230,7 +2235,7 @@ def find_new_xi(P, T, phiv, yi, Eos, density_opts={}, bounds=(0.001, .999), npoi
             xi_final = xi_min[0]
             obj_final = spline(xi_min[0])
         
-    logger.info("    Found new guess in xi: {}, Obj: {}".format(xi_final,obj_final))
+    logger.debug("    Found new guess in xi: {}, Obj: {}".format(xi_final,obj_final))
     if not gtb.isiterable(xi_final):
         xi_final = np.array([xi_final, 1-xi_final])
     
@@ -2264,6 +2269,8 @@ def objective_find_xi(xi, P, T, phiv, yi, Eos, density_opts={}, return_flag=Fals
     -------
     obj : numpy.ndarray
         Objective function for solving for liquid mole fractions
+    flag : int, Optional
+        Flag identifying the fluid type. A value of 0 is vapor, 1 is liquid, 2 mean a critical fluid, 3 means that neither is true, 4 means ideal gas is assumed. Only outputted when `return_flag` is True
     """
     
     if isinstance(xi,float) or len(xi) == 1:
@@ -2312,7 +2319,6 @@ def objective_bubble_pressure(P, xi, T, Eos, density_opts={}, mole_fraction_opti
         Dictionary of options used in calculating pressure vs. mole in :func:`~despasito.thermodynamics.calc.pressure_vs_volume_arrays`
     mole_fraction_options : dict, Optional, default={}
         Options used to solve the inner loop in the solving algorithm
-    
 
     Returns
     -------
@@ -2379,6 +2385,8 @@ def objective_dew_pressure(P, yi, T, Eos, density_opts={}, mole_fraction_options
     if P < 0:
         return 10.0
 
+    logger.info("P Guess: {} Pa".format(P))
+
     #find liquid density
     phiv, rhov, flagv = calc_vapor_fugacity_coefficient(P, T, yi, Eos, density_opts=density_opts)
 
@@ -2415,9 +2423,7 @@ def calc_dew_pressure(yi, T, Eos, density_opts={}, mole_fraction_options={}, Pgu
         [Pa] Guess the system pressure at the dew point. A negative value will force an estimation based on the saturation pressure of each component.
     Psat_set : float, Optional, default=1e+7
         [Pa] Set the saturation pressure if the pure component is above the critical point in these conditions
-    Pmin : float, Optional, default=10000
-        [Pa] Guess the minimum system pressure at the dew point. A value of None will used the calc_Prange_xi default.
-    method : str, Optional, default="broyden1"
+    method : str, Optional, default="bisect"
         Choose the method used to solve the dew point calculation
     pressure_options : dict, Optional, default={}
         Options used in the given method, "method", to solve the outer loop in the solving algorithm
@@ -2462,6 +2468,7 @@ def calc_dew_pressure(yi, T, Eos, density_opts={}, mole_fraction_options={}, Pgu
         _xi_global = P * (yi / Psat)
         _xi_global /= np.sum(_xi_global)
         _xi_global = copy.deepcopy(_xi_global)
+        logger.info("Guess xi in calc_dew_pressure with Psat: {}".format(_xi_global))
     xi = _xi_global 
 
     Prange, Pestimate = calc_Prange_yi(T, xi, yi, Eos, density_opts=density_opts, mole_fraction_options=mole_fraction_options, **kwargs)
@@ -2588,9 +2595,11 @@ def calc_bubble_pressure(xi, T, Eos, density_opts={}, mole_fraction_options={}, 
     return P, _yi_global, flagv, flagl, obj
 
 
-def hildebrand_solubility(rhol, xi, T, Eos, dT=.1, tol=1e-4, density_opts={}, **kwargs):
+def hildebrand_solubility(rhol, xi, T, Eos, dT=0.1, tol=1e-4, density_opts={}, **kwargs):
     r"""
-    Calculate the solubility parameter based on temperature and composition. This function is based on the method used in Zeng, Z., Y. Xi, and Y. Li "Calculation of Solubility Parameter Using Perturbed-Chain SAFT and Cubic-Plus-Association Equations of State" Ind. Eng. Chem. Res. 2008, 47, 9663–9669.
+    Calculate the solubility parameter based on temperature and composition. 
+
+    This function is based on the method used in Zeng, Z., Y. Xi, and Y. Li "Calculation of Solubility Parameter Using Perturbed-Chain SAFT and Cubic-Plus-Association Equations of State" Ind. Eng. Chem. Res. 2008, 47, 9663–9669.
     
     Parameters
     ----------
@@ -2602,9 +2611,9 @@ def hildebrand_solubility(rhol, xi, T, Eos, dT=.1, tol=1e-4, density_opts={}, **
         Temperature of the system [K]
     Eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
-    dT : float
+    dT : float, Optional, default=0.1
         Change in temperature used in calculating the derivative with central difference method 
-    tol : float
+    tol : float, Optional, default=1e-4
         This cutoff value evaluates the extent to which the integrand of the calculation has decayed. If the last value if the array is greater than tol, then the remaining area is estimated as a triangle, where the intercept is estimated from an interpolation of the previous four points.
     density_opts : dict, Optional, default={}
         Dictionary of options used in calculating pressure vs. mole in :func:`~despasito.thermodynamics.calc.pressure_vs_volume_arrays`
@@ -2633,7 +2642,7 @@ def hildebrand_solubility(rhol, xi, T, Eos, dT=.1, tol=1e-4, density_opts={}, **
     int_tmp = (Plist2-Plist1)/(2*dT)/R - Plist/(RT)
     integrand_list = gaussian_filter1d(int_tmp, sigma=0.1)
 
-    # Calculat U_res
+    # Calculate U_res
     integrand_spline = interpolate.InterpolatedUnivariateSpline(vlist, integrand_list,ext=1)
     U_res = -RT*integrand_spline.integral(1/rhol,vlist[-1])
 
@@ -2654,7 +2663,7 @@ def hildebrand_solubility(rhol, xi, T, Eos, dT=.1, tol=1e-4, density_opts={}, **
 
 def calc_flash(P, T, Eos, density_opts={}, maxiter=200, tol=1e-9, max_mole_fraction0=1, min_mole_fraction0=0, Psat_set=1e+7, **kwargs):
     r"""
-    Flash calculation of vapor and liquid mole fractions. Only binary systems are currently supported
+    Binary flash calculation of vapor and liquid mole fractions.
     
     Parameters
     ----------
@@ -2666,9 +2675,9 @@ def calc_flash(P, T, Eos, density_opts={}, maxiter=200, tol=1e-9, max_mole_fract
         An instance of the defined EOS class to be used in thermodynamic computations.
     density_opts : dict, Optional, default={}
         Dictionary of options used in calculating pressure vs. mole in :func:`~despasito.thermodynamics.calc.pressure_vs_volume_arrays`
-    maxiter : int, Optional, default=50
+    maxiter : int, Optional, default=200
         Maximum number of iterations in updating Ki values
-    tol : float, Optional, tol: 1e-09
+    tol : float, Optional, tol: 1e-9
         Tolerance to break loop. The error is defined as the absolute value of the summed difference in Ki values between iterations.
     min_mole_fraction0 : float, Optional, default=0
         Set the vapor and liquid mole fraction of component one to be greater than this number. Useful for diagrams with multiple solutions, such as those with an azeotrope.
@@ -2809,7 +2818,9 @@ def calc_flash(P, T, Eos, density_opts={}, maxiter=200, tol=1e-9, max_mole_fract
 
 def constrain_Ki(Ki0, min_mole_fraction0=0, max_mole_fraction0=1, **kwargs):
     r"""
-    For a binary mixture, determine whether the K values will produce properly constrained mole fractions. If not, randomly choose a value of Ki[1] within the allowed range.
+    For a binary mixture, determine whether the K values will produce properly constrained mole fractions.
+
+    If not, randomly choose a value of Ki[1] within the allowed range.
     
     Parameters
     ----------
@@ -2820,6 +2831,8 @@ def constrain_Ki(Ki0, min_mole_fraction0=0, max_mole_fraction0=1, **kwargs):
     max_mole_fraction0 : float, Optional, default=1
         Set the vapor and liquid mole fraction of component one to be less than this number. Useful for diagrams with multiple solutions, such as those with an azeotrope.
 
+    Returns
+    -------
     Ki_new : numpy.ndarray
         New suggestion for K values for a binary mixture
     flag_reset : bool
@@ -2938,15 +2951,18 @@ def fugacity_test_1(P, T, xi, rho, Eos, step_size=1e-5, **kwargs):
         [mol/:math:`m^3`] Density array. Length depends on values in density_opts
     Eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
+    step_size : float, Optional, default=1e-5
+        Step size in central difference method
 
     Returns
     -------
     Residual : float
+        Residual from thermodynamic identity 
         
     """
 
     if len(kwargs) > 0:
-        logger.debug("'fugacity_test_1' does not use the following keyword arguemnts: {}".format(", ".join(list(kwargs.keys()))))
+        logger.debug("'fugacity_test_1' does not use the following keyword arguments: {}".format(", ".join(list(kwargs.keys()))))
 
     if not gtb.isiterable(rho):
         rho = np.array([rho])
@@ -2975,6 +2991,8 @@ def fugacity_test_2(P, T, xi, rho, Eos, fractional_change=1e-1, **kwargs):
         [mol/:math:`m^3`] Density array. Length depends on values in density_opts
     Eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
+    fractional_change : float, Optional, default=1e-1
+        !!!!!!!!NoteHere!!!!!
 
     Returns
     -------
@@ -2983,7 +3001,7 @@ def fugacity_test_2(P, T, xi, rho, Eos, fractional_change=1e-1, **kwargs):
     """
 
     if len(kwargs) > 0:
-        logger.debug("'fugacity_test_2' does not use the following keyword arguemnts: {}".format(", ".join(list(kwargs.keys()))))
+        logger.debug("'fugacity_test_2' does not use the following keyword arguments: {}".format(", ".join(list(kwargs.keys()))))
 
     ncomp = len(xi)
     if not gtb.isiterable(rho):
@@ -3014,12 +3032,14 @@ def fugacity_test_2(P, T, xi, rho, Eos, fractional_change=1e-1, **kwargs):
         log_phi[i,:] = np.log(Eos.fugacity_coefficient(P*factor, rho, xi, T))
     dphidx = log_phi[0] - log_phi[1]
 
+    # Why fractional change not here?
+
     residual = np.sum(xi*dphidx)
 
     return residual
 
 
-def activity_coefficient(P, T, xi, yi, Eos, step_size=1e-2, **kwargs):
+def activity_coefficient(P, T, xi, yi, Eos, **kwargs):
     r"""
     
     Parameters
@@ -3030,19 +3050,21 @@ def activity_coefficient(P, T, xi, yi, Eos, step_size=1e-2, **kwargs):
         [K] Temperature of the system
     xi : numpy.ndarray
         Liquid mole fraction of each component, sum(xi) should equal 1.0
-    rho : float
-        [mol/:math:`m^3`] Density array. Length depends on values in density_opts passed :func:`~despasito.thermodynamics.calc.pressure_vs_volume_arrays`
+    yi : numpy.ndarray
+        Vapor mole fraction of each component, sum(xi) should equal 1.0
     Eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
 
     Returns
     -------
-    Residual : float
-        
+    activity_coefficient : numpy.ndarray
+        Activity coefficient for given composition of mixtures
+    Psat : numpy.ndarray
+        Saturation pressure 
     """
 
     if len(kwargs) > 0:
-        logger.debug("'activity_coefficient' does not use the following keyword arguemnts: {}".format(", ".join(list(kwargs.keys()))))
+        logger.debug("'activity_coefficient' does not use the following keyword arguments: {}".format(", ".join(list(kwargs.keys()))))
 
     ncomp = len(xi)
     Psat = np.zeros(ncomp)

@@ -14,7 +14,7 @@
         "file": "butane_solubility.csv"
     },
     "global_opts": {
-        "method": "grid_minimization",
-        "Ns": 3
+        "method": "basinhopping",
+        "write_intermediate_file": "True"
     }
 }

@@ -50,29 +50,27 @@ def calc_a1s(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
     Cmol2seg : float
         Conversion factor from from molecular number density, :math:`\rho`, to segment (i.e. group) number density, :math:`\rho_S`. Shown in eq. 13
     l_kl : numpy.ndarray
-        Matrix of mie potential exponents for k,l groups
+        Matrix of Mie potential exponents for k,l groups
     zetax : numpy.ndarray
         Matrix of hypothetical packing fraction based on hard sphere diameter for groups (k,l)
     epsilonkl : numpy.ndarray
         Matrix of well depths for groups (k,l)
     dkl : numpy.ndarray
-        Matrix of hardsphere diameters for groups (k,l)
+        Matrix of hard sphere diameters for groups (k,l)
 
     Returns
     -------
-    numpy.ndarray
-        Matrix used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy, size is the Ngroups by Ngroups
+    a1s : numpy.ndarray
+        Matrix used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy, size is the Nrho x Ngroups x Ngroups
 
-    :note: output seems to be a tensor of size (N x Ngroups x Ngroups)
     """
-    # Andrew: why is the 4 hard-coded here?
+
     nbeads = len(dkl)
     zetax_pow = np.zeros((len(rho), 4), dtype=rho.dtype)
     zetax_pow[:, 0] = zetax
     for i in range(1,4):
         zetax_pow[:, i] = zetax_pow[:, i-1] * zetax_pow[:, 0]
 
-    # check if you have more than 1 bead types
     etakl = np.zeros((len(rho), nbeads, nbeads), dtype=rho.dtype)
 
     for k in range(nbeads):
@@ -89,7 +87,7 @@ def calc_Bkl(rho, l_kl, Cmol2seg, dkl, epsilonkl, x0kl, zetax):
     r"""
     Return Bkl(rho*Cmol2seg,l_kl) in K as defined in eq. 20.
     
-    Used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy.
+    Used in the calculation of the first order term of the perturbation expansion corresponding to the mean-attractive energy.
     
     Parameters
     ----------
@@ -197,8 +195,8 @@ def calc_a1s_eff(rho, Cmol2seg, l_ii_avg, zetax, epsilonii_avg, dii_avg):
     
     Returns
     -------
-    numpy.ndarray
-    NoteHere
+    a1s_eff : numpy.ndarray
+        Term used in the used in the calculation of the effective averaged molecular radial distribution function of a hypothetical one-fluid Mie system.
     """
     
     ncomp = len(dii_avg)
@@ -244,8 +242,8 @@ def calc_Bkl_eff(rho, l_ii_avg, Cmol2seg, dii_avg, epsilonii_avg, x0ii, zetax):
     Returns
     -------
     Bii_avg : numpy.ndarray
-    NoteHere
-    
+        Bii_avg(rho*Cmol2seg,l_ii_avg) in K as defined in eq. 20.
+
     """
     
     rhos = Cmol2seg * rho
@@ -272,7 +270,7 @@ def calc_da1sii_drhos(rho, Cmol2seg, l_ii_avg, zetax, epsilonii_avg, dii_avg):
     r""" 
     Return a1s,ii_avg(rho*Cmol2seg,l_ii_avg) in K as defined in eq. 25.
     
-    Used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy.
+    Used in the calculation of the first order term of the perturbation expansion corresponding to the mean-attractive energy.
 
     Parameters
     ----------
@@ -292,7 +290,7 @@ def calc_da1sii_drhos(rho, Cmol2seg, l_ii_avg, zetax, epsilonii_avg, dii_avg):
     Returns
     -------
     calc_da1sii_drhos : numpy.ndarray
-        Matrix used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy, size is the Ngroups by Ngroups
+        Matrix used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy
     """
     ncomp = len(dii_avg)
     zetax_pow = np.zeros((len(rho), 4), dtype=rho.dtype)
@@ -314,7 +312,6 @@ def calc_da1sii_drhos(rho, Cmol2seg, l_ii_avg, zetax, epsilonii_avg, dii_avg):
 
     da1s_drhos = tmp1*tmp2
 
-    #da1s_drhos = - 2.0 * np.pi * ((1.0 - (etaii_avg / 2.0)) / ((1.0 - etaii_avg)**3) + (5.0 - 2.0*etaii_avg)/(2.0*(1.0-etaii_avg)**4)) * rhos_detaii_avg_drhos * ((epsilonii_avg * (dii_avg**3)) / (l_ii_avg - 3.0))
     return da1s_drhos
 
 def calc_dBkl_drhos(l_ii_avg, dii_avg, epsilonii_avg, x0ii, zetax):
@@ -433,8 +430,6 @@ def calc_da2ii_1pchi_drhos(rho, Cmol2seg, epsilonii_avg, dii_eff, x0ii, l_rii_av
     
     """
 
-    # NoteHere g2mca der_a2kl
-
     # Calculate terms and derivatives used in derivative chain rule
     KHS = ((1.0 - zetax)**4) / (1.0 + (4.0 * zetax) + (4.0 * (zetax**2)) - (4.0 * (zetax**3)) + (zetax**4))
     dKHS_drhos = (4.0*(zetax**2 - 5.0*zetax - 2.0)*(1.0 - zetax)**3)/(zetax**4 - 4.0*zetax**3 + 4.0*zetax**2 + 4.0*zetax + 1.0)**2 *(zetax/(rho*Cmol2seg))
@@ -461,12 +456,10 @@ def calc_da2ii_1pchi_drhos(rho, Cmol2seg, epsilonii_avg, dii_eff, x0ii, l_rii_av
     B = x0ii**(2.0 * l_aii_avg) * (a1sii_2l_aii_avg + Bii_2l_aii_avg) - 2.0 * x0ii**(l_aii_avg + l_rii_avg) * (a1sii_l_rii_avgl_aii_avg + Bii_l_aii_avgl_rii_avg) + x0ii**(2.0 * l_rii_avg) * (a1sii_2l_rii_avg + Bii_2l_rii_avg)
 
     dA_B = np.transpose(np.transpose(0.5*epsilonii_avg*Cii**2 * B)*dKHS_drhos)
-#    dA_B = np.einsum("i,ij->ij", dKHS_drhos, 0.5*epsilonii_avg*Cii**2 * B)
 
     dB = x0ii**(2.0 * l_aii_avg) * (da1sii_2l_aii_avg + dBii_2l_aii_avg) - 2.0 * x0ii**(l_aii_avg + l_rii_avg) * (da1sii_l_rii_avgl_aii_avg + dBii_l_aii_avgl_rii_avg) + x0ii**(2.0 * l_rii_avg) * (da1sii_2l_rii_avg + dBii_2l_rii_avg)
 
     A_dB = np.transpose(np.transpose(0.5*epsilonii_avg*Cii**2 * dB)*KHS)
-    #A_dB = np.einsum("i,ij->ij", KHS, 0.5*epsilonii_avg*Cii**2 * dB)
 
     da2ii_1pchi_drhos = A_dB + dA_B
 

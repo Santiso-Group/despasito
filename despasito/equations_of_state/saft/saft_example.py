@@ -71,8 +71,8 @@ class saft_example():
         # Note that these strings must represent methods below, but if the method is too verbose or repeditive, other methods may be added to this object. If a function is to be optimized with Cython or Numba, an extentions library can be added to the 'compiled_modules' directory. A python version with the same function names should also be present aswell. The import "if-structure" at the top is then used to import the desired form, see gamma-mie.py for an example.
         # When deciding whether to include an additional function as a class method, or if it should simply be imported from a library. Think about whether accessing that function would be nice when handling an EOS object in a python script. For instance, the 'reduced density', 'effiective packing fraction', 'Ahard_sphere', 'A1'... methods would be nice to have as attributes.
 
-        # When calculating the cross-interaction term between two beads, the parameter name and the mixing type should be listed here. The mixing rule keyword can be any that are supported in saft_toolbox.mixing_rules. As of right now, mixing rules that use other parameters are not supported by this function, so a custom mixing rule method is added as a method in this class. Even if all your mixing rules are handled internally, this attribute must exist.
-        self.mixing_rules = {"sigma": "mean"}
+        # When calculating the cross-interaction term between two beads, the parameter name and the mixing type should be listed here. The mixing rule keyword can be any that are supported in saft_toolbox.combining_rules. As of right now, mixing rules that use other parameters are not supported by this function, so a custom mixing rule method is added as a method in this class. Even if all your mixing rules are handled internally, this attribute must exist.
+        self.combining_rules = {"sigma": "mean"}
     
         # Now we start processing the given variables. The following three attributes are always needs for the saft.py class. If other inputs are needed for the specific SAFT type at hand, feel free to add them to this list.
         self.eos_dict = {}
@@ -109,7 +109,7 @@ class saft_example():
             self.ncomp, self.nbeads = np.shape(self.eos_dict['molecular_composition'])
 
         # Intiate cross interaction terms, as mentioned above, some mixing rules use a particular combination of parameters and these are handled here.
-        output = tb.cross_interaction_from_dict( self.eos_dict['beads'], self.eos_dict['bead_library'], self.mixing_rules, cross_library=self.eos_dict['cross_library'])
+        output = tb.cross_interaction_from_dict( self.eos_dict['beads'], self.eos_dict['bead_library'], self.combining_rules, cross_library=self.eos_dict['cross_library'])
         self.eos_dict["sigma_kl"] = output["sigma"]
         self.calc_sw_cross_interaction_parameters()
 
@@ -589,7 +589,7 @@ class saft_example():
         self.eos_dict["cross_library"].update(cross_library)
 
         # Update Non bonded matrices
-        output = tb.cross_interaction_from_dict( self.eos_dict['beads'], self.eos_dict['bead_library'], self.mixing_rules, cross_library=self.eos_dict['cross_library'])
+        output = tb.cross_interaction_from_dict( self.eos_dict['beads'], self.eos_dict['bead_library'], self.combining_rules, cross_library=self.eos_dict['cross_library'])
         self.eos_dict["sigma_kl"] = output["sigma"]
         self.calc_sw_cross_interaction_parameters()
         self.calc_component_averaged_properties()

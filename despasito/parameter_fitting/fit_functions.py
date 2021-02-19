@@ -13,7 +13,9 @@ logger = logging.getLogger(__name__)
 
 def initial_guess(optimization_parameters, Eos):
     r"""
-    Extract initial guess in fit parameters from EOS object. These values were taken from the EOSgroup file.
+    Extract initial guess in fit parameters from EOS object.
+
+    These values were taken from the EOSgroup file.
 
     Parameters
     ----------
@@ -33,7 +35,7 @@ def initial_guess(optimization_parameters, Eos):
         
     """
 
-    # Update bead_library with test paramters
+    # Update bead_library with test parameters
 
     parameters_guess = np.ones(len(optimization_parameters['fit_parameter_names']))
     for i, param in enumerate(optimization_parameters['fit_parameter_names']):
@@ -49,14 +51,13 @@ def initial_guess(optimization_parameters, Eos):
 
 def check_parameter_bounds(optimization_parameters, Eos, bounds):
     r"""
-    Extract initial guess in fit parameters from EOS object. These values were taken from the EOSgroup file.
+    Check that provided parameter bounds are within Eos reasonable limits
     
     Parameters
     ----------
     optimization_parameters : dict
         Parameters used in basin fitting algorithm
     
-        - fit_bead (str) - Name of bead whose parameters are being fit, should be in bead list of bead_configuration
         - fit_parameter_names (list[str]) - This list of contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
     
     Eos : obj
@@ -66,7 +67,7 @@ def check_parameter_bounds(optimization_parameters, Eos, bounds):
     
     Returns
     -------
-    bounds : list[tuple]
+    new_bounds : list[tuple]
         Checked with Eos object method, this list has a length equal to fit_parameter_names with lists of pairs for minimum and maximum bounds of parameter being fit. Defaults are broad, recommend specification.
     
     """
@@ -81,7 +82,9 @@ def check_parameter_bounds(optimization_parameters, Eos, bounds):
 
 def consolidate_bounds(optimization_parameters):
     r"""
-    Parse parameter bounds in the optimization_parameters dictionary to form a 2D numpy array with a length equal to the numbe of parameters being fit.
+    Parse parameter bounds in the optimization_parameters dictionary.
+
+    The resulting bounds form a 2D numpy array with a length equal to the number of parameters being fit.
     
     Parameters
     ----------
@@ -100,6 +103,7 @@ def consolidate_bounds(optimization_parameters):
         - fit_bead (str) - Name of bead whose parameters are being fit, should be in bead list of bead_configuration
         - fit_parameter_names (list[str]) - This list of contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
         - bounds (numpy.ndarray) - List of lists of length two, of length equal to fit_parameter_names. If no bounds were given then the default parameter boundaries are [0,1e+4], else bounds given as \*_bounds in input dictionary are used.
+
     """
 
     if "fit_bead" not in optimization_parameters:
@@ -117,7 +121,7 @@ def consolidate_bounds(optimization_parameters):
                 ind = optimization_parameters["fit_parameter_names"].index(tmp)
                 new_optimization_parameters["bounds"][ind] = value2
             else:
-                logger.warning("Bounds for parameter type '{}' were given, but this parameter is not defined to be fit.".format(tmp))
+                logger.error("Bounds for parameter type '{}' were given, but this parameter is not defined to be fit.".format(tmp))
         else:
             new_optimization_parameters[key2] = value2
             continue
@@ -216,7 +220,7 @@ def global_minimization(global_method, *args, **kwargs):
         - options (dict) - This dictionary contains the kwargs available to the chosen method
 
     constraints : dict, Optional
-        This dicitonary of constraint types and their arguements will be converted into the appropriate form for the chosen optimizaiton method.
+        This dictionary of constraint types and their arguments will be converted into the appropriate form for the chosen optimization method.
 
     Returns
     -------
@@ -243,7 +247,7 @@ def initialize_constraints(constraints, constraint_type):
     Parameters
     ----------
     constraints : dict
-        This dicitonary of constraint types and their arguements will be converted into the appropriate form for the chosen optimizaiton method. Although the key can be anything, it must represent a dictionary. The keyword 'function' must be found in the dictionary and represent a valid function name from `constraint_types.py`, as well as the two keys, 'type' and 'args'. The 'args' are inputs into the functions (keys), and 'type' entries depends on 'constraint_type'.
+        This dictionary of constraint types and their arguments will be converted into the appropriate form for the chosen optimization method. Although the key can be anything, it must represent a dictionary. The keyword 'function' must be found in the dictionary and represent a valid function name from `constraint_types.py`, as well as the two keys, 'type' and 'args'. The 'args' are inputs into the functions (keys), and 'type' entries depends on 'constraint_type'.
     constraint_type : str
         Either 'dict' or 'class'. Changes the constraint to the specified form. 
  
@@ -277,7 +281,6 @@ def initialize_constraints(constraints, constraint_type):
         if constraint_type == "class":
             if "type" not in kwargs or kwargs["type"] in ['linear', 'nonlinear']:
                 raise ValueError("Constraint, {}, does not have type. Type can be 'linear' or 'nonlinear'.".format(kwargs["function"]))
-# NoteHere
             if kwargs["type"] is "linear":
                 if "kwargs" not in kwargs:
                     output = LinearConstraint(func, args[0], args[1])
@@ -315,11 +318,10 @@ def compute_obj(beadparams, fit_bead, fit_parameter_names, exp_dict, bounds):
         Name of bead whose parameters are being fit, should be in bead list of bead_configuration
     fit_parameter_names : list[str]
         This list contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
-    bounds : list[tuple]
-        List of length equal to fit_parameter_names with lists of pairs for minimum and maximum bounds of parameter being fit. Defaults are broad, recommend specification.
-
     exp_dict : dict
         Dictionary of experimental data objects.
+    bounds : list[tuple]
+        List of length equal to fit_parameter_names with lists of pairs for minimum and maximum bounds of parameter being fit. Defaults are broad, recommend specification.
 
     Returns
     -------
@@ -328,7 +330,7 @@ def compute_obj(beadparams, fit_bead, fit_parameter_names, exp_dict, bounds):
         
     """
 
-    # Update bead_library with test paramters
+    # Update bead_library with test parameters
 
     if len(beadparams) != len(fit_parameter_names):
         raise ValueError("The length of initial guess vector should be the same number of parameters to be fit.")    
@@ -387,7 +389,7 @@ def obj_function_form(data_test, data0, weights=1.0, method="average-squared-dev
         - percent-absolute-average-deviation: sum((data_test-data0)/data0)/N*100
 
     nan_ratio : float, Optional, default=0.1
-        If more than "nan_ratio*100" percent of the calculated data failed to produce nan, increase the objective fumction by the number of data_test entries that are NaN multiplied by nan_number.
+        If more than "nan_ratio*100" percent of the calculated data failed to produce NaN, increase the objective function by the number of data_test entries that are NaN multiplied by nan_number.
     nan_number : float, Optional, default=1000
         If a thermodynamic calculation produces NaN, add this quantity to the objective value
 

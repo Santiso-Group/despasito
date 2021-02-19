@@ -1,4 +1,6 @@
-
+"""
+General functions that are applicable to multiple SAFT variants
+"""
 import numpy as np
 import logging
 
@@ -85,7 +87,7 @@ def _dkk_int(r, Ce_kT, sigma, lambdar, lambdaa):
 
 def calc_dkk(epsilon, sigma, T, Cprefactor, lambdar, lambdaa=6.0):
     r"""
-    Calculates hard sphere diameter of a group k, :math:`d_{k,k}`. Defined in eq. 10.
+    Calculates hard sphere diameter of a group k, :math:`d_{k,k}`. Defined in eq. 10. using a 40 point Gauss Legendre
     
     Parameters
     ----------
@@ -111,43 +113,17 @@ def calc_dkk(epsilon, sigma, T, Cprefactor, lambdar, lambdaa=6.0):
     Ce_kT = Cprefactor * epsilon / T
     # calculate integral of dkk_int from 0.0 to sigma
 
-    ## Option 1
-    #results = integrate.quad(lambda r: _dkk_int(r, Ce_kT, sigma, lambdar, lambdaa), 0.0, sigma, epsabs=1.0e-16, epsrel=1.0e-16)
-    #results = results[0]
-    
-    ## Option 2: 10pt Gauss Legendre
-    # 5pt
-    #x = np.array([0.0, 0.5384693101056831, -0.5384693101056831, 0.906179845938664, -0.906179845938664])
-    #w = np.array([0.568889, 0.47862867049936647, 0.47862867049936647, 0.23692688505618908, 0.23692688505618908])
-    # 10pt
-    #w = np.array([0.295524225, 0.295524225, 0.269266719, 0.269266719, 0.219086363, 0.219086363, 0.149451349, 0.149451349, 0.066671344, 0.066671344])
-    #x = np.array([-0.148874339, 0.148874339, -0.433395394, 0.433395394, -0.679409568, 0.679409568, -0.865063367, 0.865063367, -0.973906529, 0.973906529])
-    # 40pt
     w = np.array([0.077505948, 0.077505948, 0.077039818, 0.077039818, 0.076110362, 0.076110362, 0.074723169, 0.074723169, 0.072886582, 0.072886582, 0.070611647, 0.070611647, 0.067912046, 0.067912046, 0.064804013, 0.064804013, 0.061306242, 0.061306242, 0.057439769, 0.057439769, 0.053227847, 0.053227847, 0.048695808, 0.048695808, 0.043870908, 0.043870908, 0.038782168, 0.038782168, 0.033460195, 0.033460195, 0.027937007, 0.027937007, 0.022245849, 0.022245849, 0.016421058, 0.016421058, 0.010498285, 0.010498285, 0.004521277, 0.004521277])
     x = np.array([-0.038772418, 0.038772418, -0.116084071, 0.116084071, -0.192697581, 0.192697581, -0.268152185, 0.268152185, -0.341994091, 0.341994091, -0.413779204, 0.413779204, -0.483075802, 0.483075802, -0.549467125, 0.549467125, -0.61255389, 0.61255389, -0.671956685, 0.671956685, -0.727318255, 0.727318255, -0.778305651, 0.778305651, -0.824612231, 0.824612231, -0.865959503, 0.865959503, -0.902098807, 0.902098807, -0.932812808, 0.932812808, -0.957916819, 0.957916819, -0.97725995, 0.97725995, -0.990726239, 0.990726239, -0.99823771, 0.99823771])
     
     r = 0.5*sigma*(x+1)
     dkk = 0.5*sigma*np.sum(w*_dkk_int(r, Ce_kT, sigma, lambdar, lambdaa))
-
-    
-    # Option 3: Mullers method
-    #xgl = np.array([0.97390652852, 0.86506336669, 0.67940956830, 0.43339539413, 0.14887433898])
-    #wgl = np.array([0.06667134431, 0.14945134915, 0.21908636252, 0.26926671931, 0.29552422471])
-    #x1i = 0.5 * (1 + xgl)
-    #x2i = 0.5 * (1 - xgl)
-    #
-    #xsum = 0.
-    #for i in range(len(x1i)):
-    #    tmp1 = np.power(x1i[i], -lambdar) - np.power(x1i[i], -lambdaa)
-    #    tmp2 = np.power(x2i[i], -lambdar) - np.power(x2i[i], -lambdaa) 
-    #    xsum = xsum + wgl[i] * ((x1i[i]**2 * np.exp(-tmp1 * Ce_kT)) + (x2i[i]**2 * np.exp(-tmp2 * Ce_kT)))
-    #dcube_s = 1 - (3 / 2 * xsum)
-    #dkk = sigma*pow(dcube_s, 1/3)
     
     return dkk
 
 def calc_composition_dependent_variables(xi, molecular_composition, bead_library, beads):
     r"""
+    Calculate the factor for converting molar density to bead density and molecular mole fractions to bead fractions.
     
     Parameters
     ----------
@@ -197,6 +173,7 @@ def calc_composition_dependent_variables(xi, molecular_composition, bead_library
 
 def calc_zetaxstar(rho, Cmol2seg, xskl, sigmakl):
     r"""
+    Calculate matrix of hypothetical packing fraction based on sigma for groups (k,l)
     
     Parameters
     ----------
@@ -222,6 +199,7 @@ def calc_zetaxstar(rho, Cmol2seg, xskl, sigmakl):
 
 def calc_zetax(rho, Cmol2seg, xskl, dkl):
     r"""
+    Calculate matrix of hypothetical packing fraction based on hard sphere diameter for groups (k,l)
     
     Parameters
     ----------
@@ -245,6 +223,7 @@ def calc_zetax(rho, Cmol2seg, xskl, dkl):
 
 def calc_KHS(zetax):
     r"""
+    Calculate (length of densities) isothermal compressibility of system with packing fraction zetax
     
     Parameters
     ----------

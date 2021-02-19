@@ -5,7 +5,6 @@ This package will take in an equation of state object, and any user defined vari
 
 """
 
-# Add imports here
 from inspect import getmembers, isfunction
 #import logging
 

@@ -1,8 +1,4 @@
-"""
-    This file contains the interface needed to create further objects to represent experimental data. 
-
-    Using this template all future data types will be easily exchanged.
-    
+""" Interface needed to create further objects to represent experimental data.
 """
 
 # All folders in this directory refer back to this interface
@@ -12,13 +8,8 @@ from abc import ABC, abstractmethod
 
 logger = logging.getLogger(__name__)
 
-# __________________ EOS Interface _________________
 class ExpDataTemplate(ABC):
-
-    """
-    Interface needed to create further objects to represent experimental data.
-
-     Using this template all future data types will be easily exchanged.
+    """ Interface needed to create further objects to represent experimental data.
     """
     def __init__(self, data_dict):
 
@@ -69,9 +60,10 @@ class ExpDataTemplate(ABC):
         fit_bead : str
             Name of bead being fit
         param_names : list
-            Parameters to be fit. See EOS mentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
+            Parameters to be fit. See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
         param_values : list
             Value of parameter
+            
         """
 
         for i, param in enumerate(param_names):
@@ -93,12 +85,11 @@ class ExpDataTemplate(ABC):
     
     @abstractmethod
     def objective(self, Eos):
-        """
-        Float representing objective function of from comparing predictions to experimental data.
+        """ Float representing objective function of from comparing predictions to experimental data.
         """
         pass
     
     def __str__(self):
     
-        string = "Data Set Object\nname: {}\ncalculation_type: {}\nNdatapts: {}".format(self.name, self.thermodict["calculation_type"], self.npoints)
+        string = "Data Set Object\nName: {}\nCalculation_type: {}\nNumber of Points: {}".format(self.name, self.thermodict["calculation_type"], self.npoints)
         return string

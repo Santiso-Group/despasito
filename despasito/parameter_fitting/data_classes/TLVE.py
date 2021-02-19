@@ -40,8 +40,8 @@ class Data(ExpDataTemplate):
     ----------
     name : str
         Data type, in this case TLVE
-    weights : dict, Optional, deafault: {"some_property": 1.0 ...}
-        Dicitonary corresponding to thermodict, with weighting factor or vector for each system property used in fitting
+    weights : dict, Optional, default: {"some_property": 1.0 ...}
+        Dictionary corresponding to thermodict, with weighting factor or vector for each system property used in fitting
     thermodict : dict
         Dictionary of inputs needed for thermodynamic calculations
     
@@ -101,13 +101,12 @@ class Data(ExpDataTemplate):
             raise ImportError("Given TLVE data, mole fractions and/or pressure should have been provided.")
 
         if self.thermodict["calculation_type"] == None:
-            logger.warning("No calculation type has been provided.")
             if self.thermodict["xilist"]:
                 self.thermodict["calculation_type"] = "bubble_pressure"
-                logger.warning("Assume a calculation type of bubble_pressure")
+                logger.warning("No calculation type has been provided. Assume a calculation type of bubble_pressure")
             elif self.thermodict["yilist"]:
                 self.thermodict["calculation_type"] = "dew_pressure"
-                logger.warning("Assume a calculation type of dew_pressure")
+                logger.warning("No calculation type has been provided. Assume a calculation type of dew_pressure")
             else:
                 raise ValueError("Unknown calculation instructions")
 

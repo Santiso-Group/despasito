@@ -55,12 +55,10 @@ def calc_a1s(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
 
     Returns
     -------
-    numpy.ndarray
-        Matrix used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy, size is the Ngroups by Ngroups
-
-    :note: output seems to be a tensor of size (N x Ngroups x Ngroups)
+    a1s : numpy.ndarray
+        Matrix used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy, size is the Nrho x Ngroups x Ngroups
     """
-    # Andrew: why is the 4 hard-coded here?
+
     nbeads = len(dkl)
     zetax_pow = np.zeros((len(rho), 4), dtype=rho.dtype)
     zetax_pow[:, 0] = zetax
@@ -190,8 +188,8 @@ def calc_a1s_eff(rho, Cmol2seg, l_ii_avg, zetax, epsilonii_avg, dii_avg):
     
     Returns
     -------
-    numpy.ndarray
-    NoteHere
+    a1s_eff : numpy.ndarray
+        Term used in the used in the calculation of the effective averaged molecular radial distribution function of a hypothetical one-fluid Mie system.
     """
     
     ncomp = len(dii_avg)
@@ -237,7 +235,7 @@ def calc_Bkl_eff(rho, l_ii_avg, Cmol2seg, dii_avg, epsilonii_avg, x0ii, zetax):
     Returns
     -------
     Bii_avg : numpy.ndarray
-    NoteHere
+        Bii_avg(rho*Cmol2seg,l_ii_avg) in K as defined in eq. 20.
     
     """
     

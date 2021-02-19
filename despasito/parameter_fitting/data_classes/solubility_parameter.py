@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 class Data(ExpDataTemplate):
 
     r"""
-    Object for hildebrand solubility parameters. This data is evaluated with "solubility_parameter". 
+    Object for Hildebrand solubility parameters. This data is evaluated with "solubility_parameter". 
 
     Parameters
     ----------
@@ -41,8 +41,8 @@ class Data(ExpDataTemplate):
     ----------
     name : str
         Data type, in this case solubility_parameter
-    weights : dict, Optional, deafault: {"some_property": 1.0 ...}
-        Dicitonary corresponding to thermodict, with weighting factor or vector for each system property used in fitting
+    weights : dict, Optional, default: {"some_property": 1.0 ...}
+        Dictionary corresponding to thermodict, with weighting factor or vector for each system property used in fitting
     thermodict : dict
         Dictionary of inputs needed for thermodynamic calculations
         

@@ -1,3 +1,5 @@
+""" Combining rules options called from :func:`~despasito.equations_of_state.eos_toolbox.combining_rules` in the EOS class.
+"""
 
 import numpy as np
 import logging
@@ -24,7 +26,9 @@ def mean( beadA, beadB, parameter):
     -------
     parameter12 : float
         Mixed interaction parameter
+
     """
+
     return (beadA[parameter] + beadB[parameter])/2
 
 def geometric_mean( beadA, beadB, parameter):
@@ -45,7 +49,9 @@ def geometric_mean( beadA, beadB, parameter):
     -------
     parameter12 : float
         Mixed interaction parameter
+
     """
+
     return np.sqrt(beadA[parameter] * beadB[parameter])
 
 def volumetric_geometric_mean( beadA, beadB, parameter, weighting_parameters=[]):
@@ -63,10 +69,12 @@ def volumetric_geometric_mean( beadA, beadB, parameter, weighting_parameters=[])
         Name of parameter for which a mixed value is needed
     weighting_parameters : list[str], Optional, default=[]
         Given parameter name is a0 and b0, while weighting_parameters should be of length 1 to represent the name for a1 and b1.
+
     Returns
     -------
     parameter12 : float
         Mixed interaction parameter
+
     """
 
     tmp1 = np.sqrt(beadA[parameter] * beadB[parameter])
@@ -88,12 +96,13 @@ def weighted_mean( beadA, beadB, parameter, weighting_parameters=[]):
     parameter : str
         Name of parameter for which a mixed value is needed
     weighting_parameters : list[str], Optional, default=[]
-        Given parameter name is a0 and b0, while weighting_parameters should be of length 1 to represent the name for a1 and b
-1.
+        Given parameter name is a0 and b0, while weighting_parameters should be of length 1 to represent the name for a1 and b1.
+
     Returns
     -------
     parameter12 : float
         Mixed interaction parameter
+
     """
 
     param2 = weighting_parameters[0]
@@ -119,13 +128,15 @@ def mie_exponent( beadA, beadB, parameter):
     -------
     parameter12 : float
         Mixed interaction parameter
+
     """
+
     return 3 + np.sqrt((beadA[parameter] - 3.0) * (beadB[parameter] - 3.0))
 
 def square_well_berthelot(beadA, beadB, parameter, weighting_parameters=[]):
     r"""
     Calculates cross interaction parameter according to the calculation method provided.
-    square_well berthelot geometric mean: c = np.sqrt(a[0]*b[0]) * np.sqrt(a[1]**3 * b[1]**3) / ((a[1] + b[1])/2)**3 * np.sqrt(()*())/(a[])
+    square_well Berthelot geometric mean: c = np.sqrt(a[0]*b[0]) * np.sqrt(a[1]**3 * b[1]**3) / ((a[1] + b[1])/2)**3
     
     Parameters
     ----------
@@ -136,13 +147,15 @@ def square_well_berthelot(beadA, beadB, parameter, weighting_parameters=[]):
     parameter : str
         Name of parameter for which a mixed value is needed
     weighting_parameters : list[str], Optional, default=[]
-        Given parameter name is a0 and b0, while weighting_parameters should be of length 1 to represent the name for a1 and b
-1.
+        Given parameter name is a0 and b0, while weighting_parameters should be of length 1 to represent the name for a1 and b1.
+
     Returns
     -------
     parameter12 : float
         Mixed interaction parameter
+
     """
+
     param2, param3 = weighting_parameters[0], weighting_parameters[1]
 
     tmp1 = np.sqrt(beadA[parameter] * beadB[parameter])
@@ -156,7 +169,7 @@ def square_well_berthelot(beadA, beadB, parameter, weighting_parameters=[]):
 def multipole(beadA, beadB, parameter, temperature=None, mode="curve fit", scaled=False):
     r"""
     Calculates cross interaction parameter according to the calculation method provided.
-    square_well berthelot geometric mean: c = np.sqrt(a[0]*b[0]) * np.sqrt(a[1]**3 * b[1]**3) / ((a[1] + b[1])/2)**3 * np.sqrt(()*())/(a[])
+    square_well Berthelot geometric mean: c = np.sqrt(a[0]*b[0]) * np.sqrt(a[1]**3 * b[1]**3) / ((a[1] + b[1])/2)**3 
     
     Parameters
     ----------
@@ -177,6 +190,7 @@ def multipole(beadA, beadB, parameter, temperature=None, mode="curve fit", scale
     -------
     output : dict
         Mixed interaction parameter
+
     """
 
     try:
@@ -202,7 +216,7 @@ def multipole(beadA, beadB, parameter, temperature=None, mode="curve fit", scale
             raise ValueError("Multipole mixing rule must be either 'curve fit' or 'analytical'.")
         output = dict_cross["beadA"]["beadB"]
     else:
-        logger.warning("Temerature is None, using geometric mean.")
+        logger.warning("Temperature is None, using geometric mean.")
         output = {parameter: geometric_mean( beadA, beadB, parameter)}
 
     return output
