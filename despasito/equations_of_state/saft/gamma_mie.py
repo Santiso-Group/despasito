@@ -79,9 +79,9 @@ class SaftType():
     residual_helmholtz_contributions : list[str]
         List of methods from the specified saft_source representing contributions to the Helmholtz energy that are functions of density, temperature, and composition. For this variant, [`Amonomer`, `Achain`]
     parameter_types : list[str]
-        This list of parameter names for the association site calculation, "epsilon", "lambdar", "lambdaa", "sigma", and/or "Sk" as well as parameters for the specific SAFT variant. 
+        This list of parameter names, "epsilon", "lambdar", "lambdaa", "sigma", and/or "Sk" as well as parameters for the specific SAFT variant. 
     parameter_bound_extreme : dict
-        With each parameter names as an entry representing a list with the minimum and maximum feasible parameter value.
+        With each parameter name as an entry representing a list with the minimum and maximum feasible parameter value.
 
         - epsilon: [100.,1000.]
         - lambdar: [6.0,100.]
