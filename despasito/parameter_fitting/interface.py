@@ -9,7 +9,39 @@ from abc import ABC, abstractmethod
 logger = logging.getLogger(__name__)
 
 class ExpDataTemplate(ABC):
-    """ Interface needed to create further objects to represent experimental data.
+    r"""
+    Interface needed to create further objects to represent experimental data.
+
+    Parameters
+    ----------
+    data_dict : dict
+        Dictionary of exp data of TLVE temperature dependent liquid vapor equilibria
+
+        * calculation_type (str) - Optional, default=*to be set*
+        * eos_obj (obj) - Equation of state object
+        * weights (dict) - A dictionary where each key is the header used in the exp. data file. The value associated with a header can be a list as long as the number of data points to multiply by the objective value associated with each point, or a float to multiply the objective value of this data set.
+        * density_opts (dict) - Optional, default={}, Dictionary of options used in calculating pressure vs. mole fraction curves.
+        * Allowed property keys and associated values
+        * kwargs for :func:`~despasito.parameter_fitting.fit_functions.obj_function_form`
+
+    Attributes
+    ----------
+    name : str
+        Data type, in this case TLVE
+    Eos : obj
+        Equation of state object
+    weights : dict, Optional, default: {"some_property": 1.0 ...}
+        Dictionary corresponding to thermodict, with weighting factor or vector for each system property used in fitting
+    obj_opts : dict
+        Keywords to compute the objective function with :func:`~despasito.parameter_fitting.fit_functions.obj_function_form`.
+    npoints : int
+        Number of sets of system conditions this object computes
+    thermodict : dict
+        Dictionary of inputs needed for thermodynamic calculations
+    
+        - calculation_type (str) default=*to be set*
+        - density_opts (dict) default={}
+  
     """
     def __init__(self, data_dict):
 

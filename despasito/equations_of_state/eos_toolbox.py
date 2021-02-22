@@ -156,7 +156,7 @@ def calc_massi(molecular_composition, bead_library, beads):
 
     return massi
 
-def extract_property(prop, bead_library, beads):
+def extract_property(prop, bead_library, beads, default=None):
     r"""
     Extract single property or key from a dictionary within a dictionary (e.g. bead parameters) and into a single array of the same length and order as a list of bead names.
 
@@ -170,6 +170,8 @@ def extract_property(prop, bead_library, beads):
         A dictionary where bead names are the keys to access EOS self interaction parameters:
     beads : list[str]
         List of unique bead names used among components
+    default : any, Optional, default=None
+        If property is not present, set to this value. Although if the default is None, an error will result.
     
     Returns
     -------
@@ -180,11 +182,49 @@ def extract_property(prop, bead_library, beads):
     prop_array = np.zeros(len(beads))
     for i , bead in enumerate(beads):
         if prop in bead_library[bead]:
-                prop_array[i] += bead_library[bead][prop]
+                prop_array[i] = bead_library[bead][prop]
         else:
-            raise ValueError("The property {} for bead, {}, was not provided.".format(prop,bead))
+            if default == None:
+                raise ValueError("The property {} for bead, {}, was not provided.".format(prop,bead))
+            else:
+                prop_array[i] = default
 
     return prop_array
+
+
+def check_bead_parameters(bead_library0, parameter_defaults):
+    r"""
+    Be sure all needed parameters are available for each bead.
+
+    If a parameter is absent and a default value is given, this value will be added to the parameter set. If the default is None, then an error is raised.
+
+    Parameters
+    ----------
+    bead_library : dict
+        A dictionary where bead names are the keys to access EOS self interaction parameters
+    parameter_defaults : dict
+        A dictionary of default values for the required parameters.
+
+    Returns
+    -------
+    new_bead_library : dict
+        New dictionary with defaults added where relevant
+
+    """
+
+    bead_library = bead_library0.copy()
+
+    for bead, bead_dict in bead_library.items():
+        for parameter, default in parameter_defaults.items():
+            if parameter not in bead_dict:
+                if default != None:
+                    bead_library[bead][parameter] = default
+                    logger.info("Parameter, {}, is missing for parametrized group, {}. Set to default, {}".format(parameter,bead,default))
+                else:
+                    raise ValueError("Parameter, {}, should have been defined for parametrized group, {}.".format(parameter,bead))
+
+    return bead_library
+
 
 def cross_interaction_from_dict(beads, bead_library, mixing_dict, cross_library={}):
     r"""

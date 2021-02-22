@@ -181,7 +181,7 @@ def calc_assoc_matrices(beads, bead_library, molecular_composition, cross_librar
     bead_library : dict
         A dictionary where bead names are the keys to access EOS self interaction parameters:
 
-        - epsilonHB-\*: Optional, Interaction energy between each bead and association site. Asterisk represents string from sitenames.
+        - epsilonHB-\*-\*: Optional, Interaction energy between each bead and association site. Asterisk represents string from sitenames.
         - K-\*-\*: Optional, Bonding volume between each association site. Asterisk represents two strings from sitenames.
         - rc-\*-\*: Optional, Cutoff distance for association sites. Asterisk represents two strings from sitenames.
         - rd-\*-\*: Optional, Site position. Asterisk represents two strings from sitenames.
@@ -192,7 +192,7 @@ def calc_assoc_matrices(beads, bead_library, molecular_composition, cross_librar
     cross_library : dict, Optional, default={}
         A dictionary where bead names are the keys to access a dictionary of a second tier of bead names. This structure contains the EOS cross interaction parameters:
 
-        - epsilonHB-\*: Optional, Interaction energy between each bead and association site. Asterisk represents string from sitenames.
+        - epsilonHB-\*-\*: Optional, Interaction energy between each bead and association site. Asterisk represents string from sitenames.
         - K-\*-\*: Optional, Bonding volume between each association site. Asterisk represents two strings from sitenames.
         - rc-\*-\*: Optional, Cutoff distance for association sites. Asterisk represents two strings from sitenames.
         - rd-\*-\*: Optional, Site position. Asterisk represents two strings from sitenames.

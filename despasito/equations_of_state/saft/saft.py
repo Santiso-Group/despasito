@@ -65,7 +65,7 @@ class EosType(EosTemplate):
         A dictionary where bead names are the keys to access EOS self interaction parameters:
 
         - mass: Bead mass [kg/mol]
-        - epsilonHB-\*: Optional, Interaction energy between each bead and association site. Asterisk represents string from sitenames.
+        - epsilonHB-\*-\*: Optional, Interaction energy between each bead and association site. Asterisk represents string from sitenames.
         - K-\*-\*: Optional, Bonding volume between each association site. Asterisk represents two strings from sitenames.
         - rc-\*-\*: Optional, Cutoff distance for association sites. Asterisk represents two strings from sitenames.
         - rd-\*-\*: Optional, Site position. Asterisk represents two strings from sitenames.
@@ -75,7 +75,7 @@ class EosType(EosTemplate):
     cross_library : dict, Optional, default={}
         Optional library of bead cross interaction parameters. As many or as few of the desired parameters may be defined for whichever group combinations are desired.
 
-        - epsilonHB-\*: Optional, Interaction energy between each bead and association site. Asterisk represents string from sitenames.
+        - epsilonHB-\*-\*: Optional, Interaction energy between each bead and association site. Asterisk represents string from sitenames.
         - K-\*-\*: Optional, Bonding volume between each association site. Asterisk represents two strings from sitenames.
         - rc-\*-\*: Optional, Cutoff distance for association sites. Asterisk represents two strings from sitenames.
         - rd-\*-\*: Optional, Site position. Asterisk represents two strings from sitenames.
@@ -456,28 +456,6 @@ class EosType(EosTemplate):
 
         return max_density
 
-    def guess_parameters(self, parameter, bead_names):
-        """
-        Generate initial guesses for the parameters to be fit.
-
-        Parameters
-        ----------
-        parameter : str
-            Parameter to be fit. See EOS documentation for supported parameter names.
-        bead_names : list
-            Bead names to be changed. For a self interaction parameter, the length will be 1, for a cross interaction parameter, the length will be two.
-
-        Returns
-        -------
-        param_initial_guess : numpy.ndarray, 
-            An initial guess for parameter, it will be optimized throughout the process.
-        """
-
-        param_name = parameter.split("-")[0]
-        param_value = super().guess_parameters(param_name, bead_names)
-
-        return param_value
-
     def check_bounds(self, parameter, param_name, bounds):
         """
         Generate initial guesses for the parameters to be fit.
@@ -497,7 +475,8 @@ class EosType(EosTemplate):
             A screened and possibly corrected low and a high value for the parameter, param_name
         """
 
-        parameter = param_name.split("-")[0]
+        # Remove association site names 
+        param_name = param_name.split("-")[0]
         bounds_new = super().check_bounds(parameter, param_name, bounds)
         
         return bounds_new

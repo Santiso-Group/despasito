@@ -408,21 +408,21 @@ def obj_function_form(data_test, data0, weights=1.0, method="average-squared-dev
     data_tmp = np.array([(data_test[i]-data0[i])/data0[i] for i in range(len(data_test)) if not np.isnan((data_test[i]-data0[i])/data0[i])])
 
     if method == "average-squared-deviation":
-        obj_value = np.mean(data_tmp**2)
+        obj_value = np.mean(data_tmp**2*weights)
 
     elif method == "sum-squared-deviation":
-        obj_value = np.sum(data_tmp**2)
+        obj_value = np.sum(data_tmp**2*weights)
 
     elif method == "sum-squared-deviation-boltz":
         data_min = np.min(data_tmp)
-        obj_value = np.sum(data_tmp**2*np.exp((data_min-data_tmp)/np.abs(data_min)))
+        obj_value = np.sum(data_tmp**2*weights*np.exp((data_min-data_tmp)/np.abs(data_min)))
 
     elif method == "sum-deviation-boltz":
         data_min = np.min(data_tmp)
-        obj_value = np.sum(data_tmp*np.exp((data_min-data_tmp)/np.abs(data_min)))
+        obj_value = np.sum(data_tmp*weights*np.exp((data_min-data_tmp)/np.abs(data_min)))
 
     elif method == "percent-absolute-average-deviation":
-        obj_value = np.mean(np.abs(data_tmp))*100
+        obj_value = np.mean(np.abs(data_tmp)*weights)*100
 
     if len(data_tmp) == 0:
         obj_value = np.nan

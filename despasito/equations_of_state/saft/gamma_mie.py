@@ -136,7 +136,8 @@ class SaftType():
     def __init__(self, **kwargs):
     
         self.Aideal_method = "Abroglie"
-        self.parameter_types = ["epsilon", "sigma", "lambdar", "lambdaa", "Sk", "rc", "rd", "epsilonHB", "K"]
+        self.parameter_types = ["epsilon", "sigma", "lambdar", "lambdaa", "Sk"]
+        self._parameter_defaults = {"epsilon":None, "lambdar":None, "lambdaa":None, "sigma":None, "Sk": 1.0, "Vks": 1.0}
         self.parameter_bound_extreme = {"epsilon":[100.0,1000.],
                                         "sigma":[0.1,1.0],
                                         "lambdar":[6.0,100.],
@@ -164,15 +165,17 @@ class SaftType():
             elif not hasattr(self, key):
                 setattr(self, key, kwargs[key])
 
+        self.bead_library = tb.check_bead_parameters(self.bead_library, self._parameter_defaults)
+
         if 'cross_library' not in kwargs:
             self.cross_library = {}
         else:
             self.cross_library = kwargs['cross_library']
 
         if 'Vks' not in self.eos_dict:
-            self.eos_dict['Vks'] = tb.extract_property("Vks",self.bead_library,self.beads)
+            self.eos_dict['Vks'] = tb.extract_property("Vks",self.bead_library,self.beads, default=1.0)
         if 'Sk' not in self.eos_dict:
-            self.eos_dict['Sk'] = tb.extract_property("Sk",self.bead_library,self.beads)
+            self.eos_dict['Sk'] = tb.extract_property("Sk",self.bead_library,self.beads, default=1.0)
 
         # Initialize temperature attribute
         if not hasattr(self, 'T'):
@@ -866,6 +869,8 @@ class SaftType():
 
         self.bead_library.update(bead_library)
         self.cross_library.update(cross_library)
+
+        self.eos_dict['Sk'] = tb.extract_property("Sk",self.bead_library,self.beads, default=1.0)
 
         output = tb.cross_interaction_from_dict( self.beads, self.bead_library, self.combining_rules, cross_library=self.cross_library)
         self.eos_dict["sigmakl"] = output["sigma"]

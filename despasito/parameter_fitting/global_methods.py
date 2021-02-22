@@ -1,3 +1,8 @@
+"""
+
+The function names of this module represents global optimization methods that can be specified.
+
+"""
 
 import os
 import numpy as np

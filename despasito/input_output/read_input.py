@@ -264,7 +264,7 @@ def process_param_fit_inputs(thermo_dict):
     new_thermo_dict = {"exp_data":{}}
 
     for key, value in thermo_dict.items():
-        if (isinstance(value,dict) and "data_class_type" in value):
+        if isinstance(value,dict) and "data_class_type" in value:
             new_thermo_dict["exp_data"][key] = process_exp_data(value)
         else:
             new_thermo_dict[key] = value
@@ -272,7 +272,7 @@ def process_param_fit_inputs(thermo_dict):
     test1 = set(["exp_data","optimization_parameters"]).issubset(list(new_thermo_dict.keys()))
     test2 = set(["fit_bead","fit_parameter_names"]).issubset(list(new_thermo_dict["optimization_parameters"].keys()))
     if not all([test1,test2]):
-        raise ValueError("An exp_data dictionary as well as an optimization_parameters dictionary with fit_beads and fit_parameter_names must be provided.")
+        raise ValueError("An exp_data dictionary (dictionary with 'data_class_type' key) as well as an optimization_parameters dictionary with 'fit_bead' and 'fit_parameter_names' must be provided.")
 
     return new_thermo_dict
 

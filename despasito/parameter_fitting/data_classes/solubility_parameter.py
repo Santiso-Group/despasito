@@ -30,19 +30,29 @@ class Data(ExpDataTemplate):
     data_dict : dict
         Dictionary of exp data of saturation properties.
 
-        * calculation_type : str, Optional, default='solubility_parameter'
-        * T : list, List of temperature values for calculation
-        * P : list, List of pressure values used in calculations
-        * xi : list, List of liquid mole fractions used in calculations.
-        * weights : dict, A dictionary where each key is the header used in the exp. data file. The value associated with a header can be a list as long as the number of data points to multiply by the objective value associated with each point, or a float to multiply the objective value of this data set.
-        * density_opts : dict, Optional, default={"min_density_fraction":(1.0 / 60000.0), "density_increment":10.0, "max_volume_increment":1.0E-4}, Dictionary of options used in calculating pressure vs. mole fraction curves.
+        * calculation_type (str) - Optional, default='solubility_parameter'
+        * eos_obj (obj) - Equation of state object
+        * T (list) - List of temperature values for calculation
+        * P (list) - List of pressure values used in calculations
+        * xi (list) - List of liquid mole fractions used in calculations.
+        * weights (dict) - A dictionary where each key is the header used in the exp. data file. The value associated with a header can be a list as long as the number of data points to multiply by the objective value associated with each point, or a float to multiply the objective value of this data set.
+        * density_opts (dict) - Optional, default={"min_density_fraction":(1.0 / 60000.0), "density_increment":10.0, "max_volume_increment":1.0E-4}, Dictionary of options used in calculating pressure vs. mole fraction curves.
+        * kwargs for :func:`~despasito.parameter_fitting.fit_functions.obj_function_form`
 
     Attributes
     ----------
     name : str
         Data type, in this case solubility_parameter
+    Eos : obj
+        Equation of state object
     weights : dict, Optional, default: {"some_property": 1.0 ...}
         Dictionary corresponding to thermodict, with weighting factor or vector for each system property used in fitting
+    obj_opts : dict
+        Keywords to compute the objective function with :func:`~despasito.parameter_fitting.fit_functions.obj_function_form`.
+    npoints : int
+        Number of sets of system conditions this object computes
+    result_keys : list
+        Thermodynamic property names used in calculation of objective function. In in this case: ["rhol", "delta"]
     thermodict : dict
         Dictionary of inputs needed for thermodynamic calculations
         

@@ -114,6 +114,10 @@ class SaftType():
             elif not hasattr(self, key):
                 setattr(self, key, kwargs[key])
 
+        # Check bead_library to be sure all parameters are present. If one is missing that has a standard default then that is added
+        self._parameter_defaults = {"epsilon":None, "lambdar":None, "lambdaa":None, "sigma":None, "Sk": 1.0, "Vks": 1.0}
+        self.bead_library = tb.check_bead_parameters(self.bead_library, self._parameter_defaults)
+
         if 'cross_library' not in kwargs:
             self.cross_library = {}
         else:

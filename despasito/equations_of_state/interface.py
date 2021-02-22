@@ -160,20 +160,19 @@ class EosTemplate(ABC):
         if not set(bead_names).issubset(self.beads):
             raise ValueError("The bead names {} were given, but they are not in the allowed list: {}".format(", ".join(bead_names),", ".join(self.beads)))
 
-        if param_name not in self.parameter_types:
-            raise ValueError("The parameter name {} is not found in the allowed parameter types: {}".format(param_name,", ".join(self.parameter_types)))
-
         param_value = None
         # Self interaction parameter
         if len(bead_names) == 1:
-            if bead_names[0] in self.bead_library:
+            if bead_names[0] in self.bead_library and param_name in self.bead_library[bead_names[0]]:
                 param_value = self.bead_library[bead_names[0]][param_name]
         # Cross interaction parameter
         elif len(bead_names) == 2:
             if bead_names[1] in self.cross_library and bead_names[0] in self.cross_library[bead_names[1]]:
-                param_value = self.cross_library[bead_names[1]][bead_names[0]][param_name]
+                if param_name in self.cross_library[bead_names[1]][bead_names[0]]:
+                    param_value = self.cross_library[bead_names[1]][bead_names[0]][param_name]
             elif bead_names[0] in self.cross_library and bead_names[1] in self.cross_library[bead_names[0]]:
-                param_value = self.cross_library[bead_names[0]][bead_names[1]][param_name]
+                if param_name in self.cross_library[bead_names[0]][bead_names[1]]:
+                    param_value = self.cross_library[bead_names[0]][bead_names[1]][param_name]
 
         if param_value == None:
             bounds = self.check_bounds(bead_names[0], param_name, np.empty(2))
@@ -260,25 +259,25 @@ class EosTemplate(ABC):
         if not set(bead_names).issubset(self.beads):
             raise ValueError("The bead names {} were given, but they are not in the allowed list: {}".format(", ".join(bead_names),", ".join(self.beads)))
 
-        if param_name in self.parameter_types:
-            # Self interaction parameter
-            if len(bead_names) == 1:
-                if bead_names[0] in self.bead_library:
-                    self.bead_library[bead_names[0]][param_name] = param_value
-                else:
-                    self.bead_library[bead_names[0]] = {param_name: param_value}
-            # Cross interaction parameter
-            elif len(bead_names) == 2:
-                if bead_names[1] in self.cross_library and bead_names[0] in self.cross_library[bead_names[1]]:
-                    self.cross_library[bead_names[1]][bead_names[0]][param_name] = param_value
-                elif bead_names[0] in self.cross_library:
-                    if bead_names[1] in self.cross_library[bead_names[0]]:
-                        self.cross_library[bead_names[0]][bead_names[1]][param_name] = param_value
-                    else:
-                        self.cross_library[bead_names[0]][bead_names[1]] = {param_name: param_value}
-                else:
-                    self.cross_library[bead_names[0]] = {bead_names[1]: {param_name: param_value}}
-
-        else:
+        if not any([x in param_name for x in self.parameter_types]):
             raise ValueError("The parameter name {} is not found in the allowed parameter types: {}".format(param_name,", ".join(self.parameter_types)))
+
+        # Self interaction parameter
+        if len(bead_names) == 1:
+            if bead_names[0] in self.bead_library:
+                self.bead_library[bead_names[0]][param_name] = param_value
+            else:
+                self.bead_library[bead_names[0]] = {param_name: param_value}
+        # Cross interaction parameter
+        elif len(bead_names) == 2:
+            if bead_names[1] in self.cross_library and bead_names[0] in self.cross_library[bead_names[1]]:
+                self.cross_library[bead_names[1]][bead_names[0]][param_name] = param_value
+            elif bead_names[0] in self.cross_library:
+                if bead_names[1] in self.cross_library[bead_names[0]]:
+                    self.cross_library[bead_names[0]][bead_names[1]][param_name] = param_value
+                else:
+                    self.cross_library[bead_names[0]][bead_names[1]] = {param_name: param_value}
+            else:
+                self.cross_library[bead_names[0]] = {bead_names[1]: {param_name: param_value}}
+
 
