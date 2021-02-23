@@ -8,7 +8,7 @@ from . import combining_rule_types
 logger = logging.getLogger(__name__)
 
 def remove_insignificant_components(xi_old,massi_old):
-    """
+    r"""
     This function will remove any components with mole fractions less than or equal to machine precision.
 
     Parameters
@@ -18,7 +18,7 @@ def remove_insignificant_components(xi_old,massi_old):
     massi_old : numpy.ndarray
         Mass for each component [kg/mol]
 
-   Returns
+    Returns
     -------
     xi_new : numpy.ndarray
         Mole fraction of each component, sum(xi) should equal 1.0

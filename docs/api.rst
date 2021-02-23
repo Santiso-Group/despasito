@@ -23,6 +23,8 @@ Each module will then need to replicate our main command line function and call 
 
 Some steps could be skipped if your script already contains the appropriate output of a given step.
 
+The intermediate logging provided in the Input File Schema can also be accessed for imported functions through the :func:`initiate_logger <despasito.initiate_logger>`.
+
 Input File Schema
 -----------------
 

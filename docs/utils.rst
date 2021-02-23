@@ -2,8 +2,6 @@
 Utilities
 =========================
 
-Parallelization
----------------------------
 
 Click below!
 
@@ -12,16 +10,7 @@ Click below!
    :toctree: _autosummary
 
    utils.parallelization
-
-General Toolbox
----------------------------
-
-Click below!
-
-.. currentmodule:: despasito
-.. autosummary::
-   :toctree: _autosummary
-
    utils.general_toolbox
+   initiate_logger
 
 

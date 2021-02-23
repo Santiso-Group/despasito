@@ -2,9 +2,9 @@
 
 r"""
     
-    EOS object for SAFT-:math:`\gamma`-Mie
-    
-    Equations referenced in this code are from V. Papaioannou et al. J. Chem. Phys. 140 054107 2014
+    Parent SAFT EOS class
+
+    An additional class with variant specifics imported from ``saft_type.py`` completes the EOS.
     
 """
 import sys
