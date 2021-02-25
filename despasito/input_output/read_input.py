@@ -29,6 +29,27 @@ def append_data_file_path(input_dict, path='.'):
       if isinstance(val,dict) and 'file' in val:
          input_dict[key]['file'] = os.path.join(path, input_dict[key]['file'])
 
+def json_to_dict(filename):
+    r"""
+    Extract json file as a dictionary
+
+    Parameters
+    ----------
+    filename : str
+        File name and path leading to json file location
+  
+    Returns
+    -------
+    dictionary : dict
+        Dictionary resulting from json file
+    """
+
+    with open(filename, 'r') as f:
+        output = f.read()
+    dictionary = json.loads(output)
+
+    return dictionary
+
 
 def extract_calc_data(input_fname, path='.', **thermo_dict):
 
@@ -57,8 +78,7 @@ def extract_calc_data(input_fname, path='.', **thermo_dict):
     """
 
     ## Extract dictionary from input file
-    with open(input_fname, 'r') as input_file:
-        input_dict = json.loads(input_file.read())
+    input_dict = json_to_dict(input_fname)
 
     # Look for data (library) files in the user-supplied path
     append_data_file_path(input_dict, path)
@@ -79,17 +99,11 @@ def extract_calc_data(input_fname, path='.', **thermo_dict):
         raise ValueError("Bead configuration line is missing for thermodynamic calculation.")
 
     #read EOS groups file
-    with open(input_dict['EOSgroup'], 'r') as f:
-        output = f.read()
-    eos_dict['bead_library'] = json.loads(output)
-
-    #read EOS cross file
-    try:
-        with open(input_dict['EOScross'], 'r') as f:
-            output = f.read()
-        eos_dict['cross_library'] = json.loads(output)
+    eos_dict['bead_library'] = json_to_dict(input_dict['EOSgroup'])
+    if "EOScross" in input_dict:
+        eos_dict['cross_library'] = json_to_dict(input_dict['EOScross'])
         logger.info("Cross interaction parameters have been accepted")
-    except Exception:
+    else:
         logger.info("No EOScross file specified")
 
     # Extract relevant system state inputs
@@ -178,8 +192,7 @@ def make_xi_matrix(filename):
         Array of number of components by number of bead types. Defines the number of each type of group in each component.
     """
 
-    f = open(filename, 'r').read()
-    comp = json.loads(f)
+    comp = json_to_dict(filename)
     beads, molecular_composition = process_bead_data(comp)
 
     return xi, beads, molecular_composition

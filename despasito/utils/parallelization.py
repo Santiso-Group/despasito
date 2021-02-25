@@ -1,3 +1,8 @@
+"""
+
+Parallelization class to handle processing threads and logging.
+
+"""
 
 import sys
 import numpy as np

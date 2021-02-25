@@ -62,7 +62,7 @@ def bubble_pressure(Eos, **sys_dict):
     ## Extract and check input data
     thermo_keys = ['Tlist', 'xilist']
     thermo_dict = gtb.check_length(sys_dict,thermo_keys)
-    npoints = len(thermo_dict["xilist"])
+    npoints = len(thermo_dict[list(thermo_dict.keys())[0]])
 
     thermo_defaults = [constants.standard_temperature]
     thermo_dict.update(gtb.set_defaults(thermo_dict, "Tlist", thermo_defaults, lx=npoints))
@@ -148,9 +148,9 @@ def dew_pressure(Eos, **sys_dict):
     Pguess : list/float, Optional
         [Pa] Guess the system pressure at the dew point. If a list of length 1 is provided, that value is used for all temperature-composition sets given.
     Pmin : list, Optional
-        [Pa] Set the upper bound for the minimum system pressure at the bubble point. If not defined, the default in :func:`~despasito.thermodynamics.calc.calc_dew_pressure` is used. If a list of length 1 is provided, that value is used for all temperature-composition sets given.
+        [Pa] Set the upper bound for the minimum system pressure at the dew point. If not defined, the default in :func:`~despasito.thermodynamics.calc.calc_dew_pressure` is used. If a list of length 1 is provided, that value is used for all temperature-composition sets given.
     Pmax : list, Optional
-        [Pa] Set the upper bound for the maximum system pressure at the bubble point. If not defined, the default in :func:`~despasito.thermodynamics.calc.calc_dew_pressure` is used. If a list of length 1 is provided, that value is used for all temperature-composition sets given.
+        [Pa] Set the upper bound for the maximum system pressure at the dew point. If not defined, the default in :func:`~despasito.thermodynamics.calc.calc_dew_pressure` is used. If a list of length 1 is provided, that value is used for all temperature-composition sets given.
     MultiprocessingObject : obj, Optional
         Multiprocessing object, :class:`~despasito.utils.parallelization.MultiprocessingJob`
     kwargs, Optional
@@ -180,7 +180,6 @@ def dew_pressure(Eos, **sys_dict):
     thermo_keys = ['Tlist', 'yilist']
     thermo_dict = gtb.check_length(sys_dict,thermo_keys)
     npoints = len(thermo_dict[list(thermo_dict.keys())[0]])
-    npoints = len(thermo_dict["yilist"])
 
     thermo_defaults = [constants.standard_temperature]
     thermo_dict.update(gtb.set_defaults(thermo_dict, "Tlist", thermo_defaults, lx=npoints))
@@ -248,6 +247,173 @@ def _dew_pressure_wrapper(args):
     logger.info("P (Pa), xi: {} {}".format(P, xi))
 
     return P, xi, flagv, flagl, obj
+
+
+def activity_coefficient(Eos, **sys_dict):
+
+    r"""
+    Calculate the activity coefficient with a variety of methods.
+
+    Obtaining the activity coefficient requires the temperature, pressure, vapor composition, and liquid composition, but if one is missing, the necessary calculation computes it.
+    
+    Parameters
+    ----------
+    Eos : obj
+        An instance of the defined EOS class to be used in thermodynamic computations.
+    Tlist : list, Optional, default=298.15
+        [K] Temperature of the system corresponding to composition in yilist. If one set is given, this pressure will be used for all compositions.
+    xilist : list, Optional
+        List of sets of component mole fraction, where sum(yi)=1.0 for each set. Each set of components corresponds to a temperature in Tlist, or if one set is given, this composition will be used for all temperatures. If this value is not provided, a dew point calculation is inititated if the pressure is also absent, and a flash calculation if yilist is absent.
+    yilist : list, Optional
+        List of sets of component mole fraction, where sum(yi)=1.0 for each set. Each set of components corresponds to a temperature in Tlist, or if one set is given, this composition will be used for all temperatures. If this value is not provided, a bubble point calculation is inititated if the pressure is also absent, and a flash calculation if xilist is absent.
+    Plist : list, Optional
+        [Pa] Pressure of the system corresponding to Tlist. If one value is given, this pressure will be used for all temperatures. If this value is not provided, a dew or bubble point calculation is inititated to find it.
+    Pguess : list/float, Optional
+        [Pa] If the pressure and either xilist or yilist is not provided, guess the system pressure at the dew/bubble point respectively. If a list of length 1 is provided, that value is used for all temperature-composition sets given.
+    Pmin : list, Optional
+        [Pa] If the pressure and either xilist or yilist is not provided, set a minimum bounds in pressure for the dew/bubble point respectively. If not defined, the default in :func:`~despasito.thermodynamics.calc.calc_dew_pressure` is used. If a list of length 1 is provided, that value is used for all temperature-composition sets given.
+    Pmax : list, Optional
+        [Pa] If the pressure and either xilist or yilist is not provided, set a maximum bounds in pressure for the dew/bubble point respectively. If not defined, the default in :func:`~despasito.thermodynamics.calc.calc_dew_pressure` is used. If a list of length 1 is provided, that value is used for all temperature-composition sets given.
+    MultiprocessingObject : obj, Optional
+        Multiprocessing object, :class:`~despasito.utils.parallelization.MultiprocessingJob`
+    kwargs, Optional
+        Keyword arguments for :func:`~despasito.thermodynamics.calc.calc_saturation_properties` and either :func:`~despasito.thermodynamics.calc.calc_dew_pressure`, :func:`~despasito.thermodynamics.calc.calc_bubble_pressure`, or :func:`~despasito.thermodynamics.calc.calc_flash`, depending on which two of xi, yi, or P is missing.
+
+    Returns
+    -------
+    output_dict : dict
+        Output of dictionary containing given and calculated values
+
+        - T: Temperature array generated from given instructions
+        - P: Given or calculated array of pressures
+        - xi: Given or calculated array of liquid compositions
+        - yi: Given or calculated array of vapor compositions
+        - flagv: Phase flag for vapor given temperature and calculated pressure, a value of 0 is vapor, 1 is liquid, 2 mean a critical fluid, 3 means that neither is true, 4 means we should assume ideal gas
+        - flagl: Phase flag for liquid given temperature and calculated pressure, a value of 0 is vapor, 1 is liquid, 2 mean a critical fluid, 3 means that neither is true, 4 means we should assume ideal gas
+        - obj: List of objective values if a calculation was needed
+        - Psat: List of calculated saturation pressures
+        - gamma: List of calculated activity coefficients
+
+    """
+
+    if "xilist" in sys_dict and not gtb.isiterable(sys_dict["xilist"][0]):
+        sys_dict["xilist"] = np.array([sys_dict["xilist"]],float)
+    if "yilist" in sys_dict and not gtb.isiterable(sys_dict["yilist"][0]):
+        sys_dict["yilist"] = np.array([sys_dict["yilist"]],float)
+
+    ## Extract and check input data
+    thermo_keys = ['Tlist', 'yilist', 'xilist', 'Plist']
+    thermo_dict = gtb.check_length(sys_dict,thermo_keys)
+    npoints = len(thermo_dict[list(thermo_dict.keys())[0]])
+
+    ## Determine Mode
+    if "xilist" not in thermo_dict:
+        if "yilist" not in thermo_dict:
+            if "Plist" in thermo_dict:
+                mode = "flash"
+            else:
+                mode = None
+        else:
+            if "Plist" in thermo_dict:
+                thermodict["Pguess"] = thermo_dict["Plist"]
+                logger.info("Using given pressure as initial guess")
+            mode = "dew_point"
+    elif "yilist" not in thermo_dict:
+        if "Plist" in thermo_dict:
+            thermo_dict["Pguess"] = thermo_dict["Plist"]
+            logger.info("Using given pressure as initial guess")
+        mode = "bubble_point"
+    else:
+        mode = "standard"
+
+    if mode == None:
+        raise ValueError("Two of the following system properties must be provided: Tlist, Plist, xilist, or yilist")
+    else:
+        logger.info("Activity coefficient being calculated in {} mode.".format(mode))
+
+    ## Set Defaults
+    thermo_defaults = [constants.standard_temperature, np.nan*np.ones(Eos.number_of_components), np.nan*np.ones(Eos.number_of_components), np.nan]
+    thermo_dict.update(gtb.set_defaults(thermo_dict, thermo_keys, thermo_defaults, lx=npoints))
+
+    ## Optional values
+    optional_keys = ["Pguess", "Pmin", "Pmax"]
+    opts = gtb.check_length(sys_dict, optional_keys, lx=npoints)
+    if opts:
+        logger.info("Accepted user defined variables: {}".format(", ".join(list(opts.keys()))))
+
+    # Delete processed keys
+    for key in thermo_keys+optional_keys:
+        if key in sys_dict:
+            del sys_dict[key]
+
+    if 'MultiprocessingObject' in sys_dict:
+        MultiprocessingObject = sys_dict['MultiprocessingObject']
+        del sys_dict['MultiprocessingObject']
+        flag_use_mp_object = True
+    else:
+        flag_use_mp_object = False
+
+    opts.update(sys_dict) # Add unprocessed options
+
+    ## Calculate P and yi
+    per_job_var = ["Pguess", "Pmin", "Pmax"]
+    inputs = []
+    for i in range(npoints):
+        opts_tmp = opts.copy()
+        for key in per_job_var:
+            if key in opts_tmp:
+                opts_tmp[key] = opts_tmp[key][i]
+        inputs.append((thermo_dict["Tlist"][i], thermo_dict["Plist"][i], thermo_dict["xilist"][i], thermo_dict["yilist"][i], Eos, opts_tmp, mode))
+
+    if flag_use_mp_object:
+        tmp = MultiprocessingObject.pool_job(_activity_coefficient_wrapper, inputs)
+    else:
+        tmp = MultiprocessingJob.serial_job(_activity_coefficient_wrapper, inputs)
+    T_list, P_list, xi_list, yi_list, flagv_list, flagl_list, obj_list, Psat_list, gamma_list = tmp
+
+    logger.info("--- Calculation dew_pressure Complete ---")
+
+    return {"T":T_list,"xi":xi_list,"P":P_list,"yi":yi_list,"flagl":flagl_list,"flagv":flagv_list, "obj":obj_list, "Psat": Psat_list, "gamma":gamma_list}
+
+def _activity_coefficient_wrapper(args):
+    r""" Wrapper for parallelized use of 'dew_pressure' calculation type.
+    """
+
+    T, P, xi, yi, Eos, opts, mode = args
+    logger.info("T (K), yi: {} {}, Let's Begin!".format(T, yi))
+
+    try:
+        if "pressure_options" in opts and "method" in opts["pressure_options"]:
+            opts['method'] = opts["pressure_options"]["method"]
+            del opts["pressure_options"]["method"]
+
+        if mode == "dew_point":
+            P, xi, flagl, flagv, obj = calc.calc_dew_pressure(yi, T, Eos, **opts)
+        elif mode == "bubble_point":
+            P, yi, flagv, flagl, obj = calc.calc_bubble_pressure(xi, T, Eos, **opts)
+        elif mode == "flash":
+            xi, flagl, yi, flagv, obj = calc.calc_flash(P, T, Eos, **opts)
+        elif mode == "standard":
+            flagl, flagv, obj = [np.nan, np.nan, np.nan]
+
+        gamma, Psat = calc.activity_coefficient(P, T, xi, yi, Eos, **opts)
+
+    except Exception:
+        logger.warning("In calculating the activity coefficient, {} calculation with T, P, xi, and yi inputs: {}, {}, {}, {} did not produce a valid result.".format(mode, T, P, xi, yi))
+        logger.debug("Calculation Failed:", exc_info=True)
+
+        if mode == "dew_point":
+            P, xi, flagl, flagv, obj, Psat, gamma = [np.nan, np.nan*np.ones(len(yi)), 3, 3, np.nan, np.nan, np.nan]
+        elif mode == "bubble_point":
+            P, yi, flagl, flagv, obj, Psat, gamma = [np.nan, np.nan*np.ones(len(xi)), 3, 3, np.nan, np.nan, np.nan]
+        elif mode == "flash":
+            xi, yi, flagl, flagv, obj, Psat, gamma = [np.nan*np.ones(Eos.number_of_components), np.nan*np.ones(Eos.number_of_components), 3, 3, np.nan, np.nan, np.nan]
+        elif mode == "standard":
+            flagl, flagv, obj, Psat, gamma = [np.nan, np.nan, np.nan, np.nan, np.nan]
+
+    logger.info("Psat (Pa), activity coefficient: {} {}".format(Psat, gamma))
+
+    return T, P, xi, yi, flagv, flagl, obj, Psat, gamma
 
 
 def flash(Eos, **sys_dict):
@@ -375,7 +541,7 @@ def saturation_properties(Eos, **sys_dict):
     if "Tlist" not in thermo_dict:
         thermo_dict["Tlist"] = np.array([constants.standard_temperature])
         logger.info("Assuming standard temperature, {}".format(constants.standard_temperature))
-    npoints = len(thermo_dict["Tlist"])
+    npoints = len(thermo_dict[list(thermo_dict.keys())[0]])
 
     thermo_defaults = [constants.standard_temperature, np.array([[1.0] for x in range(npoints)])]
     thermo_dict.update(gtb.set_defaults(thermo_dict, thermo_keys, thermo_defaults, lx=npoints))

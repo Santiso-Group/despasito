@@ -2427,6 +2427,8 @@ def calc_dew_pressure(yi, T, Eos, density_opts={}, mole_fraction_options={}, Pgu
         Choose the method used to solve the dew point calculation
     pressure_options : dict, Optional, default={}
         Options used in the given method, "method", to solve the outer loop in the solving algorithm
+    kwargs
+        Keyword arguments for :func:`~despasito.thermodynamics.calc.calc_saturation_properties`
 
     Returns
     -------
@@ -2452,7 +2454,7 @@ def calc_dew_pressure(yi, T, Eos, density_opts={}, mole_fraction_options={}, Pgu
     for i in range(np.size(yi)):
         yi_tmp = np.zeros_like(yi)
         yi_tmp[i] = 1.0
-        Psat[i], _, _ = calc_saturation_properties(T, yi_tmp, Eos, density_opts)
+        Psat[i], _, _ = calc_saturation_properties(T, yi_tmp, Eos, density_opts=density_opts, **kwargs)
         if np.isnan(Psat[i]):
             Psat[i] = Psat_set
             logger.warning("Component, {}, is above its critical point. Psat is assumed to be {}.".format(i+1,Psat[i]))
@@ -2524,6 +2526,8 @@ def calc_bubble_pressure(xi, T, Eos, density_opts={}, mole_fraction_options={}, 
         Choose the method used to solve the dew point calculation
     pressure_options : dict, Optional, default={}
         Options used in the given method, "method", to solve the outer loop in the solving algorithm
+    kwargs
+        Keyword arguments for :func:`~despasito.thermodynamics.calc.calc_saturation_properties`
 
     Returns
     -------
@@ -2548,7 +2552,7 @@ def calc_bubble_pressure(xi, T, Eos, density_opts={}, mole_fraction_options={}, 
     for i in range(np.size(xi)):
         xi_tmp = np.zeros_like(xi)
         xi_tmp[i] = 1.0
-        Psat[i], _, _ = calc_saturation_properties(T, xi_tmp, Eos, density_opts)
+        Psat[i], _, _ = calc_saturation_properties(T, xi_tmp, Eos, density_opts=density_opts, **kwargs)
         if np.isnan(Psat[i]):
             Psat[i] = Psat_set
             logger.warning("Component, {}, is above its critical point. Psat is assumed to be {}.".format(i+1,Psat[i]))
@@ -2685,6 +2689,8 @@ def calc_flash(P, T, Eos, density_opts={}, maxiter=200, tol=1e-9, max_mole_fract
         Set the vapor and liquid mole fraction of component one to be less than this number. Useful for diagrams with multiple solutions, such as those with an azeotrope.
     Psat_set : float, Optional, default=1e+7
         [Pa] Set the saturation pressure if the pure component is above the critical point in these conditions
+    kwargs
+        Keyword arguments for :func:`~despasito.thermodynamics.calc.calc_saturation_properties`
 
     Returns
     -------
@@ -2713,7 +2719,7 @@ def calc_flash(P, T, Eos, density_opts={}, maxiter=200, tol=1e-9, max_mole_fract
     for i in range(np.size(xi)):
         xi_tmp = np.zeros_like(xi)
         xi_tmp[i] = 1.0
-        Psat[i], _, _ = calc_saturation_properties(T, xi_tmp, Eos, density_opts)
+        Psat[i], _, _ = calc_saturation_properties(T, xi_tmp, Eos, density_opts=density_opts, **kwargs)
         if np.isnan(Psat[i]):
             Psat[i] = Psat_set
             logger.warning("Component, {}, is above its critical point. Psat is assumed to be {}.".format(i+1,Psat[i]))
@@ -3041,6 +3047,8 @@ def fugacity_test_2(P, T, xi, rho, Eos, fractional_change=1e-1, **kwargs):
 
 def activity_coefficient(P, T, xi, yi, Eos, **kwargs):
     r"""
+
+    Calculation activity coefficient given T, P, yi, and xi.
     
     Parameters
     ----------
@@ -3054,6 +3062,8 @@ def activity_coefficient(P, T, xi, yi, Eos, **kwargs):
         Vapor mole fraction of each component, sum(xi) should equal 1.0
     Eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
+    kwargs
+        Keyword arguments for :func:`~despasito.thermodynamics.calc.calc_saturation_properties`
 
     Returns
     -------
@@ -3071,7 +3081,7 @@ def activity_coefficient(P, T, xi, yi, Eos, **kwargs):
     for i in range(ncomp):
         tmp = np.zeros(ncomp)
         tmp[i] = 1.
-        Psat[i], _, _ = calc_saturation_properties(T, tmp, Eos, **opts)
+        Psat[i], _, _ = calc_saturation_properties(T, tmp, Eos, **kwargs)
 
     activity_coefficient = yi*P/(Psat*xi)
 
