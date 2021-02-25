@@ -46,7 +46,7 @@ class EOStemplate(ABC):
         Output a guess for the given parameter type.
         """
         pass
-    
+
     @abstractmethod
     def check_bounds(self, fit_bead, param_name, bounds):
         """
@@ -60,4 +60,3 @@ class EOStemplate(ABC):
         Update a given parameter in EOS.
         """
         pass
-

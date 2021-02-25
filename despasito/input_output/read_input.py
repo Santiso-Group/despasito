@@ -15,8 +15,9 @@ import os
 #                                                                    #
 ######################################################################
 
-def append_data_file_path(input_dict, path='.'):
-   """
+
+def append_data_file_path(input_dict, path="."):
+    """
    Appends path to data file(s).
 
    Parameters
@@ -26,22 +27,23 @@ def append_data_file_path(input_dict, path='.'):
    path: str
        relative path to append to existing data files 
    """
-   if 'EOSgroup' in input_dict:
-      input_dict['EOSgroup'] = os.path.join(path, input_dict['EOSgroup'])
+    if "EOSgroup" in input_dict:
+        input_dict["EOSgroup"] = os.path.join(path, input_dict["EOSgroup"])
 
-   if 'EOScross' in input_dict:
-      input_dict['EOScross'] = os.path.join(path, input_dict['EOScross'])
+    if "EOScross" in input_dict:
+        input_dict["EOScross"] = os.path.join(path, input_dict["EOScross"])
 
-   for key, val in input_dict.items():
-      if 'file' in val:
-         input_dict[key]['file'] = os.path.join(path, input_dict[key]['file'])
+    for key, val in input_dict.items():
+        if "file" in val:
+            input_dict[key]["file"] = os.path.join(path, input_dict[key]["file"])
+
 
 ######################################################################
 #                                                                    #
 #                  Extract Bead Data                                 #
 #                                                                    #
 ######################################################################
-def extract_calc_data(input_fname, path='.', **args):
+def extract_calc_data(input_fname, path=".", **args):
 
     """
     Parse dictionary from .json input file into a dictionaries.
@@ -64,7 +66,7 @@ def extract_calc_data(input_fname, path='.', **args):
     logger = logging.getLogger(__name__)
 
     ## Extract dictionary from input file
-    with open(input_fname, 'r') as input_file:
+    with open(input_fname, "r") as input_file:
         input_dict = json.loads(input_file.read())
 
     # Look for data (library) files in the user-supplied path
@@ -76,58 +78,76 @@ def extract_calc_data(input_fname, path='.', **args):
         output_file = None
 
     ## Make bead data dictionary for EOS
-    #process input file
-    beads, nui = process_bead_data(input_dict['beadconfig'])
-    eos_dict = {'beads':beads,'nui':nui}
+    # process input file
+    beads, nui = process_bead_data(input_dict["beadconfig"])
+    eos_dict = {"beads": beads, "nui": nui}
 
-    #read EOS groups file
-    with open(input_dict['EOSgroup'], 'r') as f:
+    # read EOS groups file
+    with open(input_dict["EOSgroup"], "r") as f:
         output = f.read()
-    eos_dict['beadlibrary'] = json.loads(output)
+    eos_dict["beadlibrary"] = json.loads(output)
 
-    #read EOS cross file
+    # read EOS cross file
     try:
-        with open(input_dict['EOScross'], 'r') as f:
+        with open(input_dict["EOScross"], "r") as f:
             output = f.read()
-        eos_dict['crosslibrary'] = json.loads(output)
+        eos_dict["crosslibrary"] = json.loads(output)
         logger.info("Cross interaction parameters have been accepted")
     except:
         logger.info("No EOScross file specified")
 
     try:
-        eos_dict['sitenames'] = input_dict['association_site_names']
-        logger.info('Association sites have been accepted')
+        eos_dict["sitenames"] = input_dict["association_site_names"]
+        logger.info("Association sites have been accepted")
     except:
-        logger.info('No association sites specified')
+        logger.info("No association sites specified")
 
     if "eos" in input_dict:
-        eos_dict['eos'] = input_dict["eos"]
+        eos_dict["eos"] = input_dict["eos"]
 
     ## Make dictionary of data needed for thermodynamic calculation
     thermo_dict = {}
     # Extract relevant system state inputs
-    EOS_dict_keys = ['beadconfig', 'EOSgroup', 'EOScross','association_site_names',"output_file","eos"]
+    EOS_dict_keys = [
+        "beadconfig",
+        "EOSgroup",
+        "EOScross",
+        "association_site_names",
+        "output_file",
+        "eos",
+    ]
     for key, value in input_dict.items():
         if key not in EOS_dict_keys:
             thermo_dict[key] = value
 
     if "opt_params" not in thermo_dict:
-        logger.info("The following thermo calculation parameters have been provided: {}\n".format((", ".join(thermo_dict.keys()))))
-    else: # parameter fitting
+        logger.info(
+            "The following thermo calculation parameters have been provided: {}\n".format(
+                (", ".join(thermo_dict.keys()))
+            )
+        )
+    else:  # parameter fitting
         thermo_dict = process_param_fit_inputs(thermo_dict)
         tmp = ""
         for key, value in thermo_dict["exp_data"].items():
-            tmp += " {} ({}),".format(key,value["name"])
-        logger.info("The bead, {}, will have the parameters {}, fit using the following data:\n {}".format(thermo_dict["opt_params"]["fit_bead"],thermo_dict["opt_params"]["fit_params"],tmp))
+            tmp += " {} ({}),".format(key, value["name"])
+        logger.info(
+            "The bead, {}, will have the parameters {}, fit using the following data:\n {}".format(
+                thermo_dict["opt_params"]["fit_bead"],
+                thermo_dict["opt_params"]["fit_params"],
+                tmp,
+            )
+        )
 
     return eos_dict, thermo_dict, output_file
+
 
 ######################################################################
 #                                                                    #
 #                  Extract Density Plot  Parameters                  #
 #                                                                    #
 ######################################################################
-def file2paramdict(filename,delimiter=" "):
+def file2paramdict(filename, delimiter=" "):
 
     """
     Converted file directly into a dictionary.
@@ -147,10 +167,10 @@ def file2paramdict(filename,delimiter=" "):
         Resulting dictionary
     """
 
-    #logger = logging.getLogger(__name__)
+    # logger = logging.getLogger(__name__)
 
     dictionary = {}
-    with  open(filename, "r") as filedata:
+    with open(filename, "r") as filedata:
         for line in filedata:
             line.rstrip()
             linearray = line.split(delimiter)
@@ -162,8 +182,9 @@ def file2paramdict(filename,delimiter=" "):
                         dictionary[linearray[0]] = float(linearray[1])
                     else:
                         dictionary[linearray[0]] = linearray[1]
-    
+
     return dictionary
+
 
 ######################################################################
 #                                                                    #
@@ -190,9 +211,9 @@ def make_xi_matrix(filename):
         Array of number of components by number of bead types. Defines the number of each type of group in each component.
     """
 
-    #logger = logging.getLogger(__name__)
+    # logger = logging.getLogger(__name__)
 
-    f = open(filename, 'r').read()
+    f = open(filename, "r").read()
     comp = json.loads(f)
     beads, nui = process_bead_data(comp)
     return xi, beads, nui
@@ -221,9 +242,9 @@ def process_bead_data(bead_data):
         Array of number of components by number of bead types. Defines the number of each type of group in each component.
     """
 
-    #logger = logging.getLogger(__name__)
+    # logger = logging.getLogger(__name__)
 
-    #find list of unique beads
+    # find list of unique beads
     beads = []
     for i in range(len(bead_data)):
         for j in range(len(bead_data[i])):
@@ -238,6 +259,7 @@ def process_bead_data(bead_data):
                 if bead_data[i][j][0] == beads[k]:
                     nui[i, k] = bead_data[i][j][1]
     return beads, nui
+
 
 ######################################################################
 #                                                                    #
@@ -287,13 +309,15 @@ def process_param_fit_inputs(thermo_dict):
     logger = logging.getLogger(__name__)
 
     # Initial new dictionary that will have dictionary for extracted data
-    new_thermo_dict = {"exp_data":{}}
+    new_thermo_dict = {"exp_data": {}}
 
     for key, value in thermo_dict.items():
-        if key == "opt_params": 
+        if key == "opt_params":
             new_opt_params = {}
             keys_del = []
-            new_opt_params["bounds"] = [[0,1e+4] for x in range(len(value["fit_params"]))]
+            new_opt_params["bounds"] = [
+                [0, 1e4] for x in range(len(value["fit_params"]))
+            ]
             for key2, value2 in value.items():
                 if key2 == "fit_bead":
                     new_opt_params["fit_bead"] = value["fit_bead"]
@@ -302,41 +326,54 @@ def process_param_fit_inputs(thermo_dict):
                 elif key2 == "beadparams0":
                     new_opt_params["beadparams0"] = value["beadparams0"]
                 elif "bounds" in key2:
-                    tmp  = key2.replace("_bounds","")
+                    tmp = key2.replace("_bounds", "")
                     if tmp in value["fit_params"]:
                         ind = value["fit_params"].index(tmp)
                         new_opt_params["bounds"][ind] = value2
                     else:
-                        logger.warning("Bounds for parameter type '{}' were given, but this parameter is not defined to be fit.".format(tmp))
+                        logger.warning(
+                            "Bounds for parameter type '{}' were given, but this parameter is not defined to be fit.".format(
+                                tmp
+                            )
+                        )
                 else:
                     continue
                 keys_del.append(key2)
             for key2 in keys_del:
-                value.pop(key2,None)
+                value.pop(key2, None)
 
             if value:
-               logger.info("The opt_params keys: {}, were not used.".format(", ".join(list(value.keys()))))
+                logger.info(
+                    "The opt_params keys: {}, were not used.".format(
+                        ", ".join(list(value.keys()))
+                    )
+                )
             new_thermo_dict[key] = new_opt_params
 
-        elif (type(value) == dict and "datatype" in value):
+        elif type(value) == dict and "datatype" in value:
             new_thermo_dict["exp_data"][key] = process_exp_data(value)
 
         else:
             new_thermo_dict[key] = value
 
     # Move opt_params values to thermo_dict
-    keys = ["bounds","minimizer_dict"]
+    keys = ["bounds", "minimizer_dict"]
     for key in keys:
         if key in new_thermo_dict["opt_params"]:
             new_thermo_dict[key] = new_thermo_dict["opt_params"][key]
-            new_thermo_dict["opt_params"].pop(key,None)
+            new_thermo_dict["opt_params"].pop(key, None)
 
-    test1 = set(["exp_data","opt_params"]).issubset(list(new_thermo_dict.keys()))
-    test2 = set(["fit_bead","fit_params"]).issubset(list(new_thermo_dict["opt_params"].keys()))
-    if not all([test1,test2]):
-        raise ValueError("An exp_data and opt_params dictionary with, fit_beads and fit_params must be given")
+    test1 = set(["exp_data", "opt_params"]).issubset(list(new_thermo_dict.keys()))
+    test2 = set(["fit_bead", "fit_params"]).issubset(
+        list(new_thermo_dict["opt_params"].keys())
+    )
+    if not all([test1, test2]):
+        raise ValueError(
+            "An exp_data and opt_params dictionary with, fit_beads and fit_params must be given"
+        )
 
     return new_thermo_dict
+
 
 ######################################################################
 #                                                                    #
@@ -366,7 +403,7 @@ def process_exp_data(exp_data_dict):
         - name (str) - One of the supported data type objects to fit parameters
     """
 
-    #logger = logging.getLogger(__name__)
+    # logger = logging.getLogger(__name__)
 
     exp_data = {}
     for key, value in exp_data_dict.items():
@@ -379,6 +416,7 @@ def process_exp_data(exp_data_dict):
             exp_data[key] = value
 
     return exp_data
+
 
 ######################################################################
 #                                                                    #
@@ -403,40 +441,44 @@ def process_exp_data_file(fname):
         Dictionary of experimental data from file.
     """
 
-    #logger = logging.getLogger(__name__)
+    # logger = logging.getLogger(__name__)
 
     try:
-        data = np.transpose(np.genfromtxt(fname, delimiter=',',names=True,skip_header=1))
+        data = np.transpose(
+            np.genfromtxt(fname, delimiter=",", names=True, skip_header=1)
+        )
     except:
-        raise ValueError("Cannot import '{}', Check data file formatting.".format(fname))
-    file_dict = {name:data[name] for name in data.dtype.names}
-    
+        raise ValueError(
+            "Cannot import '{}', Check data file formatting.".format(fname)
+        )
+    file_dict = {name: data[name] for name in data.dtype.names}
+
     # Sort through properties
     key_del = []
-    xi, yi, zi = [[],[],[]]
+    xi, yi, zi = [[], [], []]
     for key, value in file_dict.items():
-       if "#" in key:
-           key.replace("#","").replace(" ","")
+        if "#" in key:
+            key.replace("#", "").replace(" ", "")
 
-       # Assuming mole fractions are listed starting at x1 and continue in order
-       if key.startswith("x"): 
-           xi.append(value)
-       elif key.startswith("y"):
-           yi.append(value)
-       elif key.startswith("z"):
-           zi.append(value)
-       else:
-           continue
-       key_del.append(key)
+        # Assuming mole fractions are listed starting at x1 and continue in order
+        if key.startswith("x"):
+            xi.append(value)
+        elif key.startswith("y"):
+            yi.append(value)
+        elif key.startswith("z"):
+            zi.append(value)
+        else:
+            continue
+        key_del.append(key)
 
     for key in key_del:
-        file_dict.pop(key,None)
+        file_dict.pop(key, None)
 
-    if xi: file_dict["xi"] = np.transpose(np.array([np.array(x) for x in xi]))
-    if yi: file_dict["yi"] = np.transpose(np.array([np.array(y) for y in yi]))
-    if zi: file_dict["zi"] = np.transpose(np.array([np.array(z) for z in zi]))
+    if xi:
+        file_dict["xi"] = np.transpose(np.array([np.array(x) for x in xi]))
+    if yi:
+        file_dict["yi"] = np.transpose(np.array([np.array(y) for y in yi]))
+    if zi:
+        file_dict["zi"] = np.transpose(np.array([np.array(z) for z in zi]))
 
     return file_dict
-
-
-

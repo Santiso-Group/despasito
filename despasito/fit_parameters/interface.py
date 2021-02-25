@@ -25,4 +25,3 @@ class ExpDataTemplate(ABC):
         Float representing objective function of from comparing predictions to experimental data.
         """
         pass
-

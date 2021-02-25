@@ -73,34 +73,52 @@ class Data(ExpDataTemplate):
         if "T" in data_dict:
             self._thermodict["Tlist"] = data_dict["T"]
         if "rhol" in data_dict:
-            key = 'rhol'
+            key = "rhol"
             self._thermodict["rhol"] = data_dict["rhol"]
             if key in self.weights:
-                if type(self.weights[key]) != float and len(self.weights[key]) != len(self._thermodict[key]):
-                    raise ValueError("Array of weights for '{}' values not equal to number of experimental values given.".format(key))
+                if type(self.weights[key]) != float and len(self.weights[key]) != len(
+                    self._thermodict[key]
+                ):
+                    raise ValueError(
+                        "Array of weights for '{}' values not equal to number of experimental values given.".format(
+                            key
+                        )
+                    )
         if "P" in data_dict:
             self._thermodict["Plist"] = data_dict["P"]
-            if 'P' in self.weights:
-                self.weights['Plist'] = self.weights.pop('P')
+            if "P" in self.weights:
+                self.weights["Plist"] = self.weights.pop("P")
         if "delta" in data_dict:
-            key = 'delta'
+            key = "delta"
             self._thermodict["delta"] = data_dict["delta"]
             if key in self.weights:
-                if type(self.weights[key]) != float and len(self.weights[key]) != len(self._thermodict[key]):
-                    raise ValueError("Array of weights for '{}' values not equal to number of experimental values given.".format(key))
+                if type(self.weights[key]) != float and len(self.weights[key]) != len(
+                    self._thermodict[key]
+                ):
+                    raise ValueError(
+                        "Array of weights for '{}' values not equal to number of experimental values given.".format(
+                            key
+                        )
+                    )
 
         tmp = ["Tlist", "delta"]
         if not all([x in self._thermodict.keys() for x in tmp]):
-            raise ImportError("Given solubility data, value(s) for T and delta should have been provided.")
+            raise ImportError(
+                "Given solubility data, value(s) for T and delta should have been provided."
+            )
 
         for key in self._thermodict.keys():
             if key not in self.weights:
-                if key != 'calculation_type':
+                if key != "calculation_type":
                     self.weights[key] = 1.0
 
-        logger.info("Data type 'solubility parameter' initiated with calctype, {}, and data types: {}.\nWeight data by: {}".format(self.calctype,", ".join(self._thermodict.keys()),self.weights))
+        logger.info(
+            "Data type 'solubility parameter' initiated with calctype, {}, and data types: {}.\nWeight data by: {}".format(
+                self.calctype, ", ".join(self._thermodict.keys()), self.weights
+            )
+        )
 
-        if 'rhodict' in data_dict:
+        if "rhodict" in data_dict:
             self._thermodict["rhodict"] = data_dict["rhodict"]
 
     def _thermo_wrapper(self, eos):
@@ -120,21 +138,24 @@ class Data(ExpDataTemplate):
         """
 
         # Check bead type
-        if 'xilist' not in self._thermodict:
+        if "xilist" not in self._thermodict:
             if len(eos._nui) > 1:
-                raise ValueError("Ambiguous instructions. Include xi to define intended component to obtain saturation properties")
+                raise ValueError(
+                    "Ambiguous instructions. Include xi to define intended component to obtain saturation properties"
+                )
             else:
-                self._thermodict['xilist'] = np.array([[1.0] for x in range(len(self._thermodict['Tlist']))])
+                self._thermodict["xilist"] = np.array(
+                    [[1.0] for x in range(len(self._thermodict["Tlist"]))]
+                )
 
         # Run thermo calculations
         try:
             output_dict = thermo(eos, self._thermodict)
-            output = [output_dict["delta"],output_dict["rhol"]]
+            output = [output_dict["delta"], output_dict["rhol"]]
         except:
             raise ValueError("Calculation of solubility_parameter failed")
 
         return output
-
 
     def objective(self, eos):
 
@@ -163,11 +184,33 @@ class Data(ExpDataTemplate):
         # objective function
         obj_value = np.zeros(2)
         if "delta" in self._thermodict:
-            obj_value[0] = np.sum((((phase_list[0] - self._thermodict["delta"]) / self._thermodict["delta"])**2)*self.weights['delta'])
+            obj_value[0] = np.sum(
+                (
+                    (
+                        (phase_list[0] - self._thermodict["delta"])
+                        / self._thermodict["delta"]
+                    )
+                    ** 2
+                )
+                * self.weights["delta"]
+            )
         if "rhol" in self._thermodict:
-            obj_value[1] = np.sum((((phase_list[1] - self._thermodict["rhol"]) / self._thermodict["rhol"])**2)*self.weights['rhol'])
+            obj_value[1] = np.sum(
+                (
+                    (
+                        (phase_list[1] - self._thermodict["rhol"])
+                        / self._thermodict["rhol"]
+                    )
+                    ** 2
+                )
+                * self.weights["rhol"]
+            )
 
-        logger.debug("Obj. breakdown for {}: delta {}, rhol {}".format(self.name,obj_value[0],obj_value[1]))
+        logger.debug(
+            "Obj. breakdown for {}: delta {}, rhol {}".format(
+                self.name, obj_value[0], obj_value[1]
+            )
+        )
 
         if all(np.isnan(obj_value)):
             obj_total = np.nan
@@ -178,6 +221,9 @@ class Data(ExpDataTemplate):
 
     def __str__(self):
 
-        string = "Data Set Object\nname: %s\ncalctype:%s\nNdatapts:%g" % {self.name, self.calctype, len(self._thermodict['T'])}
+        string = "Data Set Object\nname: %s\ncalctype:%s\nNdatapts:%g" % {
+            self.name,
+            self.calctype,
+            len(self._thermodict["T"]),
+        }
         return string
-        

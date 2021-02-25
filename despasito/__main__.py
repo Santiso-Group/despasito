@@ -17,7 +17,7 @@ if args.verbose == 0:
     quiet = True
     args.verbose = 20
 elif args.verbose < 4:
-    args.verbose = (4-args.verbose)*10
+    args.verbose = (4 - args.verbose) * 10
 else:
     args.verbose = 10
 
@@ -30,14 +30,20 @@ logger.setLevel(args.verbose)
 if os.path.isfile(args.logFile):
     os.remove(args.logFile)
 log_file_handler = logging.handlers.RotatingFileHandler(args.logFile)
-log_file_handler.setFormatter( logging.Formatter('%(asctime)s [%(levelname)s](%(name)s:%(funcName)s:%(lineno)d): %(message)s') )
+log_file_handler.setFormatter(
+    logging.Formatter(
+        "%(asctime)s [%(levelname)s](%(name)s:%(funcName)s:%(lineno)d): %(message)s"
+    )
+)
 log_file_handler.setLevel(args.verbose)
 logger.addHandler(log_file_handler)
 
 if quiet == False:
     # Set up logging to console
-    console_handler = logging.StreamHandler() # sys.stderr
-    console_handler.setFormatter( logging.Formatter('[%(levelname)s](%(name)s): %(message)s') )
+    console_handler = logging.StreamHandler()  # sys.stderr
+    console_handler.setFormatter(
+        logging.Formatter("[%(levelname)s](%(name)s): %(message)s")
+    )
     console_handler.setLevel(args.verbose)
     logger.addHandler(console_handler)
 
@@ -52,12 +58,12 @@ logging.info("JIT compilation: {}".format(args.jit))
 
 # Run program
 if args.input:
-    kwargs = {"filename":args.input}
+    kwargs = {"filename": args.input}
 else:
     kwargs = {}
-#kwargs["logFile"] = args.logFile
+# kwargs["logFile"] = args.logFile
 kwargs["threads"] = args.threads
 kwargs["path"] = args.path
-kwargs["jit" ] = args.jit
+kwargs["jit"] = args.jit
 
 run(**kwargs)

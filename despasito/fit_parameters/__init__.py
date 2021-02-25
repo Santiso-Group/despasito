@@ -17,6 +17,7 @@ import logging
 from . import fit_funcs as ff
 from . import data_classes
 
+
 def fit(eos, thermo_dict):
     r"""
     Fit defined parameters for equation of state object with given experimental data. 
@@ -69,28 +70,32 @@ def fit(eos, thermo_dict):
     for key, value in thermo_dict.items():
         # Extract inputs
         if key == "opt_params":
-            opt_params  = value
+            opt_params = value
         elif key == "exp_data":
             exp_data = value
         # Optional inputs
         elif key == "bounds":
             bounds = value
         elif key == "minimizer_dict":
-            dicts['minimizer_dict'] = value
+            dicts["minimizer_dict"] = value
         elif key == "global_dict":
-            dicts['global_dict'] = value
+            dicts["global_dict"] = value
         else:
             continue
         keys_del.append(key)
 
     for key in keys_del:
-        thermo_dict.pop(key,None)
+        thermo_dict.pop(key, None)
 
     if list(thermo_dict.keys()):
-        logger.info("Note: thermo_dict keys: {}, were not used.".format(", ".join(list(thermo_dict.keys()))))
+        logger.info(
+            "Note: thermo_dict keys: {}, were not used.".format(
+                ", ".join(list(thermo_dict.keys()))
+            )
+        )
 
     if "bounds" not in thermo_dict:
-        bounds = np.empty((len(opt_params["fit_params"]),2))
+        bounds = np.empty((len(opt_params["fit_params"]), 2))
     bounds = ff.check_parameter_bounds(opt_params, eos, bounds)
 
     # Reformat exp. data into formatted dictionary
@@ -102,20 +107,32 @@ def fit(eos, thermo_dict):
     for key, data_dict in exp_data.items():
         fittype = data_dict["name"]
         try:
-            exp_module = import_module("."+fittype,package="despasito.fit_parameters.data_classes")
+            exp_module = import_module(
+                "." + fittype, package="despasito.fit_parameters.data_classes"
+            )
             data_class = getattr(exp_module, "Data")
         except:
-            if not type_list: raise ImportError("No fit types")
-            elif len(type_list) == 1: tmp = type_list[0]
-            else: tmp = ", ".join(type_list)
-            raise ImportError("The experimental data type, '"+fittype+"', was not found\nThe following calculation types are supported: "+tmp)
+            if not type_list:
+                raise ImportError("No fit types")
+            elif len(type_list) == 1:
+                tmp = type_list[0]
+            else:
+                tmp = ", ".join(type_list)
+            raise ImportError(
+                "The experimental data type, '"
+                + fittype
+                + "', was not found\nThe following calculation types are supported: "
+                + tmp
+            )
 
         try:
             instance = data_class(data_dict)
             exp_dict[key] = instance
             logger.info("Initiated exp. data object: {}".format(instance.name))
         except:
-            raise AttributeError("Data set, {}, did not properly initiate object".format(key))
+            raise AttributeError(
+                "Data set, {}, did not properly initiate object".format(key)
+            )
 
     # Generate initial guess for parameters if none was given
     if "beadparams0" in opt_params:
@@ -132,17 +149,34 @@ def fit(eos, thermo_dict):
 
     # Run Parameter Fitting
     try:
-        result = ff.global_minimization(global_method, beadparams0, bounds, opt_params["fit_bead"], opt_params["fit_params"], eos, exp_dict, **dicts)
+        result = ff.global_minimization(
+            global_method,
+            beadparams0,
+            bounds,
+            opt_params["fit_bead"],
+            opt_params["fit_params"],
+            eos,
+            exp_dict,
+            **dicts
+        )
 
         print(result.keys())
         logger.info("Fitting terminated:\n{}".format(result.message))
         logger.info("Best Fit Parameters")
         logger.info("    Obj. Value: {}".format(result.fun))
         for i in range(len(opt_params["fit_params"])):
-            logger.info("    {} {}: {}".format(opt_params["fit_bead"],opt_params["fit_params"][i],result.x[i]))
+            logger.info(
+                "    {} {}: {}".format(
+                    opt_params["fit_bead"], opt_params["fit_params"][i], result.x[i]
+                )
+            )
 
     except:
         raise TypeError("The parameter fitting failed")
 
-    return {"fit_bead": opt_params["fit_bead"], "fit_parameters":opt_params["fit_params"], "final_parameters": result.x, "objective_value": result.fun} 
-
+    return {
+        "fit_bead": opt_params["fit_bead"],
+        "fit_parameters": opt_params["fit_params"],
+        "final_parameters": result.x,
+        "objective_value": result.fun,
+    }

@@ -1,4 +1,3 @@
-
 import numpy as np
 import logging
 import scipy.optimize as spo
@@ -28,20 +27,27 @@ def initial_guess(opt_params, eos):
 
     # Update beadlibrary with test paramters
 
-    beadparams0 = np.ones(len(opt_params['fit_params']))
-    for i, param in enumerate(opt_params['fit_params']):
+    beadparams0 = np.ones(len(opt_params["fit_params"]))
+    for i, param in enumerate(opt_params["fit_params"]):
         fit_params_list = param.split("_")
-        if (fit_params_list[0] == "l" and fit_params_list[1] in ["a","r"]):
-            fit_params_list[0] = "{}_{}".format(fit_params_list[0],fit_params_list[1])
+        if fit_params_list[0] == "l" and fit_params_list[1] in ["a", "r"]:
+            fit_params_list[0] = "{}_{}".format(fit_params_list[0], fit_params_list[1])
             fit_params_list.remove(fit_params_list[1])
         if len(fit_params_list) == 1:
-            beadparams0[i] = eos.param_guess(fit_params_list[0], [opt_params['fit_bead']])
+            beadparams0[i] = eos.param_guess(
+                fit_params_list[0], [opt_params["fit_bead"]]
+            )
         elif len(fit_params_list) == 2:
-            beadparams0[i] = eos.param_guess(fit_params_list[0], [opt_params['fit_bead'], fit_params_list[1]])
+            beadparams0[i] = eos.param_guess(
+                fit_params_list[0], [opt_params["fit_bead"], fit_params_list[1]]
+            )
         else:
-            raise ValueError("Parameters for only one bead are allowed to be fit at one time. Please only list one bead type in your fit parameter name.")
+            raise ValueError(
+                "Parameters for only one bead are allowed to be fit at one time. Please only list one bead type in your fit parameter name."
+            )
 
     return beadparams0
+
 
 def check_parameter_bounds(opt_params, eos, bounds):
     r"""
@@ -67,12 +73,15 @@ def check_parameter_bounds(opt_params, eos, bounds):
     
     """
 
-    new_bounds = [(0,0) for x in range(len(opt_params['fit_params']))]
+    new_bounds = [(0, 0) for x in range(len(opt_params["fit_params"]))]
     # Check boundary parameters to be sure they're in a reasonable range
-    for i, param in enumerate(opt_params['fit_params']):
-        new_bounds[i] = tuple(eos.check_bounds(opt_params['fit_bead'], param, bounds[i]))
+    for i, param in enumerate(opt_params["fit_params"]):
+        new_bounds[i] = tuple(
+            eos.check_bounds(opt_params["fit_bead"], param, bounds[i])
+        )
 
     return new_bounds
+
 
 def reformat_ouput(cluster):
     r"""
@@ -92,7 +101,7 @@ def reformat_ouput(cluster):
         
     """
 
-    #logger = logging.getLogger(__name__)
+    # logger = logging.getLogger(__name__)
 
     # Arrange data
     type_cluster = [type(x[0]) for x in cluster]
@@ -100,7 +109,7 @@ def reformat_ouput(cluster):
     # if input is a list or array
     if len(cluster) == 1:
         matrix = np.transpose(np.array(cluster[0]))
-        if cluster[0][0] not in [list,np.ndarray,tuple]:
+        if cluster[0][0] not in [list, np.ndarray, tuple]:
             len_cluster = [1]
         else:
             len_cluster = [len(cluster[0][0])]
@@ -110,8 +119,8 @@ def reformat_ouput(cluster):
 
         # Obtain dimensions of final matrix
         len_cluster = []
-        for i,typ in enumerate(type_cluster):
-            if typ in [list,np.ndarray,tuple]:
+        for i, typ in enumerate(type_cluster):
+            if typ in [list, np.ndarray, tuple]:
                 len_cluster.append(len(cluster[i][0]))
             else:
                 len_cluster.append(1)
@@ -129,10 +138,11 @@ def reformat_ouput(cluster):
                 for j in range(l):
                     matrix_tmp[:, ind] = matrix[j]
                     ind += 1
-        #matrix = np.transpose(np.array(matrix_tmp))
+        # matrix = np.transpose(np.array(matrix_tmp))
         matrix = np.array(matrix_tmp)
 
     return matrix, len_cluster
+
 
 class BasinStep(object):
     r"""
@@ -159,8 +169,8 @@ class BasinStep(object):
             
         """
 
-        #logger = logging.getLogger(__name__)
-        
+        # logger = logging.getLogger(__name__)
+
         self._stepsize = stepsize
         self._stepmag = stepmag
 
@@ -181,7 +191,7 @@ class BasinStep(object):
         """
 
         logger = logging.getLogger(__name__)
-        
+
         # Save intital guess in array
         xold = np.copy(x)
 
@@ -197,9 +207,11 @@ class BasinStep(object):
                 # If a value of x is negative, don't  break the cycle
                 if x[i] < 0.0:
                     breakloop = False
-            if breakloop: break
-            logger.info("Basin Step after {} iterations:\n    {}".format(j,x))
+            if breakloop:
+                break
+            logger.info("Basin Step after {} iterations:\n    {}".format(j, x))
         return x
+
 
 class BasinBounds(object):
     r"""
@@ -247,7 +259,17 @@ class BasinBounds(object):
         return tmax and tmin
 
 
-def global_minimization(global_method, beadparams0, bounds, fit_bead, fit_params, eos, exp_dict, global_dict={}, minimizer_dict={}):
+def global_minimization(
+    global_method,
+    beadparams0,
+    bounds,
+    fit_bead,
+    fit_params,
+    eos,
+    exp_dict,
+    global_dict={},
+    minimizer_dict={},
+):
     r"""
     Fit defined parameters for equation of state object with given experimental data. 
 
@@ -302,9 +324,9 @@ def global_minimization(global_method, beadparams0, bounds, fit_bead, fit_params
             for key, value in global_dict.items():
                 new_global_dict[key] = value
         global_dict = new_global_dict
-    
+
         # Set up options for minimizer in basin hopping
-        new_minimizer_dict = {"method": 'nelder-mead', "options": {'maxiter': 50}}
+        new_minimizer_dict = {"method": "nelder-mead", "options": {"maxiter": 50}}
         if minimizer_dict:
             for key, value in minimizer_dict.items():
                 if key == "method":
@@ -313,20 +335,30 @@ def global_minimization(global_method, beadparams0, bounds, fit_bead, fit_params
                     for key2, value2 in value.items():
                         new_minimizer_dict[key][key2] = value2
         minimizer_dict = new_minimizer_dict
-      
+
         # NoteHere: how is this array generated? stepmag = np.array([550.0, 26.0, 4.0e-10, 0.45, 500.0, 150.0e-30, 550.0])
         try:
             if "stepsize" in global_dict:
-            	stepsize = global_dict["stepsize"]
+                stepsize = global_dict["stepsize"]
             else:
-            	stepsize = 0.1
+                stepsize = 0.1
             stepmag = np.transpose(np.array(bounds))[1]
             global_dict["take_step"] = BasinStep(stepmag, stepsize=stepsize)
             custombounds = BasinBounds(bounds)
         except:
-        	raise TypeError("Could not initialize BasinStep and/or BasinBounds")
+            raise TypeError("Could not initialize BasinStep and/or BasinBounds")
 
-        result = spo.basinhopping(compute_obj, beadparams0, **global_dict, accept_test=custombounds, disp=True, minimizer_kwargs={"args": (fit_bead, fit_params, eos, exp_dict),**minimizer_dict})
+        result = spo.basinhopping(
+            compute_obj,
+            beadparams0,
+            **global_dict,
+            accept_test=custombounds,
+            disp=True,
+            minimizer_kwargs={
+                "args": (fit_bead, fit_params, eos, exp_dict),
+                **minimizer_dict,
+            }
+        )
 
     elif global_method == "differential_evolution":
 
@@ -337,7 +369,12 @@ def global_minimization(global_method, beadparams0, bounds, fit_bead, fit_params
                 new_global_dict[key] = value
         global_dict = new_global_dict
 
-        result = spo.differential_evolution(compute_obj, bounds, args=(fit_bead, fit_params, eos, exp_dict), **global_dict)
+        result = spo.differential_evolution(
+            compute_obj,
+            bounds,
+            args=(fit_bead, fit_params, eos, exp_dict),
+            **global_dict
+        )
 
     elif global_method == "brute":
 
@@ -348,10 +385,19 @@ def global_minimization(global_method, beadparams0, bounds, fit_bead, fit_params
                 new_global_dict[key] = value
         global_dict = new_global_dict
 
-        result = spo.brute(compute_obj, bounds, args=(fit_bead, fit_params, eos, exp_dict), **global_dict)
+        result = spo.brute(
+            compute_obj,
+            bounds,
+            args=(fit_bead, fit_params, eos, exp_dict),
+            **global_dict
+        )
 
     else:
-        raise ValueError("Global optimization method, {}, is not currently supported. Try: {}".format(global_method,", ".join(methods)))
+        raise ValueError(
+            "Global optimization method, {}, is not currently supported. Try: {}".format(
+                global_method, ", ".join(methods)
+            )
+        )
 
     return result
 
@@ -389,7 +435,9 @@ def compute_obj(beadparams, fit_bead, fit_params, eos, exp_dict):
     # Update beadlibrary with test paramters
 
     if len(beadparams) != len(fit_params):
-        raise ValueError("The length of initial guess vector should be the same number of parameters to be fit.")    
+        raise ValueError(
+            "The length of initial guess vector should be the same number of parameters to be fit."
+        )
 
     for i, param in enumerate(fit_params):
         eos.update_parameters(fit_bead, param, beadparams[i])
@@ -397,18 +445,25 @@ def compute_obj(beadparams, fit_bead, fit_params, eos, exp_dict):
 
     # Compute obj_function
     obj_function = []
-    for key,data_obj in exp_dict.items():
+    for key, data_obj in exp_dict.items():
         try:
             obj_function.append(data_obj.objective(eos))
         except:
-            raise ValueError("Failed to evaluate objective function for {} of type {}.".format(key,data_obj.name))
+            raise ValueError(
+                "Failed to evaluate objective function for {} of type {}.".format(
+                    key, data_obj.name
+                )
+            )
 
     obj_total = np.nansum(obj_function)
-    if obj_total == 0. and np.isnan(np.sum(obj_function)):
+    if obj_total == 0.0 and np.isnan(np.sum(obj_function)):
         obj_total = np.inf
 
     # Write out parameters and objective functions for each dataset
-    logger.info("\nParameters: {}\nValues: {}\nExp. Data: {}\nObj. Values: {}\nTotal Obj. Value: {}".format(fit_params,beadparams,list(exp_dict.keys()),obj_function,obj_total))
+    logger.info(
+        "\nParameters: {}\nValues: {}\nExp. Data: {}\nObj. Values: {}\nTotal Obj. Value: {}".format(
+            fit_params, beadparams, list(exp_dict.keys()), obj_function, obj_total
+        )
+    )
 
     return obj_total
-
