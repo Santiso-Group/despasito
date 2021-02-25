@@ -8,6 +8,7 @@ from abc import ABC, abstractmethod
 
 logger = logging.getLogger(__name__)
 
+
 class ExpDataTemplate(ABC):
     r"""
     Interface needed to create further objects to represent experimental data.
@@ -43,23 +44,24 @@ class ExpDataTemplate(ABC):
         - density_opts (dict) default={}
   
     """
+
     def __init__(self, data_dict):
 
         # Self interaction parameters
         self.name = "To be set"
-        
+
         if "eos_obj" in data_dict:
             self.Eos = data_dict["eos_obj"]
             del data_dict["eos_obj"]
         else:
             raise ValueError("An Eos object should have been included")
-        
+
         if "weights" in data_dict:
             self.weights = data_dict["weights"]
             del data_dict["weights"]
         else:
             self.weights = {}
-        
+
         self.obj_opts = {}
         if "objective_method" in data_dict:
             self.obj_opts["method"] = data_dict["objective_method"]
@@ -70,9 +72,9 @@ class ExpDataTemplate(ABC):
                 self.obj_opts[key] = data_dict[key]
                 del data_dict[key]
         logger.info("Objective function options: {}".format(self.obj_opts))
-        
+
         self.npoints = np.nan
-        
+
         # Add to thermo_dict
         self.thermodict = {"calculation_type": None}
         thermo_dict_keys = ["MultiprocessingObject", "density_opts", "calculation_type"]
@@ -106,22 +108,34 @@ class ExpDataTemplate(ABC):
                 bead_names.append(fit_parameter_names_list[1])
 
             if len(fit_parameter_names_list) == 1:
-                self.Eos.update_parameter(fit_parameter_names_list[0], [fit_bead], param_values[i])
+                self.Eos.update_parameter(
+                    fit_parameter_names_list[0], [fit_bead], param_values[i]
+                )
             elif len(fit_parameter_names_list) == 2:
-                self.Eos.update_parameter(fit_parameter_names_list[0], [fit_bead, fit_parameter_names_list[1]], param_values[i])
+                self.Eos.update_parameter(
+                    fit_parameter_names_list[0],
+                    [fit_bead, fit_parameter_names_list[1]],
+                    param_values[i],
+                )
             else:
-                raise ValueError("Parameters for only one bead are allowed to be fit. Multiple underscores in a parameter name suggest more than one bead type in your fit parameter name, {}".format(param))
+                raise ValueError(
+                    "Parameters for only one bead are allowed to be fit. Multiple underscores in a parameter name suggest more than one bead type in your fit parameter name, {}".format(
+                        param
+                    )
+                )
 
         if hasattr(self.Eos, "parameter_refresh"):
             self.Eos.parameter_refresh()
-    
+
     @abstractmethod
     def objective(self, Eos):
         """ Float representing objective function of from comparing predictions to experimental data.
         """
         pass
-    
+
     def __str__(self):
-    
-        string = "Data Set Object\nName: {}\nCalculation_type: {}\nNumber of Points: {}".format(self.name, self.thermodict["calculation_type"], self.npoints)
+
+        string = "Data Set Object\nName: {}\nCalculation_type: {}\nNumber of Points: {}".format(
+            self.name, self.thermodict["calculation_type"], self.npoints
+        )
         return string

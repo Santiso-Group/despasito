@@ -6,11 +6,13 @@ This package will take in an equation of state object, and any user defined vari
 """
 
 from inspect import getmembers, isfunction
-#import logging
+
+# import logging
 
 from . import calculation_types
 
-#logger = logging.getLogger(__name__)
+# logger = logging.getLogger(__name__)
+
 
 def thermo(Eos, calculation_type=None, **thermo_dict):
     """
@@ -34,7 +36,7 @@ def thermo(Eos, calculation_type=None, **thermo_dict):
     """
 
     if calculation_type == None:
-        raise ValueError('No calculation type specified')
+        raise ValueError("No calculation type specified")
 
     # Extract available calculation types
     calc_list = [o[0] for o in getmembers(calculation_types) if isfunction(o[1])]
@@ -44,7 +46,11 @@ def thermo(Eos, calculation_type=None, **thermo_dict):
         func = getattr(calculation_types, calculation_type)
 
     except Exception:
-        raise ImportError("The calculation type, '{}', was not found\nThe following calculation types are supported: {}".format(calculation_type,", ".join(calc_list)))
+        raise ImportError(
+            "The calculation type, '{}', was not found\nThe following calculation types are supported: {}".format(
+                calculation_type, ", ".join(calc_list)
+            )
+        )
 
     try:
         output_dict = func(Eos, **thermo_dict)
@@ -52,4 +58,3 @@ def thermo(Eos, calculation_type=None, **thermo_dict):
         raise TypeError("The calculation type, '{}', failed".format(calculation_type))
 
     return output_dict
-

@@ -20,6 +20,7 @@ from despasito.equations_of_state.saft import Aassoc
 logger = logging.getLogger(__name__)
 
 from despasito.equations_of_state import method_stat
+
 if not method_stat.cython and not method_stat.numba:
     pass
 elif method_stat.cython:
@@ -27,9 +28,16 @@ elif method_stat.cython:
 elif method_stat.numba:
     logger.warning("saft.gamma_sw does not use numba.")
 
-ckl_coef = np.array([[2.25855, -1.50349, 0.249434], [-0.669270, 1.40049, -0.827739], [10.1576, -15.0427, 5.30827]])
+ckl_coef = np.array(
+    [
+        [2.25855, -1.50349, 0.249434],
+        [-0.669270, 1.40049, -0.827739],
+        [10.1576, -15.0427, 5.30827],
+    ]
+)
 
-class SaftType():
+
+class SaftType:
 
     r"""
     Object of SAFT-𝛾-SW (for square well potential)
@@ -114,63 +122,104 @@ class SaftType():
     """
 
     def __init__(self, **kwargs):
-    
+
         self.Aideal_method = "Abroglie"
-        self.residual_helmholtz_contributions = ["Amonomer","Achain"]
+        self.residual_helmholtz_contributions = ["Amonomer", "Achain"]
         self.parameter_types = ["epsilon", "lambda", "sigma", "Sk"]
-        self._parameter_defaults = {"epsilon":None, "lambda":None, "sigma":None, "Sk": 1.0, "Vks": 1.0}
-        self.parameter_bound_extreme = {"epsilon":[10.,1000.], "lambda":[1.0,10.0], "sigma":[0.1,10.0], "Sk":[0.1,1.]}    
-        self.combining_rules = {"sigma": {"function": "mean"},
-                             "lambda": {"function": "weighted_mean", "weighting_parameters": ["sigma"]},
-                             "epsilon": {"function": "square_well_berthelot", "weighting_parameters": ["sigma", "lambda"]}
-                            } # Note in this EOS object, the mixing rules for the group parameters are also used for their corresponding molecular averaged parameters.
-    
-        if not hasattr(self, 'eos_dict'):
+        self._parameter_defaults = {
+            "epsilon": None,
+            "lambda": None,
+            "sigma": None,
+            "Sk": 1.0,
+            "Vks": 1.0,
+        }
+        self.parameter_bound_extreme = {
+            "epsilon": [10.0, 1000.0],
+            "lambda": [1.0, 10.0],
+            "sigma": [0.1, 10.0],
+            "Sk": [0.1, 1.0],
+        }
+        self.combining_rules = {
+            "sigma": {"function": "mean"},
+            "lambda": {"function": "weighted_mean", "weighting_parameters": ["sigma"]},
+            "epsilon": {
+                "function": "square_well_berthelot",
+                "weighting_parameters": ["sigma", "lambda"],
+            },
+        }  # Note in this EOS object, the mixing rules for the group parameters are also used for their corresponding molecular averaged parameters.
+
+        if not hasattr(self, "eos_dict"):
             self.eos_dict = {}
-        
-        needed_attributes = ['molecular_composition','beads','bead_library']
+
+        needed_attributes = ["molecular_composition", "beads", "bead_library"]
         for key in needed_attributes:
             if key not in kwargs:
-                raise ValueError("The one of the following inputs is missing: {}".format(", ".join(tmp)))
+                raise ValueError(
+                    "The one of the following inputs is missing: {}".format(
+                        ", ".join(tmp)
+                    )
+                )
             elif key == "molecular_composition":
                 if "molecular_composition" not in self.eos_dict:
                     self.eos_dict[key] = kwargs[key]
             elif not hasattr(self, key):
                 setattr(self, key, kwargs[key])
 
-        self.bead_library = tb.check_bead_parameters(self.bead_library, self._parameter_defaults)
+        self.bead_library = tb.check_bead_parameters(
+            self.bead_library, self._parameter_defaults
+        )
 
-        if 'cross_library' not in kwargs:
+        if "cross_library" not in kwargs:
             self.cross_library = {}
         else:
-            self.cross_library = kwargs['cross_library']
+            self.cross_library = kwargs["cross_library"]
 
-        if 'Vks' not in self.eos_dict:
-            self.eos_dict['Vks'] = tb.extract_property("Vks",self.bead_library,self.beads, default=1.0)
-        if 'Sk' not in self.eos_dict:
-            self.eos_dict['Sk'] = tb.extract_property("Sk",self.bead_library,self.beads, default=1.0)
+        if "Vks" not in self.eos_dict:
+            self.eos_dict["Vks"] = tb.extract_property(
+                "Vks", self.bead_library, self.beads, default=1.0
+            )
+        if "Sk" not in self.eos_dict:
+            self.eos_dict["Sk"] = tb.extract_property(
+                "Sk", self.bead_library, self.beads, default=1.0
+            )
 
         # Initialize component attribute
-        if not hasattr(self, 'xi'):
+        if not hasattr(self, "xi"):
             self.xi = np.nan
-        if not hasattr(self, 'nbeads') or not hasattr(self, 'ncomp'):
-            self.ncomp, self.nbeads = np.shape(self.eos_dict['molecular_composition'])
+        if not hasattr(self, "nbeads") or not hasattr(self, "ncomp"):
+            self.ncomp, self.nbeads = np.shape(self.eos_dict["molecular_composition"])
 
         # Initiate cross interaction terms
-        output = tb.cross_interaction_from_dict( self.beads, self.bead_library, self.combining_rules, cross_library=self.cross_library)
+        output = tb.cross_interaction_from_dict(
+            self.beads,
+            self.bead_library,
+            self.combining_rules,
+            cross_library=self.cross_library,
+        )
         self.eos_dict["sigma_kl"] = output["sigma"]
         self.eos_dict["epsilon_kl"] = output["epsilon"]
         self.eos_dict["lambda_kl"] = output["lambda"]
 
         if "num_rings" in kwargs:
-            self.eos_dict['num_rings'] = kwargs['num_rings']
-            logger.info("Accepted component ring structure: {}".format(kwargs["num_rings"]))
+            self.eos_dict["num_rings"] = kwargs["num_rings"]
+            logger.info(
+                "Accepted component ring structure: {}".format(kwargs["num_rings"])
+            )
         else:
-            self.eos_dict['num_rings'] = np.zeros(len(self.eos_dict['molecular_composition']))
+            self.eos_dict["num_rings"] = np.zeros(
+                len(self.eos_dict["molecular_composition"])
+            )
 
         # Initiate average interaction terms
         self.calc_component_averaged_properties()
-        self.alphakl = 2.0*np.pi/3.0*self.eos_dict['epsilon_kl']*self.eos_dict['sigma_kl']**3*(self.eos_dict['lambda_kl']**3 - 1.0)
+        self.alphakl = (
+            2.0
+            * np.pi
+            / 3.0
+            * self.eos_dict["epsilon_kl"]
+            * self.eos_dict["sigma_kl"] ** 3
+            * (self.eos_dict["lambda_kl"] ** 3 - 1.0)
+        )
 
     def calc_component_averaged_properties(self):
         r"""
@@ -186,40 +235,50 @@ class SaftType():
             - lambda_ij (numpy.ndarray) - Matrix of average molecular range of potential well depth (k,l)
     
         """
-    
-        ncomp, nbeads = np.shape(self.eos_dict['molecular_composition'])
+
+        ncomp, nbeads = np.shape(self.eos_dict["molecular_composition"])
         zki = np.zeros((ncomp, nbeads), float)
         zkinorm = np.zeros(ncomp, float)
-    
+
         epsilonii = np.zeros(ncomp, float)
         sigmaii = np.zeros(ncomp, float)
         lambdaii = np.zeros(ncomp, float)
-    
-        #compute zki
+
+        # compute zki
         for i in range(ncomp):
             for k in range(nbeads):
-                zki[i, k] = self.eos_dict['molecular_composition'][i, k] * self.eos_dict['Vks'][k] * self.eos_dict['Sk'][k]
+                zki[i, k] = (
+                    self.eos_dict["molecular_composition"][i, k]
+                    * self.eos_dict["Vks"][k]
+                    * self.eos_dict["Sk"][k]
+                )
                 zkinorm[i] += zki[i, k]
-    
+
         for i in range(ncomp):
             for k in range(nbeads):
                 zki[i, k] = zki[i, k] / zkinorm[i]
-    
+
         for i in range(ncomp):
             for k in range(nbeads):
-                sigmaii[i] += zki[i, k] * self.eos_dict['sigma_kl'][k, k]**3
+                sigmaii[i] += zki[i, k] * self.eos_dict["sigma_kl"][k, k] ** 3
                 for l in range(nbeads):
 
-                    epsilonii[i] += zki[i, k] * zki[i, l] * self.eos_dict['epsilon_kl'][k, l]
-                    lambdaii[i] += zki[i, k] * zki[i, l] * self.eos_dict['lambda_kl'][k, l]
-            sigmaii[i] = sigmaii[i]**(1.0/3.0)
+                    epsilonii[i] += (
+                        zki[i, k] * zki[i, l] * self.eos_dict["epsilon_kl"][k, l]
+                    )
+                    lambdaii[i] += (
+                        zki[i, k] * zki[i, l] * self.eos_dict["lambda_kl"][k, l]
+                    )
+            sigmaii[i] = sigmaii[i] ** (1.0 / 3.0)
 
         input_dict = {"sigma": sigmaii, "lambda": lambdaii, "epsilon": epsilonii}
         dummy_dict, dummy_labels = tb.construct_dummy_bead_library(input_dict)
-        output_dict = tb.cross_interaction_from_dict(dummy_labels, dummy_dict, self.combining_rules)
-        self.eos_dict["sigma_ij"] = output_dict['sigma']
-        self.eos_dict["lambda_ij"] = output_dict['lambda']
-        self.eos_dict["epsilon_ij"] = output_dict['epsilon']
+        output_dict = tb.cross_interaction_from_dict(
+            dummy_labels, dummy_dict, self.combining_rules
+        )
+        self.eos_dict["sigma_ij"] = output_dict["sigma"]
+        self.eos_dict["lambda_ij"] = output_dict["lambda"]
+        self.eos_dict["epsilon_ij"] = output_dict["epsilon"]
 
     def reduced_density(self, rho, xi):
         r"""
@@ -241,11 +300,17 @@ class SaftType():
         self._check_density(rho)
         self._check_composition_dependent_parameters(xi)
 
-        rho2 = rho * constants.molecule_per_nm3 * self.eos_dict['Cmol2seg']
+        rho2 = rho * constants.molecule_per_nm3 * self.eos_dict["Cmol2seg"]
 
         reduced_density = np.zeros((np.size(rho), 4))
         for m in range(4):
-            reduced_density[:, m] = rho2 * (np.sum(np.sqrt(np.diag(self.eos_dict['xskl'])) * (np.diag(self.eos_dict['sigma_kl'])**m)) * (np.pi / 6.0))
+            reduced_density[:, m] = rho2 * (
+                np.sum(
+                    np.sqrt(np.diag(self.eos_dict["xskl"]))
+                    * (np.diag(self.eos_dict["sigma_kl"]) ** m)
+                )
+                * (np.pi / 6.0)
+            )
 
         return reduced_density
 
@@ -277,10 +342,10 @@ class SaftType():
             lambdakl = self.eos_dict["lambda_kl"]
         elif mode == "effective":
             lambdakl = self.eos_dict["lambda_ij"]
-        lx = len(lambdakl) # lx is nbeads for normal and ncomp for effective
+        lx = len(lambdakl)  # lx is nbeads for normal and ncomp for effective
 
         if zetax is None:
-            zetax = self.reduced_density(rho, xi)[:,3]
+            zetax = self.reduced_density(rho, xi)[:, 3]
 
         zetax_pow = np.zeros((np.size(rho), 3))
         zetax_pow[:, 0] = zetax
@@ -291,8 +356,14 @@ class SaftType():
         for k in range(lx):
             for l in range(lx):
                 if lambdakl[k, l] != 0.0:
-                    cikl = np.dot(ckl_coef, np.array( (1.0, lambdakl[k, l], lambdakl[k, l]**2), dtype=ckl_coef.dtype ))
-                    zetakl[:, k, l] = np.dot( zetax_pow, cikl)
+                    cikl = np.dot(
+                        ckl_coef,
+                        np.array(
+                            (1.0, lambdakl[k, l], lambdakl[k, l] ** 2),
+                            dtype=ckl_coef.dtype,
+                        ),
+                    )
+                    zetakl[:, k, l] = np.dot(zetax_pow, cikl)
 
         return zetakl
 
@@ -324,25 +395,32 @@ class SaftType():
             lambdakl = self.eos_dict["lambda_kl"]
         elif mode == "effective":
             lambdakl = self.eos_dict["lambda_ij"]
-        lx = len(lambdakl) # lx is nbeads for normal and ncomp for effective
+        lx = len(lambdakl)  # lx is nbeads for normal and ncomp for effective
 
         if zetax is None:
-            zetax = self.reduced_density(rho, xi)[:,3]
+            zetax = self.reduced_density(rho, xi)[:, 3]
 
-        zetax_pow = np.transpose(np.array([np.ones(len(rho)), 2*zetax, 3*zetax**2]))
+        zetax_pow = np.transpose(
+            np.array([np.ones(len(rho)), 2 * zetax, 3 * zetax ** 2])
+        )
 
         # check if you have more than 1 bead types
         dzetakl = np.zeros((np.size(rho), lx, lx))
         for k in range(lx):
             for l in range(lx):
                 if lambdakl[k, l] != 0.0:
-                    cikl = np.dot(ckl_coef, np.array( (1.0, lambdakl[k, l], lambdakl[k, l]**2), dtype=ckl_coef.dtype ))
-                    dzetakl[:, k, l] = np.dot( zetax_pow, cikl)
+                    cikl = np.dot(
+                        ckl_coef,
+                        np.array(
+                            (1.0, lambdakl[k, l], lambdakl[k, l] ** 2),
+                            dtype=ckl_coef.dtype,
+                        ),
+                    )
+                    dzetakl[:, k, l] = np.dot(zetax_pow, cikl)
 
         return dzetakl
 
-        
-    def Ahard_sphere(self,rho, T, xi):
+    def Ahard_sphere(self, rho, T, xi):
         r"""
         Outputs hard sphere approximation of Helmholtz free energy, :math:`A^{HS}/Nk_{b}T`.
         
@@ -366,14 +444,16 @@ class SaftType():
 
         zeta = self.reduced_density(rho, xi)
 
-        tmp = (6.0 / (np.pi * rho * constants.molecule_per_nm3))
-        tmp1 = np.log1p(-zeta[:, 3]) * (zeta[:, 2]**3 / (zeta[:, 3]**2) - zeta[:, 0])
+        tmp = 6.0 / (np.pi * rho * constants.molecule_per_nm3)
+        tmp1 = np.log1p(-zeta[:, 3]) * (
+            zeta[:, 2] ** 3 / (zeta[:, 3] ** 2) - zeta[:, 0]
+        )
         tmp2 = 3.0 * zeta[:, 2] / (1 - zeta[:, 3]) * zeta[:, 1]
-        tmp3 = zeta[:, 2]**3 / (zeta[:, 3] * ((1.0 - zeta[:, 3])**2))
-        AHS = tmp*(tmp1 + tmp2 + tmp3)
+        tmp3 = zeta[:, 2] ** 3 / (zeta[:, 3] * ((1.0 - zeta[:, 3]) ** 2))
+        AHS = tmp * (tmp1 + tmp2 + tmp3)
 
         return AHS
-    
+
     def Afirst_order(self, rho, T, xi, zetax=None):
         r"""
         Outputs :math:`A^{1st order}/Nk_{b}T`. This is the first order term in the high-temperature perturbation expansion
@@ -399,11 +479,15 @@ class SaftType():
         self._check_composition_dependent_parameters(xi)
 
         if zetax is None:
-            zetax = self.reduced_density(rho, xi)[:,3]
+            zetax = self.reduced_density(rho, xi)[:, 3]
 
         g0HS = self.calc_g0HS(rho, xi, zetax=zetax)
-        a1kl_tmp = np.tensordot(rho * constants.molecule_per_nm3, self.eos_dict['xskl']*self.alphakl, 0)
-        A1 = -(self.eos_dict['Cmol2seg']**2 / T) * np.sum(a1kl_tmp * g0HS, axis=(1,2)) # Units of K
+        a1kl_tmp = np.tensordot(
+            rho * constants.molecule_per_nm3, self.eos_dict["xskl"] * self.alphakl, 0
+        )
+        A1 = -(self.eos_dict["Cmol2seg"] ** 2 / T) * np.sum(
+            a1kl_tmp * g0HS, axis=(1, 2)
+        )  # Units of K
 
         return A1
 
@@ -429,35 +513,41 @@ class SaftType():
         Asecond_order : numpy.ndarray
             Helmholtz energy of monomers for each density given.
         """
-        
+
         rho = self._check_density(rho)
         self._check_composition_dependent_parameters(xi)
 
         if zetax is None:
-            zetax = self.reduced_density(rho, xi)[:,3]
+            zetax = self.reduced_density(rho, xi)[:, 3]
         # Note that zetax = zeta3
 
         if KHS is None:
             KHS = stb.calc_KHS(zetax)
-        
+
         dzetakl = self._dzetaeff_dzetax(rho, xi, zetax=zetax)
         zeta_eff = self.effective_packing_fraction(rho, xi, zetax=zetax)
         g0HS = self.calc_g0HS(rho, xi, zetax=zetax)
 
-        rho2 = self.eos_dict['Cmol2seg'] * rho * constants.molecule_per_nm3
+        rho2 = self.eos_dict["Cmol2seg"] * rho * constants.molecule_per_nm3
 
         tmp1 = KHS * rho2 / 2.0
-        tmp2 = self.eos_dict['epsilon_kl'] * self.alphakl * self.eos_dict['xskl']
-        a2kl_tmp = np.tensordot( tmp1, tmp2, 0)
+        tmp2 = self.eos_dict["epsilon_kl"] * self.alphakl * self.eos_dict["xskl"]
+        a2kl_tmp = np.tensordot(tmp1, tmp2, 0)
 
-        a2 = a2kl_tmp*(g0HS + zetax[:,np.newaxis,np.newaxis]*dzetakl*(2.5 - zeta_eff)/(1-zeta_eff)**4)
+        a2 = a2kl_tmp * (
+            g0HS
+            + zetax[:, np.newaxis, np.newaxis]
+            * dzetakl
+            * (2.5 - zeta_eff)
+            / (1 - zeta_eff) ** 4
+        )
 
         # Lymperiadis 2007 has a disconnect where Eq. 24 != Eq. 30, as Eq. 24 is missing a minus sign. (Same in Lymperiadis 2008 for Eq. 32 and Eq. 38)
-        A2 = -(self.eos_dict['Cmol2seg'] / (T**2)) * np.sum(a2, axis=(1,2))
+        A2 = -(self.eos_dict["Cmol2seg"] / (T ** 2)) * np.sum(a2, axis=(1, 2))
 
         return A2
-    
-    def Amonomer(self,rho, T, xi):
+
+    def Amonomer(self, rho, T, xi):
         r"""
         Outputs the monomer contribution of the Helmholtz energy :math:`A^{mono.}/Nk_{b}T`.
     
@@ -477,14 +567,22 @@ class SaftType():
         """
 
         if np.all(rho > self.density_max(xi, T)):
-            raise ValueError("Density values should not all be greater than {}, or calc_Amono will fail in log calculation.".format(self.density_max(xi, T)))
+            raise ValueError(
+                "Density values should not all be greater than {}, or calc_Amono will fail in log calculation.".format(
+                    self.density_max(xi, T)
+                )
+            )
 
         rho = self._check_density(rho)
         self._check_composition_dependent_parameters(xi)
 
-        zetax = self.reduced_density(rho, xi)[:,3]
+        zetax = self.reduced_density(rho, xi)[:, 3]
 
-        Amonomer = self.Ahard_sphere(rho, T, xi) + self.Afirst_order(rho, T, xi, zetax=zetax) + self.Asecond_order(rho, T, xi, zetax=zetax)
+        Amonomer = (
+            self.Ahard_sphere(rho, T, xi)
+            + self.Afirst_order(rho, T, xi, zetax=zetax)
+            + self.Asecond_order(rho, T, xi, zetax=zetax)
+        )
 
         return Amonomer
 
@@ -513,11 +611,11 @@ class SaftType():
         self._check_composition_dependent_parameters(xi)
 
         if zetax is None:
-            zetax = self.reduced_density(rho, xi)[:,3]
+            zetax = self.reduced_density(rho, xi)[:, 3]
 
         zeta_eff = self.effective_packing_fraction(rho, xi, mode=mode, zetax=zetax)
 
-        g0HS = (1.0 - zeta_eff/2.0) / (1.0 - zeta_eff)**3
+        g0HS = (1.0 - zeta_eff / 2.0) / (1.0 - zeta_eff) ** 3
 
         return g0HS
 
@@ -545,15 +643,22 @@ class SaftType():
 
         zetam = self.reduced_density(rho, xi)
 
-        tmp1 = 1.0 / (1.0 - zetam[:,3])
-        tmp2 = zetam[:,2] / (1.0 - zetam[:,3])**2
-        tmp3 = zetam[:,2]**2 / (1.0 - zetam[:,3])**3
+        tmp1 = 1.0 / (1.0 - zetam[:, 3])
+        tmp2 = zetam[:, 2] / (1.0 - zetam[:, 3]) ** 2
+        tmp3 = zetam[:, 2] ** 2 / (1.0 - zetam[:, 3]) ** 3
 
         gHS = np.zeros((np.size(rho), self.ncomp, self.ncomp))
         for i in range(self.ncomp):
             for j in range(self.ncomp):
-                tmp = self.eos_dict['sigma_ij'][i,i]*self.eos_dict['sigma_ij'][j,j]/(self.eos_dict['sigma_ij'][i,i]+self.eos_dict['sigma_ij'][j,j])
-                gHS[:,i,j] = tmp1 + 3*tmp*tmp2 + 2*tmp**2*tmp3
+                tmp = (
+                    self.eos_dict["sigma_ij"][i, i]
+                    * self.eos_dict["sigma_ij"][j, j]
+                    / (
+                        self.eos_dict["sigma_ij"][i, i]
+                        + self.eos_dict["sigma_ij"][j, j]
+                    )
+                )
+                gHS[:, i, j] = tmp1 + 3 * tmp * tmp2 + 2 * tmp ** 2 * tmp3
 
         return gHS
 
@@ -583,26 +688,40 @@ class SaftType():
         kT = T * constants.kb
 
         if zetax is None:
-            zetax = self.reduced_density(rho, xi)[:,3]
+            zetax = self.reduced_density(rho, xi)[:, 3]
 
         g0HS = self.calc_g0HS(rho, xi, zetax=zetax, mode="effective")
         gHS = self.calc_gHS(rho, xi)
-        zeta_eff = self.effective_packing_fraction(rho, xi, mode="effective", zetax=zetax)
-        dg0HSdzetaeff = (2.5 - zeta_eff)/(1.0 - zeta_eff)**4
+        zeta_eff = self.effective_packing_fraction(
+            rho, xi, mode="effective", zetax=zetax
+        )
+        dg0HSdzetaeff = (2.5 - zeta_eff) / (1.0 - zeta_eff) ** 4
 
         ncomp = len(xi)
-        dckl_coef = np.array([[-1.50349, 0.249434],[1.40049, -0.827739],[-15.0427, 5.30827]])
-        zetax_pow = np.transpose(np.array([zetax, zetax**2, zetax**3]))
+        dckl_coef = np.array(
+            [[-1.50349, 0.249434], [1.40049, -0.827739], [-15.0427, 5.30827]]
+        )
+        zetax_pow = np.transpose(np.array([zetax, zetax ** 2, zetax ** 3]))
         dzetaijdlambda = np.zeros((np.size(rho), ncomp, ncomp))
         for i in range(ncomp):
             for j in range(ncomp):
-                cikl = np.dot(dckl_coef, np.array([1.0, (2*self.eos_dict['lambda_ij'][i, j])]))
-                dzetaijdlambda[:, i, j] = np.dot( zetax_pow, cikl)
+                cikl = np.dot(
+                    dckl_coef, np.array([1.0, (2 * self.eos_dict["lambda_ij"][i, j])])
+                )
+                dzetaijdlambda[:, i, j] = np.dot(zetax_pow, cikl)
 
         dzetaijdzetax = self._dzetaeff_dzetax(rho, xi, zetax=zetax, mode="effective")
-        dzetaeff = self.eos_dict['lambda_ij'][np.newaxis,:,:]/3.0*dzetaijdlambda - zetax[:,np.newaxis,np.newaxis]*dzetaijdzetax
-    
-        gSW = gHS + self.eos_dict['epsilon_ij'][np.newaxis,:,:]/ T * (g0HS + (self.eos_dict['lambda_ij'][np.newaxis,:,:]**3-1.0)*dg0HSdzetaeff*dzetaeff)
+        dzetaeff = (
+            self.eos_dict["lambda_ij"][np.newaxis, :, :] / 3.0 * dzetaijdlambda
+            - zetax[:, np.newaxis, np.newaxis] * dzetaijdzetax
+        )
+
+        gSW = gHS + self.eos_dict["epsilon_ij"][np.newaxis, :, :] / T * (
+            g0HS
+            + (self.eos_dict["lambda_ij"][np.newaxis, :, :] ** 3 - 1.0)
+            * dg0HSdzetaeff
+            * dzetaeff
+        )
 
         return gSW
 
@@ -628,13 +747,17 @@ class SaftType():
         rho = self._check_density(rho)
 
         gii = self.calc_gSW(rho, T, xi)
-        
+
         Achain = 0.0
         for i in range(self.ncomp):
-            beadsum = -1.0 + self.eos_dict['num_rings'][i]
+            beadsum = -1.0 + self.eos_dict["num_rings"][i]
             for k in range(self.nbeads):
-                beadsum += (self.eos_dict['molecular_composition'][i, k] * self.eos_dict["Vks"][k] * self.eos_dict["Sk"][k])
-            Achain -= xi[i] * beadsum * np.log(gii[:, i,i])
+                beadsum += (
+                    self.eos_dict["molecular_composition"][i, k]
+                    * self.eos_dict["Vks"][k]
+                    * self.eos_dict["Sk"][k]
+                )
+            Achain -= xi[i] * beadsum * np.log(gii[:, i, i])
 
         if np.any(np.isnan(Achain)):
             logger.error("Some Helmholtz values are NaN, check energy parameters.")
@@ -665,7 +788,16 @@ class SaftType():
 
         # estimate the maximum density based on the hard sphere packing fraction
         # etax, assuming a maximum packing fraction specified by maxpack
-        max_density = maxpack * 6.0 / (self.eos_dict['Cmol2seg'] * np.pi * np.sum(self.eos_dict['xskl'] * (self.eos_dict['sigma_kl']**3))) / constants.molecule_per_nm3
+        max_density = (
+            maxpack
+            * 6.0
+            / (
+                self.eos_dict["Cmol2seg"]
+                * np.pi
+                * np.sum(self.eos_dict["xskl"] * (self.eos_dict["sigma_kl"] ** 3))
+            )
+            / constants.molecule_per_nm3
+        )
 
         return max_density
 
@@ -689,7 +821,7 @@ class SaftType():
         gr : numpy.ndarray
             A temperature-density polynomial correlation of the association integral for a Lennard-Jones monomer. This matrix is (len(rho) x Ncomp x Ncomp)
         """
-    
+
         rho = self._check_density(rho)
         gSW = self.calc_gSW(rho, T, xi)
 
@@ -718,12 +850,16 @@ class SaftType():
             Matrix of binding volumes
         """
 
-        dij_bar = np.zeros((self.ncomp,self.ncomp))
+        dij_bar = np.zeros((self.ncomp, self.ncomp))
         for i in range(self.ncomp):
             for j in range(self.ncomp):
-                dij_bar[i,j] = np.mean([self.eos_dict['sigma_ij'][i],self.eos_dict['sigma_ij'][j]])
+                dij_bar[i, j] = np.mean(
+                    [self.eos_dict["sigma_ij"][i], self.eos_dict["sigma_ij"][j]]
+                )
 
-        Kijklab = Aassoc.calc_bonding_volume(rc_klab, dij_bar, rd_klab=rd_klab, reduction_ratio=reduction_ratio)
+        Kijklab = Aassoc.calc_bonding_volume(
+            rc_klab, dij_bar, rd_klab=rd_klab, reduction_ratio=reduction_ratio
+        )
 
         return Kijklab
 
@@ -751,18 +887,39 @@ class SaftType():
         self.bead_library.update(bead_library)
         self.cross_library.update(cross_library)
 
-        self.eos_dict['Sk'] = tb.extract_property("Sk",self.bead_library,self.beads, default=1.0)
+        self.eos_dict["Sk"] = tb.extract_property(
+            "Sk", self.bead_library, self.beads, default=1.0
+        )
 
         # Update Non bonded matrices
-        output = tb.cross_interaction_from_dict( self.beads, self.bead_library, self.combining_rules, cross_library=self.cross_library)
+        output = tb.cross_interaction_from_dict(
+            self.beads,
+            self.bead_library,
+            self.combining_rules,
+            cross_library=self.cross_library,
+        )
         self.eos_dict["sigma_kl"] = output["sigma"]
         self.eos_dict["epsilon_kl"] = output["epsilon"]
         self.eos_dict["lambda_kl"] = output["lambda"]
         self.calc_component_averaged_properties()
 
         if not np.any(np.isnan(self.xi)):
-            self.eos_dict['Cmol2seg'], self.eos_dict['xskl'] = stb.calc_composition_dependent_variables(self.xi, self.eos_dict['molecular_composition'], self.bead_library, self.beads)
-        self.alphakl = 2.0*np.pi/3.0*self.eos_dict['epsilon_kl']*self.eos_dict['sigma_kl']**3*(self.eos_dict['lambda_kl']**3 - 1.0)
+            self.eos_dict["Cmol2seg"], self.eos_dict[
+                "xskl"
+            ] = stb.calc_composition_dependent_variables(
+                self.xi,
+                self.eos_dict["molecular_composition"],
+                self.bead_library,
+                self.beads,
+            )
+        self.alphakl = (
+            2.0
+            * np.pi
+            / 3.0
+            * self.eos_dict["epsilon_kl"]
+            * self.eos_dict["sigma_kl"] ** 3
+            * (self.eos_dict["lambda_kl"] ** 3 - 1.0)
+        )
 
     def _check_density(self, rho):
         r"""
@@ -789,8 +946,8 @@ class SaftType():
         if any(np.isnan(rho)):
             raise ValueError("NaN was given as a value of density, rho")
         elif rho.size == 0:
-                raise ValueError("No value of density was given")
-        elif any(rho < 0.):
+            raise ValueError("No value of density was given")
+        elif any(rho < 0.0):
             raise ValueError("Density values cannot be negative.")
 
         return rho
@@ -817,7 +974,14 @@ class SaftType():
         """
         xi = np.array(xi)
         if not np.all(self.xi == xi):
-            self.eos_dict['Cmol2seg'], self.eos_dict['xskl'] = stb.calc_composition_dependent_variables(xi, self.eos_dict['molecular_composition'], self.bead_library, self.beads)
+            self.eos_dict["Cmol2seg"], self.eos_dict[
+                "xskl"
+            ] = stb.calc_composition_dependent_variables(
+                xi,
+                self.eos_dict["molecular_composition"],
+                self.bead_library,
+                self.beads,
+            )
             self.xi = xi
 
     def __str__(self):

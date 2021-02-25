@@ -63,12 +63,12 @@ class Data(ExpDataTemplate):
     def __init__(self, data_dict):
 
         super().__init__(data_dict)
-        
+
         self.name = "solubility_parameter"
         if self.thermodict["calculation_type"] == None:
             self.thermodict["calculation_type"] = "solubility_parameter"
-        
-        if 'density_opts' not in self.thermodict:
+
+        if "density_opts" not in self.thermodict:
             self.thermodict["density_opts"] = {}
 
         if "xi" in data_dict:
@@ -84,8 +84,8 @@ class Data(ExpDataTemplate):
         if "P" in data_dict:
             self.thermodict["Plist"] = data_dict["P"]
             del data_dict["P"]
-            if 'P' in self.weights:
-                self.weights['Plist'] = self.weights.pop('P')
+            if "P" in self.weights:
+                self.weights["Plist"] = self.weights.pop("P")
 
         self.thermodict.update(data_dict)
 
@@ -96,18 +96,36 @@ class Data(ExpDataTemplate):
         self.thermodict.update(gtb.check_length(self.thermodict, key_list))
         self.npoints = np.size(self.thermodict["delta"])
 
-        if 'xilist' not in self.thermodict and self.Eos.number_of_components > 1:
+        if "xilist" not in self.thermodict and self.Eos.number_of_components > 1:
             raise ValueError("Ambiguous mixture composition. Define xi")
-        thermo_defaults = [constants.standard_pressure, np.array([[1.0] for x in range(self.npoints)]), constants.standard_temperature]
-        self.thermodict.update(gtb.set_defaults(self.thermodict, thermo_keys, thermo_defaults, lx=self.npoints))
+        thermo_defaults = [
+            constants.standard_pressure,
+            np.array([[1.0] for x in range(self.npoints)]),
+            constants.standard_temperature,
+        ]
+        self.thermodict.update(
+            gtb.set_defaults(
+                self.thermodict, thermo_keys, thermo_defaults, lx=self.npoints
+            )
+        )
 
-        self.weights.update(gtb.check_length(self.weights, self.result_keys, lx=self.npoints))
+        self.weights.update(
+            gtb.check_length(self.weights, self.result_keys, lx=self.npoints)
+        )
         self.weights.update(gtb.set_defaults(self.weights, self.result_keys, 1.0))
 
         if "Tlist" not in self.thermodict and "delta" not in self.thermodict:
-            raise ImportError("Given solubility data, value(s) for T and delta should have been provided.")
+            raise ImportError(
+                "Given solubility data, value(s) for T and delta should have been provided."
+            )
 
-        logger.info("Data type 'solubility parameter' initiated with calculation_type, {}, and data types: {}.\nWeight data by: {}".format(self.thermodict["calculation_type"],", ".join(self.result_keys),self.weights))
+        logger.info(
+            "Data type 'solubility parameter' initiated with calculation_type, {}, and data types: {}.\nWeight data by: {}".format(
+                self.thermodict["calculation_type"],
+                ", ".join(self.result_keys),
+                self.weights,
+            )
+        )
 
     def _thermo_wrapper(self):
 
@@ -130,12 +148,11 @@ class Data(ExpDataTemplate):
         # Run thermo calculations
         try:
             output_dict = thermo(self.Eos, **opts)
-            output = [output_dict["delta"],output_dict["rhol"]]
+            output = [output_dict["delta"], output_dict["rhol"]]
         except Exception:
             raise ValueError("Calculation of solubility_parameter failed")
 
         return output
-
 
     def objective(self):
 
@@ -157,17 +174,29 @@ class Data(ExpDataTemplate):
         # objective function
         obj_value = np.zeros(2)
         if "delta" in self.thermodict:
-            obj_value[0] = ff.obj_function_form(phase_list[0], self.thermodict['delta'], weights=self.weights['delta'], **self.obj_opts)
+            obj_value[0] = ff.obj_function_form(
+                phase_list[0],
+                self.thermodict["delta"],
+                weights=self.weights["delta"],
+                **self.obj_opts
+            )
         if "rhol" in self.thermodict:
-            obj_value[1] = ff.obj_function_form(phase_list[1], self.thermodict['rhol'], weights=self.weights['rhol'], **self.obj_opts)
+            obj_value[1] = ff.obj_function_form(
+                phase_list[1],
+                self.thermodict["rhol"],
+                weights=self.weights["rhol"],
+                **self.obj_opts
+            )
 
-        logger.debug("Obj. breakdown for {}: delta {}, rhol {}".format(self.name,obj_value[0],obj_value[1]))
+        logger.debug(
+            "Obj. breakdown for {}: delta {}, rhol {}".format(
+                self.name, obj_value[0], obj_value[1]
+            )
+        )
 
-        if all([(np.isnan(x) or x==0.0) for x in obj_value]):
+        if all([(np.isnan(x) or x == 0.0) for x in obj_value]):
             obj_total = np.inf
         else:
             obj_total = np.nansum(obj_value)
 
         return obj_total
-
-        

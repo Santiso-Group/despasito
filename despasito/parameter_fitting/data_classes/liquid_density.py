@@ -63,13 +63,17 @@ class Data(ExpDataTemplate):
     def __init__(self, data_dict):
 
         super().__init__(data_dict)
-        
+
         self.name = "liquid_density"
-        tmp = {"min_density_fraction":(1.0 / 300000.0), "density_increment":10.0, "max_volume_increment":1.0E-4}
-        if 'density_opts' in self.thermodict:
+        tmp = {
+            "min_density_fraction": (1.0 / 300000.0),
+            "density_increment": 10.0,
+            "max_volume_increment": 1.0e-4,
+        }
+        if "density_opts" in self.thermodict:
             tmp.update(self.thermodict["density_opts"])
         self.thermodict["density_opts"] = tmp
-        
+
         if self.thermodict["calculation_type"] == None:
             self.thermodict["calculation_type"] = "liquid_properties"
 
@@ -92,18 +96,36 @@ class Data(ExpDataTemplate):
         self.thermodict.update(gtb.check_length(self.thermodict, key_list))
         self.npoints = np.size(self.thermodict["Tlist"])
 
-        if 'xilist' not in self.thermodict and self.Eos.number_of_components > 1:
+        if "xilist" not in self.thermodict and self.Eos.number_of_components > 1:
             raise ValueError("Ambiguous mixture composition. Define xi")
-        thermo_defaults = [constants.standard_pressure, np.array([[1.0] for x in range(self.npoints)]), constants.standard_temperature]
-        self.thermodict.update(gtb.set_defaults(self.thermodict, thermo_keys, thermo_defaults, lx=self.npoints))
+        thermo_defaults = [
+            constants.standard_pressure,
+            np.array([[1.0] for x in range(self.npoints)]),
+            constants.standard_temperature,
+        ]
+        self.thermodict.update(
+            gtb.set_defaults(
+                self.thermodict, thermo_keys, thermo_defaults, lx=self.npoints
+            )
+        )
 
-        self.weights.update(gtb.check_length(self.weights, self.result_keys, lx=self.npoints))
+        self.weights.update(
+            gtb.check_length(self.weights, self.result_keys, lx=self.npoints)
+        )
         self.weights.update(gtb.set_defaults(self.weights, self.result_keys, 1.0))
 
         if "Tlist" not in self.thermodict and "rhol" not in self.thermodict:
-            raise ImportError("Given liquid property data, values for T, xi, and rhol should have been provided.")
+            raise ImportError(
+                "Given liquid property data, values for T, xi, and rhol should have been provided."
+            )
 
-        logger.info("Data type 'liquid_properties' initiated with calculation_type, {}, and data types: {}.\nWeight data by: {}".format(self.thermodict["calculation_type"],", ".join(self.result_keys),self.weights))
+        logger.info(
+            "Data type 'liquid_properties' initiated with calculation_type, {}, and data types: {}.\nWeight data by: {}".format(
+                self.thermodict["calculation_type"],
+                ", ".join(self.result_keys),
+                self.weights,
+            )
+        )
 
     def _thermo_wrapper(self):
 
@@ -130,7 +152,6 @@ class Data(ExpDataTemplate):
             raise ValueError("Calculation of calc_liquid_density failed")
         return output
 
-
     def objective(self):
 
         """
@@ -145,16 +166,20 @@ class Data(ExpDataTemplate):
         phase_list = self._thermo_wrapper()
 
         # Reformat array of results
-        phase_list, len_list = ff.reformat_output(phase_list) 
+        phase_list, len_list = ff.reformat_output(phase_list)
         phase_list = np.transpose(np.array(phase_list))
 
         # objective function
-        obj_value = ff.obj_function_form(phase_list, self.thermodict['rhol'], weights=self.weights['rhol'], **self.obj_opts)
+        obj_value = ff.obj_function_form(
+            phase_list,
+            self.thermodict["rhol"],
+            weights=self.weights["rhol"],
+            **self.obj_opts
+        )
 
-        logger.debug("Obj. breakdown for {}: rhol {}".format(self.name,obj_value))
+        logger.debug("Obj. breakdown for {}: rhol {}".format(self.name, obj_value))
 
-        if (np.isnan(obj_value) or obj_value==0.0):
+        if np.isnan(obj_value) or obj_value == 0.0:
             obj_value = np.inf
 
         return obj_value
-
