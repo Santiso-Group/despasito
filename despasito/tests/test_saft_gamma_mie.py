@@ -34,7 +34,7 @@ epsilonHB_co2_h2o = np.array([[[[   0., 0., 0. ], \
                              [[   0.,  0., 1985.4], \
                               [   0.,  0., 0. ], \
                               [1985.4, 0., 0. ]]]])
-Eos_co2_h2o = despasito.equations_of_state.initiate_eos(eos="saft.gamma_mie",beads=beads_co2_h2o,molecular_composition=molecular_composition_co2_h2o,bead_library=copy.deepcopy(bead_library_co2_h2o),cross_library=copy.deepcopy(cross_library_co2_h2o), jit=True)
+Eos_co2_h2o = despasito.equations_of_state.initiate_eos(eos="saft.gamma_mie",beads=beads_co2_h2o,molecular_composition=molecular_composition_co2_h2o,bead_library=copy.deepcopy(bead_library_co2_h2o),cross_library=copy.deepcopy(cross_library_co2_h2o))
 T = 323.2 
 rho_co2_h2o = np.array([21146.16997993]) 
 P = np.array([1713500.67089664])
@@ -47,6 +47,16 @@ def test_saft_gamma_mie_class_noassoc(beads=beads_co2_ben,molecular_composition=
 #   """Test ability to create EOS object without association sites"""
     Eos_class = despasito.equations_of_state.initiate_eos(eos="saft.gamma_mie",beads=beads,molecular_composition=molecular_composition,bead_library=copy.deepcopy(bead_library))
     assert (Eos_class.eos_dict['massi']==np.array([0.04401, 0.07811])).all()
+
+def test_fortran_available():
+
+    try:
+        from despasito.equations_of_state.saft.compiled_modules import ext_Aassoc_fortran
+        flag = True
+    except Exception:
+        flag = False
+
+    assert flag
 
 def test_saft_gamma_mie_class_assoc(beads=beads_co2_h2o,molecular_composition=molecular_composition_co2_h2o,bead_library=bead_library_co2_h2o,cross_library=cross_library_co2_h2o,epsilonHB=epsilonHB_co2_h2o):
 #   """Test ability to create EOS object with association sites"""
@@ -61,7 +71,31 @@ def test_saft_gamma_mie_class_assoc_P(T=T,xi=xi_co2_h2o,Eos=Eos_co2_h2o,rho=rho_
 def test_saft_gamma_mie_class_assoc_mu(P=P,xi=xi_co2_h2o,T=T,Eos=Eos_co2_h2o,rho=rho_co2_h2o):
 #   """Test ability to predict P with association sites"""
     phi = Eos.fugacity_coefficient(P, rho, xi, T)
-#    assert mui == pytest.approx(np.array([1.61884825, -4.09022886]),abs=1e-4)
     assert phi == pytest.approx(np.array([4.49499056, 0.02580171]),abs=1e-4)
+
+def test_numba_available():
+
+    try:
+        from despasito.equations_of_state.saft.compiled_modules.ext_Aassoc_numba import calc_Xika
+        from despasito.equations_of_state.saft.compiled_modules.ext_gamma_mie_numba import calc_a1s, calc_Bkl, calc_a1ii, calc_a1s_eff, calc_Bkl_eff, calc_da1iidrhos, calc_da2ii_1pchi_drhos
+        flag = True
+    except Exception:
+        flag = False
+
+    assert flag
+
+def test_cython_available():
+
+    try:
+        from despasito.equations_of_state.saft.compiled_modules.ext_Aassoc_cython import calc_Xika
+        from despasito.equations_of_state.saft.compiled_modules.ext_gamma_mie_cython import calc_a1s, calc_Bkl, calc_a1ii, calc_a1s_eff, calc_Bkl_eff, calc_da1iidrhos, calc_da2ii_1pchi_drhos
+        flag = True
+    except Exception:
+        flag = False
+
+    assert flag
+
+
+
 
 

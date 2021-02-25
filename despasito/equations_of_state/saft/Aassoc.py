@@ -26,7 +26,7 @@ if not method_stat.cython and not method_stat.numba and not method_stat.python:
         flag_fortran = True
     except Exception:
         logger.info("Fortran module failed to import, using numba for association sites")
-        from .compiled_modules.ext_Aassoc_python import calc_Xika
+        method_stat.numba = True
 
 if method_stat.cython:
     from .compiled_modules.ext_Aassoc_cython import calc_Xika
