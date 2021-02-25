@@ -37,12 +37,12 @@ optimization_parameters = {"fit_bead" : "CO2", "fit_parameter_names": ["epsilon_
 thermo_dict0 = {"optimization_parameters": optimization_parameters, "exp_data": exp_data_dew_pressure, "parameters_guess": [432.69], "global_opts": {"method": "single_objective"}}
 
 
-def test_dew_pressure(Eos=Eos,thermo_dict=copy.deepcopy(thermo_dict0)):
-
-    thermo_dict = ri.process_param_fit_inputs(thermo_dict)
-    output = fit.fit(**thermo_dict)
-        
-    assert output["parameters_final"][0]==pytest.approx(432.69,abs=1.0) and output["objective_value"]==pytest.approx(854.19,abs=1.0)
+#def test_dew_pressure(Eos=Eos,thermo_dict=copy.deepcopy(thermo_dict0)):
+#
+#    thermo_dict = ri.process_param_fit_inputs(thermo_dict)
+#    output = fit.fit(**thermo_dict)
+#        
+#    assert output["parameters_final"][0]==pytest.approx(432.69,abs=1.0) and output["objective_value"]==pytest.approx(854.19,abs=1.0)
 
 thermo_dict0["exp_data"] = exp_data_flash
 def test_flash(Eos=Eos,thermo_dict=copy.deepcopy(thermo_dict0)):
