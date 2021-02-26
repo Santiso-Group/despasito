@@ -27,14 +27,12 @@ jobs:
   windows:
     runs-on: windows-latest
     steps:
-      - run: choco install gfortran
-      - run: gfortran --version
+      - run: choco install mingw
 
   mac:
     runs-on: macos-latest
     steps:
       - run: brew install gfortran 
-      - run: gfortran --version
 
   test:
     name: Test on ${{ matrix.os }}, Python ${{ matrix.python-version }}
