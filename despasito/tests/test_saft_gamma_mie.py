@@ -84,6 +84,13 @@ def test_numba_available():
 
     assert flag
 
+Eos_co2_h2o = despasito.equations_of_state.initiate_eos(eos="saft.gamma_mie",beads=beads_co2_h2o,molecular_composition=molecular_composition_co2_h2o,bead_library=copy.deepcopy(bead_library_co2_h2o),cross_library=copy.deepcopy(cross_library_co2_h2o), numba=True)
+
+def test_saft_gamma_mie_class_assoc_P_numba(T=T,xi=xi_co2_h2o,Eos=Eos_co2_h2o,rho=rho_co2_h2o):
+#   """Test ability to predict P with association sites"""
+    P = Eos.pressure(rho,T,xi)[0]
+    assert P == pytest.approx(15727315.77,abs=1e+3)
+
 def test_cython_available():
 
     try:
@@ -94,6 +101,13 @@ def test_cython_available():
         flag = False
 
     assert flag
+
+Eos_co2_h2o = despasito.equations_of_state.initiate_eos(eos="saft.gamma_mie",beads=beads_co2_h2o,molecular_composition=molecular_composition_co2_h2o,bead_library=copy.deepcopy(bead_library_co2_h2o),cross_library=copy.deepcopy(cross_library_co2_h2o), cython=True)
+
+def test_saft_gamma_mie_class_assoc_P_cython(T=T,xi=xi_co2_h2o,Eos=Eos_co2_h2o,rho=rho_co2_h2o):
+#   """Test ability to predict P with association sites"""
+    P = Eos.pressure(rho,T,xi)[0]
+    assert P == pytest.approx(15727315.77,abs=1e+3)
 
 
 
