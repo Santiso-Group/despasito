@@ -32,7 +32,7 @@ if flag_cython:
     for cyext in cython_list:
         name = os.path.split(cyext)[-1].split(".")[-2]
         cy_ext_1 = Extension(name=name, sources=[cyext], include_dirs=[fpath])
-        extensions.extend(cythonize([cy_ext_1]))
+        extensions.extend(cythonize([cy_ext_1],compiler_directives={'language_level': 3}))
 
 # from https://github.com/pytest-dev/pytest-runner#conditional-requirement
 needs_pytest = {"pytest", "test", "ptr"}.intersection(sys.argv)
@@ -92,7 +92,8 @@ setup(
     #            'Mac OS-X',
     #            'Unix',
     #            'Windows'],            # Valid platforms your code works on, adjust to your flavor
-    python_requires=">=3.6, <3.8",  # Python version restrictions
+    python_requires=">=3.6, <=3.8.8",          # Python version restrictions
+
     # Manual control if final package is compressible or not, set False to prevent the .egg from being made
     zip_safe=False,
 )

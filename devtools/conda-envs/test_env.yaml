@@ -1,5 +1,7 @@
 name: test
 channels:
+  - defaults
+  - conda-forge
 dependencies:
     # Base depends
   - python
@@ -7,6 +9,7 @@ dependencies:
   - numpy
   - scipy
   - numba
+  - cython
 
     # Testing
   - pytest
