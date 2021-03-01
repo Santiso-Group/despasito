@@ -23,9 +23,12 @@ flag_fortran = False
 if not method_stat.cython and not method_stat.numba and not method_stat.python:
     try:
         from .compiled_modules import ext_Aassoc_fortran
+
         flag_fortran = True
     except Exception:
-        logger.info("Fortran module failed to import, using numba for association sites")
+        logger.info(
+            "Fortran module failed to import, using numba for association sites"
+        )
         method_stat.numba = True
 
 if method_stat.cython:
@@ -37,24 +40,50 @@ elif method_stat.python:
     logger.info("Using pure python. Consider using 'numba' flag")
     from .compiled_modules.ext_Aassoc_python import calc_Xika
 
+
 def _calc_Xika_wrap(*args, maxiter=500, tol=1e-12, damp=0.1):
     r""" This function wrapper allows difference types of compiled functions to be referenced.
     """
     indices, rho, xi, molecular_composition, nk, Fklab, Kklab, gr_assoc = args
     if len(np.shape(Kklab)) == 4:
         if flag_fortran:
-            Xika_init = 0.5*np.ones(len(indices))
-            Xika = ext_Aassoc_fortran.calc_xika_4(indices,constants.molecule_per_nm3*rho,Xika_init,xi,molecular_composition,nk,Fklab,Kklab,gr_assoc,maxiter,tol)
+            Xika_init = 0.5 * np.ones(len(indices))
+            Xika = ext_Aassoc_fortran.calc_xika_4(
+                indices,
+                constants.molecule_per_nm3 * rho,
+                Xika_init,
+                xi,
+                molecular_composition,
+                nk,
+                Fklab,
+                Kklab,
+                gr_assoc,
+                maxiter,
+                tol,
+            )
         else:
             Xika, _ = calc_Xika(*args)
     elif len(np.shape(Kklab)) == 6:
         if flag_fortran:
-            Xika_init = 0.5*np.ones(len(indices))
-            Xika = ext_Aassoc_fortran.calc_xika_6(indices,constants.molecule_per_nm3*rho,Xika_init,xi,molecular_composition,nk,Fklab,Kklab,gr_assoc,maxiter,tol)
+            Xika_init = 0.5 * np.ones(len(indices))
+            Xika = ext_Aassoc_fortran.calc_xika_6(
+                indices,
+                constants.molecule_per_nm3 * rho,
+                Xika_init,
+                xi,
+                molecular_composition,
+                nk,
+                Fklab,
+                Kklab,
+                gr_assoc,
+                maxiter,
+                tol,
+            )
         else:
             Xika, _ = calc_Xika(*args)
 
     return Xika
+
 
 def assoc_site_indices(nk, molecular_composition, xi=None):
     r"""
@@ -85,21 +114,22 @@ def assoc_site_indices(nk, molecular_composition, xi=None):
         bead_sites.append([i for i, site in enumerate(bead) if site != 0])
 
     ## Indices of components will minimal mole fractions
-    #if xi is not None:
+    # if xi is not None:
     #    zero_frac = np.where(np.array(xi)<np.finfo("float").eps)[0]
-    #else:
+    # else:
     #    zero_frac = np.array([])
 
     for i, comp in enumerate(molecular_composition):
-        #if i not in zero_frac:
-       for j, bead in enumerate(comp):
-           if (bead != 0 and bead_sites[j]):
-               for k in bead_sites[j]:
-                   indices.append([i,j,k])
+        # if i not in zero_frac:
+        for j, bead in enumerate(comp):
+            if bead != 0 and bead_sites[j]:
+                for k in bead_sites[j]:
+                    indices.append([i, j, k])
 
     indices = np.array([np.array(x) for x in indices], dtype=np.int)
 
     return indices
+
 
 def initiate_assoc_matrices(beads, bead_library, molecular_composition):
     r"""
@@ -139,9 +169,11 @@ def initiate_assoc_matrices(beads, bead_library, molecular_composition):
             if key.startswith("Nk"):
                 tmp = key.split("-")
                 if len(tmp) < 2:
-                    raise ValueError("Association site names should be defined with hyphens (e.g. Nk-H)")
+                    raise ValueError(
+                        "Association site names should be defined with hyphens (e.g. Nk-H)"
+                    )
                 else:
-                    _, site = tmp 
+                    _, site = tmp
 
                 if site not in sitenames:
                     for j in range(i):
@@ -151,7 +183,11 @@ def initiate_assoc_matrices(beads, bead_library, molecular_composition):
                 else:
                     ind = sitenames.index(site)
                     nk[i][ind] = value
-                logger.debug("Bead {} has {} of the association site {}".format(bead,value,site))
+                logger.debug(
+                    "Bead {} has {} of the association site {}".format(
+                        bead, value, site
+                    )
+                )
 
     indices = assoc_site_indices(nk, molecular_composition)
     if indices.size == 0:
@@ -160,13 +196,23 @@ def initiate_assoc_matrices(beads, bead_library, molecular_composition):
         flag_assoc = True
 
     if flag_assoc:
-        logger.info("The following association sites have been identified: {}".format(sitenames))
+        logger.info(
+            "The following association sites have been identified: {}".format(sitenames)
+        )
     else:
         logger.info("No association sites are used in this system.")
 
     return sitenames, np.array(nk), flag_assoc
 
-def calc_assoc_matrices(beads, bead_library, molecular_composition, cross_library={}, nk=None, sitenames=None):
+
+def calc_assoc_matrices(
+    beads,
+    bead_library,
+    molecular_composition,
+    cross_library={},
+    nk=None,
+    sitenames=None,
+):
     r"""
     
     Generate matrices used for association site calculations.
@@ -218,7 +264,9 @@ def calc_assoc_matrices(beads, bead_library, molecular_composition, cross_librar
 
     nbeads = len(beads)
     if np.any(sitenames == None) or np.any(nk == None):
-        sitenames, nk, _ = initiate_assoc_matrices(bead_library, beads, molecular_composition)
+        sitenames, nk, _ = initiate_assoc_matrices(
+            bead_library, beads, molecular_composition
+        )
     else:
         nsitesmax = len(sitenames)
     epsilonHB = np.zeros((nbeads, nbeads, nsitesmax, nsitesmax))
@@ -236,22 +284,39 @@ def calc_assoc_matrices(beads, bead_library, molecular_composition, cross_librar
 
             if nk1[a] == 0.0:
                 continue
-       
+
             for b, site2 in enumerate(sitenames):
 
                 if nk1[b] != 0:
-                    epsilon_tmp = "-".join(["epsilonHB",site1,site2])
-                    K_tmp = "-".join(["K",site1,site2])
-                    rc_tmp = "-".join(["rc",site1,site2])
-                    rd_tmp = "-".join(["rd",site1,site2])
+                    epsilon_tmp = "-".join(["epsilonHB", site1, site2])
+                    K_tmp = "-".join(["K", site1, site2])
+                    rc_tmp = "-".join(["rc", site1, site2])
+                    rd_tmp = "-".join(["rd", site1, site2])
 
-                    if epsilon_tmp in bead_library[bead1] and (K_tmp not in bead_library[bead1] and rc_tmp not in bead_library[bead1]):
-                        raise ValueError("An association site energy parameter for {} was given for bead {}, but not the bonding information. Either K-sitename-sitename or rc-sitename-sitename must be given.".format("{}-{}".format(site1,site2),bead1))
+                    if epsilon_tmp in bead_library[bead1] and (
+                        K_tmp not in bead_library[bead1]
+                        and rc_tmp not in bead_library[bead1]
+                    ):
+                        raise ValueError(
+                            "An association site energy parameter for {} was given for bead {}, but not the bonding information. Either K-sitename-sitename or rc-sitename-sitename must be given.".format(
+                                "{}-{}".format(site1, site2), bead1
+                            )
+                        )
                     elif K_tmp in bead_library[bead1] and rc_tmp in bead_library[bead1]:
-                        raise ValueError("Both association site bonding volumes and cutoff distances were provided for bead {}. This is redundant.".format(bead1))
-                    elif epsilon_tmp not in bead_library[bead1] and (K_tmp in bead_library[bead1] or rc_tmp in bead_library[bead1]):
-                        raise ValueError("An association site bonding information for {} was given for bead {}, but not the energy parameter. epsilonHB must be given.".format("{}-{}".format(site1,site2),bead1))
-                    
+                        raise ValueError(
+                            "Both association site bonding volumes and cutoff distances were provided for bead {}. This is redundant.".format(
+                                bead1
+                            )
+                        )
+                    elif epsilon_tmp not in bead_library[bead1] and (
+                        K_tmp in bead_library[bead1] or rc_tmp in bead_library[bead1]
+                    ):
+                        raise ValueError(
+                            "An association site bonding information for {} was given for bead {}, but not the energy parameter. epsilonHB must be given.".format(
+                                "{}-{}".format(site1, site2), bead1
+                            )
+                        )
+
                     if epsilon_tmp in bead_library[bead1]:
                         epsilonHB[i, i, a, b] = bead_library[bead1][epsilon_tmp]
                         epsilonHB[i, i, b, a] = epsilonHB[i, i, a, b]
@@ -281,8 +346,8 @@ def calc_assoc_matrices(beads, bead_library, molecular_composition, cross_librar
                 continue
 
             for b, site2 in enumerate(sitenames):
-                epsilon_tmp = "-".join(["epsilonHB",site1,site2])
-                K_tmp = "-".join(["K",site1,site2])
+                epsilon_tmp = "-".join(["epsilonHB", site1, site2])
+                K_tmp = "-".join(["K", site1, site2])
                 for j, bead2 in enumerate(beads):
                     if i == j:
                         continue
@@ -291,29 +356,72 @@ def calc_assoc_matrices(beads, bead_library, molecular_composition, cross_librar
                     if bead2 in cross_library[bead1]:
                         # Update matrix if found in cross_library
                         if epsilon_tmp in cross_library[bead1][bead2]:
-                            if (nk[i][a] == 0 or nk[j][b] == 0):
-                                if 0 not in [nk[i][b],nk[j][a]]:
-                                    logger.warning("Site names were listed in the wrong order for parameter definitions in cross interaction library. Changing {}_{} - {}_{} interaction to {}_{} - {}_{}".format( beads[i], sitenames[a], beads[j], sitenames[b], beads[i], sitenames[b], beads[j], sitenames[a]))
+                            if nk[i][a] == 0 or nk[j][b] == 0:
+                                if 0 not in [nk[i][b], nk[j][a]]:
+                                    logger.warning(
+                                        "Site names were listed in the wrong order for parameter definitions in cross interaction library. Changing {}_{} - {}_{} interaction to {}_{} - {}_{}".format(
+                                            beads[i],
+                                            sitenames[a],
+                                            beads[j],
+                                            sitenames[b],
+                                            beads[i],
+                                            sitenames[b],
+                                            beads[j],
+                                            sitenames[a],
+                                        )
+                                    )
                                     a, b = [b, a]
                                 elif nk[i][a] == 0:
-                                    raise ValueError("Cross interaction library parameters suggest a {}_{} - {}_{}   interaction, but {} doesn't have site {}.".format( beads[i], sitenames[a], beads[j], sitenames[b],beads[i], sitenames[a]))
+                                    raise ValueError(
+                                        "Cross interaction library parameters suggest a {}_{} - {}_{}   interaction, but {} doesn't have site {}.".format(
+                                            beads[i],
+                                            sitenames[a],
+                                            beads[j],
+                                            sitenames[b],
+                                            beads[i],
+                                            sitenames[a],
+                                        )
+                                    )
                                 elif nk[j][b] == 0:
-                                    raise ValueError("Cross interaction library parameters suggest a {}_{} - {}_{}   interaction, but {} doesn't have site {}.".format(beads[i], sitenames[a], beads[j], sitenames[b], beads[j], sitenames[b]))
+                                    raise ValueError(
+                                        "Cross interaction library parameters suggest a {}_{} - {}_{}   interaction, but {} doesn't have site {}.".format(
+                                            beads[i],
+                                            sitenames[a],
+                                            beads[j],
+                                            sitenames[b],
+                                            beads[j],
+                                            sitenames[b],
+                                        )
+                                    )
 
                             flag_update = True
-                            epsilonHB[i,j,a,b] = cross_library[bead1][bead2][epsilon_tmp]
-                            epsilonHB[j,i,b,a] = epsilonHB[i,j,a,b]
-    
-                            if flag_Kklab:
-                                Kklab[i,j,a,b] = cross_library[bead1][bead2][K_tmp]
-                                Kklab[j,i,b,a] = Kklab[i,j,a,b]
+                            epsilonHB[i, j, a, b] = cross_library[bead1][bead2][
+                                epsilon_tmp
+                            ]
+                            epsilonHB[j, i, b, a] = epsilonHB[i, j, a, b]
 
-                    if not flag_update and nk[j][b] != 0 and epsilonHB[j,i,b,a] == 0.0:
-                        epsilonHB[i,j,a,b] = np.sqrt(epsilonHB[i,i,a,a]*epsilonHB[j,j,b,b])
-                        epsilonHB[j,i,b,a] = epsilonHB[i,j,a,b]
+                            if flag_Kklab:
+                                Kklab[i, j, a, b] = cross_library[bead1][bead2][K_tmp]
+                                Kklab[j, i, b, a] = Kklab[i, j, a, b]
+
+                    if (
+                        not flag_update
+                        and nk[j][b] != 0
+                        and epsilonHB[j, i, b, a] == 0.0
+                    ):
+                        epsilonHB[i, j, a, b] = np.sqrt(
+                            epsilonHB[i, i, a, a] * epsilonHB[j, j, b, b]
+                        )
+                        epsilonHB[j, i, b, a] = epsilonHB[i, j, a, b]
                         if flag_Kklab:
-                            Kklab[i,j,a,b] = (((Kklab[i,i,a,a])**(1.0/3.0)+(Kklab[j,j,b,b])**(1.0/3.0))/2.0)**3
-                            Kklab[j,i,b,a] = Kklab[i,j,a,b]
+                            Kklab[i, j, a, b] = (
+                                (
+                                    (Kklab[i, i, a, a]) ** (1.0 / 3.0)
+                                    + (Kklab[j, j, b, b]) ** (1.0 / 3.0)
+                                )
+                                / 2.0
+                            ) ** 3
+                            Kklab[j, i, b, a] = Kklab[i, j, a, b]
 
     output = {"epsilonHB": epsilonHB}
     if flag_Kklab:
@@ -324,11 +432,16 @@ def calc_assoc_matrices(beads, bead_library, molecular_composition, cross_librar
         output["rd_klab"] = rd_klab
 
     if flag_Kklab and flag_rc_klab:
-        raise ValueError("Both association site bonding volumes and cutoff distances were provided. This is redundant.")
+        raise ValueError(
+            "Both association site bonding volumes and cutoff distances were provided. This is redundant."
+        )
     elif flag_rd_klab and not flag_rc_klab:
-        raise ValueError("Association site position were provided, but not cutoff distances.")
-                    
+        raise ValueError(
+            "Association site position were provided, but not cutoff distances."
+        )
+
     return output
+
 
 def calc_bonding_volume(rc_klab, dij_bar, rd_klab=None, reduction_ratio=0.25):
     """
@@ -355,7 +468,7 @@ def calc_bonding_volume(rc_klab, dij_bar, rd_klab=None, reduction_ratio=0.25):
 
     ncomp = len(dij_bar)
     nbead, _, nsite, _ = np.shape(rc_klab)
-    Kijklab = np.zeros((ncomp,ncomp,nbead,nbead,nsite,nsite))
+    Kijklab = np.zeros((ncomp, ncomp, nbead, nbead, nsite, nsite))
 
     for i in range(ncomp):
         for j in range(ncomp):
@@ -363,19 +476,33 @@ def calc_bonding_volume(rc_klab, dij_bar, rd_klab=None, reduction_ratio=0.25):
                 for l in range(nbead):
                     for a in range(nsite):
                         for b in range(nsite):
-                            if rc_klab[k,l,a,b] != 0:
+                            if rc_klab[k, l, a, b] != 0:
                                 if rd_klab == None:
-                                    rd = reduction_ratio*dij_bar[i,j]
+                                    rd = reduction_ratio * dij_bar[i, j]
                                 else:
-                                    rd = rd_klab[k,l,a,b]
+                                    rd = rd_klab[k, l, a, b]
 
-                                tmp0 = np.pi*dij_bar[i,j]**2/(18*rd**2)
-                                tmp11 = np.log((rc_klab[k,l,a,b]+2*rd)/dij_bar[i,j])
-                                tmp12 = 6*rc_klab[k,l,a,b]**3 + 18*rc_klab[k,l,a,b]**2*rd - 24*rd**3
-                                tmp21 = rc_klab[k,l,a,b] + 2*rd - dij_bar[i,j]
-                                tmp22 = 22*rd**2 - 5*rd*rc_klab[k,l,a,b] - 7*rd*dij_bar[i,j] - 8*rc_klab[k,l,a,b]**2 + rc_klab[k,l,a,b]*dij_bar[i,j] + dij_bar[i,j]**2
+                                tmp0 = np.pi * dij_bar[i, j] ** 2 / (18 * rd ** 2)
+                                tmp11 = np.log(
+                                    (rc_klab[k, l, a, b] + 2 * rd) / dij_bar[i, j]
+                                )
+                                tmp12 = (
+                                    6 * rc_klab[k, l, a, b] ** 3
+                                    + 18 * rc_klab[k, l, a, b] ** 2 * rd
+                                    - 24 * rd ** 3
+                                )
+                                tmp21 = rc_klab[k, l, a, b] + 2 * rd - dij_bar[i, j]
+                                tmp22 = (
+                                    22 * rd ** 2
+                                    - 5 * rd * rc_klab[k, l, a, b]
+                                    - 7 * rd * dij_bar[i, j]
+                                    - 8 * rc_klab[k, l, a, b] ** 2
+                                    + rc_klab[k, l, a, b] * dij_bar[i, j]
+                                    + dij_bar[i, j] ** 2
+                                )
 
-                                Kijklab[i,j,k,l,a,b] = tmp0*(tmp11*tmp12 + tmp21*tmp22)
+                                Kijklab[i, j, k, l, a, b] = tmp0 * (
+                                    tmp11 * tmp12 + tmp21 * tmp22
+                                )
 
     return Kijklab
-

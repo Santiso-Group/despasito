@@ -63,14 +63,18 @@ class Data(ExpDataTemplate):
     def __init__(self, data_dict):
 
         super().__init__(data_dict)
-        
+
         # If required items weren't defined, set defaults
         self.name = "saturation_properties"
         if self.thermodict["calculation_type"] == None:
             self.thermodict["calculation_type"] = "saturation_properties"
 
-        tmp = {"min_density_fraction":(1.0 / 80000.0), "density_increment":10.0, "max_volume_increment":1.0E-4}
-        if 'density_opts' in self.thermodict:
+        tmp = {
+            "min_density_fraction": (1.0 / 80000.0),
+            "density_increment": 10.0,
+            "max_volume_increment": 1.0e-4,
+        }
+        if "density_opts" in self.thermodict:
             tmp.update(self.thermodict["density_opts"])
         self.thermodict["density_opts"] = tmp
 
@@ -88,11 +92,17 @@ class Data(ExpDataTemplate):
         if "P" in data_dict:
             self.thermodict["Psat"] = data_dict["P"]
             del data_dict["P"]
-            if 'P' in self.weights:
-                if gtb.isiterable(self.weights["P"]) and len(self.weights["P"]) != len(self.thermodict["Psat"]):
-                    raise ValueError("Array of weights for '{}' values not equal to number of experimental values given.".format("P"))
+            if "P" in self.weights:
+                if gtb.isiterable(self.weights["P"]) and len(self.weights["P"]) != len(
+                    self.thermodict["Psat"]
+                ):
+                    raise ValueError(
+                        "Array of weights for '{}' values not equal to number of experimental values given.".format(
+                            "P"
+                        )
+                    )
                 else:
-                    self.weights['Psat'] = self.weights.pop('P')
+                    self.weights["Psat"] = self.weights.pop("P")
 
         self.thermodict.update(data_dict)
 
@@ -106,22 +116,43 @@ class Data(ExpDataTemplate):
                 self.npoints = np.size(self.thermodict[key])
                 break
 
-        if 'xilist' not in self.thermodict and self.Eos.number_of_components > 1:
-            raise ValueError("Ambiguous instructions. Include xi to define intended component to obtain saturation properties")
-        thermo_defaults = [np.array([[1.0] for x in range(self.npoints)]), constants.standard_temperature]
-        self.thermodict.update(gtb.set_defaults(self.thermodict, thermo_keys, thermo_defaults, lx=self.npoints))
+        if "xilist" not in self.thermodict and self.Eos.number_of_components > 1:
+            raise ValueError(
+                "Ambiguous instructions. Include xi to define intended component to obtain saturation properties"
+            )
+        thermo_defaults = [
+            np.array([[1.0] for x in range(self.npoints)]),
+            constants.standard_temperature,
+        ]
+        self.thermodict.update(
+            gtb.set_defaults(
+                self.thermodict, thermo_keys, thermo_defaults, lx=self.npoints
+            )
+        )
 
-        self.weights.update(gtb.check_length(self.weights, self.result_keys, lx=self.npoints))
+        self.weights.update(
+            gtb.check_length(self.weights, self.result_keys, lx=self.npoints)
+        )
         self.weights.update(gtb.set_defaults(self.weights, self.result_keys, 1.0))
 
         if "Tlist" not in self.thermodict:
-            raise ImportError("Given saturation data, value(s) for T should have been provided.")
+            raise ImportError(
+                "Given saturation data, value(s) for T should have been provided."
+            )
 
-        tmp = ["Psat","rhol","rhov"]
+        tmp = ["Psat", "rhol", "rhov"]
         if not any([x in self.thermodict for x in tmp]):
-            raise ImportError("Given saturation data, values for Psat, rhol, and/or rhov should have been provided.")
+            raise ImportError(
+                "Given saturation data, values for Psat, rhol, and/or rhov should have been provided."
+            )
 
-        logger.info("Data type 'saturation_properties' initiated with calculation_type, {}, and data types: {}.\nWeight data by: {}".format(self.thermodict["calculation_type"],", ".join(self.result_keys),self.weights))
+        logger.info(
+            "Data type 'saturation_properties' initiated with calculation_type, {}, and data types: {}.\nWeight data by: {}".format(
+                self.thermodict["calculation_type"],
+                ", ".join(self.result_keys),
+                self.weights,
+            )
+        )
 
     def _thermo_wrapper(self):
 
@@ -144,7 +175,7 @@ class Data(ExpDataTemplate):
         # Run thermo calculations
         try:
             output_dict = thermo(self.Eos, **opts)
-            output = [output_dict["Psat"],output_dict["rhol"],output_dict["rhov"]]
+            output = [output_dict["Psat"], output_dict["rhol"], output_dict["rhov"]]
         except Exception:
             raise ValueError("Calculation of calc_saturation_properties failed")
 
@@ -160,7 +191,7 @@ class Data(ExpDataTemplate):
         obj_val : float
             A value for the objective function
         """
-        
+
         phase_list = self._thermo_wrapper()
 
         ## Reformat array of results
@@ -170,19 +201,36 @@ class Data(ExpDataTemplate):
         # objective function
         obj_value = np.zeros(3)
         if "Psat" in self.thermodict:
-            obj_value[0] = ff.obj_function_form(phase_list[0], self.thermodict['Psat'], weights=self.weights['Psat'], **self.obj_opts)
+            obj_value[0] = ff.obj_function_form(
+                phase_list[0],
+                self.thermodict["Psat"],
+                weights=self.weights["Psat"],
+                **self.obj_opts
+            )
         if "rhol" in self.thermodict:
-            obj_value[1] = ff.obj_function_form(phase_list[1], self.thermodict['rhol'], weights=self.weights['rhol'], **self.obj_opts)
+            obj_value[1] = ff.obj_function_form(
+                phase_list[1],
+                self.thermodict["rhol"],
+                weights=self.weights["rhol"],
+                **self.obj_opts
+            )
         if "rhov" in self.thermodict:
-            obj_value[2] = ff.obj_function_form(phase_list[2], self.thermodict['rhov'], weights=self.weights['rhov'], **self.obj_opts)
+            obj_value[2] = ff.obj_function_form(
+                phase_list[2],
+                self.thermodict["rhov"],
+                weights=self.weights["rhov"],
+                **self.obj_opts
+            )
 
-        logger.debug("Obj. breakdown for {}: Psat {}, rhol {}, rhov {}".format(self.name,obj_value[0],obj_value[1],obj_value[2]))
+        logger.debug(
+            "Obj. breakdown for {}: Psat {}, rhol {}, rhov {}".format(
+                self.name, obj_value[0], obj_value[1], obj_value[2]
+            )
+        )
 
-        if all([(np.isnan(x) or x==0.0) for x in obj_value]):
+        if all([(np.isnan(x) or x == 0.0) for x in obj_value]):
             obj_total = np.inf
         else:
             obj_total = np.nansum(obj_value)
 
         return obj_total
-
-        

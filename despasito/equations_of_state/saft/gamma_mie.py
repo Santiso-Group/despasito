@@ -22,17 +22,44 @@ logger = logging.getLogger(__name__)
 from despasito.equations_of_state import method_stat
 
 if not method_stat.cython and not method_stat.numba:
-    from .compiled_modules.ext_gamma_mie_python import calc_a1s, calc_a1ii, calc_Bkl, prefactor, calc_Iij, calc_a1s_eff, calc_Bkl_eff, calc_da1iidrhos, calc_da2ii_1pchi_drhos
+    from .compiled_modules.ext_gamma_mie_python import (
+        calc_a1s,
+        calc_a1ii,
+        calc_Bkl,
+        prefactor,
+        calc_Iij,
+        calc_a1s_eff,
+        calc_Bkl_eff,
+        calc_da1iidrhos,
+        calc_da2ii_1pchi_drhos,
+    )
 
 elif method_stat.cython:
-    from .compiled_modules.ext_gamma_mie_cython import calc_a1s, calc_Bkl, calc_a1ii, calc_a1s_eff, calc_Bkl_eff, calc_da1iidrhos, calc_da2ii_1pchi_drhos
+    from .compiled_modules.ext_gamma_mie_cython import (
+        calc_a1s,
+        calc_Bkl,
+        calc_a1ii,
+        calc_a1s_eff,
+        calc_Bkl_eff,
+        calc_da1iidrhos,
+        calc_da2ii_1pchi_drhos,
+    )
     from .compiled_modules.ext_gamma_mie_python import prefactor, calc_Iij
 
 elif method_stat.numba:
-    from .compiled_modules.ext_gamma_mie_numba import calc_a1s, calc_Bkl, calc_a1ii, calc_a1s_eff, calc_Bkl_eff, calc_da1iidrhos, calc_da2ii_1pchi_drhos
+    from .compiled_modules.ext_gamma_mie_numba import (
+        calc_a1s,
+        calc_Bkl,
+        calc_a1ii,
+        calc_a1s_eff,
+        calc_Bkl_eff,
+        calc_da1iidrhos,
+        calc_da2ii_1pchi_drhos,
+    )
     from .compiled_modules.ext_gamma_mie_python import prefactor, calc_Iij
 
-class SaftType():
+
+class SaftType:
 
     r"""
     Object of SAFT-𝛾-Mie
@@ -134,77 +161,113 @@ class SaftType():
     """
 
     def __init__(self, **kwargs):
-    
+
         self.Aideal_method = "Abroglie"
         self.parameter_types = ["epsilon", "sigma", "lambdar", "lambdaa", "Sk"]
-        self._parameter_defaults = {"epsilon":None, "lambdar":None, "lambdaa":None, "sigma":None, "Sk": 1.0, "Vks": 1.0}
-        self.parameter_bound_extreme = {"epsilon":[100.0,1000.],
-                                        "sigma":[0.1,1.0],
-                                        "lambdar":[6.0,100.],
-                                        "lambdaa":[3.0,100.],
-                                        "Sk":[0.1,1.]}    
-        self.residual_helmholtz_contributions = ["Amonomer","Achain"]
-        self.combining_rules = {"sigma": {"function": "mean"},
-                             "lambdar": {"function": "mie_exponent"},
-                             "lambdaa": {"function": "mie_exponent"},
-                             "epsilon": {"function": "volumetric_geometric_mean",
-                                         "weighting_parameters": ["sigma"]}
-                            }
+        self._parameter_defaults = {
+            "epsilon": None,
+            "lambdar": None,
+            "lambdaa": None,
+            "sigma": None,
+            "Sk": 1.0,
+            "Vks": 1.0,
+        }
+        self.parameter_bound_extreme = {
+            "epsilon": [100.0, 1000.0],
+            "sigma": [0.1, 1.0],
+            "lambdar": [6.0, 100.0],
+            "lambdaa": [3.0, 100.0],
+            "Sk": [0.1, 1.0],
+        }
+        self.residual_helmholtz_contributions = ["Amonomer", "Achain"]
+        self.combining_rules = {
+            "sigma": {"function": "mean"},
+            "lambdar": {"function": "mie_exponent"},
+            "lambdaa": {"function": "mie_exponent"},
+            "epsilon": {
+                "function": "volumetric_geometric_mean",
+                "weighting_parameters": ["sigma"],
+            },
+        }
 
         self._mixing_temp_dependence = None
 
-        if not hasattr(self, 'eos_dict'):
+        if not hasattr(self, "eos_dict"):
             self.eos_dict = {}
-        
-        needed_attributes = ['molecular_composition','beads','bead_library']
+
+        needed_attributes = ["molecular_composition", "beads", "bead_library"]
         for key in needed_attributes:
             if key not in kwargs:
-                raise ValueError("The one of the following inputs is missing: {}".format(", ".join(tmp)))
+                raise ValueError(
+                    "The one of the following inputs is missing: {}".format(
+                        ", ".join(tmp)
+                    )
+                )
             elif key == "molecular_composition":
-                    self.eos_dict[key] = kwargs[key]
+                self.eos_dict[key] = kwargs[key]
             elif not hasattr(self, key):
                 setattr(self, key, kwargs[key])
 
-        self.bead_library = tb.check_bead_parameters(self.bead_library, self._parameter_defaults)
+        self.bead_library = tb.check_bead_parameters(
+            self.bead_library, self._parameter_defaults
+        )
 
-        if 'cross_library' not in kwargs:
+        if "cross_library" not in kwargs:
             self.cross_library = {}
         else:
-            self.cross_library = kwargs['cross_library']
+            self.cross_library = kwargs["cross_library"]
 
-        if 'Vks' not in self.eos_dict:
-            self.eos_dict['Vks'] = tb.extract_property("Vks",self.bead_library,self.beads, default=1.0)
-        if 'Sk' not in self.eos_dict:
-            self.eos_dict['Sk'] = tb.extract_property("Sk",self.bead_library,self.beads, default=1.0)
+        if "Vks" not in self.eos_dict:
+            self.eos_dict["Vks"] = tb.extract_property(
+                "Vks", self.bead_library, self.beads, default=1.0
+            )
+        if "Sk" not in self.eos_dict:
+            self.eos_dict["Sk"] = tb.extract_property(
+                "Sk", self.bead_library, self.beads, default=1.0
+            )
 
         # Initialize temperature attribute
-        if not hasattr(self, 'T'):
+        if not hasattr(self, "T"):
             self.T = np.nan
-        if not hasattr(self, 'xi'):
+        if not hasattr(self, "xi"):
             self.xi = np.nan
 
-        if not hasattr(self, 'nbeads') or not hasattr(self, 'ncomp'):
-            self.ncomp, self.nbeads = np.shape(self.eos_dict['molecular_composition'])
+        if not hasattr(self, "nbeads") or not hasattr(self, "ncomp"):
+            self.ncomp, self.nbeads = np.shape(self.eos_dict["molecular_composition"])
 
         # Initiate cross interaction terms
-        output = tb.cross_interaction_from_dict( self.beads, self.bead_library, self.combining_rules, cross_library=self.cross_library)
+        output = tb.cross_interaction_from_dict(
+            self.beads,
+            self.bead_library,
+            self.combining_rules,
+            cross_library=self.cross_library,
+        )
         self.eos_dict["sigmakl"] = output["sigma"]
         self.eos_dict["epsilonkl"] = output["epsilon"]
         self.eos_dict["lambdaakl"] = output["lambdaa"]
         self.eos_dict["lambdarkl"] = output["lambdar"]
 
         # compute alphakl eq. 33
-        self.eos_dict['Ckl'] = prefactor(self.eos_dict['lambdarkl'], self.eos_dict['lambdaakl'])
-        self.eos_dict['alphakl'] = self.eos_dict['Ckl'] * ((1.0 / (self.eos_dict['lambdaakl'] - 3.0)) - (1.0 / (self.eos_dict['lambdarkl'] - 3.0)))
+        self.eos_dict["Ckl"] = prefactor(
+            self.eos_dict["lambdarkl"], self.eos_dict["lambdaakl"]
+        )
+        self.eos_dict["alphakl"] = self.eos_dict["Ckl"] * (
+            (1.0 / (self.eos_dict["lambdaakl"] - 3.0))
+            - (1.0 / (self.eos_dict["lambdarkl"] - 3.0))
+        )
 
         # Initiate average interaction terms
         self.calc_component_averaged_properties()
 
         if "num_rings" in kwargs:
-            self.eos_dict['num_rings'] = kwargs['num_rings']
-            logger.info("Accepted component ring structure: {}".format(kwargs["num_rings"]))
+            self.eos_dict["num_rings"] = kwargs["num_rings"]
+            logger.info(
+                "Accepted component ring structure: {}".format(kwargs["num_rings"])
+            )
         else:
-            self.eos_dict['num_rings'] = np.zeros(len(self.eos_dict['molecular_composition']))
+            self.eos_dict["num_rings"] = np.zeros(
+                len(self.eos_dict["molecular_composition"])
+            )
 
     def calc_component_averaged_properties(self):
         r"""
@@ -224,34 +287,46 @@ class SaftType():
 
         zki = np.zeros((self.ncomp, self.nbeads), float)
         zkinorm = np.zeros(self.ncomp, float)
-    
+
         output = {}
-        output['epsilonii_avg'] = np.zeros(self.ncomp, float)
-        output['sigmaii_avg'] = np.zeros(self.ncomp, float)
-        output['lambdarii_avg'] = np.zeros(self.ncomp, float)
-        output['lambdaaii_avg'] = np.zeros(self.ncomp, float)
-    
-        #compute zki
+        output["epsilonii_avg"] = np.zeros(self.ncomp, float)
+        output["sigmaii_avg"] = np.zeros(self.ncomp, float)
+        output["lambdarii_avg"] = np.zeros(self.ncomp, float)
+        output["lambdaaii_avg"] = np.zeros(self.ncomp, float)
+
+        # compute zki
         for i in range(self.ncomp):
             for k in range(self.nbeads):
-                zki[i, k] = self.eos_dict['molecular_composition'][i, k] * self.eos_dict['Vks'][k] * self.eos_dict['Sk'][k]
+                zki[i, k] = (
+                    self.eos_dict["molecular_composition"][i, k]
+                    * self.eos_dict["Vks"][k]
+                    * self.eos_dict["Sk"][k]
+                )
                 zkinorm[i] += zki[i, k]
-    
+
         for i in range(self.ncomp):
             for k in range(self.nbeads):
                 zki[i, k] = zki[i, k] / zkinorm[i]
-    
+
         for i in range(self.ncomp):
             for k in range(self.nbeads):
                 for l in range(self.nbeads):
-                    output['sigmaii_avg'][i] += zki[i, k] * zki[i, l] * self.eos_dict['sigmakl'][k, l]**3
-                    output['epsilonii_avg'][i] += zki[i, k] * zki[i, l] * self.eos_dict['epsilonkl'][k, l]
-                    output['lambdarii_avg'][i] += zki[i, k] * zki[i, l] * self.eos_dict['lambdarkl'][k, l]
-                    output['lambdaaii_avg'][i] += zki[i, k] * zki[i, l] * self.eos_dict['lambdaakl'][k, l]
-            output['sigmaii_avg'][i] = output['sigmaii_avg'][i]**(1/3.0)
+                    output["sigmaii_avg"][i] += (
+                        zki[i, k] * zki[i, l] * self.eos_dict["sigmakl"][k, l] ** 3
+                    )
+                    output["epsilonii_avg"][i] += (
+                        zki[i, k] * zki[i, l] * self.eos_dict["epsilonkl"][k, l]
+                    )
+                    output["lambdarii_avg"][i] += (
+                        zki[i, k] * zki[i, l] * self.eos_dict["lambdarkl"][k, l]
+                    )
+                    output["lambdaaii_avg"][i] += (
+                        zki[i, k] * zki[i, l] * self.eos_dict["lambdaakl"][k, l]
+                    )
+            output["sigmaii_avg"][i] = output["sigmaii_avg"][i] ** (1 / 3.0)
 
         self.eos_dict.update(output)
-    
+
     def Ahard_sphere(self, rho, T, xi):
         r"""
         Outputs monomer contribution to the Helmholtz energy, :math:`A^{HS}/Nk_{B}T`.
@@ -277,21 +352,34 @@ class SaftType():
 
         eta = np.zeros((np.size(rho), 4))
         for m in range(4):
-            eta[:, m] = rho * constants.molecule_per_nm3 * self.eos_dict['Cmol2seg'] * (np.sum(np.sqrt(np.diag(self.eos_dict['xskl'])) * (np.diag(self.eos_dict['dkl'])**m)) * (np.pi / 6.0))
+            eta[:, m] = (
+                rho
+                * constants.molecule_per_nm3
+                * self.eos_dict["Cmol2seg"]
+                * (
+                    np.sum(
+                        np.sqrt(np.diag(self.eos_dict["xskl"]))
+                        * (np.diag(self.eos_dict["dkl"]) ** m)
+                    )
+                    * (np.pi / 6.0)
+                )
+            )
 
-        tmp = (6.0 / (np.pi * rho * constants.molecule_per_nm3))
+        tmp = 6.0 / (np.pi * rho * constants.molecule_per_nm3)
         if self.ncomp == 1:
             tmp1 = 0
         else:
-            tmp1 = np.log1p(-eta[:, 3]) * (eta[:, 2]**3 / (eta[:, 3]**2) - eta[:, 0])
+            tmp1 = np.log1p(-eta[:, 3]) * (
+                eta[:, 2] ** 3 / (eta[:, 3] ** 2) - eta[:, 0]
+            )
         tmp2 = 3.0 * eta[:, 2] / (1 - eta[:, 3]) * eta[:, 1]
-        tmp3 = eta[:, 2]**3 / (eta[:, 3] * ((1.0 - eta[:, 3])**2))
+        tmp3 = eta[:, 2] ** 3 / (eta[:, 3] * ((1.0 - eta[:, 3]) ** 2))
 
-        AHS = tmp*(tmp1 + tmp2 + tmp3)
+        AHS = tmp * (tmp1 + tmp2 + tmp3)
 
         return AHS
-    
-    def Afirst_order(self,rho, T, xi, zetax=None):
+
+    def Afirst_order(self, rho, T, xi, zetax=None):
         r"""
         Outputs :math:`A^{1st order}/Nk_{B}T`. This is the first order term in the high-temperature perturbation expansion
         
@@ -317,14 +405,28 @@ class SaftType():
         self._check_composition_dependent_parameters(xi)
 
         if zetax is None:
-            zetax = stb.calc_zetax(rho, self.eos_dict['Cmol2seg'], self.eos_dict['xskl'], self.eos_dict['dkl'])
+            zetax = stb.calc_zetax(
+                rho,
+                self.eos_dict["Cmol2seg"],
+                self.eos_dict["xskl"],
+                self.eos_dict["dkl"],
+            )
 
         # compute components of eq. 19
-        a1kl = calc_a1ii(rho, self.eos_dict['Cmol2seg'], self.eos_dict['dkl'], self.eos_dict['lambdaakl'], self.eos_dict['lambdarkl'], self.eos_dict['x0kl'], self.eos_dict['epsilonkl'], zetax)
+        a1kl = calc_a1ii(
+            rho,
+            self.eos_dict["Cmol2seg"],
+            self.eos_dict["dkl"],
+            self.eos_dict["lambdaakl"],
+            self.eos_dict["lambdarkl"],
+            self.eos_dict["x0kl"],
+            self.eos_dict["epsilonkl"],
+            zetax,
+        )
 
         # eq. 18
-        a1 = np.einsum("ijk,jk->i", a1kl, self.eos_dict['xskl'])
-        A1 = (self.eos_dict['Cmol2seg'] / T) * a1 # Units of K
+        a1 = np.einsum("ijk,jk->i", a1kl, self.eos_dict["xskl"])
+        A1 = (self.eos_dict["Cmol2seg"] / T) * a1  # Units of K
 
         return A1
 
@@ -352,46 +454,125 @@ class SaftType():
         Asecond_order : numpy.ndarray
             Helmholtz energy of monomers for each density given.
         """
-        
+
         rho = self._check_density(rho)
         self._check_temperature_dependent_parameters(T)
         self._check_composition_dependent_parameters(xi)
 
         if zetax is None:
-            zetax = stb.calc_zetax(rho, self.eos_dict['Cmol2seg'], self.eos_dict['xskl'], self.eos_dict['dkl'])
+            zetax = stb.calc_zetax(
+                rho,
+                self.eos_dict["Cmol2seg"],
+                self.eos_dict["xskl"],
+                self.eos_dict["dkl"],
+            )
 
         if zetaxstar is None:
-            zetaxstar = stb.calc_zetaxstar(rho, self.eos_dict['Cmol2seg'], self.eos_dict['xskl'], self.eos_dict['sigmakl'])
+            zetaxstar = stb.calc_zetaxstar(
+                rho,
+                self.eos_dict["Cmol2seg"],
+                self.eos_dict["xskl"],
+                self.eos_dict["sigmakl"],
+            )
 
         if KHS is None:
             KHS = stb.calc_KHS(zetax)
-        
+
         ## compute a2kl, eq. 30 #####
-        
+
         # compute f1, f2, and f3 for eq. 32
-        fmlist123 = self.calc_fm(self.eos_dict['alphakl'], np.array([1, 2, 3]))
-    
-        chikl = np.einsum("i,jk", zetaxstar, fmlist123[0]) + np.einsum("i,jk", zetaxstar**5, fmlist123[1]) + np.einsum("i,jk", zetaxstar**8, fmlist123[2])
+        fmlist123 = self.calc_fm(self.eos_dict["alphakl"], np.array([1, 2, 3]))
 
-        a1s_2la = calc_a1s(rho, self.eos_dict['Cmol2seg'], 2.0 * self.eos_dict['lambdaakl'], zetax, self.eos_dict['epsilonkl'], self.eos_dict['dkl'])
-        a1s_2lr = calc_a1s(rho, self.eos_dict['Cmol2seg'], 2.0 * self.eos_dict['lambdarkl'], zetax, self.eos_dict['epsilonkl'], self.eos_dict['dkl'])
-        a1s_lalr = calc_a1s(rho, self.eos_dict['Cmol2seg'], self.eos_dict['lambdaakl'] + self.eos_dict['lambdarkl'], zetax, self.eos_dict['epsilonkl'], self.eos_dict['dkl'])
-        B_2la = calc_Bkl(rho, 2.0 * self.eos_dict['lambdaakl'], self.eos_dict['Cmol2seg'], self.eos_dict['dkl'], self.eos_dict['epsilonkl'], self.eos_dict['x0kl'], zetax)
-        B_2lr = calc_Bkl(rho, 2.0 * self.eos_dict['lambdarkl'], self.eos_dict['Cmol2seg'], self.eos_dict['dkl'], self.eos_dict['epsilonkl'], self.eos_dict['x0kl'], zetax)
-        B_lalr = calc_Bkl(rho, self.eos_dict['lambdaakl'] + self.eos_dict['lambdarkl'], self.eos_dict['Cmol2seg'], self.eos_dict['dkl'], self.eos_dict['epsilonkl'], self.eos_dict['x0kl'], zetax)
+        chikl = (
+            np.einsum("i,jk", zetaxstar, fmlist123[0])
+            + np.einsum("i,jk", zetaxstar ** 5, fmlist123[1])
+            + np.einsum("i,jk", zetaxstar ** 8, fmlist123[2])
+        )
 
-        a2kl = (self.eos_dict['x0kl']**(2.0 * self.eos_dict['lambdaakl'])) * (a1s_2la + B_2la) / constants.molecule_per_nm3 - ((2.0 * self.eos_dict['x0kl']**(self.eos_dict['lambdaakl'] + self.eos_dict['lambdarkl'])) * (a1s_lalr + B_lalr) / constants.molecule_per_nm3) + ((self.eos_dict['x0kl']**(2.0 * self.eos_dict['lambdarkl'])) * (a1s_2lr + B_2lr) / constants.molecule_per_nm3)
-        a2kl *= (1.0 + chikl) * self.eos_dict['epsilonkl'] * (self.eos_dict['Ckl']**2)  # *(KHS/2.0)
+        a1s_2la = calc_a1s(
+            rho,
+            self.eos_dict["Cmol2seg"],
+            2.0 * self.eos_dict["lambdaakl"],
+            zetax,
+            self.eos_dict["epsilonkl"],
+            self.eos_dict["dkl"],
+        )
+        a1s_2lr = calc_a1s(
+            rho,
+            self.eos_dict["Cmol2seg"],
+            2.0 * self.eos_dict["lambdarkl"],
+            zetax,
+            self.eos_dict["epsilonkl"],
+            self.eos_dict["dkl"],
+        )
+        a1s_lalr = calc_a1s(
+            rho,
+            self.eos_dict["Cmol2seg"],
+            self.eos_dict["lambdaakl"] + self.eos_dict["lambdarkl"],
+            zetax,
+            self.eos_dict["epsilonkl"],
+            self.eos_dict["dkl"],
+        )
+        B_2la = calc_Bkl(
+            rho,
+            2.0 * self.eos_dict["lambdaakl"],
+            self.eos_dict["Cmol2seg"],
+            self.eos_dict["dkl"],
+            self.eos_dict["epsilonkl"],
+            self.eos_dict["x0kl"],
+            zetax,
+        )
+        B_2lr = calc_Bkl(
+            rho,
+            2.0 * self.eos_dict["lambdarkl"],
+            self.eos_dict["Cmol2seg"],
+            self.eos_dict["dkl"],
+            self.eos_dict["epsilonkl"],
+            self.eos_dict["x0kl"],
+            zetax,
+        )
+        B_lalr = calc_Bkl(
+            rho,
+            self.eos_dict["lambdaakl"] + self.eos_dict["lambdarkl"],
+            self.eos_dict["Cmol2seg"],
+            self.eos_dict["dkl"],
+            self.eos_dict["epsilonkl"],
+            self.eos_dict["x0kl"],
+            zetax,
+        )
+
+        a2kl = (
+            (self.eos_dict["x0kl"] ** (2.0 * self.eos_dict["lambdaakl"]))
+            * (a1s_2la + B_2la)
+            / constants.molecule_per_nm3
+            - (
+                (
+                    2.0
+                    * self.eos_dict["x0kl"]
+                    ** (self.eos_dict["lambdaakl"] + self.eos_dict["lambdarkl"])
+                )
+                * (a1s_lalr + B_lalr)
+                / constants.molecule_per_nm3
+            )
+            + (
+                (self.eos_dict["x0kl"] ** (2.0 * self.eos_dict["lambdarkl"]))
+                * (a1s_2lr + B_2lr)
+                / constants.molecule_per_nm3
+            )
+        )
+        a2kl *= (
+            (1.0 + chikl) * self.eos_dict["epsilonkl"] * (self.eos_dict["Ckl"] ** 2)
+        )  # *(KHS/2.0)
 
         a2kl = np.einsum("i,ijk->ijk", KHS / 2.0, a2kl)
-        
+
         # eq. 29
-        a2 = np.einsum("ijk,jk->i", a2kl, self.eos_dict['xskl'])
-        A2 = (self.eos_dict['Cmol2seg'] / (T**2)) * a2
+        a2 = np.einsum("ijk,jk->i", a2kl, self.eos_dict["xskl"])
+        A2 = (self.eos_dict["Cmol2seg"] / (T ** 2)) * a2
 
         return A2
-    
-    def Athird_order(self,rho, T, xi, zetaxstar=None):
+
+    def Athird_order(self, rho, T, xi, zetaxstar=None):
         r"""
         Outputs :math:`A^{3rd order}/Nk_{B}T`. This is the third order term in the high-temperature perturbation expansion
         
@@ -417,20 +598,30 @@ class SaftType():
         self._check_composition_dependent_parameters(xi)
 
         if zetaxstar is None:
-            zetaxstar = stb.calc_zetaxstar(rho, self.eos_dict['Cmol2seg'], self.eos_dict['xskl'], self.eos_dict['sigmakl'])
-        
-        # compute a3kl
-        fmlist456 = self.calc_fm(self.eos_dict['alphakl'], np.array([4, 5, 6]))
+            zetaxstar = stb.calc_zetaxstar(
+                rho,
+                self.eos_dict["Cmol2seg"],
+                self.eos_dict["xskl"],
+                self.eos_dict["sigmakl"],
+            )
 
-        a3kl = np.einsum("i,jk", zetaxstar, -(self.eos_dict['epsilonkl']**3) * fmlist456[0]) * np.exp( np.einsum("i,jk", zetaxstar, fmlist456[1]) + np.einsum("i,jk", zetaxstar**2, fmlist456[2])) # a3kl=-(epsilonkl**3)*fmlist456[0]*zetaxstar*np.exp((fmlist456[1]*zetaxstar)+(fmlist456[2]*(zetaxstar**2)))
+        # compute a3kl
+        fmlist456 = self.calc_fm(self.eos_dict["alphakl"], np.array([4, 5, 6]))
+
+        a3kl = np.einsum(
+            "i,jk", zetaxstar, -(self.eos_dict["epsilonkl"] ** 3) * fmlist456[0]
+        ) * np.exp(
+            np.einsum("i,jk", zetaxstar, fmlist456[1])
+            + np.einsum("i,jk", zetaxstar ** 2, fmlist456[2])
+        )  # a3kl=-(epsilonkl**3)*fmlist456[0]*zetaxstar*np.exp((fmlist456[1]*zetaxstar)+(fmlist456[2]*(zetaxstar**2)))
 
         # eq. 37
-        a3 = np.einsum("ijk,jk->i", a3kl, self.eos_dict['xskl'])
-        A3 = (self.eos_dict['Cmol2seg'] / (T**3)) * a3
+        a3 = np.einsum("ijk,jk->i", a3kl, self.eos_dict["xskl"])
+        A3 = (self.eos_dict["Cmol2seg"] / (T ** 3)) * a3
 
         return A3
-    
-    def Amonomer(self,rho, T, xi):
+
+    def Amonomer(self, rho, T, xi):
         r"""
         Outputs :math:`A^{mono.}/Nk_{B}T`. This is composed
         
@@ -452,15 +643,31 @@ class SaftType():
         """
 
         if np.all(rho >= self.density_max(xi, T, maxpack=1.0)):
-            raise ValueError("Density values should not all be greater than {}, or calc_Amono will fail in log calculation.".format(self.density_max(xi, T)))
+            raise ValueError(
+                "Density values should not all be greater than {}, or calc_Amono will fail in log calculation.".format(
+                    self.density_max(xi, T)
+                )
+            )
 
         rho = self._check_density(rho)
         self._check_temperature_dependent_parameters(T)
         self._check_composition_dependent_parameters(xi)
 
-        zetax = stb.calc_zetax(rho, self.eos_dict['Cmol2seg'], self.eos_dict['xskl'], self.eos_dict['dkl'])
-        zetaxstar = stb.calc_zetaxstar(rho, self.eos_dict['Cmol2seg'], self.eos_dict['xskl'], self.eos_dict['sigmakl'])
-        Amonomer = self.Ahard_sphere(rho, T, xi) + self.Afirst_order(rho, T, xi, zetax=zetax) + self.Asecond_order(rho, T, xi, zetax=zetax, zetaxstar=zetaxstar) + self.Athird_order(rho, T, xi, zetaxstar=zetaxstar)
+        zetax = stb.calc_zetax(
+            rho, self.eos_dict["Cmol2seg"], self.eos_dict["xskl"], self.eos_dict["dkl"]
+        )
+        zetaxstar = stb.calc_zetaxstar(
+            rho,
+            self.eos_dict["Cmol2seg"],
+            self.eos_dict["xskl"],
+            self.eos_dict["sigmakl"],
+        )
+        Amonomer = (
+            self.Ahard_sphere(rho, T, xi)
+            + self.Afirst_order(rho, T, xi, zetax=zetax)
+            + self.Asecond_order(rho, T, xi, zetax=zetax, zetaxstar=zetaxstar)
+            + self.Athird_order(rho, T, xi, zetaxstar=zetaxstar)
+        )
 
         return Amonomer
 
@@ -492,19 +699,35 @@ class SaftType():
         self._check_composition_dependent_parameters(xi)
 
         if zetax is None:
-            zetax = stb.calc_zetax(rho, self.eos_dict['Cmol2seg'], self.eos_dict['xskl'], self.eos_dict['dkl'])
+            zetax = stb.calc_zetax(
+                rho,
+                self.eos_dict["Cmol2seg"],
+                self.eos_dict["xskl"],
+                self.eos_dict["dkl"],
+            )
 
         km = np.zeros((np.size(rho), 4))
         gdHS = np.zeros((np.size(rho), np.size(xi)))
-        
-        km[:, 0] = -np.log(1.0 - zetax) + (42.0 * zetax - 39.0 * zetax**2 + 9.0 * zetax**3 - 2.0 * zetax**4) / (6.0 * (1.0 - zetax)**3)
-        km[:, 1] = (zetax**4 + 6.0 * zetax**2 - 12.0 * zetax) / (2.0 * (1.0 - zetax)**3)
-        km[:, 2] = -3.0 * zetax**2 / (8.0 * (1.0 - zetax)**2)
-        km[:, 3] = (-zetax**4 + 3.0 * zetax**2 + 3.0 * zetax) / (6.0 * (1.0 - zetax)**3)
+
+        km[:, 0] = -np.log(1.0 - zetax) + (
+            42.0 * zetax - 39.0 * zetax ** 2 + 9.0 * zetax ** 3 - 2.0 * zetax ** 4
+        ) / (6.0 * (1.0 - zetax) ** 3)
+        km[:, 1] = (zetax ** 4 + 6.0 * zetax ** 2 - 12.0 * zetax) / (
+            2.0 * (1.0 - zetax) ** 3
+        )
+        km[:, 2] = -3.0 * zetax ** 2 / (8.0 * (1.0 - zetax) ** 2)
+        km[:, 3] = (-zetax ** 4 + 3.0 * zetax ** 2 + 3.0 * zetax) / (
+            6.0 * (1.0 - zetax) ** 3
+        )
 
         for i in range(self.ncomp):
-            gdHS[:, i] = np.exp(km[:, 0] + km[:, 1] * self.eos_dict['x0ii'][i] + km[:, 2] * self.eos_dict['x0ii'][i]**2 + km[:, 3] * self.eos_dict['x0ii'][i]**3)
-        
+            gdHS[:, i] = np.exp(
+                km[:, 0]
+                + km[:, 1] * self.eos_dict["x0ii"][i]
+                + km[:, 2] * self.eos_dict["x0ii"][i] ** 2
+                + km[:, 3] * self.eos_dict["x0ii"][i] ** 3
+            )
+
         return gdHS
 
     def g1(self, rho, T, xi, zetax=None):
@@ -533,28 +756,94 @@ class SaftType():
         self._check_composition_dependent_parameters(xi)
 
         if zetax is None:
-            zetax = stb.calc_zetax(rho, self.eos_dict['Cmol2seg'], self.eos_dict['xskl'], self.eos_dict['dkl'])
+            zetax = stb.calc_zetax(
+                rho,
+                self.eos_dict["Cmol2seg"],
+                self.eos_dict["xskl"],
+                self.eos_dict["dkl"],
+            )
 
-        da1iidrhos = calc_da1iidrhos(rho, self.eos_dict['Cmol2seg'], self.eos_dict['dii_eff'], self.eos_dict['lambdaaii_avg'], self.eos_dict['lambdarii_avg'], self.eos_dict['x0ii'], self.eos_dict['epsilonii_avg'], zetax)
+        da1iidrhos = calc_da1iidrhos(
+            rho,
+            self.eos_dict["Cmol2seg"],
+            self.eos_dict["dii_eff"],
+            self.eos_dict["lambdaaii_avg"],
+            self.eos_dict["lambdarii_avg"],
+            self.eos_dict["x0ii"],
+            self.eos_dict["epsilonii_avg"],
+            zetax,
+        )
 
-        a1sii_lambdaaii_avg = calc_a1s_eff(rho, self.eos_dict['Cmol2seg'], self.eos_dict['lambdaaii_avg'], zetax, self.eos_dict['epsilonii_avg'], self.eos_dict['dii_eff'])
-        a1sii_lambdarii_avg = calc_a1s_eff(rho, self.eos_dict['Cmol2seg'], self.eos_dict['lambdarii_avg'], zetax, self.eos_dict['epsilonii_avg'], self.eos_dict['dii_eff'])
+        a1sii_lambdaaii_avg = calc_a1s_eff(
+            rho,
+            self.eos_dict["Cmol2seg"],
+            self.eos_dict["lambdaaii_avg"],
+            zetax,
+            self.eos_dict["epsilonii_avg"],
+            self.eos_dict["dii_eff"],
+        )
+        a1sii_lambdarii_avg = calc_a1s_eff(
+            rho,
+            self.eos_dict["Cmol2seg"],
+            self.eos_dict["lambdarii_avg"],
+            zetax,
+            self.eos_dict["epsilonii_avg"],
+            self.eos_dict["dii_eff"],
+        )
 
-        Bii_lambdaaii_avg = calc_Bkl_eff(rho, self.eos_dict['lambdaaii_avg'], self.eos_dict['Cmol2seg'], self.eos_dict['dii_eff'], self.eos_dict['epsilonii_avg'], self.eos_dict['x0ii'], zetax)
-        Bii_lambdarii_avg = calc_Bkl_eff(rho, self.eos_dict['lambdarii_avg'], self.eos_dict['Cmol2seg'], self.eos_dict['dii_eff'], self.eos_dict['epsilonii_avg'], self.eos_dict['x0ii'], zetax)
+        Bii_lambdaaii_avg = calc_Bkl_eff(
+            rho,
+            self.eos_dict["lambdaaii_avg"],
+            self.eos_dict["Cmol2seg"],
+            self.eos_dict["dii_eff"],
+            self.eos_dict["epsilonii_avg"],
+            self.eos_dict["x0ii"],
+            zetax,
+        )
+        Bii_lambdarii_avg = calc_Bkl_eff(
+            rho,
+            self.eos_dict["lambdarii_avg"],
+            self.eos_dict["Cmol2seg"],
+            self.eos_dict["dii_eff"],
+            self.eos_dict["epsilonii_avg"],
+            self.eos_dict["x0ii"],
+            zetax,
+        )
 
-        Cii = prefactor(self.eos_dict['lambdarii_avg'], self.eos_dict['lambdaaii_avg'])
+        Cii = prefactor(self.eos_dict["lambdarii_avg"], self.eos_dict["lambdaaii_avg"])
 
-        tmp1 = (1.0 / (2.0 * np.pi * self.eos_dict['epsilonii_avg'] * self.eos_dict['dii_eff']**3 * constants.molecule_per_nm3**2)) 
+        tmp1 = 1.0 / (
+            2.0
+            * np.pi
+            * self.eos_dict["epsilonii_avg"]
+            * self.eos_dict["dii_eff"] ** 3
+            * constants.molecule_per_nm3 ** 2
+        )
         tmp11 = 3.0 * da1iidrhos
-        tmp21 = Cii * self.eos_dict['lambdaaii_avg'] * (self.eos_dict['x0ii']**self.eos_dict['lambdaaii_avg'])  
-        tmp22 = np.einsum("ij,i->ij", (a1sii_lambdaaii_avg + Bii_lambdaaii_avg), 1.0 / (rho * self.eos_dict['Cmol2seg']))
-        tmp31 = (Cii * self.eos_dict['lambdarii_avg'] *  (self.eos_dict['x0ii']**self.eos_dict['lambdarii_avg'])) 
-        tmp32 = np.einsum("ij,i->ij", (a1sii_lambdarii_avg + Bii_lambdarii_avg), 1.0 / (rho * self.eos_dict['Cmol2seg'])) 
-        g1 = tmp1*(tmp11-tmp21*tmp22+tmp31*tmp32)
+        tmp21 = (
+            Cii
+            * self.eos_dict["lambdaaii_avg"]
+            * (self.eos_dict["x0ii"] ** self.eos_dict["lambdaaii_avg"])
+        )
+        tmp22 = np.einsum(
+            "ij,i->ij",
+            (a1sii_lambdaaii_avg + Bii_lambdaaii_avg),
+            1.0 / (rho * self.eos_dict["Cmol2seg"]),
+        )
+        tmp31 = (
+            Cii
+            * self.eos_dict["lambdarii_avg"]
+            * (self.eos_dict["x0ii"] ** self.eos_dict["lambdarii_avg"])
+        )
+        tmp32 = np.einsum(
+            "ij,i->ij",
+            (a1sii_lambdarii_avg + Bii_lambdarii_avg),
+            1.0 / (rho * self.eos_dict["Cmol2seg"]),
+        )
+        g1 = tmp1 * (tmp11 - tmp21 * tmp22 + tmp31 * tmp32)
 
         return g1
-    
+
     def g2(self, rho, T, xi, zetax=None):
         r"""
         Calculate the second order expansion term in calculating the radial distribution function of a Mie fluid
@@ -579,47 +868,145 @@ class SaftType():
         rho = self._check_density(rho)
         self._check_temperature_dependent_parameters(T)
         self._check_composition_dependent_parameters(xi)
- 
+
         if zetax is None:
-            zetax = stb.calc_zetax(rho, self.eos_dict['Cmol2seg'], self.eos_dict['xskl'], self.eos_dict['dkl'])
-        zetaxstar = stb.calc_zetaxstar(rho, self.eos_dict['Cmol2seg'], self.eos_dict['xskl'], self.eos_dict['sigmakl'])
+            zetax = stb.calc_zetax(
+                rho,
+                self.eos_dict["Cmol2seg"],
+                self.eos_dict["xskl"],
+                self.eos_dict["dkl"],
+            )
+        zetaxstar = stb.calc_zetaxstar(
+            rho,
+            self.eos_dict["Cmol2seg"],
+            self.eos_dict["xskl"],
+            self.eos_dict["sigmakl"],
+        )
         KHS = stb.calc_KHS(zetax)
-        
-        Cii = prefactor(self.eos_dict['lambdarii_avg'], self.eos_dict['lambdaaii_avg'])
-        
+
+        Cii = prefactor(self.eos_dict["lambdarii_avg"], self.eos_dict["lambdaaii_avg"])
+
         phi7 = np.array([10.0, 10.0, 0.57, -6.7, -8.0])
-        alphaii = Cii * ((1.0 / (self.eos_dict['lambdaaii_avg'] - 3.0)) - (1.0 / (self.eos_dict['lambdarii_avg'] - 3.0)))
-        theta = np.exp(self.eos_dict['epsilonii_avg'] / T) - 1.0
-        
+        alphaii = Cii * (
+            (1.0 / (self.eos_dict["lambdaaii_avg"] - 3.0))
+            - (1.0 / (self.eos_dict["lambdarii_avg"] - 3.0))
+        )
+        theta = np.exp(self.eos_dict["epsilonii_avg"] / T) - 1.0
+
         gammacii = np.zeros((np.size(rho), np.size(xi)))
         for i in range(self.ncomp):
-            gammacii[:, i] = phi7[0] * (-np.tanh(phi7[1] * (phi7[2] - alphaii[i])) + 1.0) * zetaxstar * theta[i] * np.exp(phi7[3] * zetaxstar + phi7[4] * (zetaxstar**2))
+            gammacii[:, i] = (
+                phi7[0]
+                * (-np.tanh(phi7[1] * (phi7[2] - alphaii[i])) + 1.0)
+                * zetaxstar
+                * theta[i]
+                * np.exp(phi7[3] * zetaxstar + phi7[4] * (zetaxstar ** 2))
+            )
 
-        da2iidrhos = calc_da2ii_1pchi_drhos(rho, self.eos_dict['Cmol2seg'], self.eos_dict['epsilonii_avg'], self.eos_dict['dii_eff'], self.eos_dict['x0ii'], self.eos_dict['lambdarii_avg'], self.eos_dict['lambdaaii_avg'], zetax)
+        da2iidrhos = calc_da2ii_1pchi_drhos(
+            rho,
+            self.eos_dict["Cmol2seg"],
+            self.eos_dict["epsilonii_avg"],
+            self.eos_dict["dii_eff"],
+            self.eos_dict["x0ii"],
+            self.eos_dict["lambdarii_avg"],
+            self.eos_dict["lambdaaii_avg"],
+            zetax,
+        )
 
-        a1sii_2lambdaaii_avg = calc_a1s_eff(rho, self.eos_dict['Cmol2seg'], 2.0 * self.eos_dict['lambdaaii_avg'], zetax, self.eos_dict['epsilonii_avg'], self.eos_dict['dii_eff'])
-        a1sii_2lambdarii_avg = calc_a1s_eff(rho, self.eos_dict['Cmol2seg'], 2.0 * self.eos_dict['lambdarii_avg'], zetax, self.eos_dict['epsilonii_avg'], self.eos_dict['dii_eff'])
-        a1sii_lambdarii_avglambdaaii_avg = calc_a1s_eff(rho, self.eos_dict['Cmol2seg'], self.eos_dict['lambdaaii_avg'] + self.eos_dict['lambdarii_avg'], zetax, self.eos_dict['epsilonii_avg'], self.eos_dict['dii_eff'])
-        
-        Bii_2lambdaaii_avg = calc_Bkl_eff(rho, 2.0 * self.eos_dict['lambdaaii_avg'], self.eos_dict['Cmol2seg'], self.eos_dict['dii_eff'], self.eos_dict['epsilonii_avg'], self.eos_dict['x0ii'], zetax)
-        Bii_2lambdarii_avg = calc_Bkl_eff(rho, 2.0 * self.eos_dict['lambdarii_avg'], self.eos_dict['Cmol2seg'], self.eos_dict['dii_eff'], self.eos_dict['epsilonii_avg'], self.eos_dict['x0ii'], zetax)
-        Bii_lambdaaii_avglambdarii_avg = calc_Bkl_eff(rho, self.eos_dict['lambdaaii_avg'] + self.eos_dict['lambdarii_avg'], self.eos_dict['Cmol2seg'], self.eos_dict['dii_eff'], self.eos_dict['epsilonii_avg'], self.eos_dict['x0ii'], zetax)
+        a1sii_2lambdaaii_avg = calc_a1s_eff(
+            rho,
+            self.eos_dict["Cmol2seg"],
+            2.0 * self.eos_dict["lambdaaii_avg"],
+            zetax,
+            self.eos_dict["epsilonii_avg"],
+            self.eos_dict["dii_eff"],
+        )
+        a1sii_2lambdarii_avg = calc_a1s_eff(
+            rho,
+            self.eos_dict["Cmol2seg"],
+            2.0 * self.eos_dict["lambdarii_avg"],
+            zetax,
+            self.eos_dict["epsilonii_avg"],
+            self.eos_dict["dii_eff"],
+        )
+        a1sii_lambdarii_avglambdaaii_avg = calc_a1s_eff(
+            rho,
+            self.eos_dict["Cmol2seg"],
+            self.eos_dict["lambdaaii_avg"] + self.eos_dict["lambdarii_avg"],
+            zetax,
+            self.eos_dict["epsilonii_avg"],
+            self.eos_dict["dii_eff"],
+        )
 
-        eKC2 = np.einsum("i,j->ij", KHS / rho / self.eos_dict['Cmol2seg'], self.eos_dict['epsilonii_avg'] * (Cii**2))
-        
-        g2MCA = (1.0 / (2.0 * np.pi * (self.eos_dict['epsilonii_avg']**2) * self.eos_dict['dii_eff']**3 * constants.molecule_per_nm3**2)) * ((3.0 * da2iidrhos) \
-                - (eKC2 * self.eos_dict['lambdarii_avg'] * (self.eos_dict['x0ii']**(2.0 * self.eos_dict['lambdarii_avg']))) \
-                   * (a1sii_2lambdarii_avg + Bii_2lambdarii_avg) \
-                + eKC2 * (self.eos_dict['lambdarii_avg'] + self.eos_dict['lambdaaii_avg']) \
-                   * (self.eos_dict['x0ii']**(self.eos_dict['lambdarii_avg'] + self.eos_dict['lambdaaii_avg'])) * (a1sii_lambdarii_avglambdaaii_avg + \
-                Bii_lambdaaii_avglambdarii_avg) \
-                - eKC2 * self.eos_dict['lambdaaii_avg'] * (self.eos_dict['x0ii']**(2.0 * self.eos_dict['lambdaaii_avg'])) \
-                   * (a1sii_2lambdaaii_avg + Bii_2lambdaaii_avg))
+        Bii_2lambdaaii_avg = calc_Bkl_eff(
+            rho,
+            2.0 * self.eos_dict["lambdaaii_avg"],
+            self.eos_dict["Cmol2seg"],
+            self.eos_dict["dii_eff"],
+            self.eos_dict["epsilonii_avg"],
+            self.eos_dict["x0ii"],
+            zetax,
+        )
+        Bii_2lambdarii_avg = calc_Bkl_eff(
+            rho,
+            2.0 * self.eos_dict["lambdarii_avg"],
+            self.eos_dict["Cmol2seg"],
+            self.eos_dict["dii_eff"],
+            self.eos_dict["epsilonii_avg"],
+            self.eos_dict["x0ii"],
+            zetax,
+        )
+        Bii_lambdaaii_avglambdarii_avg = calc_Bkl_eff(
+            rho,
+            self.eos_dict["lambdaaii_avg"] + self.eos_dict["lambdarii_avg"],
+            self.eos_dict["Cmol2seg"],
+            self.eos_dict["dii_eff"],
+            self.eos_dict["epsilonii_avg"],
+            self.eos_dict["x0ii"],
+            zetax,
+        )
+
+        eKC2 = np.einsum(
+            "i,j->ij",
+            KHS / rho / self.eos_dict["Cmol2seg"],
+            self.eos_dict["epsilonii_avg"] * (Cii ** 2),
+        )
+
+        g2MCA = (
+            1.0
+            / (
+                2.0
+                * np.pi
+                * (self.eos_dict["epsilonii_avg"] ** 2)
+                * self.eos_dict["dii_eff"] ** 3
+                * constants.molecule_per_nm3 ** 2
+            )
+        ) * (
+            (3.0 * da2iidrhos)
+            - (
+                eKC2
+                * self.eos_dict["lambdarii_avg"]
+                * (self.eos_dict["x0ii"] ** (2.0 * self.eos_dict["lambdarii_avg"]))
+            )
+            * (a1sii_2lambdarii_avg + Bii_2lambdarii_avg)
+            + eKC2
+            * (self.eos_dict["lambdarii_avg"] + self.eos_dict["lambdaaii_avg"])
+            * (
+                self.eos_dict["x0ii"]
+                ** (self.eos_dict["lambdarii_avg"] + self.eos_dict["lambdaaii_avg"])
+            )
+            * (a1sii_lambdarii_avglambdaaii_avg + Bii_lambdaaii_avglambdarii_avg)
+            - eKC2
+            * self.eos_dict["lambdaaii_avg"]
+            * (self.eos_dict["x0ii"] ** (2.0 * self.eos_dict["lambdaaii_avg"]))
+            * (a1sii_2lambdaaii_avg + Bii_2lambdaaii_avg)
+        )
 
         g2 = (1.0 + gammacii) * g2MCA
 
         return g2
-    
+
     def Achain(self, rho, T, xi):
         r"""
         Outputs the chain term for the Helmholtz energy, :math:`A^{chain}/Nk_{B}T`.
@@ -643,18 +1030,27 @@ class SaftType():
         self._check_temperature_dependent_parameters(T)
         self._check_composition_dependent_parameters(xi)
 
-        zetax = stb.calc_zetax(rho, self.eos_dict['Cmol2seg'], self.eos_dict['xskl'], self.eos_dict['dkl'])
+        zetax = stb.calc_zetax(
+            rho, self.eos_dict["Cmol2seg"], self.eos_dict["xskl"], self.eos_dict["dkl"]
+        )
         gdHS = self.gdHS(rho, T, xi, zetax=zetax)
         g1 = self.g1(rho, T, xi, zetax=zetax)
         g2 = self.g2(rho, T, xi, zetax=zetax)
 
-        gii = gdHS * np.exp((self.eos_dict['epsilonii_avg'] * g1 / (T * gdHS)) + (((self.eos_dict['epsilonii_avg'] / T)**2) * g2 / gdHS))
+        gii = gdHS * np.exp(
+            (self.eos_dict["epsilonii_avg"] * g1 / (T * gdHS))
+            + (((self.eos_dict["epsilonii_avg"] / T) ** 2) * g2 / gdHS)
+        )
 
         Achain = 0.0
         for i in range(self.ncomp):
-            beadsum = -1.0 + self.eos_dict['num_rings'][i]
+            beadsum = -1.0 + self.eos_dict["num_rings"][i]
             for k in range(self.nbeads):
-                beadsum += (self.eos_dict['molecular_composition'][i, k] * self.eos_dict["Vks"][k] * self.eos_dict["Sk"][k])
+                beadsum += (
+                    self.eos_dict["molecular_composition"][i, k]
+                    * self.eos_dict["Vks"][k]
+                    * self.eos_dict["Sk"][k]
+                )
             Achain -= xi[i] * beadsum * np.log(gii[:, i])
 
         if np.any(np.isnan(Achain)):
@@ -688,7 +1084,16 @@ class SaftType():
         # estimate the maximum density based on the hard sphere packing fraction
         # etax, assuming a maximum packing fraction specified by maxpack
 
-        max_density = maxpack * 6.0 / (self.eos_dict['Cmol2seg'] * np.pi * np.sum(self.eos_dict['xskl'] * (self.eos_dict['dkl']**3))) / constants.molecule_per_nm3
+        max_density = (
+            maxpack
+            * 6.0
+            / (
+                self.eos_dict["Cmol2seg"]
+                * np.pi
+                * np.sum(self.eos_dict["xskl"] * (self.eos_dict["dkl"] ** 3))
+            )
+            / constants.molecule_per_nm3
+        )
 
         return max_density
 
@@ -709,31 +1114,93 @@ class SaftType():
         fmlist : numpy.ndarray
             List of coefficients used to compute the correction term for :math:`A_{2}` which is related to the fluctuations of attractive energy.
         """
-    
+
         if np.size(np.shape(alphakl)) == 2:
-            fmlist = np.zeros((np.size(mlist), np.size(alphakl, axis=0), np.size(alphakl, axis=0)))
+            fmlist = np.zeros(
+                (np.size(mlist), np.size(alphakl, axis=0), np.size(alphakl, axis=0))
+            )
         elif np.size(np.shape(alphakl)) == 1:
             fmlist = np.zeros((np.size(mlist), np.size(alphakl, axis=0)))
         else:
-            logger.error('Unexpected shape in calc_fm')
+            logger.error("Unexpected shape in calc_fm")
         mlist = mlist - 1
 
-        phimn=np.array([[  7.53655570e+00,  -3.76046300e+01,   7.17459530e+01,  -4.68355200e+01, -2.46798200e+00,  -5.02720000e-01,   8.09568830e+00],\
-                [ -3.59440000e+02,   1.82560000e+03,  -3.16800000e+03,   1.88420000e+03, -8.23760000e-01,  -3.19350000e+00,   3.70900000e+00],\
-                [  1.55090000e+03,  -5.07010000e+03,   6.53460000e+03,  -3.28870000e+03, -2.71710000e+00,   2.08830000e+00,   0.00000000e+00],\
-                [ -1.19932000e+00,   9.06363200e+00,  -1.79482000e+01,   1.13402700e+01,  2.05214200e+01,  -5.66377000e+01,   4.05368300e+01],\
-                [ -1.91128000e+03,   2.13901750e+04,  -5.13207000e+04,   3.70645400e+04,  1.10374200e+03,  -3.26461000e+03,   2.55618100e+03],\
-                [  9.23690000e+03,  -1.29430000e+05,   3.57230000e+05,  -3.15530000e+05,  1.39020000e+03,  -4.51820000e+03,   4.24160000e+03],\
-                [  1.00000000e+01,   1.00000000e+01,   5.70000000e-01,  -6.70000000e+00, -8.00000000e+00,   0.00000000e+00,   0.00000000e+00]])
-        
+        phimn = np.array(
+            [
+                [
+                    7.53655570e00,
+                    -3.76046300e01,
+                    7.17459530e01,
+                    -4.68355200e01,
+                    -2.46798200e00,
+                    -5.02720000e-01,
+                    8.09568830e00,
+                ],
+                [
+                    -3.59440000e02,
+                    1.82560000e03,
+                    -3.16800000e03,
+                    1.88420000e03,
+                    -8.23760000e-01,
+                    -3.19350000e00,
+                    3.70900000e00,
+                ],
+                [
+                    1.55090000e03,
+                    -5.07010000e03,
+                    6.53460000e03,
+                    -3.28870000e03,
+                    -2.71710000e00,
+                    2.08830000e00,
+                    0.00000000e00,
+                ],
+                [
+                    -1.19932000e00,
+                    9.06363200e00,
+                    -1.79482000e01,
+                    1.13402700e01,
+                    2.05214200e01,
+                    -5.66377000e01,
+                    4.05368300e01,
+                ],
+                [
+                    -1.91128000e03,
+                    2.13901750e04,
+                    -5.13207000e04,
+                    3.70645400e04,
+                    1.10374200e03,
+                    -3.26461000e03,
+                    2.55618100e03,
+                ],
+                [
+                    9.23690000e03,
+                    -1.29430000e05,
+                    3.57230000e05,
+                    -3.15530000e05,
+                    1.39020000e03,
+                    -4.51820000e03,
+                    4.24160000e03,
+                ],
+                [
+                    1.00000000e01,
+                    1.00000000e01,
+                    5.70000000e-01,
+                    -6.70000000e00,
+                    -8.00000000e00,
+                    0.00000000e00,
+                    0.00000000e00,
+                ],
+            ]
+        )
+
         for i, m in enumerate(mlist):
             for n in range(4):
-                fmlist[i] += phimn[m, n] * (alphakl**n)
+                fmlist[i] += phimn[m, n] * (alphakl ** n)
             dum = np.ones_like(fmlist[i])
             for n in range(4, 7):
-                dum += phimn[m, n] * (alphakl**(n - 3.0))
+                dum += phimn[m, n] * (alphakl ** (n - 3.0))
             fmlist[i] = fmlist[i] / dum
-    
+
         return fmlist
 
     def calc_gr_assoc(self, rho, T, xi, Ktype="ijklab"):
@@ -764,14 +1231,24 @@ class SaftType():
         rho = self._check_density(rho)
         self._check_temperature_dependent_parameters(T)
         self._check_composition_dependent_parameters(xi)
-    
+
         if Ktype == "klab":
-            gr = calc_Iij(rho, T, xi, self.eos_dict['epsilonii_avg'], self.eos_dict['sigmaii_avg'], self.eos_dict['sigmakl'], self.eos_dict['xskl'])
+            gr = calc_Iij(
+                rho,
+                T,
+                xi,
+                self.eos_dict["epsilonii_avg"],
+                self.eos_dict["sigmaii_avg"],
+                self.eos_dict["sigmakl"],
+                self.eos_dict["xskl"],
+            )
         elif Ktype == "ijklab":
             gr = self.calc_gdHS_assoc(rho, T, xi)
         else:
-            raise ValueError("Ktype does not indicate a known gr_assoc for this saft type.")
-    
+            raise ValueError(
+                "Ktype does not indicate a known gr_assoc for this saft type."
+            )
+
         return gr
 
     def calc_gdHS_assoc(self, rho, T, xi):
@@ -801,18 +1278,33 @@ class SaftType():
         self._check_composition_dependent_parameters(xi)
 
         eta = np.zeros((np.size(rho), 2))
-        for m in range(2,4):
-            eta[:, m] = rho * constants.molecule_per_nm3 * self.eos_dict['Cmol2seg'] * (np.sum(np.sqrt(np.diag(self.eos_dict['xskl'])) * (np.diag(self.eos_dict['dkl'])**m)) * (np.pi / 6.0))
+        for m in range(2, 4):
+            eta[:, m] = (
+                rho
+                * constants.molecule_per_nm3
+                * self.eos_dict["Cmol2seg"]
+                * (
+                    np.sum(
+                        np.sqrt(np.diag(self.eos_dict["xskl"]))
+                        * (np.diag(self.eos_dict["dkl"]) ** m)
+                    )
+                    * (np.pi / 6.0)
+                )
+            )
 
-        gr = np.zeros((len(rho),self.ncomp, self.ncomp))
-        tmp0 = 1/(1-eta[:,1])
-        tmp1 = eta[:,0]/(1-eta[:,1])**2
-        tmp2 = eta[:,0]**2/(1-eta[:,1])**3
+        gr = np.zeros((len(rho), self.ncomp, self.ncomp))
+        tmp0 = 1 / (1 - eta[:, 1])
+        tmp1 = eta[:, 0] / (1 - eta[:, 1]) ** 2
+        tmp2 = eta[:, 0] ** 2 / (1 - eta[:, 1]) ** 3
         for i in range(ncomp):
             for j in range(ncomp):
-                tmp = self.eos_dict['dii_eff'][i]*self.eos_dict['dii_eff'][j]/(self.eos_dict['dii_eff'][i]+self.eos_dict['dii_eff'][j])
-                gr[:,i,j] = tmp0 + 3*tmp*tmp1 + 2*tmp**2*tmp2
-                
+                tmp = (
+                    self.eos_dict["dii_eff"][i]
+                    * self.eos_dict["dii_eff"][j]
+                    / (self.eos_dict["dii_eff"][i] + self.eos_dict["dii_eff"][j])
+                )
+                gr[:, i, j] = tmp0 + 3 * tmp * tmp1 + 2 * tmp ** 2 * tmp2
+
         return gr
 
     def calc_Kijklab(self, T, rc_klab, rd_klab=None, reduction_ratio=0.25):
@@ -835,12 +1327,16 @@ class SaftType():
 
         self._check_temperature_dependent_parameters(T)
 
-        dij_bar = np.zeros((self.ncomp,self.ncomp))
+        dij_bar = np.zeros((self.ncomp, self.ncomp))
         for i in range(self.ncomp):
             for j in range(self.ncomp):
-                dij_bar[i,j] = np.mean([self.eos_dict['dii_eff'][i],self.eos_dict['dii_eff'][j]])
+                dij_bar[i, j] = np.mean(
+                    [self.eos_dict["dii_eff"][i], self.eos_dict["dii_eff"][j]]
+                )
 
-        Kijklab = Aassoc.calc_bonding_volume(rc_klab, dij_bar, rd_klab=rd_klab, reduction_ratio=reduction_ratio)
+        Kijklab = Aassoc.calc_bonding_volume(
+            rc_klab, dij_bar, rd_klab=rd_klab, reduction_ratio=reduction_ratio
+        )
 
         return Kijklab
 
@@ -870,9 +1366,16 @@ class SaftType():
         self.bead_library.update(bead_library)
         self.cross_library.update(cross_library)
 
-        self.eos_dict['Sk'] = tb.extract_property("Sk",self.bead_library,self.beads, default=1.0)
+        self.eos_dict["Sk"] = tb.extract_property(
+            "Sk", self.bead_library, self.beads, default=1.0
+        )
 
-        output = tb.cross_interaction_from_dict( self.beads, self.bead_library, self.combining_rules, cross_library=self.cross_library)
+        output = tb.cross_interaction_from_dict(
+            self.beads,
+            self.bead_library,
+            self.combining_rules,
+            cross_library=self.cross_library,
+        )
         self.eos_dict["sigmakl"] = output["sigma"]
         self.eos_dict["epsilonkl"] = output["epsilon"]
         self.eos_dict["lambdaakl"] = output["lambdaa"]
@@ -888,10 +1391,22 @@ class SaftType():
         self.calc_component_averaged_properties()
 
         if not np.any(np.isnan(self.xi)):
-            self.eos_dict['Cmol2seg'], self.eos_dict['xskl'] = stb.calc_composition_dependent_variables(self.xi, self.eos_dict['molecular_composition'], self.bead_library, self.beads)
-    
-        self.eos_dict['Ckl'] = prefactor(self.eos_dict['lambdarkl'], self.eos_dict['lambdaakl'])
-        self.eos_dict['alphakl'] = self.eos_dict['Ckl'] * ((1.0 / (self.eos_dict['lambdaakl'] - 3.0)) - (1.0 / (self.eos_dict['lambdarkl'] - 3.0)))
+            self.eos_dict["Cmol2seg"], self.eos_dict[
+                "xskl"
+            ] = stb.calc_composition_dependent_variables(
+                self.xi,
+                self.eos_dict["molecular_composition"],
+                self.bead_library,
+                self.beads,
+            )
+
+        self.eos_dict["Ckl"] = prefactor(
+            self.eos_dict["lambdarkl"], self.eos_dict["lambdaakl"]
+        )
+        self.eos_dict["alphakl"] = self.eos_dict["Ckl"] * (
+            (1.0 / (self.eos_dict["lambdaakl"] - 3.0))
+            - (1.0 / (self.eos_dict["lambdarkl"] - 3.0))
+        )
 
     def _check_density(self, rho):
         r"""
@@ -919,8 +1434,8 @@ class SaftType():
         if any(np.isnan(rho)):
             raise ValueError("NaN was given as a value of density, rho")
         elif rho.size == 0:
-                raise ValueError("No value of density, rho, was given")
-        elif any(rho < 0.):
+            raise ValueError("No value of density, rho, was given")
+        elif any(rho < 0.0):
             raise ValueError("Density values cannot be negative.")
 
         return rho
@@ -965,23 +1480,32 @@ class SaftType():
                         self.combining_rules[key]["temperature"] = T
 
             if self._mixing_temp_dependence:
-                output = tb.cross_interaction_from_dict( self.beads, self.bead_library, self.combining_rules, cross_library=self.cross_library)
+                output = tb.cross_interaction_from_dict(
+                    self.beads,
+                    self.bead_library,
+                    self.combining_rules,
+                    cross_library=self.cross_library,
+                )
                 self.eos_dict["sigmakl"] = output["sigma"]
                 self.eos_dict["epsilonkl"] = output["epsilon"]
                 self.eos_dict["lambdaakl"] = output["lambdaa"]
                 self.eos_dict["lambdarkl"] = output["lambdar"]
 
                 # compute alphakl eq. 33
-                self.eos_dict['Ckl'] = prefactor(
-                    self.eos_dict['lambdarkl'], 
-                    self.eos_dict['lambdaakl']
-                    )
-                self.eos_dict['alphakl'] = self.eos_dict['Ckl'] \
-                    * ((1.0 / (self.eos_dict['lambdaakl'] - 3.0)) \
-                        - (1.0 / (self.eos_dict['lambdarkl'] - 3.0)))
+                self.eos_dict["Ckl"] = prefactor(
+                    self.eos_dict["lambdarkl"], self.eos_dict["lambdaakl"]
+                )
+                self.eos_dict["alphakl"] = self.eos_dict["Ckl"] * (
+                    (1.0 / (self.eos_dict["lambdaakl"] - 3.0))
+                    - (1.0 / (self.eos_dict["lambdarkl"] - 3.0))
+                )
                 self.calc_component_averaged_properties()
 
-            self.eos_dict['dkl'], self.eos_dict['x0kl'] = stb.calc_hard_sphere_matricies(T, self.eos_dict['sigmakl'], self.bead_library, self.beads, prefactor)
+            self.eos_dict["dkl"], self.eos_dict[
+                "x0kl"
+            ] = stb.calc_hard_sphere_matricies(
+                T, self.eos_dict["sigmakl"], self.bead_library, self.beads, prefactor
+            )
             self._update_chain_temperature_dependent_variables(T)
 
     def _check_composition_dependent_parameters(self, xi):
@@ -1006,7 +1530,14 @@ class SaftType():
         """
         xi = np.array(xi)
         if not np.all(self.xi == xi):
-            self.eos_dict['Cmol2seg'], self.eos_dict['xskl'] = stb.calc_composition_dependent_variables(xi, self.eos_dict['molecular_composition'], self.bead_library, self.beads)
+            self.eos_dict["Cmol2seg"], self.eos_dict[
+                "xskl"
+            ] = stb.calc_composition_dependent_variables(
+                xi,
+                self.eos_dict["molecular_composition"],
+                self.bead_library,
+                self.beads,
+            )
             self.xi = xi
 
     def _update_chain_temperature_dependent_variables(self, T):
@@ -1029,29 +1560,35 @@ class SaftType():
             - x0ii (numpy.ndarray) - Matrix of sigmaii_avg/dii_eff, sigmaii_avg is the average molecular Mie radius and dii_eff the average molecular hard sphere diameter
 
         """
-        
+
         zki = np.zeros((self.ncomp, self.nbeads), float)
         zkinorm = np.zeros(self.ncomp, float)
         dii_eff = np.zeros((self.ncomp), float)
-        #compute zki
+        # compute zki
         for i in range(self.ncomp):
             for k in range(self.nbeads):
-                zki[i, k] = self.eos_dict['molecular_composition'][i, k] * self.eos_dict['Vks'][k] * self.eos_dict['Sk'][k]
+                zki[i, k] = (
+                    self.eos_dict["molecular_composition"][i, k]
+                    * self.eos_dict["Vks"][k]
+                    * self.eos_dict["Sk"][k]
+                )
                 zkinorm[i] += zki[i, k]
 
         for i in range(self.ncomp):
             for k in range(self.nbeads):
                 zki[i, k] = zki[i, k] / zkinorm[i]
-        
+
         for i in range(self.ncomp):
             for k in range(self.nbeads):
                 for l in range(self.nbeads):
-                    dii_eff[i] += zki[i, k] * zki[i, l] * self.eos_dict['dkl'][k, l]**3
-            dii_eff[i] = dii_eff[i]**(1/3.0)
-        self.eos_dict['dii_eff'] = dii_eff
+                    dii_eff[i] += (
+                        zki[i, k] * zki[i, l] * self.eos_dict["dkl"][k, l] ** 3
+                    )
+            dii_eff[i] = dii_eff[i] ** (1 / 3.0)
+        self.eos_dict["dii_eff"] = dii_eff
 
-        #compute x0ii
-        self.eos_dict['x0ii'] = self.eos_dict['sigmaii_avg']/dii_eff
+        # compute x0ii
+        self.eos_dict["x0ii"] = self.eos_dict["sigmaii_avg"] / dii_eff
 
     def __str__(self):
 

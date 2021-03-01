@@ -17,7 +17,9 @@ import despasito.utils.general_toolbox as gtb
 logger = logging.getLogger(__name__)
 
 
-def single_objective(parameters_guess, bounds, fit_bead, fit_parameter_names, exp_dict, global_opts={}):
+def single_objective(
+    parameters_guess, bounds, fit_bead, fit_parameter_names, exp_dict, global_opts={}
+):
     r"""
     Evaluate parameter set for equation of state with given experimental data
 
@@ -43,20 +45,34 @@ def single_objective(parameters_guess, bounds, fit_bead, fit_parameter_names, ex
     """
 
     if len(global_opts) > 0:
-        logger.info("The fitting method 'single_objective' does not have further options")
+        logger.info(
+            "The fitting method 'single_objective' does not have further options"
+        )
 
-    obj_value = ff.compute_obj(parameters_guess, fit_bead, fit_parameter_names, exp_dict, bounds)
+    obj_value = ff.compute_obj(
+        parameters_guess, fit_bead, fit_parameter_names, exp_dict, bounds
+    )
 
-    result = spo.OptimizeResult(x=parameters_guess,
-                                fun=obj_value,
-                                success=True,
-                                nit=0,
-                                message="Successfully computed objective function for provided parameter set." )
+    result = spo.OptimizeResult(
+        x=parameters_guess,
+        fun=obj_value,
+        success=True,
+        nit=0,
+        message="Successfully computed objective function for provided parameter set.",
+    )
 
     return result
 
 
-def differential_evolution(parameters_guess, bounds, fit_bead, fit_parameter_names, exp_dict, global_opts={}, constraints=None):
+def differential_evolution(
+    parameters_guess,
+    bounds,
+    fit_bead,
+    fit_parameter_names,
+    exp_dict,
+    global_opts={},
+    constraints=None,
+):
     r"""
     Fit defined parameters for equation of state object using scipy.optimize.differential_evolution with given experimental data. 
 
@@ -104,9 +120,14 @@ def differential_evolution(parameters_guess, bounds, fit_bead, fit_parameter_nam
     else:
         filename = None
 
-    if "write_intermediate_file" in global_opts and global_opts["write_intermediate_file"]:
+    if (
+        "write_intermediate_file" in global_opts
+        and global_opts["write_intermediate_file"]
+    ):
         del global_opts["write_intermediate_file"]
-        global_opts["callback"] = _WriteParameterResults(fit_parameter_names, obj_cut=obj_cut, filename=filename)
+        global_opts["callback"] = _WriteParameterResults(
+            fit_parameter_names, obj_cut=obj_cut, filename=filename
+        )
 
     # Options for differential evolution, set defaults in new_global_opts
     new_global_opts = {"init": "random"}
@@ -115,7 +136,11 @@ def differential_evolution(parameters_guess, bounds, fit_bead, fit_parameter_nam
             if key is "MultiprocessingObject":
                 flag_workers = "workers" in global_opts and global_opts["workers"] > 1
                 if value.ncores > 1 and flag_workers:
-                    logger.info("Differential Evolution algorithm is using {} workers.".format(value.ncores))
+                    logger.info(
+                        "Differential Evolution algorithm is using {} workers.".format(
+                            value.ncores
+                        )
+                    )
                     new_global_opts["workers"] = value._pool.map
                     exp_dict = _del_Data_MultiprocessingObject(exp_dict)
             elif key not in obj_kwargs:
@@ -126,11 +151,26 @@ def differential_evolution(parameters_guess, bounds, fit_bead, fit_parameter_nam
         global_opts["constraints"] = ff.initialize_constraints(constraints, "class")
     logger.info("Differential Evolution Options: {}".format(global_opts))
 
-    result = spo.differential_evolution(ff.compute_obj, bounds, args=(fit_bead, fit_parameter_names, exp_dict, bounds), **global_opts)
+    result = spo.differential_evolution(
+        ff.compute_obj,
+        bounds,
+        args=(fit_bead, fit_parameter_names, exp_dict, bounds),
+        **global_opts
+    )
 
     return result
 
-def shgo(parameters_guess, bounds, fit_bead, fit_parameter_names, exp_dict, global_opts={}, minimizer_opts={}, constraints=None):
+
+def shgo(
+    parameters_guess,
+    bounds,
+    fit_bead,
+    fit_parameter_names,
+    exp_dict,
+    global_opts={},
+    minimizer_opts={},
+    constraints=None,
+):
     r"""
     Fit defined parameters for equation of state object using scipy.optimize.shgo with given experimental data. 
 
@@ -175,7 +215,7 @@ def shgo(parameters_guess, bounds, fit_bead, fit_parameter_names, exp_dict, glob
     global_opts = new_global_opts
 
     # Set up options for minimizer in basin hopping
-    new_minimizer_opts = {"method": 'nelder-mead', "options": {'maxiter': 50}}
+    new_minimizer_opts = {"method": "nelder-mead", "options": {"maxiter": 50}}
     if minimizer_opts:
         for key, value in minimizer_opts.items():
             if key == "method":
@@ -190,17 +230,40 @@ def shgo(parameters_guess, bounds, fit_bead, fit_parameter_names, exp_dict, glob
         if minimizer_opts["method"] not in ["COBYLA", "SLSQP"]:
             minimizer_opts["method"] = "SLSQP"
             for key, value in minimizer_opts["options"].items():
-                if key not in ["ftol", "eps", "disp", "maxiter", "finite_diff_rel_step"]:
+                if key not in [
+                    "ftol",
+                    "eps",
+                    "disp",
+                    "maxiter",
+                    "finite_diff_rel_step",
+                ]:
                     del minimizer_opts["options"][key]
 
     if minimizer_opts:
-        logger.warning("Minimization options were given but aren't used in this method.")
+        logger.warning(
+            "Minimization options were given but aren't used in this method."
+        )
 
-    result = spo.shgo(ff.compute_obj, bounds, args=(fit_bead, fit_parameter_names, exp_dict, bounds), **global_opts)
+    result = spo.shgo(
+        ff.compute_obj,
+        bounds,
+        args=(fit_bead, fit_parameter_names, exp_dict, bounds),
+        **global_opts
+    )
 
     return result
 
-def grid_minimization(parameters_guess, bounds, fit_bead, fit_parameter_names, exp_dict, global_opts={}, minimizer_opts={}, constraints=None):
+
+def grid_minimization(
+    parameters_guess,
+    bounds,
+    fit_bead,
+    fit_parameter_names,
+    exp_dict,
+    global_opts={},
+    minimizer_opts={},
+    constraints=None,
+):
     r"""
     Fit defined parameters for equation of state object using a custom adaptation of scipy.optimize.brute with given experimental data. 
 
@@ -238,14 +301,18 @@ def grid_minimization(parameters_guess, bounds, fit_bead, fit_parameter_names, e
         scipy OptimizedResult
     """
 
-     # Options for brute, set defaults in new_global_opts
+    # Options for brute, set defaults in new_global_opts
     flag_use_mp_object = False
-    new_global_opts = {"Ns": 5, "finish":spo.minimize}
+    new_global_opts = {"Ns": 5, "finish": spo.minimize}
     if global_opts:
         for key, value in global_opts.items():
             if key is "MultiprocessingObject":
                 if value.ncores > 1:
-                    logger.info("Grid minimization algorithm is using {} workers.".format(value.ncores))
+                    logger.info(
+                        "Grid minimization algorithm is using {} workers.".format(
+                            value.ncores
+                        )
+                    )
                     new_global_opts["MultiprocessingObject"] = value
                     flag_use_mp_object = True
                     exp_dict = _del_Data_MultiprocessingObject(exp_dict)
@@ -259,8 +326,8 @@ def grid_minimization(parameters_guess, bounds, fit_bead, fit_parameter_names, e
     logger.info("Grid Minimization Options: {}".format(global_opts))
 
     # Set up options for minimizer
-    new_minimizer_opts = {"method": 'lm'}
-    #new_minimizer_opts = {"method": 'L-BFGS-B'}
+    new_minimizer_opts = {"method": "lm"}
+    # new_minimizer_opts = {"method": 'L-BFGS-B'}
     if minimizer_opts:
         for key, value in minimizer_opts.items():
             if key == "method":
@@ -269,7 +336,7 @@ def grid_minimization(parameters_guess, bounds, fit_bead, fit_parameter_names, e
                 for key2, value2 in value.items():
                     new_minimizer_opts[key][key2] = value2
     minimizer_opts = new_minimizer_opts
-    logger.info("    Minimizer Options: {}".format( minimizer_opts))
+    logger.info("    Minimizer Options: {}".format(minimizer_opts))
 
     args = (fit_bead, fit_parameter_names, exp_dict, bounds)
 
@@ -285,39 +352,50 @@ def grid_minimization(parameters_guess, bounds, fit_bead, fit_parameter_names, e
                 if len(lrange[k]) < 3:
                     lrange[k] = tuple(lrange[k]) + (complex(global_opts["Ns"]),)
                 lrange[k] = slice(*lrange[k])
-        if (N == 1):
+        if N == 1:
             lrange = lrange[0]
         x0_array = np.mgrid[lrange]
         inpt_shape = x0_array.shape
-        if (N > 1):
+        if N > 1:
             x0_array = np.reshape(x0_array, (inpt_shape[0], np.prod(inpt_shape[1:]))).T
 
     inputs = [(x0, args, bounds, constraints, minimizer_opts) for x0 in x0_array]
 
     # Start computation
     if flag_use_mp_object:
-        x0, results, fval = global_opts["MultiprocessingObject"].pool_job(_grid_minimization_wrapper, inputs)
+        x0, results, fval = global_opts["MultiprocessingObject"].pool_job(
+            _grid_minimization_wrapper, inputs
+        )
     else:
-        x0, results, fval = MultiprocessingJob.serial_job(_grid_minimization_wrapper, inputs)
+        x0, results, fval = MultiprocessingJob.serial_job(
+            _grid_minimization_wrapper, inputs
+        )
 
     # Choose final output
     result = [fval[0], results[0]]
-    logger.info("For bead: {} and parameters {}".format(fit_bead,fit_parameter_names))
+    logger.info("For bead: {} and parameters {}".format(fit_bead, fit_parameter_names))
     for i in range(len(x0_array)):
         tmp_result = results[i]
         logger.info("x0: {}, xf: {}, obj: {}".format(x0_array[i], results[i], fval[i]))
         if result[0] > fval[i]:
             result = [fval[i], tmp_result]
 
-    result = spo.OptimizeResult(x=result[1],
-                                fun=result[0],
-                                success=True,
-                                nit=len(x0)*global_opts["Ns"],
-                                message="Termination successful with {} grid points and the minimum value minimized. Note that parameters may be outside of the given bounds because of the minimizing function.".format(len(x0)*global_opts["Ns"]))
+    result = spo.OptimizeResult(
+        x=result[1],
+        fun=result[0],
+        success=True,
+        nit=len(x0) * global_opts["Ns"],
+        message="Termination successful with {} grid points and the minimum value minimized. Note that parameters may be outside of the given bounds because of the minimizing function.".format(
+            len(x0) * global_opts["Ns"]
+        ),
+    )
 
     return result
 
-def brute(parameters_guess, bounds, fit_bead, fit_parameter_names, exp_dict, global_opts={}):
+
+def brute(
+    parameters_guess, bounds, fit_bead, fit_parameter_names, exp_dict, global_opts={}
+):
     r"""
     Fit defined parameters for equation of state object using scipy.optimize.brute with given experimental data. 
 
@@ -346,13 +424,15 @@ def brute(parameters_guess, bounds, fit_bead, fit_parameter_names, exp_dict, glo
     """
 
     # Options for brute, set defaults in new_global_opts
-    new_global_opts = {"Ns": 5, "finish":spo.minimize}
+    new_global_opts = {"Ns": 5, "finish": spo.minimize}
     if global_opts:
         for key, value in global_opts.items():
             if key is "MultiprocessingObject":
                 flag_workers = "workers" in global_opts and global_opts["workers"] > 1
                 if value.ncores > 1 and flag_workers:
-                    logger.info("Brute algorithm is using {} workers.".format(value.ncores))
+                    logger.info(
+                        "Brute algorithm is using {} workers.".format(value.ncores)
+                    )
                     new_global_opts["workers"] = value._pool.map
                     exp_dict = _del_Data_MultiprocessingObject(exp_dict)
             else:
@@ -361,16 +441,34 @@ def brute(parameters_guess, bounds, fit_bead, fit_parameter_names, exp_dict, glo
     global_opts["full_output"] = True
 
     logger.info("Brute Options: {}".format(global_opts))
-    x0, fval, grid, Jount = spo.brute(ff.compute_obj, bounds, args=(fit_bead, fit_parameter_names, exp_dict, bounds), **global_opts)
-    result = spo.OptimizeResult(x=x0,
-                                fun=fval,
-                                success=True,
-                                nit=len(x0)*global_opts["Ns"],
-                                message="Termination successful with {} grid points and the minimum value minimized. Note that parameters may be outside of the given bounds because of the minimizing function.".format(len(x0)*global_opts["Ns"]))
+    x0, fval, grid, Jount = spo.brute(
+        ff.compute_obj,
+        bounds,
+        args=(fit_bead, fit_parameter_names, exp_dict, bounds),
+        **global_opts
+    )
+    result = spo.OptimizeResult(
+        x=x0,
+        fun=fval,
+        success=True,
+        nit=len(x0) * global_opts["Ns"],
+        message="Termination successful with {} grid points and the minimum value minimized. Note that parameters may be outside of the given bounds because of the minimizing function.".format(
+            len(x0) * global_opts["Ns"]
+        ),
+    )
 
     return result
 
-def basinhopping(parameters_guess, bounds, fit_bead, fit_parameter_names, exp_dict, global_opts={}, minimizer_opts={}):
+
+def basinhopping(
+    parameters_guess,
+    bounds,
+    fit_bead,
+    fit_parameter_names,
+    exp_dict,
+    global_opts={},
+    minimizer_opts={},
+):
     r"""
     Fit defined parameters for equation of state object using scipy.optimize.basinhopping with given experimental data. 
 
@@ -424,9 +522,14 @@ def basinhopping(parameters_guess, bounds, fit_bead, fit_parameter_names, exp_di
     else:
         filename = None
 
-    if "write_intermediate_file" in global_opts and global_opts["write_intermediate_file"]:
+    if (
+        "write_intermediate_file" in global_opts
+        and global_opts["write_intermediate_file"]
+    ):
         del global_opts["write_intermediate_file"]
-        global_opts["callback"] = _WriteParameterResults(fit_parameter_names, obj_cut=obj_cut, filename=filename)
+        global_opts["callback"] = _WriteParameterResults(
+            fit_parameter_names, obj_cut=obj_cut, filename=filename
+        )
 
     # Options for basin hopping
     new_global_opts = {"niter": 10, "T": 0.5, "niter_success": 3}
@@ -437,7 +540,7 @@ def basinhopping(parameters_guess, bounds, fit_bead, fit_parameter_names, exp_di
     global_opts = new_global_opts
 
     # Set up options for minimizer in basin hopping
-    new_minimizer_opts = {"method": 'nelder-mead', "options": {'maxiter': 50}}
+    new_minimizer_opts = {"method": "nelder-mead", "options": {"maxiter": 50}}
     if minimizer_opts:
         for key, value in minimizer_opts.items():
             if key == "method":
@@ -459,13 +562,23 @@ def basinhopping(parameters_guess, bounds, fit_bead, fit_parameter_names, exp_di
         raise TypeError("Could not initialize BasinStep and/or BasinBounds")
 
     logger.info("Basin Hopping Options: {}".format(global_opts))
-    minimizer_kwargs={"args": (fit_bead, fit_parameter_names, exp_dict, bounds),**minimizer_opts}
+    minimizer_kwargs = {
+        "args": (fit_bead, fit_parameter_names, exp_dict, bounds),
+        **minimizer_opts,
+    }
     if "minimizer_kwargs" in global_opts:
         minimizer_kwargs.update(global_opts["minimizer_kwargs"])
         del global_opts["minimizer_kwargs"]
-    result = spo.basinhopping(ff.compute_obj, parameters_guess, **global_opts, accept_test=custombounds, minimizer_kwargs=minimizer_kwargs)
+    result = spo.basinhopping(
+        ff.compute_obj,
+        parameters_guess,
+        **global_opts,
+        accept_test=custombounds,
+        minimizer_kwargs=minimizer_kwargs
+    )
 
     return result
+
 
 # ___________ Supporting Classes and Functions ___________________________________________
 def _grid_minimization_wrapper(args):
@@ -483,18 +596,26 @@ def _grid_minimization_wrapper(args):
         method = "least_squares"
 
     try:
-        result = gtb.solve_root( ff.compute_obj, args=obj_args, method=method, x0=x0, bounds=bounds, options=opts)
+        result = gtb.solve_root(
+            ff.compute_obj,
+            args=obj_args,
+            method=method,
+            x0=x0,
+            bounds=bounds,
+            options=opts,
+        )
     except Exception:
-        result = np.nan*np.ones(len(x0))
+        result = np.nan * np.ones(len(x0))
 
-    if np.sum(np.abs(result-x0)) < 1e-6:
-        result = np.nan*np.ones(len(x0))
+    if np.sum(np.abs(result - x0)) < 1e-6:
+        result = np.nan * np.ones(len(x0))
 
-    logger.info("Starting parameters: {}, converged to: {}".format(x0,result))
+    logger.info("Starting parameters: {}, converged to: {}".format(x0, result))
 
     fval = ff.compute_obj(result, *obj_args)
 
     return x0, result, fval
+
 
 class _BasinStep(object):
     r""" Custom basin step used by scipy.optimize.basinhopping function.
@@ -555,8 +676,9 @@ class _BasinStep(object):
                     breakloop = False
             if breakloop:
                 break
-            logger.info("Basin Step after {} iterations:\n    {}".format(j,x))
+            logger.info("Basin Step after {} iterations:\n    {}".format(j, x))
         return x
+
 
 class _BasinBounds(object):
     r""" Object used by scipy.optimize.basinhopping to set bounds of parameters.
@@ -606,12 +728,21 @@ class _BasinBounds(object):
         feasible1 = np.abs(kwargs["f_new"]) < np.inf
         feasible2 = not np.isnan(kwargs["f_new"])
 
-        if (tmax and tmin and feasible1 and feasible2):
-            logger.info("Accept parameters: {}, with obj. function: {}".format(x,kwargs["f_new"]))
+        if tmax and tmin and feasible1 and feasible2:
+            logger.info(
+                "Accept parameters: {}, with obj. function: {}".format(
+                    x, kwargs["f_new"]
+                )
+            )
         else:
-            logger.info("Reject parameters: {}, with obj. function: {}".format(x,kwargs["f_new"]))
+            logger.info(
+                "Reject parameters: {}, with obj. function: {}".format(
+                    x, kwargs["f_new"]
+                )
+            )
 
         return tmax and tmin and feasible1 and feasible2
+
 
 class _WriteParameterResults(object):
     r""" Object used by scipy.optimize.basinhopping to set bounds of parameters.
@@ -646,9 +777,13 @@ class _WriteParameterResults(object):
         if os.path.isfile(filename):
             old_fname = filename
             for i in range(20):
-                filename = "{}_{}".format(i,old_fname)
+                filename = "{}_{}".format(i, old_fname)
                 if not os.path.isfile(filename):
-                    logger.info("File '{}' already exists, using {}.".format(old_fname,filename))
+                    logger.info(
+                        "File '{}' already exists, using {}.".format(
+                            old_fname, filename
+                        )
+                    )
                     break
 
         self.beadnames = beadnames
@@ -680,31 +815,40 @@ class _WriteParameterResults(object):
             
         """
 
-        if "convergence" in kwargs: # Used in differential_evolution
+        if "convergence" in kwargs:  # Used in differential_evolution
             if kwargs["convergence"] < self.obj_cut:
                 if not os.path.isfile(self.filename):
-                    with open(self.filename, 'w') as f:
-                        f.write("# n, convergence, {}\n".format(", ".join(self.beadnames)))
-    
-                with open(self.filename, 'a') as f:
-                    tmp = [self.ninit, kwargs["convergence"]]+list(args[0])
-                    f.write(("{}, "*len(tmp)).format(*tmp)+"\n")
+                    with open(self.filename, "w") as f:
+                        f.write(
+                            "# n, convergence, {}\n".format(", ".join(self.beadnames))
+                        )
 
-        elif len(args) == 3: # used in basinhopping
+                with open(self.filename, "a") as f:
+                    tmp = [self.ninit, kwargs["convergence"]] + list(args[0])
+                    f.write(("{}, " * len(tmp)).format(*tmp) + "\n")
+
+        elif len(args) == 3:  # used in basinhopping
             if args[2] or args[1] < self.obj_cut:
                 if not os.path.isfile(self.filename):
-                    with open(self.filename, 'w') as f:
-                        f.write("# n, obj. value, accepted, {}\n".format(", ".join(self.beadnames)))
-    
-                with open(self.filename, 'a') as f:
-                    tmp = [self.ninit, args[1], args[2]]+list(args[0])
-                    f.write(("{}, "*len(tmp)).format(*tmp)+"\n")
+                    with open(self.filename, "w") as f:
+                        f.write(
+                            "# n, obj. value, accepted, {}\n".format(
+                                ", ".join(self.beadnames)
+                            )
+                        )
+
+                with open(self.filename, "a") as f:
+                    tmp = [self.ninit, args[1], args[2]] + list(args[0])
+                    f.write(("{}, " * len(tmp)).format(*tmp) + "\n")
         else:
-            raise ValueError("Unknown inputs. This function is equipped to handle differential_evolution and basinhopping algorithms.")
+            raise ValueError(
+                "Unknown inputs. This function is equipped to handle differential_evolution and basinhopping algorithms."
+            )
 
         self.ninit += 1
 
         return False
+
 
 def _del_Data_MultiprocessingObject(dictionary):
     r""" A dictionary of fitting objects will remove MultiprocessingObject attributes so that the multiprocessing pool can be used by the fitting algorithm.

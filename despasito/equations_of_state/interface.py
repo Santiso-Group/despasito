@@ -59,7 +59,9 @@ class EosTemplate(ABC):
         self.number_of_components = None
         for bead in beads:
             if bead not in bead_library:
-                raise ValueError("The group, '{}', was not found in parameter library".format(bead))
+                raise ValueError(
+                    "The group, '{}', was not found in parameter library".format(bead)
+                )
 
         self.beads = None
         self.bead_library = None
@@ -152,34 +154,59 @@ class EosTemplate(ABC):
 
         keys = ["beads", "parameter_types", "bead_library", "cross_library"]
         for key in keys:
-            if getattr(self,key) == None:
-                raise ValueError("EOS object attribute, {}, cannot be None. Ensure EOS object initiates this attribute".format(key))
+            if getattr(self, key) == None:
+                raise ValueError(
+                    "EOS object attribute, {}, cannot be None. Ensure EOS object initiates this attribute".format(
+                        key
+                    )
+                )
 
         if len(bead_names) > 2:
-            raise ValueError("The bead names {} were given, but only a maximum of 2 are permitted.".format(", ".join(bead_names)))
+            raise ValueError(
+                "The bead names {} were given, but only a maximum of 2 are permitted.".format(
+                    ", ".join(bead_names)
+                )
+            )
         if not set(bead_names).issubset(self.beads):
-            raise ValueError("The bead names {} were given, but they are not in the allowed list: {}".format(", ".join(bead_names),", ".join(self.beads)))
+            raise ValueError(
+                "The bead names {} were given, but they are not in the allowed list: {}".format(
+                    ", ".join(bead_names), ", ".join(self.beads)
+                )
+            )
 
         param_value = None
         # Self interaction parameter
         if len(bead_names) == 1:
-            if bead_names[0] in self.bead_library and param_name in self.bead_library[bead_names[0]]:
+            if (
+                bead_names[0] in self.bead_library
+                and param_name in self.bead_library[bead_names[0]]
+            ):
                 param_value = self.bead_library[bead_names[0]][param_name]
         # Cross interaction parameter
         elif len(bead_names) == 2:
-            if bead_names[1] in self.cross_library and bead_names[0] in self.cross_library[bead_names[1]]:
+            if (
+                bead_names[1] in self.cross_library
+                and bead_names[0] in self.cross_library[bead_names[1]]
+            ):
                 if param_name in self.cross_library[bead_names[1]][bead_names[0]]:
-                    param_value = self.cross_library[bead_names[1]][bead_names[0]][param_name]
-            elif bead_names[0] in self.cross_library and bead_names[1] in self.cross_library[bead_names[0]]:
+                    param_value = self.cross_library[bead_names[1]][bead_names[0]][
+                        param_name
+                    ]
+            elif (
+                bead_names[0] in self.cross_library
+                and bead_names[1] in self.cross_library[bead_names[0]]
+            ):
                 if param_name in self.cross_library[bead_names[0]][bead_names[1]]:
-                    param_value = self.cross_library[bead_names[0]][bead_names[1]][param_name]
+                    param_value = self.cross_library[bead_names[0]][bead_names[1]][
+                        param_name
+                    ]
 
         if param_value == None:
             bounds = self.check_bounds(bead_names[0], param_name, np.empty(2))
-            param_value = (bounds[1]-bounds[0])/2 + bounds[0]
+            param_value = (bounds[1] - bounds[0]) / 2 + bounds[0]
 
         return param_value
-    
+
     def check_bounds(self, parameter, param_name, bounds):
         """
         Generate initial guesses for the parameters to be fit.
@@ -201,36 +228,68 @@ class EosTemplate(ABC):
 
         keys = ["parameter_types", "parameter_bound_extreme"]
         for key in keys:
-            if getattr(self,key) == None:
-                raise ValueError("EOS object attribute, {}, cannot be None. Ensure EOS object initiates this attribute".format(key))
+            if getattr(self, key) == None:
+                raise ValueError(
+                    "EOS object attribute, {}, cannot be None. Ensure EOS object initiates this attribute".format(
+                        key
+                    )
+                )
 
         fit_parameter_names_list = param_name.split("_")
         parameter = fit_parameter_names_list[0]
 
         bounds_new = np.zeros(2)
         # Non bonded parameters
-        if (parameter in self.parameter_bound_extreme):
+        if parameter in self.parameter_bound_extreme:
 
             if bounds[0] < self.parameter_bound_extreme[parameter][0]:
-                logger.debug("Given {} lower boundary, {}, is less than what is recommended by Eos object. Using value of {}.".format(param_name,bounds[0],self.parameter_bound_extreme[parameter][0]))
+                logger.debug(
+                    "Given {} lower boundary, {}, is less than what is recommended by Eos object. Using value of {}.".format(
+                        param_name,
+                        bounds[0],
+                        self.parameter_bound_extreme[parameter][0],
+                    )
+                )
                 bounds_new[0] = self.parameter_bound_extreme[parameter][0]
             elif bounds[0] > self.parameter_bound_extreme[parameter][1]:
-                logger.debug("Given {} lower boundary, {}, is greater than what is recommended by Eos object. Using value of {}.".format(param_name,bounds[0],self.parameter_bound_extreme[parameter][0]))
+                logger.debug(
+                    "Given {} lower boundary, {}, is greater than what is recommended by Eos object. Using value of {}.".format(
+                        param_name,
+                        bounds[0],
+                        self.parameter_bound_extreme[parameter][0],
+                    )
+                )
                 bounds_new[0] = self.parameter_bound_extreme[parameter][0]
             else:
                 bounds_new[0] = bounds[0]
 
-            if (bounds[1] > self.parameter_bound_extreme[parameter][1]):
-                logger.debug("Given {} upper boundary, {}, is greater than what is recommended by Eos object. Using value of {}.".format(param_name,bounds[1],self.parameter_bound_extreme[parameter][1]))
+            if bounds[1] > self.parameter_bound_extreme[parameter][1]:
+                logger.debug(
+                    "Given {} upper boundary, {}, is greater than what is recommended by Eos object. Using value of {}.".format(
+                        param_name,
+                        bounds[1],
+                        self.parameter_bound_extreme[parameter][1],
+                    )
+                )
                 bounds_new[1] = self.parameter_bound_extreme[parameter][1]
-            elif (bounds[1] < self.parameter_bound_extreme[parameter][0]):
-                logger.debug("Given {} upper boundary, {}, is less than what is recommended by Eos object. Using value of {}.".format(param_name,bounds[1],self.parameter_bound_extreme[parameter][1]))
+            elif bounds[1] < self.parameter_bound_extreme[parameter][0]:
+                logger.debug(
+                    "Given {} upper boundary, {}, is less than what is recommended by Eos object. Using value of {}.".format(
+                        param_name,
+                        bounds[1],
+                        self.parameter_bound_extreme[parameter][1],
+                    )
+                )
                 bounds_new[1] = self.parameter_bound_extreme[parameter][1]
             else:
                 bounds_new[1] = bounds[1]
 
         else:
-            raise ValueError("The parameter name {} is not found in the allowed parameter types: {}".format(param_name,", ".join(self.parameter_types)))
+            raise ValueError(
+                "The parameter name {} is not found in the allowed parameter types: {}".format(
+                    param_name, ", ".join(self.parameter_types)
+                )
+            )
 
         return bounds_new
 
@@ -251,16 +310,32 @@ class EosTemplate(ABC):
 
         keys = ["beads", "parameter_types", "bead_library", "cross_library"]
         for key in keys:
-            if getattr(self,key) == None:
-                raise ValueError("EOS object attribute, {}, cannot be None. Ensure EOS object initiates this attribute".format(key))
+            if getattr(self, key) == None:
+                raise ValueError(
+                    "EOS object attribute, {}, cannot be None. Ensure EOS object initiates this attribute".format(
+                        key
+                    )
+                )
 
         if len(bead_names) > 2:
-            raise ValueError("The bead names {} were given, but only a maximum of 2 are permitted.".format(", ".join(bead_names)))
+            raise ValueError(
+                "The bead names {} were given, but only a maximum of 2 are permitted.".format(
+                    ", ".join(bead_names)
+                )
+            )
         if not set(bead_names).issubset(self.beads):
-            raise ValueError("The bead names {} were given, but they are not in the allowed list: {}".format(", ".join(bead_names),", ".join(self.beads)))
+            raise ValueError(
+                "The bead names {} were given, but they are not in the allowed list: {}".format(
+                    ", ".join(bead_names), ", ".join(self.beads)
+                )
+            )
 
         if not any([x in param_name for x in self.parameter_types]):
-            raise ValueError("The parameter name {} is not found in the allowed parameter types: {}".format(param_name,", ".join(self.parameter_types)))
+            raise ValueError(
+                "The parameter name {} is not found in the allowed parameter types: {}".format(
+                    param_name, ", ".join(self.parameter_types)
+                )
+            )
 
         # Self interaction parameter
         if len(bead_names) == 1:
@@ -270,14 +345,23 @@ class EosTemplate(ABC):
                 self.bead_library[bead_names[0]] = {param_name: param_value}
         # Cross interaction parameter
         elif len(bead_names) == 2:
-            if bead_names[1] in self.cross_library and bead_names[0] in self.cross_library[bead_names[1]]:
-                self.cross_library[bead_names[1]][bead_names[0]][param_name] = param_value
+            if (
+                bead_names[1] in self.cross_library
+                and bead_names[0] in self.cross_library[bead_names[1]]
+            ):
+                self.cross_library[bead_names[1]][bead_names[0]][
+                    param_name
+                ] = param_value
             elif bead_names[0] in self.cross_library:
                 if bead_names[1] in self.cross_library[bead_names[0]]:
-                    self.cross_library[bead_names[0]][bead_names[1]][param_name] = param_value
+                    self.cross_library[bead_names[0]][bead_names[1]][
+                        param_name
+                    ] = param_value
                 else:
-                    self.cross_library[bead_names[0]][bead_names[1]] = {param_name: param_value}
+                    self.cross_library[bead_names[0]][bead_names[1]] = {
+                        param_name: param_value
+                    }
             else:
-                self.cross_library[bead_names[0]] = {bead_names[1]: {param_name: param_value}}
-
-
+                self.cross_library[bead_names[0]] = {
+                    bead_names[1]: {param_name: param_value}
+                }

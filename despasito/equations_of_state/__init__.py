@@ -8,6 +8,7 @@ Create an EOS class from options taken from factory design pattern.
 from importlib import import_module
 import logging
 
+
 class method_stat:
 
     numba = False
@@ -17,7 +18,10 @@ class method_stat:
 
 logger = logging.getLogger(__name__)
 
-def initiate_eos(eos="saft.gamma_mie", numba=None, cython=None, python=None, **input_dict):
+
+def initiate_eos(
+    eos="saft.gamma_mie", numba=None, cython=None, python=None, **input_dict
+):
     """
     Interface between the user and our library of equations of state (EOS).
 
@@ -43,29 +47,40 @@ def initiate_eos(eos="saft.gamma_mie", numba=None, cython=None, python=None, **i
     if python != None:
         method_stat.python = python
 
-    factory_families = ["saft"] # Eos families in this list have a general object with a factory to import relevant modules
+    factory_families = [
+        "saft"
+    ]  # Eos families in this list have a general object with a factory to import relevant modules
 
     logger.info("Using EOS: {}".format(eos))
 
     try:
-        eos_fam, eos_type = eos.split('.')
+        eos_fam, eos_type = eos.split(".")
     except Exception:
-        raise ValueError("Input should be in the form EOSfamily.EOSname (e.g. saft.gamme_mie).")
+        raise ValueError(
+            "Input should be in the form EOSfamily.EOSname (e.g. saft.gamme_mie)."
+        )
 
     class_name = "EosType"
     try:
         if eos_fam in factory_families:
-            eos_module = import_module('.' + eos_fam, package="despasito.equations_of_state." + eos_fam)
-            input_dict['saft_name'] = eos_type
-        
+            eos_module = import_module(
+                "." + eos_fam, package="despasito.equations_of_state." + eos_fam
+            )
+            input_dict["saft_name"] = eos_type
+
         else:
-            eos_module = import_module('.' + eos_type, package="despasito.equations_of_state." + eos_fam)
+            eos_module = import_module(
+                "." + eos_type, package="despasito.equations_of_state." + eos_fam
+            )
         eos_class = getattr(eos_module, class_name)
     except AttributeError:
-        raise ImportError("Based on your input, '{}', we expect the class, {}, in a module, {}, found in the package, {}, which indicates the EOS family.".format(eos, class_name, eos_type, eos_fam))
+        raise ImportError(
+            "Based on your input, '{}', we expect the class, {}, in a module, {}, found in the package, {}, which indicates the EOS family.".format(
+                eos, class_name, eos_type, eos_fam
+            )
+        )
     instance = eos_class(**input_dict)
 
     logger.info("Created {} Eos object".format(eos))
 
     return instance
-

@@ -1,4 +1,3 @@
-
 import os
 import numpy as np
 import logging
@@ -10,6 +9,7 @@ from . import global_methods as global_methods_mod
 import despasito.utils.general_toolbox as gtb
 
 logger = logging.getLogger(__name__)
+
 
 def initial_guess(optimization_parameters, Eos):
     r"""
@@ -37,17 +37,27 @@ def initial_guess(optimization_parameters, Eos):
 
     # Update bead_library with test parameters
 
-    parameters_guess = np.ones(len(optimization_parameters['fit_parameter_names']))
-    for i, param in enumerate(optimization_parameters['fit_parameter_names']):
+    parameters_guess = np.ones(len(optimization_parameters["fit_parameter_names"]))
+    for i, param in enumerate(optimization_parameters["fit_parameter_names"]):
         fit_parameter_names_list = param.split("_")
         if len(fit_parameter_names_list) == 1:
-            parameters_guess[i] = Eos.guess_parameters(fit_parameter_names_list[0], [optimization_parameters['fit_bead']])
+            parameters_guess[i] = Eos.guess_parameters(
+                fit_parameter_names_list[0], [optimization_parameters["fit_bead"]]
+            )
         elif len(fit_parameter_names_list) == 2:
-            parameters_guess[i] = Eos.guess_parameters(fit_parameter_names_list[0], [optimization_parameters['fit_bead'], fit_parameter_names_list[1]])
+            parameters_guess[i] = Eos.guess_parameters(
+                fit_parameter_names_list[0],
+                [optimization_parameters["fit_bead"], fit_parameter_names_list[1]],
+            )
         else:
-            raise ValueError("Parameters for only one bead are allowed to be fit. Multiple underscores in a parameter name suggest more than one bead type in your fit parameter name, {}".format(param))
+            raise ValueError(
+                "Parameters for only one bead are allowed to be fit. Multiple underscores in a parameter name suggest more than one bead type in your fit parameter name, {}".format(
+                    param
+                )
+            )
 
     return parameters_guess
+
 
 def check_parameter_bounds(optimization_parameters, Eos, bounds):
     r"""
@@ -72,13 +82,18 @@ def check_parameter_bounds(optimization_parameters, Eos, bounds):
     
     """
 
-    new_bounds = [(0,0) for x in range(len(optimization_parameters['fit_parameter_names']))]
+    new_bounds = [
+        (0, 0) for x in range(len(optimization_parameters["fit_parameter_names"]))
+    ]
     # Check boundary parameters to be sure they're in a reasonable range
-    for i, param in enumerate(optimization_parameters['fit_parameter_names']):
+    for i, param in enumerate(optimization_parameters["fit_parameter_names"]):
         fit_parameter_names_list = param.split("_")
-        new_bounds[i] = tuple(Eos.check_bounds(fit_parameter_names_list[0], param, bounds[i]))
+        new_bounds[i] = tuple(
+            Eos.check_bounds(fit_parameter_names_list[0], param, bounds[i])
+        )
 
     return new_bounds
+
 
 def consolidate_bounds(optimization_parameters):
     r"""
@@ -107,26 +122,39 @@ def consolidate_bounds(optimization_parameters):
     """
 
     if "fit_bead" not in optimization_parameters:
-        raise ValueError("optimization_parameters dictionary should include keyword, fit_bead, defining the name of the bead whose parameters are to be fit.")
+        raise ValueError(
+            "optimization_parameters dictionary should include keyword, fit_bead, defining the name of the bead whose parameters are to be fit."
+        )
     if "fit_parameter_names" not in optimization_parameters:
-        raise ValueError("optimization_parameters dictionary should include keyword, fit_parameter_names, defining the parameters to be fit.")
+        raise ValueError(
+            "optimization_parameters dictionary should include keyword, fit_parameter_names, defining the parameters to be fit."
+        )
 
     new_optimization_parameters = {}
-    new_optimization_parameters["bounds"] = [[0,1e+4] for x in range(len(optimization_parameters["fit_parameter_names"]))]
+    new_optimization_parameters["bounds"] = [
+        [0, 1e4] for x in range(len(optimization_parameters["fit_parameter_names"]))
+    ]
     for key2, value2 in optimization_parameters.items():
         if "bounds" in key2:
-            tmp  = key2.replace("_bounds","")
+            tmp = key2.replace("_bounds", "")
             if tmp in optimization_parameters["fit_parameter_names"]:
-                logger.info("Accepted bounds for parameter, '{}': {}".format(tmp, value2))
+                logger.info(
+                    "Accepted bounds for parameter, '{}': {}".format(tmp, value2)
+                )
                 ind = optimization_parameters["fit_parameter_names"].index(tmp)
                 new_optimization_parameters["bounds"][ind] = value2
             else:
-                logger.error("Bounds for parameter type '{}' were given, but this parameter is not defined to be fit.".format(tmp))
+                logger.error(
+                    "Bounds for parameter type '{}' were given, but this parameter is not defined to be fit.".format(
+                        tmp
+                    )
+                )
         else:
             new_optimization_parameters[key2] = value2
             continue
 
     return new_optimization_parameters
+
 
 def reformat_output(cluster):
     r"""
@@ -158,7 +186,7 @@ def reformat_output(cluster):
 
         # Obtain dimensions of final matrix
         len_cluster = []
-        for i,tmp_cluster in enumerate(cluster):
+        for i, tmp_cluster in enumerate(cluster):
             if gtb.isiterable(tmp_cluster[0]):
                 len_cluster.append(len(tmp_cluster[0]))
             else:
@@ -172,8 +200,10 @@ def reformat_output(cluster):
                 matrix = np.zeros([len(val[0]), len(val)])
             except Exception:
                 matrix = np.zeros([1, len(val)])
-            for j, tmp in enumerate(val): # yes, this is a simple transpose, but for some reason a numpy array of np arrays wouldn't transpose
-                matrix[:,j] = tmp
+            for j, tmp in enumerate(
+                val
+            ):  # yes, this is a simple transpose, but for some reason a numpy array of np arrays wouldn't transpose
+                matrix[:, j] = tmp
             l = len_cluster[i]
             if l == 1:
                 matrix_tmp[:, ind] = np.array(matrix)
@@ -189,6 +219,7 @@ def reformat_output(cluster):
         matrix = np.array(matrix_tmp)
 
     return matrix, len_cluster
+
 
 def global_minimization(global_method, *args, **kwargs):
     r"""
@@ -230,15 +261,24 @@ def global_minimization(global_method, *args, **kwargs):
     """
 
     logger.info("Using global optimization method: {}".format(global_method))
-    calc_list = [o[0] for o in getmembers(global_methods_mod) if (isfunction(o[1]) and o[0][0] is not "_")]
+    calc_list = [
+        o[0]
+        for o in getmembers(global_methods_mod)
+        if (isfunction(o[1]) and o[0][0] is not "_")
+    ]
     try:
         func = getattr(global_methods_mod, global_method)
     except Exception:
-        raise ImportError("The global minimization type, '{}', was not found\nThe following calculation types are supported: {}".format(function,", ".join(calc_list)))
+        raise ImportError(
+            "The global minimization type, '{}', was not found\nThe following calculation types are supported: {}".format(
+                function, ", ".join(calc_list)
+            )
+        )
 
     output = func(*args, **kwargs)
 
     return output
+
 
 def initialize_constraints(constraints, constraint_type):
     r"""
@@ -262,7 +302,11 @@ def initialize_constraints(constraints, constraint_type):
         
     """
 
-    calc_list = [o[0] for o in getmembers(constraints_mod) if (isfunction(o[1]) and o[0][0] is not "_")]
+    calc_list = [
+        o[0]
+        for o in getmembers(constraints_mod)
+        if (isfunction(o[1]) and o[0][0] is not "_")
+    ]
 
     new_constraints = []
     for const_type, kwargs in constraints.items():
@@ -273,14 +317,26 @@ def initialize_constraints(constraints, constraint_type):
         try:
             func = getattr(constraints_mod, kwargs["function"])
         except Exception:
-            raise ImportError("The constraint type, '{}', was not found\nThe following types are supported: {}".format(function,", ".join(calc_list)))
+            raise ImportError(
+                "The constraint type, '{}', was not found\nThe following types are supported: {}".format(
+                    function, ", ".join(calc_list)
+                )
+            )
 
         if "args" not in kwargs:
-            raise ValueError("Constraint function, {}, is missing arguements".format(kwargs["function"]))
+            raise ValueError(
+                "Constraint function, {}, is missing arguements".format(
+                    kwargs["function"]
+                )
+            )
 
         if constraint_type == "class":
-            if "type" not in kwargs or kwargs["type"] in ['linear', 'nonlinear']:
-                raise ValueError("Constraint, {}, does not have type. Type can be 'linear' or 'nonlinear'.".format(kwargs["function"]))
+            if "type" not in kwargs or kwargs["type"] in ["linear", "nonlinear"]:
+                raise ValueError(
+                    "Constraint, {}, does not have type. Type can be 'linear' or 'nonlinear'.".format(
+                        kwargs["function"]
+                    )
+                )
             if kwargs["type"] is "linear":
                 if "kwargs" not in kwargs:
                     output = LinearConstraint(func, args[0], args[1])
@@ -293,8 +349,12 @@ def initialize_constraints(constraints, constraint_type):
                     output = NonlinearConstraint(func, args[0], args[1], **kwargs)
 
         elif constraint_type == "dict":
-            if "type" not in kwargs or kwargs["type"] in ['eq', 'ineq']:
-                raise ValueError("Constraint, {}, does not have type. Type can be 'eq' or 'ineq'.".format(kwargs["function"]))
+            if "type" not in kwargs or kwargs["type"] in ["eq", "ineq"]:
+                raise ValueError(
+                    "Constraint, {}, does not have type. Type can be 'eq' or 'ineq'.".format(
+                        kwargs["function"]
+                    )
+                )
             output = {"type": kwargs["type"], "function": func, "args": kwargs["args"]}
         else:
             raise ValueError("Constraint type {}, must be either 'class' or 'dict'.")
@@ -302,6 +362,7 @@ def initialize_constraints(constraints, constraint_type):
         new_constraints.append(output)
 
     return tuple(new_constraints)
+
 
 def compute_obj(beadparams, fit_bead, fit_parameter_names, exp_dict, bounds):
     r"""
@@ -333,39 +394,73 @@ def compute_obj(beadparams, fit_bead, fit_parameter_names, exp_dict, bounds):
     # Update bead_library with test parameters
 
     if len(beadparams) != len(fit_parameter_names):
-        raise ValueError("The length of initial guess vector should be the same number of parameters to be fit.")    
+        raise ValueError(
+            "The length of initial guess vector should be the same number of parameters to be fit."
+        )
 
-    logger.info((' {}: {},' * len(fit_parameter_names)).format(*[val for pair in zip(fit_parameter_names, beadparams) for val in pair]))
+    logger.info(
+        (" {}: {}," * len(fit_parameter_names)).format(
+            *[val for pair in zip(fit_parameter_names, beadparams) for val in pair]
+        )
+    )
 
     # Compute obj_function
     obj_function = []
-    for key,data_obj in exp_dict.items():
+    for key, data_obj in exp_dict.items():
         try:
             data_obj.update_parameters(fit_bead, fit_parameter_names, beadparams)
             obj_function.append(data_obj.objective())
         except Exception:
-            logger.exception("Failed to evaluate objective function for {} of type {}.".format(key,data_obj.name))
+            logger.exception(
+                "Failed to evaluate objective function for {} of type {}.".format(
+                    key, data_obj.name
+                )
+            )
             obj_function.append(np.inf)
 
     obj_total = np.nansum(obj_function)
-    if obj_total == 0. and np.isnan(np.sum(obj_function)):
+    if obj_total == 0.0 and np.isnan(np.sum(obj_function)):
         obj_total = np.inf
 
     # Add penalty for being out of bounds for the sake of inner minimization
     for i, param in enumerate(beadparams):
         if param <= bounds[i][0]:
-            logger.debug("Adding penalty to {} parameter for being lower than range".format(fit_parameter_names[i]))
-            obj_total += (1e+3*(param - bounds[i][0]))**8
+            logger.debug(
+                "Adding penalty to {} parameter for being lower than range".format(
+                    fit_parameter_names[i]
+                )
+            )
+            obj_total += (1e3 * (param - bounds[i][0])) ** 8
         elif param >= bounds[i][1]:
-            logger.debug("Adding penalty to {} parameter for being higher than range".format(fit_parameter_names[i]))
-            obj_total += (1e+3*(param - bounds[i][1]))**8
+            logger.debug(
+                "Adding penalty to {} parameter for being higher than range".format(
+                    fit_parameter_names[i]
+                )
+            )
+            obj_total += (1e3 * (param - bounds[i][1])) ** 8
 
     # Write out parameters and objective functions for each dataset
-    logger.info("\nParameters: {}\nValues: {}\nExp. Data: {}\nObj. Values: {}\nTotal Obj. Value: {}".format(fit_parameter_names,beadparams,list(exp_dict.keys()),obj_function,obj_total))
+    logger.info(
+        "\nParameters: {}\nValues: {}\nExp. Data: {}\nObj. Values: {}\nTotal Obj. Value: {}".format(
+            fit_parameter_names,
+            beadparams,
+            list(exp_dict.keys()),
+            obj_function,
+            obj_total,
+        )
+    )
 
     return obj_total
 
-def obj_function_form(data_test, data0, weights=1.0, method="average-squared-deviation", nan_number=1000, nan_ratio=0.1):
+
+def obj_function_form(
+    data_test,
+    data0,
+    weights=1.0,
+    method="average-squared-deviation",
+    nan_number=1000,
+    nan_ratio=0.1,
+):
     """
     Factory method of possible objective functions. 
 
@@ -400,39 +495,65 @@ def obj_function_form(data_test, data0, weights=1.0, method="average-squared-dev
     """
 
     if np.size(data0) != np.size(data_test):
-        raise ValueError("Input data of length, {}, must be the same length as reference data of length {}".format(len(data_test),len(data0)))
-    
-    if np.size(weights) > 1 and np.size(weights) != np.size(data_test):
-        raise ValueError("Weight for data is provided as an array of length, {}, but must be length, {}.".format(len(weights),len(data_test)))
+        raise ValueError(
+            "Input data of length, {}, must be the same length as reference data of length {}".format(
+                len(data_test), len(data0)
+            )
+        )
 
-    data_tmp = np.array([(data_test[i]-data0[i])/data0[i] for i in range(len(data_test)) if not np.isnan((data_test[i]-data0[i])/data0[i])])
+    if np.size(weights) > 1 and np.size(weights) != np.size(data_test):
+        raise ValueError(
+            "Weight for data is provided as an array of length, {}, but must be length, {}.".format(
+                len(weights), len(data_test)
+            )
+        )
+
+    data_tmp = np.array(
+        [
+            (data_test[i] - data0[i]) / data0[i]
+            for i in range(len(data_test))
+            if not np.isnan((data_test[i] - data0[i]) / data0[i])
+        ]
+    )
 
     if method == "average-squared-deviation":
-        obj_value = np.mean(data_tmp**2*weights)
+        obj_value = np.mean(data_tmp ** 2 * weights)
 
     elif method == "sum-squared-deviation":
-        obj_value = np.sum(data_tmp**2*weights)
+        obj_value = np.sum(data_tmp ** 2 * weights)
 
     elif method == "sum-squared-deviation-boltz":
         data_min = np.min(data_tmp)
-        obj_value = np.sum(data_tmp**2*weights*np.exp((data_min-data_tmp)/np.abs(data_min)))
+        obj_value = np.sum(
+            data_tmp ** 2 * weights * np.exp((data_min - data_tmp) / np.abs(data_min))
+        )
 
     elif method == "sum-deviation-boltz":
         data_min = np.min(data_tmp)
-        obj_value = np.sum(data_tmp*weights*np.exp((data_min-data_tmp)/np.abs(data_min)))
+        obj_value = np.sum(
+            data_tmp * weights * np.exp((data_min - data_tmp) / np.abs(data_min))
+        )
 
     elif method == "percent-absolute-average-deviation":
-        obj_value = np.mean(np.abs(data_tmp)*weights)*100
+        obj_value = np.mean(np.abs(data_tmp) * weights) * 100
 
     if len(data_tmp) == 0:
         obj_value = np.nan
 
     if len(data_test) != len(data_tmp):
-        tmp = 1-len(data_tmp)/len(data_test)
+        tmp = 1 - len(data_tmp) / len(data_test)
         if tmp > nan_ratio:
-            obj_value += (len(data_test)-len(data_tmp))*nan_number
-            logger.debug("Values of NaN were removed from objective value calculation, nan_ratio {} > {}, augment obj. value".format(tmp, nan_ratio))
+            obj_value += (len(data_test) - len(data_tmp)) * nan_number
+            logger.debug(
+                "Values of NaN were removed from objective value calculation, nan_ratio {} > {}, augment obj. value".format(
+                    tmp, nan_ratio
+                )
+            )
         else:
-            logger.debug("Values of NaN were removed from objective value calculation, nan_ratio {} < {}".format(tmp, nan_ratio))
+            logger.debug(
+                "Values of NaN were removed from objective value calculation, nan_ratio {} < {}".format(
+                    tmp, nan_ratio
+                )
+            )
 
     return obj_value

@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 def test_despasito_log_file():
     """Test enabling of logging"""
 
-    fname = "despasito_{}.log".format(random.randint(1,10))
+    fname = "despasito_{}.log".format(random.randint(1, 10))
     despasito.initiate_logger(log_file=fname, verbose=10)
     logger.info("test")
 
@@ -30,6 +30,7 @@ def test_despasito_log_file():
         flag = False
 
     assert flag
+
 
 def test_despasito_log_console(capsys):
     """Test enabling of logging"""
