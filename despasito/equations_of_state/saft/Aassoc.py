@@ -34,6 +34,7 @@ if not method_stat.cython and not method_stat.numba and not method_stat.python:
 if method_stat.cython:
     from .compiled_modules.ext_Aassoc_cython import calc_Xika
 elif method_stat.numba:
+    
     from .compiled_modules.ext_Aassoc_numba import calc_Xika
 elif method_stat.python:
     logger.info("Using pure python. Consider using 'numba' flag")
