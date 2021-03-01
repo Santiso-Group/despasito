@@ -141,6 +141,7 @@ def test_saft_gamma_mie_class_noassoc(
 
 def test_fortran_available():
     print(os.listdir("despasito/equations_of_state/saft/compiled_modules"))
+    print(os.getcwd())
     try:
         from despasito.equations_of_state.saft.compiled_modules import ext_Aassoc_fortran
         flag = True
