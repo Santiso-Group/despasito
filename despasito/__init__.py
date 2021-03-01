@@ -8,9 +8,10 @@ from .main import run
 
 # Handle versioneer
 from ._version import get_versions
+
 versions = get_versions()
-__version__ = versions['version']
-__git_revision__ = versions['full-revisionid']
+__version__ = versions["version"]
+__git_revision__ = versions["full-revisionid"]
 del get_versions, versions
 
 import logging
@@ -19,6 +20,7 @@ import os
 
 logger = logging.getLogger()
 logger.setLevel(30)
+
 
 def initiate_logger(console=None, log_file=None, verbose=30):
     """
@@ -49,8 +51,10 @@ def initiate_logger(console=None, log_file=None, verbose=30):
 
     # Set up logging to console
     if console and handler_console == None:
-        console_handler = logging.StreamHandler() # sys.stderr
-        console_handler.setFormatter( logging.Formatter('[%(levelname)s](%(name)s): %(message)s') )
+        console_handler = logging.StreamHandler()  # sys.stderr
+        console_handler.setFormatter(
+            logging.Formatter("[%(levelname)s](%(name)s): %(message)s")
+        )
         console_handler.setLevel(verbose)
         logger.addHandler(console_handler)
     elif console:
@@ -69,7 +73,11 @@ def initiate_logger(console=None, log_file=None, verbose=30):
             os.remove(log_file)
 
         log_file_handler = logging.handlers.RotatingFileHandler(log_file)
-        log_file_handler.setFormatter( logging.Formatter('%(asctime)s [%(levelname)s](%(name)s:%(funcName)s:%(lineno)d): %(message)s') )
+        log_file_handler.setFormatter(
+            logging.Formatter(
+                "%(asctime)s [%(levelname)s](%(name)s:%(funcName)s:%(lineno)d): %(message)s"
+            )
+        )
         log_file_handler.setLevel(verbose)
         logger.addHandler(log_file_handler)
     elif log_file:
@@ -77,5 +85,3 @@ def initiate_logger(console=None, log_file=None, verbose=30):
     elif handler_logfile == False:
         handler_logfile.close()
         logger.removeHandler(handler_logfile)
-
-

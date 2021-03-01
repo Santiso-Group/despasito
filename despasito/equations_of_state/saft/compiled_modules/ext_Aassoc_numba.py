@@ -1,8 +1,8 @@
-
 import numpy as np
 import numba
 
 from despasito.equations_of_state import constants
+
 
 def calc_Xika(indices, rho, xi, molecular_composition, nk, Fklab, Kklab, gr_assoc):
     r""" 
@@ -37,14 +37,32 @@ def calc_Xika(indices, rho, xi, molecular_composition, nk, Fklab, Kklab, gr_asso
 
     l_K = len(np.shape(Kklab))
     if l_K == 4:
-        Xika_final, err_array = calc_Xika_4(indices, rho, xi, molecular_composition, nk, Fklab, Kklab, gr_assoc)
+        Xika_final, err_array = calc_Xika_4(
+            indices, rho, xi, molecular_composition, nk, Fklab, Kklab, gr_assoc
+        )
     if l_K == 6:
-        Xika_final, err_array = calc_Xika_6(indices, rho, xi, molecular_composition, nk, Fklab, Kklab, gr_assoc)
+        Xika_final, err_array = calc_Xika_6(
+            indices, rho, xi, molecular_composition, nk, Fklab, Kklab, gr_assoc
+        )
 
     return Xika_final, err_array
 
-@numba.njit(numba.types.Tuple((numba.f8[:,:], numba.f8[:]))(numba.i8[:,:], numba.f8[:], numba.f8[:], numba.f8[:,:], numba.i8[:,:], numba.f8[:,:,:,:], numba.f8[:,:,:,:], numba.f8[:,:,:]))
-def calc_Xika_4(indices, rho, xi, molecular_composition, nk, Fklab, Kklab, gr_assoc): # , maxiter=500, tol=1e-12, damp=.1
+
+@numba.njit(
+    numba.types.Tuple((numba.f8[:, :], numba.f8[:]))(
+        numba.i8[:, :],
+        numba.f8[:],
+        numba.f8[:],
+        numba.f8[:, :],
+        numba.i8[:, :],
+        numba.f8[:, :, :, :],
+        numba.f8[:, :, :, :],
+        numba.f8[:, :, :],
+    )
+)
+def calc_Xika_4(
+    indices, rho, xi, molecular_composition, nk, Fklab, Kklab, gr_assoc
+):  # , maxiter=500, tol=1e-12, damp=.1
     r""" 
     Calculate the fraction of molecules of component i that are not bonded at a site of type a on group k.
 
@@ -75,22 +93,21 @@ def calc_Xika_4(indices, rho, xi, molecular_composition, nk, Fklab, Kklab, gr_as
         Of the same length of rho, is a list in the error of the total error Xika for each point. 
     """
 
-    maxiter=500
-    tol=1e-12
-    damp=.1
+    maxiter = 500
+    tol = 1e-12
+    damp = 0.1
 
     ncomp, nbeads = np.shape(molecular_composition)
     nsitesmax = np.shape(nk)[1]
     nrho = len(rho)
     l_ind = len(indices)
 
-
-#    Xika_final = np.ones((nrho,ncomp, nbeads, nsitesmax))
+    #    Xika_final = np.ones((nrho,ncomp, nbeads, nsitesmax))
     Xika_final = np.ones((nrho, len(indices)))
-    err_array   = np.zeros(nrho)
+    err_array = np.zeros(nrho)
 
     # Parallelize here, wrt rho!
-    Xika_elements = .5*np.ones(len(indices))
+    Xika_elements = 0.5 * np.ones(len(indices))
     for r in range(nrho):
         for knd in range(maxiter):
 
@@ -101,32 +118,56 @@ def calc_Xika_4(indices, rho, xi, molecular_composition, nk, Fklab, Kklab, gr_as
                 jnd = 0
                 for jjnd in range(l_ind):
                     j, l, b = indices[jjnd]
-                    delta = Fklab[k, l, a, b] * Kklab[k, l, a, b] * gr_assoc[r,i, j]
-                    Xika_elements_new[ind] += constants.molecule_per_nm3 * rho[r] * xi[j] * molecular_composition[j,l] * nk[l,b] * Xika_elements[jnd] * delta
+                    delta = Fklab[k, l, a, b] * Kklab[k, l, a, b] * gr_assoc[r, i, j]
+                    Xika_elements_new[ind] += (
+                        constants.molecule_per_nm3
+                        * rho[r]
+                        * xi[j]
+                        * molecular_composition[j, l]
+                        * nk[l, b]
+                        * Xika_elements[jnd]
+                        * delta
+                    )
                     jnd += 1
                 ind += 1
-            Xika_elements_new = 1./Xika_elements_new
+            Xika_elements_new = 1.0 / Xika_elements_new
             obj = np.sum(np.abs(Xika_elements_new - Xika_elements))
 
             if obj < tol:
                 break
             else:
-                if obj/max(Xika_elements) > 1e+3:
-                    Xika_elements = Xika_elements + damp*(Xika_elements_new - Xika_elements)
+                if obj / max(Xika_elements) > 1e3:
+                    Xika_elements = Xika_elements + damp * (
+                        Xika_elements_new - Xika_elements
+                    )
                 else:
                     Xika_elements = Xika_elements_new
 
         err_array[r] = obj
 
-        Xika_final[r,:] = Xika_elements
-        #for jjnd in range(l_ind):
+        Xika_final[r, :] = Xika_elements
+        # for jjnd in range(l_ind):
         #    i,k,a = indices[jjnd]
         #    Xika_final[r,i,k,a] = Xika_elements[jjnd]
 
     return Xika_final, err_array
 
-@numba.njit(numba.types.Tuple((numba.f8[:,:], numba.f8[:]))(numba.i8[:,:], numba.f8[:], numba.f8[:], numba.f8[:,:], numba.i8[:,:], numba.f8[:,:,:,:], numba.f8[:,:,:,:,:,:], numba.f8[:,:,:]))
-def calc_Xika_6(indices, rho, xi, molecular_composition, nk, Fklab, Kklab, gr_assoc): # , maxiter=500, tol=1e-12, damp=.1
+
+@numba.njit(
+    numba.types.Tuple((numba.f8[:, :], numba.f8[:]))(
+        numba.i8[:, :],
+        numba.f8[:],
+        numba.f8[:],
+        numba.f8[:, :],
+        numba.i8[:, :],
+        numba.f8[:, :, :, :],
+        numba.f8[:, :, :, :, :, :],
+        numba.f8[:, :, :],
+    )
+)
+def calc_Xika_6(
+    indices, rho, xi, molecular_composition, nk, Fklab, Kklab, gr_assoc
+):  # , maxiter=500, tol=1e-12, damp=.1
     r""" 
     Calculate the fraction of molecules of component i that are not bonded at a site of type a on group k.
 
@@ -157,22 +198,21 @@ def calc_Xika_6(indices, rho, xi, molecular_composition, nk, Fklab, Kklab, gr_as
         Of the same length of rho, is a list in the error of the total error Xika for each point. 
     """
 
-    maxiter=500
-    tol=1e-12
-    damp=.1
+    maxiter = 500
+    tol = 1e-12
+    damp = 0.1
 
     ncomp, nbeads = np.shape(molecular_composition)
     nsitesmax = np.shape(nk)[1]
     nrho = len(rho)
     l_ind = len(indices)
 
-
-#    Xika_final = np.ones((nrho,ncomp, nbeads, nsitesmax))
+    #    Xika_final = np.ones((nrho,ncomp, nbeads, nsitesmax))
     Xika_final = np.ones((nrho, len(indices)))
-    err_array   = np.zeros(nrho)
+    err_array = np.zeros(nrho)
 
     # Parallelize here, wrt rho!
-    Xika_elements = .5*np.ones(len(indices))
+    Xika_elements = 0.5 * np.ones(len(indices))
     for r in range(nrho):
         for knd in range(maxiter):
 
@@ -183,27 +223,38 @@ def calc_Xika_6(indices, rho, xi, molecular_composition, nk, Fklab, Kklab, gr_as
                 jnd = 0
                 for jjnd in range(l_ind):
                     j, l, b = indices[jjnd]
-                    delta = Fklab[k, l, a, b] * Kklab[i, j, k, l, a, b] * gr_assoc[r,i, j]
-                    Xika_elements_new[ind] += constants.molecule_per_nm3 * rho[r] * xi[j] * molecular_composition[j,l] * nk[l,b] * Xika_elements[jnd] * delta
+                    delta = (
+                        Fklab[k, l, a, b] * Kklab[i, j, k, l, a, b] * gr_assoc[r, i, j]
+                    )
+                    Xika_elements_new[ind] += (
+                        constants.molecule_per_nm3
+                        * rho[r]
+                        * xi[j]
+                        * molecular_composition[j, l]
+                        * nk[l, b]
+                        * Xika_elements[jnd]
+                        * delta
+                    )
                     jnd += 1
                 ind += 1
-            Xika_elements_new = 1./Xika_elements_new
+            Xika_elements_new = 1.0 / Xika_elements_new
             obj = np.sum(np.abs(Xika_elements_new - Xika_elements))
 
             if obj < tol:
                 break
             else:
-                if obj/max(Xika_elements) > 1e+3:
-                    Xika_elements = Xika_elements + damp*(Xika_elements_new - Xika_elements)
+                if obj / max(Xika_elements) > 1e3:
+                    Xika_elements = Xika_elements + damp * (
+                        Xika_elements_new - Xika_elements
+                    )
                 else:
                     Xika_elements = Xika_elements_new
 
         err_array[r] = obj
 
-        Xika_final[r,:] = Xika_elements
-        #for jjnd in range(l_ind):
+        Xika_final[r, :] = Xika_elements
+        # for jjnd in range(l_ind):
         #    i,k,a = indices[jjnd]
         #    Xika_final[r,i,k,a] = Xika_elements[jjnd]
 
     return Xika_final, err_array
-
