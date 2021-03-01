@@ -5,8 +5,6 @@ on:
   # Existing codes likely still have "master" as the primary branch
   # Both are tracked here to keep legacy and new codes working
   push:
-    branches:
-      - "**"
   pull_request:
     branches:
       - "master"
