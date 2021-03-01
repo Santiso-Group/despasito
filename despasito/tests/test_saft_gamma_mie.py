@@ -7,7 +7,7 @@ import despasito.equations_of_state
 
 # import despasito.equations_of_state.saft.solv_assoc as solv_assoc
 import copy
-
+import os
 import pytest
 import sys
 import numpy as np
@@ -140,12 +140,9 @@ def test_saft_gamma_mie_class_noassoc(
 
 
 def test_fortran_available():
-
-    from despasito.equations_of_state.saft.compiled_modules import ext_Aassoc_fortran
-        
+    print(os.listdir(despasito.equations_of_state.saft.compiled_modules))
     try:
         from despasito.equations_of_state.saft.compiled_modules import ext_Aassoc_fortran
-
         flag = True
     except Exception:
         flag = False
