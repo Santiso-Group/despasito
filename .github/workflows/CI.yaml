@@ -88,7 +88,7 @@ jobs:
       shell: bash -l {0}
 
       run: |
-        pytest -v --cov=despasito --cov-report=xml --color=yes despasito/tests/
+        pytest -vvv --cov=despasito --cov-report=xml --color=yes despasito/tests/test_saft_gamma_mie.py
     - name: CodeCov
       uses: codecov/codecov-action@v1
       with:
