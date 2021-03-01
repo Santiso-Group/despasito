@@ -9,6 +9,7 @@ dependencies:
   - numpy
   - scipy
   - numba
+  - cython
 
     # Testing
   - pytest
