@@ -140,6 +140,8 @@ def test_saft_gamma_mie_class_noassoc(
 
 
 def test_fortran_available():
+    from distutils.sysconfig import get_python_inc
+    print(os.path.join(get_python_inc(plat_specific=1)))
     print(os.listdir("despasito/equations_of_state/saft/compiled_modules"))
     print(os.getcwd())
     try:
