@@ -32,7 +32,7 @@ if flag_cython:
     for cyext in cython_list:
         name = os.path.split(cyext)[-1].split(".")[-2]
         cy_ext_1 = Extension(name=name, sources=[cyext], include_dirs=[fpath])
-        extensions.extend(cythonize([cy_ext_1]))
+        extensions.extend(cythonize([cy_ext_1],compiler_directives={'language_level': 3}))
 
 # from https://github.com/pytest-dev/pytest-runner#conditional-requirement
 needs_pytest = {"pytest", "test", "ptr"}.intersection(sys.argv)
