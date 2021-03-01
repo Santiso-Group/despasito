@@ -141,10 +141,10 @@ def test_saft_gamma_mie_class_noassoc(
 
 def test_fortran_available():
 
+    from despasito.equations_of_state.saft.compiled_modules import ext_Aassoc_fortran
+        
     try:
-        from despasito.equations_of_state.saft.compiled_modules import (
-            ext_Aassoc_fortran,
-        )
+        from despasito.equations_of_state.saft.compiled_modules import ext_Aassoc_fortran
 
         flag = True
     except Exception:
