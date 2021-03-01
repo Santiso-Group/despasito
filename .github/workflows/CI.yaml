@@ -82,9 +82,7 @@ jobs:
       # conda setup requires this special shell
       shell: bash -l {0}
       run: |
-##### NoteHere
         pwd
-#####
         python -m pip install . --no-deps -vvv
         conda list
 
@@ -93,10 +91,8 @@ jobs:
       shell: bash -l {0}
 
       run: |
-#### NoteHere
         ls despasito/equations_of_state/saft/compiled_modules
         pwd
-#####
         pytest -vvv --cov=despasito --cov-report=xml --color=yes despasito/tests/
     - name: CodeCov
       uses: codecov/codecov-action@v1
