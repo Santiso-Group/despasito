@@ -19,16 +19,16 @@ on:
     - cron: "0 0 * * *"
 
 jobs:
-  linux:
-    runs-on: ubuntu-latest
-    steps:
-      - run: sudo apt-get install gfortran
-      - run: gfortran --version
+#  linux:
+#    runs-on: ubuntu-latest
+#    steps:
+#      - run: sudo apt-get install gfortran
+#      - run: gfortran --version
 
-  windows:
-    runs-on: windows-latest
-    steps:
-      - run: choco install mingw
+#  windows:
+#    runs-on: windows-latest
+#    steps:
+#      - run: choco install mingw
 
   mac:
     runs-on: macos-latest
