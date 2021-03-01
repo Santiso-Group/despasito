@@ -107,7 +107,7 @@ def extract_calc_data(input_fname, path='.', **thermo_dict):
         logger.info("No EOScross file specified")
 
     # Extract relevant system state inputs
-    EOS_dict_keys = ['bead_configuration', 'EOSgroup', 'EOScross',"output_file", "numba", "cython", "python"]
+    EOS_dict_keys = ['bead_configuration', 'EOSgroup', 'EOScross',"output_file"]
     for key, value in input_dict.items():
         if key.startswith("eos_"):
             new_key = "_".join(key.split("_")[1:])
@@ -116,6 +116,11 @@ def extract_calc_data(input_fname, path='.', **thermo_dict):
             eos_dict['eos'] = input_dict["eos"]
         elif key not in EOS_dict_keys:
             thermo_dict[key] = value
+
+    for key in ["numba", "cython", "python"]:
+        if key in thermo_dict:
+            eos_dict[key] = thermo_dict[key]
+            del thermo_dict[key]
 
     if "optimization_parameters" not in thermo_dict:
         logger.info("The following thermo calculation parameters have been provided: {}\n".format((", ".join(thermo_dict.keys()))))

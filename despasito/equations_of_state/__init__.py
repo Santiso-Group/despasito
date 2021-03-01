@@ -14,6 +14,7 @@ class method_stat:
     cython = False
     python = False
 
+
 logger = logging.getLogger(__name__)
 
 def initiate_eos(eos="saft.gamma_mie", numba=None, cython=None, python=None, **input_dict):
