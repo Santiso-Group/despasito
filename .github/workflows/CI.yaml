@@ -6,13 +6,10 @@ on:
   # Both are tracked here to keep legacy and new codes working
   push:
     branches:
-      - "update"
-      - "*"
       - "**"
   pull_request:
     branches:
       - "master"
-      - "main"
       - "update"
   schedule:
     # Nightly tests run on master by default:
@@ -46,7 +43,7 @@ jobs:
         python-version: [3.7, 3.8]
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
 
     - name: Additional info about the build
       shell: bash
