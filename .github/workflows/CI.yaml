@@ -35,6 +35,7 @@ jobs:
     steps:
       - run: brew install gfortran 
       - run: gfortran-10 --version
+      - run: alias gfortran-10
 
   test:
     name: Test on ${{ matrix.os }}, Python ${{ matrix.python-version }}
