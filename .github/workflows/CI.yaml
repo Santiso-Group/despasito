@@ -80,7 +80,7 @@ jobs:
       # conda setup requires this special shell
       shell: bash -l {0}
       run: |
-        which gfortran
+        alias gfortran-10
         python -m pip install -e . --no-deps -vvv
         conda list
 
