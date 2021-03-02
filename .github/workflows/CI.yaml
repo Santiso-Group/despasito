@@ -79,8 +79,8 @@ jobs:
     - name: Install package
       # conda setup requires this special shell
       shell: bash -l {0}
+      run: f2py -c --help-fcompiler
       run: |
-        echo $GITHUB_ENV
         python -m pip install -e . --no-deps -vvv
         conda list
 
