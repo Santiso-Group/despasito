@@ -67,7 +67,6 @@ jobs:
         python -m pip install -U pytest pytest-cov codecov
 
     - if: matrix.os == 'macos-latest'
-          shell: bash
           run: ln -s gfortran gfortran-10
 
     # More info on options: https://github.com/conda-incubator/setup-miniconda
