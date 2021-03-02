@@ -264,7 +264,7 @@ def global_minimization(global_method, *args, **kwargs):
     calc_list = [
         o[0]
         for o in getmembers(global_methods_mod)
-        if (isfunction(o[1]) and o[0][0] is not "_")
+        if (isfunction(o[1]) and o[0][0] != "_")
     ]
     try:
         func = getattr(global_methods_mod, global_method)
@@ -305,7 +305,7 @@ def initialize_constraints(constraints, constraint_type):
     calc_list = [
         o[0]
         for o in getmembers(constraints_mod)
-        if (isfunction(o[1]) and o[0][0] is not "_")
+        if (isfunction(o[1]) and o[0][0] != "_")
     ]
 
     new_constraints = []
@@ -337,12 +337,12 @@ def initialize_constraints(constraints, constraint_type):
                         kwargs["function"]
                     )
                 )
-            if kwargs["type"] is "linear":
+            if kwargs["type"] == "linear":
                 if "kwargs" not in kwargs:
                     output = LinearConstraint(func, args[0], args[1])
                 else:
                     output = LinearConstraint(func, args[0], args[1], **kwargs)
-            elif kwargs["type"] is "nonlinear":
+            elif kwargs["type"] == "nonlinear":
                 if "kwargs" not in kwargs:
                     output = NonlinearConstraint(func, args[0], args[1])
                 else:

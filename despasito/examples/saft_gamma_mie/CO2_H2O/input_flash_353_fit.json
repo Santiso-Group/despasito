@@ -13,10 +13,10 @@
         "data_class_type": "flash",
         "calculation_type": "flash",
         "T": [353],
-        "P": [7.08e+6],
-        "xi": [[0.0128, 0.9872]],
-        "yi": [[0.9896, 0.0104]]
+        "P": [4.05e+6],
+        "xi": [[0.008, 0.992]],
+        "yi": [[0.9857, 0.0143]]
     },
-    "global_opts": {"method": "single_objective"},
-    "min_mole_fraction0": 0.98
+    "global_opts": {"method": "single_objective"}
 }
+

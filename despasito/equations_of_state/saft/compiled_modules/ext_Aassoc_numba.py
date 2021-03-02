@@ -36,6 +36,13 @@ def calc_Xika(indices, rho, xi, molecular_composition, nk, Fklab, Kklab, gr_asso
     """
 
     l_K = len(np.shape(Kklab))
+
+    print("Xika", l_K)
+    for tmp in [indices, rho, xi, molecular_composition, nk, Fklab, Kklab, gr_assoc]:
+        print(type(tmp), np.shape(tmp))
+
+    #sys.exit("stop")
+
     if l_K == 4:
         Xika_final, err_array = calc_Xika_4(
             indices, rho, xi, molecular_composition, nk, Fklab, Kklab, gr_assoc

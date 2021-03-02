@@ -141,7 +141,7 @@ def test_fit_import():
 thermo_dict0["exp_data"] = exp_data_sol
 
 
-def test_solubility_so(Eos=Eos, thermo_dict=copy.deepcopy(thermo_dict0)):
+def test_solubility_so(Eos=Eos, thermo_dict=thermo_dict0.copy()):
 
     thermo_dict = ri.process_param_fit_inputs(thermo_dict)
     output = fit.fit(**thermo_dict)
@@ -155,7 +155,7 @@ def test_solubility_so(Eos=Eos, thermo_dict=copy.deepcopy(thermo_dict0)):
 thermo_dict_mix["exp_data"] = exp_data_density
 
 
-def test_density_so(Eos=Eos_mix, thermo_dict=copy.deepcopy(thermo_dict_mix)):
+def test_density_so(Eos=Eos_mix, thermo_dict=thermo_dict_mix.copy()):
 
     thermo_dict = ri.process_param_fit_inputs(thermo_dict)
     output = fit.fit(**thermo_dict)
@@ -170,7 +170,7 @@ thermo_dict0["exp_data"] = exp_data_sat
 thermo_dict0["global_opts"] = {"method": "single_objective"}
 
 
-def test_saturation_de(Eos=Eos, thermo_dict=copy.deepcopy(thermo_dict0)):
+def test_saturation_de(Eos=Eos, thermo_dict=thermo_dict0.copy()):
 
     thermo_dict["density_opts"] = {"pressure_min": 10}
     thermo_dict = ri.process_param_fit_inputs(thermo_dict)

@@ -17,70 +17,78 @@ from despasito.equations_of_state import constants
 
 logger = logging.getLogger(__name__)
 
-from despasito.equations_of_state import method_stat
+try:
+    from .compiled_modules import ext_Aassoc_fortran
+    flag_fortran = True
+except Exception:
+    flag_fortran = False
 
-flag_fortran = False
-if not method_stat.cython and not method_stat.numba and not method_stat.python:
-    try:
-        from .compiled_modules import ext_Aassoc_fortran
-
-        flag_fortran = True
-    except Exception:
-        logger.info(
-            "Fortran module failed to import, using numba for association sites"
-        )
-        method_stat.numba = True
-
-if method_stat.cython:
-    from .compiled_modules.ext_Aassoc_cython import calc_Xika
-elif method_stat.numba:
-    
-    from .compiled_modules.ext_Aassoc_numba import calc_Xika
-elif method_stat.python:
-    logger.info("Using pure python. Consider using 'numba' flag")
-    from .compiled_modules.ext_Aassoc_python import calc_Xika
+from .compiled_modules.ext_Aassoc_cython import calc_Xika as calc_Xika_cython
+from .compiled_modules.ext_Aassoc_numba import calc_Xika as calc_Xika_numba
+from .compiled_modules.ext_Aassoc_python import calc_Xika as calc_Xika_python
 
 
-def _calc_Xika_wrap(*args, maxiter=500, tol=1e-12, damp=0.1):
+def _calc_Xika_wrap(*args, method_stat, maxiter=500, tol=1e-12, damp=0.1):
     r""" This function wrapper allows difference types of compiled functions to be referenced.
     """
+
     indices, rho, xi, molecular_composition, nk, Fklab, Kklab, gr_assoc = args
+
     if len(np.shape(Kklab)) == 4:
-        if flag_fortran:
-            Xika_init = 0.5 * np.ones(len(indices))
-            Xika = ext_Aassoc_fortran.calc_xika_4(
-                indices,
-                constants.molecule_per_nm3 * rho,
-                Xika_init,
-                xi,
-                molecular_composition,
-                nk,
-                Fklab,
-                Kklab,
-                gr_assoc,
-                maxiter,
-                tol,
-            )
+        if method_stat.fortran:
+            if flag_fortran:
+                Xika_init = 0.5 * np.ones(len(indices))
+                Xika = ext_Aassoc_fortran.calc_xika_4(
+                    indices,
+                    constants.molecule_per_nm3 * rho,
+                    Xika_init,
+                    xi,
+                    molecular_composition,
+                    nk,
+                    Fklab,
+                    Kklab,
+                    gr_assoc,
+                    maxiter,
+                    tol,
+                )
+            else:
+                logger.info("Fortran module failed to import, using numba for association sites") 
         else:
-            Xika, _ = calc_Xika(*args)
+            if method_stat.numba:
+                Xika, _ = calc_Xika_numba(*args)
+            elif method_stat.cython:
+                Xika, _ = calc_Xika_cython(*args)
+            elif method_stat.python:
+                Xika, _ = calc_Xika_python(*args)
+                logger.warning("Using pure python. Consider using 'numba' flag")
+
     elif len(np.shape(Kklab)) == 6:
-        if flag_fortran:
-            Xika_init = 0.5 * np.ones(len(indices))
-            Xika = ext_Aassoc_fortran.calc_xika_6(
-                indices,
-                constants.molecule_per_nm3 * rho,
-                Xika_init,
-                xi,
-                molecular_composition,
-                nk,
-                Fklab,
-                Kklab,
-                gr_assoc,
-                maxiter,
-                tol,
-            )
+        if method_stat.fortran:
+            if flag_fortran:
+                Xika_init = 0.5 * np.ones(len(indices))
+                Xika = ext_Aassoc_fortran.calc_xika_6(
+                    indices,
+                    constants.molecule_per_nm3 * rho,
+                    Xika_init,
+                    xi,
+                    molecular_composition,
+                    nk,
+                    Fklab,
+                    Kklab,
+                    gr_assoc,
+                    maxiter,
+                    tol,
+                )
+            else:
+                logger.info("Fortran module failed to import, using numba for association sites")
         else:
-            Xika, _ = calc_Xika(*args)
+            if method_stat.numba:
+                Xika, _ = calc_Xika_numba(*args)
+            elif method_stat.cython:
+                Xika, _ = calc_Xika_cython(*args)
+            elif method_stat.python:
+                Xika, _ = calc_Xika_python(*args)
+                logger.warning("Using pure python. Consider using 'numba' flag")
 
     return Xika
 

@@ -8,19 +8,30 @@ Create an EOS class from options taken from factory design pattern.
 from importlib import import_module
 import logging
 
-
 class method_stat:
 
-    numba = False
-    cython = False
-    python = False
+    def __init__(self, numba=False, cython=False, python=False):
 
+        self.numba = numba
+        self.cython = cython
+        self.python = python
+
+        if not any([numba, cython, python]):
+            self.fortran = True
+        else:
+            self.fortran = False
+
+    def __str__(self):
+
+        string = "Compilation: numba {}, cython {}, python {}, fortran {}".format(self.numba, self.cython, self.python, self.fortran)
+
+        return string
 
 logger = logging.getLogger(__name__)
 
 
 def initiate_eos(
-    eos="saft.gamma_mie", numba=None, cython=None, python=None, **input_dict
+    eos="saft.gamma_mie", numba=False, cython=False, python=False, **input_dict
 ):
     """
     Interface between the user and our library of equations of state (EOS).
@@ -29,10 +40,16 @@ def initiate_eos(
 
     Parameters
     ----------
+    eos : str, Optional, default="saft.gamma_mie"
+        Name of EOS, see EOS Types in the documentation for additional options. Input should be in the form EOSfamily.EOSname (e.g. saft.gamme_mie).
     input_dict : dict, Optional
         A dictionary of inputs for the desired EOS. See specific EOS documentation for required inputs.
-
-        - eos : str - Input should be in the form EOSfamily.EOSname (e.g. saft.gamme_mie). Note that the name of the class is EOSfamily_EOSname.
+    numba : bool, Optional, default=False
+        If True, numba Just-In-Time compilation is used.
+    cython : bool, Optional, default=False
+        If True, cython pre-compiled modules are used.
+    python : bool, Optional, default=False
+        If True, pure python is used for everything, note that if association sites are present in the SAFT EOS, this is detrimentally slow
                 
     Returns
     -------
@@ -40,12 +57,7 @@ def initiate_eos(
         An instance of the defined EOS class to be used in thermodynamic computations.
     """
 
-    if numba != None:
-        method_stat.numba = numba
-    if cython != None:
-        method_stat.cython = cython
-    if python != None:
-        method_stat.python = python
+    input_dict["method_stat"] = method_stat(numba=numba, cython=cython, python=python)
 
     factory_families = [
         "saft"

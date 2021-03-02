@@ -97,6 +97,8 @@ class EosType(EosTemplate):
         Functional form of ideal gas contribution for Helmholtz energy. Default is defined in SAFT variant.
     reduction_ratio : float, Optional
         Reduced distance of the sites from the center of the sphere of interaction. This value is used when site position, rd_klab is None. See "func"`~despasito.equations_of_state.saft.Aassoc.calc_bonding_volume` for more details
+    method_stat : obj
+        EOS object containing the the method status of the available options. 
     kwargs
         Other keywords that are specific to the chosen SAFT variant
 
@@ -152,6 +154,9 @@ class EosType(EosTemplate):
         self.saft_name = saft_name
         saft_source = saft_type(saft_name)
         self.saft_source = saft_source(**kwargs)
+
+        if "method_stat" in kwargs:
+            self.method_stat = self.saft_source.method_stat
 
         if not hasattr(self, "eos_dict"):
             self.eos_dict = {}
@@ -421,6 +426,7 @@ class EosType(EosTemplate):
             Fklab,
             Kklab,
             gr_assoc,
+            method_stat=self.method_stat
         )
 
         # Compute A_assoc

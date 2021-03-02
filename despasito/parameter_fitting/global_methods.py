@@ -133,7 +133,7 @@ def differential_evolution(
     new_global_opts = {"init": "random"}
     if global_opts:
         for key, value in global_opts.items():
-            if key is "MultiprocessingObject":
+            if key == "MultiprocessingObject":
                 flag_workers = "workers" in global_opts and global_opts["workers"] > 1
                 if value.ncores > 1 and flag_workers:
                     logger.info(
@@ -210,7 +210,7 @@ def shgo(
     new_global_opts = {"sampling_method": "sobol"}
     if global_opts:
         for key, value in global_opts.items():
-            if key is not "MultiprocessingObject" and key not in obj_kwargs:
+            if key != "MultiprocessingObject" and key not in obj_kwargs:
                 new_global_opts[key] = value
     global_opts = new_global_opts
 
@@ -306,7 +306,7 @@ def grid_minimization(
     new_global_opts = {"Ns": 5, "finish": spo.minimize}
     if global_opts:
         for key, value in global_opts.items():
-            if key is "MultiprocessingObject":
+            if key == "MultiprocessingObject":
                 if value.ncores > 1:
                     logger.info(
                         "Grid minimization algorithm is using {} workers.".format(
@@ -427,7 +427,7 @@ def brute(
     new_global_opts = {"Ns": 5, "finish": spo.minimize}
     if global_opts:
         for key, value in global_opts.items():
-            if key is "MultiprocessingObject":
+            if key == "MultiprocessingObject":
                 flag_workers = "workers" in global_opts and global_opts["workers"] > 1
                 if value.ncores > 1 and flag_workers:
                     logger.info(
@@ -535,7 +535,7 @@ def basinhopping(
     new_global_opts = {"niter": 10, "T": 0.5, "niter_success": 3}
     if global_opts:
         for key, value in global_opts.items():
-            if key is not "MultiprocessingObject":
+            if key != "MultiprocessingObject":
                 new_global_opts[key] = value
     global_opts = new_global_opts
 

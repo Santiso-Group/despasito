@@ -16,48 +16,27 @@ import despasito.equations_of_state.eos_toolbox as tb
 from despasito.equations_of_state import constants
 import despasito.equations_of_state.saft.saft_toolbox as stb
 from despasito.equations_of_state.saft import Aassoc
+from .compiled_modules.ext_gamma_mie_python import prefactor, calc_Iij
 
 logger = logging.getLogger(__name__)
 
-from despasito.equations_of_state import method_stat
+def _import_supporting_functions(method_stat=None):
+    """ Import appropriate functions for compilation mode
+    """
 
-if not method_stat.cython and not method_stat.numba:
-    from .compiled_modules.ext_gamma_mie_python import (
-        calc_a1s,
-        calc_a1ii,
-        calc_Bkl,
-        prefactor,
-        calc_Iij,
-        calc_a1s_eff,
-        calc_Bkl_eff,
-        calc_da1iidrhos,
-        calc_da2ii_1pchi_drhos,
-    )
+    if method_stat == None or method_stat.fortran or method_stat.python:
+        import despasito.equations_of_state.saft.compiled_modules.ext_gamma_mie_python as cm
 
-elif method_stat.cython:
-    from .compiled_modules.ext_gamma_mie_cython import (
-        calc_a1s,
-        calc_Bkl,
-        calc_a1ii,
-        calc_a1s_eff,
-        calc_Bkl_eff,
-        calc_da1iidrhos,
-        calc_da2ii_1pchi_drhos,
-    )
-    from .compiled_modules.ext_gamma_mie_python import prefactor, calc_Iij
+    elif method_stat.numba:
+        import despasito.equations_of_state.saft.compiled_modules.ext_gamma_mie_numba as cm
 
-elif method_stat.numba:
-    from .compiled_modules.ext_gamma_mie_numba import (
-        calc_a1s,
-        calc_Bkl,
-        calc_a1ii,
-        calc_a1s_eff,
-        calc_Bkl_eff,
-        calc_da1iidrhos,
-        calc_da2ii_1pchi_drhos,
-    )
-    from .compiled_modules.ext_gamma_mie_python import prefactor, calc_Iij
+    elif method_stat.cython:
+        import despasito.equations_of_state.saft.compiled_modules.ext_gamma_mie_cython as cm
 
+    else:
+        raise ValueError("Unknown instructions for importing supportive functions of SAFT")
+
+    return cm
 
 class SaftType:
 
@@ -161,6 +140,14 @@ class SaftType:
     """
 
     def __init__(self, **kwargs):
+
+        if "method_stat" in kwargs:
+            self.method_stat = kwargs["method_stat"]
+            del kwargs["method_stat"]
+        else:
+            self.method_stat = None
+
+        self._cm = _import_supporting_functions(self.method_stat)
 
         self.Aideal_method = "Abroglie"
         self.parameter_types = ["epsilon", "sigma", "lambdar", "lambdaa", "Sk"]
@@ -413,7 +400,7 @@ class SaftType:
             )
 
         # compute components of eq. 19
-        a1kl = calc_a1ii(
+        a1kl = self._cm.calc_a1ii(
             rho,
             self.eos_dict["Cmol2seg"],
             self.eos_dict["dkl"],
@@ -489,7 +476,7 @@ class SaftType:
             + np.einsum("i,jk", zetaxstar ** 8, fmlist123[2])
         )
 
-        a1s_2la = calc_a1s(
+        a1s_2la = self._cm.calc_a1s(
             rho,
             self.eos_dict["Cmol2seg"],
             2.0 * self.eos_dict["lambdaakl"],
@@ -497,7 +484,7 @@ class SaftType:
             self.eos_dict["epsilonkl"],
             self.eos_dict["dkl"],
         )
-        a1s_2lr = calc_a1s(
+        a1s_2lr = self._cm.calc_a1s(
             rho,
             self.eos_dict["Cmol2seg"],
             2.0 * self.eos_dict["lambdarkl"],
@@ -505,7 +492,7 @@ class SaftType:
             self.eos_dict["epsilonkl"],
             self.eos_dict["dkl"],
         )
-        a1s_lalr = calc_a1s(
+        a1s_lalr = self._cm.calc_a1s(
             rho,
             self.eos_dict["Cmol2seg"],
             self.eos_dict["lambdaakl"] + self.eos_dict["lambdarkl"],
@@ -513,7 +500,7 @@ class SaftType:
             self.eos_dict["epsilonkl"],
             self.eos_dict["dkl"],
         )
-        B_2la = calc_Bkl(
+        B_2la = self._cm.calc_Bkl(
             rho,
             2.0 * self.eos_dict["lambdaakl"],
             self.eos_dict["Cmol2seg"],
@@ -522,7 +509,7 @@ class SaftType:
             self.eos_dict["x0kl"],
             zetax,
         )
-        B_2lr = calc_Bkl(
+        B_2lr = self._cm.calc_Bkl(
             rho,
             2.0 * self.eos_dict["lambdarkl"],
             self.eos_dict["Cmol2seg"],
@@ -531,7 +518,7 @@ class SaftType:
             self.eos_dict["x0kl"],
             zetax,
         )
-        B_lalr = calc_Bkl(
+        B_lalr = self._cm.calc_Bkl(
             rho,
             self.eos_dict["lambdaakl"] + self.eos_dict["lambdarkl"],
             self.eos_dict["Cmol2seg"],
@@ -763,7 +750,7 @@ class SaftType:
                 self.eos_dict["dkl"],
             )
 
-        da1iidrhos = calc_da1iidrhos(
+        da1iidrhos = self._cm.calc_da1iidrhos(
             rho,
             self.eos_dict["Cmol2seg"],
             self.eos_dict["dii_eff"],
@@ -774,7 +761,7 @@ class SaftType:
             zetax,
         )
 
-        a1sii_lambdaaii_avg = calc_a1s_eff(
+        a1sii_lambdaaii_avg = self._cm.calc_a1s_eff(
             rho,
             self.eos_dict["Cmol2seg"],
             self.eos_dict["lambdaaii_avg"],
@@ -782,7 +769,7 @@ class SaftType:
             self.eos_dict["epsilonii_avg"],
             self.eos_dict["dii_eff"],
         )
-        a1sii_lambdarii_avg = calc_a1s_eff(
+        a1sii_lambdarii_avg = self._cm.calc_a1s_eff(
             rho,
             self.eos_dict["Cmol2seg"],
             self.eos_dict["lambdarii_avg"],
@@ -791,7 +778,7 @@ class SaftType:
             self.eos_dict["dii_eff"],
         )
 
-        Bii_lambdaaii_avg = calc_Bkl_eff(
+        Bii_lambdaaii_avg = self._cm.calc_Bkl_eff(
             rho,
             self.eos_dict["lambdaaii_avg"],
             self.eos_dict["Cmol2seg"],
@@ -800,7 +787,7 @@ class SaftType:
             self.eos_dict["x0ii"],
             zetax,
         )
-        Bii_lambdarii_avg = calc_Bkl_eff(
+        Bii_lambdarii_avg = self._cm.calc_Bkl_eff(
             rho,
             self.eos_dict["lambdarii_avg"],
             self.eos_dict["Cmol2seg"],
@@ -903,7 +890,7 @@ class SaftType:
                 * np.exp(phi7[3] * zetaxstar + phi7[4] * (zetaxstar ** 2))
             )
 
-        da2iidrhos = calc_da2ii_1pchi_drhos(
+        da2iidrhos = self._cm.calc_da2ii_1pchi_drhos(
             rho,
             self.eos_dict["Cmol2seg"],
             self.eos_dict["epsilonii_avg"],
@@ -914,7 +901,7 @@ class SaftType:
             zetax,
         )
 
-        a1sii_2lambdaaii_avg = calc_a1s_eff(
+        a1sii_2lambdaaii_avg = self._cm.calc_a1s_eff(
             rho,
             self.eos_dict["Cmol2seg"],
             2.0 * self.eos_dict["lambdaaii_avg"],
@@ -922,7 +909,7 @@ class SaftType:
             self.eos_dict["epsilonii_avg"],
             self.eos_dict["dii_eff"],
         )
-        a1sii_2lambdarii_avg = calc_a1s_eff(
+        a1sii_2lambdarii_avg = self._cm.calc_a1s_eff(
             rho,
             self.eos_dict["Cmol2seg"],
             2.0 * self.eos_dict["lambdarii_avg"],
@@ -930,7 +917,7 @@ class SaftType:
             self.eos_dict["epsilonii_avg"],
             self.eos_dict["dii_eff"],
         )
-        a1sii_lambdarii_avglambdaaii_avg = calc_a1s_eff(
+        a1sii_lambdarii_avglambdaaii_avg = self._cm.calc_a1s_eff(
             rho,
             self.eos_dict["Cmol2seg"],
             self.eos_dict["lambdaaii_avg"] + self.eos_dict["lambdarii_avg"],
@@ -939,7 +926,7 @@ class SaftType:
             self.eos_dict["dii_eff"],
         )
 
-        Bii_2lambdaaii_avg = calc_Bkl_eff(
+        Bii_2lambdaaii_avg = self._cm.calc_Bkl_eff(
             rho,
             2.0 * self.eos_dict["lambdaaii_avg"],
             self.eos_dict["Cmol2seg"],
@@ -948,7 +935,7 @@ class SaftType:
             self.eos_dict["x0ii"],
             zetax,
         )
-        Bii_2lambdarii_avg = calc_Bkl_eff(
+        Bii_2lambdarii_avg = self._cm.calc_Bkl_eff(
             rho,
             2.0 * self.eos_dict["lambdarii_avg"],
             self.eos_dict["Cmol2seg"],
@@ -957,7 +944,7 @@ class SaftType:
             self.eos_dict["x0ii"],
             zetax,
         )
-        Bii_lambdaaii_avglambdarii_avg = calc_Bkl_eff(
+        Bii_lambdaaii_avglambdarii_avg = self._cm.calc_Bkl_eff(
             rho,
             self.eos_dict["lambdaaii_avg"] + self.eos_dict["lambdarii_avg"],
             self.eos_dict["Cmol2seg"],

@@ -83,25 +83,28 @@ optimization_parameters = {
     "fit_parameter_names": ["epsilon_H2O353"],
     "epsilon_H2O353_bounds": [150.0, 600.0],
 }
-thermo_dict0 = {
+thermo_dict_dew = {
     "optimization_parameters": optimization_parameters,
     "exp_data": exp_data_dew_pressure,
     "parameters_guess": [432.69],
     "global_opts": {"method": "single_objective"},
 }
 
+thermo_dict_flash = {
+    "optimization_parameters": optimization_parameters,
+    "exp_data": exp_data_flash,
+    "parameters_guess": [432.69],
+    "global_opts": {"method": "single_objective"},
+}
 
-# def test_dew_pressure(Eos=Eos,thermo_dict=copy.deepcopy(thermo_dict0)):
-#
-#    thermo_dict = ri.process_param_fit_inputs(thermo_dict)
-#    output = fit.fit(**thermo_dict)
-#
-#    assert output["parameters_final"][0]==pytest.approx(432.69,abs=1.0) and output["objective_value"]==pytest.approx(854.19,abs=1.0)
+def test_dew_pressure(Eos=Eos,thermo_dict=thermo_dict_dew.copy()):
 
-thermo_dict0["exp_data"] = exp_data_flash
+    thermo_dict = ri.process_param_fit_inputs(thermo_dict)
+    output = fit.fit(**thermo_dict)
 
+    assert output["parameters_final"][0]==pytest.approx(432.69,abs=1.0) and output["objective_value"]==pytest.approx(854.19,abs=1.0)
 
-def test_flash(Eos=Eos, thermo_dict=copy.deepcopy(thermo_dict0)):
+def test_flash(Eos=Eos, thermo_dict=thermo_dict_flash.copy()):
 
     thermo_dict = ri.process_param_fit_inputs(thermo_dict)
     output = fit.fit(**thermo_dict)

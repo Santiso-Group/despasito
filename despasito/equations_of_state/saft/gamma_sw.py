@@ -19,15 +19,6 @@ from despasito.equations_of_state.saft import Aassoc
 
 logger = logging.getLogger(__name__)
 
-from despasito.equations_of_state import method_stat
-
-if not method_stat.cython and not method_stat.numba:
-    pass
-elif method_stat.cython:
-    logger.warning("saft.gamma_sw does not use cython.")
-elif method_stat.numba:
-    logger.warning("saft.gamma_sw does not use numba.")
-
 ckl_coef = np.array(
     [
         [2.25855, -1.50349, 0.249434],
@@ -122,6 +113,13 @@ class SaftType:
     """
 
     def __init__(self, **kwargs):
+
+        if "method_stat" in kwargs:
+            self.method_stat = kwargs["method_stat"]
+            del kwargs["method_stat"]
+            logger.info("This EOS doesn't use compiled modules for Amonomer and Achain")
+        else:
+            self.method_stat = None
 
         self.Aideal_method = "Abroglie"
         self.residual_helmholtz_contributions = ["Amonomer", "Achain"]
