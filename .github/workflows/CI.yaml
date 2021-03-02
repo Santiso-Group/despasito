@@ -34,7 +34,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - run: brew install gfortran 
-      - run: gfortran --version
+      - run: gfortran-10 --version
 
   test:
     name: Test on ${{ matrix.os }}, Python ${{ matrix.python-version }}
