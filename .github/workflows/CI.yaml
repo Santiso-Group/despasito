@@ -61,13 +61,16 @@ jobs:
     - name: Upgrade pip if necessary
       run: |
         python -m pip install --upgrade pip
+
     - name: Testing Dependencies
       shell: bash
       run: |
         python -m pip install -U pytest pytest-cov codecov
 
-    - if: matrix.os == 'macos-latest'
-          run: ln -s gfortran gfortran-10
+    - name: Check macos gfortran
+      if: startsWith(matrix.os, 'macOS')
+      run: |
+        ln -s gfortran gfortran-10
 
     # More info on options: https://github.com/conda-incubator/setup-miniconda
     - uses: conda-incubator/setup-miniconda@v2
