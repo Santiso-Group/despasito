@@ -1,0 +1,9 @@
+{
+    "bead_configuration": [[["H2O", 1]]], 
+    "eos": "saft.gamma_sw",
+    "EOSgroup": "../../library/SWgroup.json",
+    "EOScross": "../../library/SWcross.json",
+    "calculation_type" : "liquid_properties",
+    "output_file": "out_sw.txt",
+    "Tlist": 580.0
+}

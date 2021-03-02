@@ -61,7 +61,7 @@ def bubble_pressure(Eos, **sys_dict):
 
     ## Extract and check input data
     thermo_keys = ["Tlist", "xilist"]
-    thermo_dict = gtb.check_length(sys_dict, thermo_keys)
+    thermo_dict = gtb.check_length_dict(sys_dict, thermo_keys)
     npoints = len(thermo_dict[list(thermo_dict.keys())[0]])
 
     thermo_defaults = [constants.standard_temperature]
@@ -71,7 +71,7 @@ def bubble_pressure(Eos, **sys_dict):
 
     ## Optional values
     optional_keys = ["Pguess", "Pmin", "Pmax"]
-    opts = gtb.check_length(sys_dict, optional_keys, lx=npoints)
+    opts = gtb.check_length_dict(sys_dict, optional_keys, lx=npoints)
     if opts:
         logger.info(
             "Accepted user defined variables: {}".format(", ".join(list(opts.keys())))
@@ -201,7 +201,7 @@ def dew_pressure(Eos, **sys_dict):
 
     ## Extract and check input data
     thermo_keys = ["Tlist", "yilist"]
-    thermo_dict = gtb.check_length(sys_dict, thermo_keys)
+    thermo_dict = gtb.check_length_dict(sys_dict, thermo_keys)
     npoints = len(thermo_dict[list(thermo_dict.keys())[0]])
 
     thermo_defaults = [constants.standard_temperature]
@@ -211,7 +211,7 @@ def dew_pressure(Eos, **sys_dict):
 
     ## Optional values
     optional_keys = ["Pguess", "Pmin", "Pmax"]
-    opts = gtb.check_length(sys_dict, optional_keys, lx=npoints)
+    opts = gtb.check_length_dict(sys_dict, optional_keys, lx=npoints)
     if opts:
         logger.info(
             "Accepted user defined variables: {}".format(", ".join(list(opts.keys())))
@@ -349,7 +349,7 @@ def activity_coefficient(Eos, **sys_dict):
 
     ## Extract and check input data
     thermo_keys = ["Tlist", "yilist", "xilist", "Plist"]
-    thermo_dict = gtb.check_length(sys_dict, thermo_keys)
+    thermo_dict = gtb.check_length_dict(sys_dict, thermo_keys)
     npoints = len(thermo_dict[list(thermo_dict.keys())[0]])
 
     ## Determine Mode
@@ -392,7 +392,7 @@ def activity_coefficient(Eos, **sys_dict):
 
     ## Optional values
     optional_keys = ["Pguess", "Pmin", "Pmax"]
-    opts = gtb.check_length(sys_dict, optional_keys, lx=npoints)
+    opts = gtb.check_length_dict(sys_dict, optional_keys, lx=npoints)
     if opts:
         logger.info(
             "Accepted user defined variables: {}".format(", ".join(list(opts.keys())))
@@ -561,7 +561,7 @@ def flash(Eos, **sys_dict):
 
     ## Extract and check input data
     thermo_keys = ["Tlist", "Plist"]
-    thermo_dict = gtb.check_length(sys_dict, thermo_keys)
+    thermo_dict = gtb.check_length_dict(sys_dict, thermo_keys)
     npoints = len(thermo_dict[list(thermo_dict.keys())[0]])
 
     thermo_defaults = [constants.standard_temperature, constants.standard_pressure]
@@ -677,7 +677,7 @@ def saturation_properties(Eos, **sys_dict):
 
     ## Extract and check input data
     thermo_keys = ["Tlist", "xilist"]
-    thermo_dict = gtb.check_length(sys_dict, thermo_keys)
+    thermo_dict = gtb.check_length_dict(sys_dict, thermo_keys)
     if "Tlist" not in thermo_dict:
         thermo_dict["Tlist"] = np.array([constants.standard_temperature])
         logger.info(
@@ -795,7 +795,7 @@ def liquid_properties(Eos, **sys_dict):
 
     ## Extract and check input data
     thermo_keys = ["Tlist", "xilist", "Plist"]
-    thermo_dict = gtb.check_length(sys_dict, thermo_keys)
+    thermo_dict = gtb.check_length_dict(sys_dict, thermo_keys)
     npoints = len(thermo_dict[list(thermo_dict.keys())[0]])
 
     if "xilist" not in thermo_dict and Eos.number_of_components > 1:
@@ -917,7 +917,7 @@ def vapor_properties(Eos, **sys_dict):
 
     ## Extract and check input data
     thermo_keys = ["Tlist", "yilist", "Plist"]
-    thermo_dict = gtb.check_length(sys_dict, thermo_keys)
+    thermo_dict = gtb.check_length_dict(sys_dict, thermo_keys)
     npoints = len(thermo_dict[list(thermo_dict.keys())[0]])
 
     if "yilist" not in thermo_dict and Eos.number_of_components > 1:
@@ -1039,7 +1039,7 @@ def solubility_parameter(Eos, **sys_dict):
     ## Extract and check input data
     thermo_keys = ["Tlist", "xilist", "Plist"]
     if any([x in sys_dict for x in thermo_keys]):
-        thermo_dict = gtb.check_length(sys_dict, thermo_keys)
+        thermo_dict = gtb.check_length_dict(sys_dict, thermo_keys)
         npoints = len(thermo_dict[list(thermo_dict.keys())[0]])
     else:
         npoints = 1
@@ -1180,7 +1180,7 @@ def verify_eos(Eos, **sys_dict):
         )
 
     thermo_keys = ["Tlist", "xilist", "Plist"]
-    thermo_dict = gtb.check_length(sys_dict, thermo_keys)
+    thermo_dict = gtb.check_length_dict(sys_dict, thermo_keys)
     npoints = len(thermo_dict[list(thermo_dict.keys())[0]])
 
     thermo_defaults = [constants.standard_temperature, constants.standard_pressure]

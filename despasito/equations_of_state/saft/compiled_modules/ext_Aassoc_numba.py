@@ -37,11 +37,11 @@ def calc_Xika(indices, rho, xi, molecular_composition, nk, Fklab, Kklab, gr_asso
 
     l_K = len(np.shape(Kklab))
 
-    print("Xika", l_K)
-    for tmp in [indices, rho, xi, molecular_composition, nk, Fklab, Kklab, gr_assoc]:
-        print(type(tmp), np.shape(tmp))
-
-    #sys.exit("stop")
+    # Ensure all inputs are numpy arrays
+    tmp_array = [rho, xi, molecular_composition, nk, Fklab, Kklab, gr_assoc]
+    for i,tmp in enumerate(tmp_array):
+        tmp_array[i] = np.array(tmp)
+    rho, xi, molecular_composition, nk, Fklab, Kklab, gr_assoc = tmp_array
 
     if l_K == 4:
         Xika_final, err_array = calc_Xika_4(
@@ -104,8 +104,8 @@ def calc_Xika_4(
     tol = 1e-12
     damp = 0.1
 
-    ncomp, nbeads = np.shape(molecular_composition)
-    nsitesmax = np.shape(nk)[1]
+    ncomp, nbeads = molecular_composition.shape
+    nsitesmax = nk.shape[1]
     nrho = len(rho)
     l_ind = len(indices)
 
@@ -143,7 +143,7 @@ def calc_Xika_4(
             if obj < tol:
                 break
             else:
-                if obj / max(Xika_elements) > 1e3:
+                if obj / np.max(Xika_elements) > 1e3:
                     Xika_elements = Xika_elements + damp * (
                         Xika_elements_new - Xika_elements
                     )
@@ -209,8 +209,8 @@ def calc_Xika_6(
     tol = 1e-12
     damp = 0.1
 
-    ncomp, nbeads = np.shape(molecular_composition)
-    nsitesmax = np.shape(nk)[1]
+    ncomp, nbeads = molecular_composition.shape
+    nsitesmax = nk.shape[1]
     nrho = len(rho)
     l_ind = len(indices)
 
@@ -250,7 +250,7 @@ def calc_Xika_6(
             if obj < tol:
                 break
             else:
-                if obj / max(Xika_elements) > 1e3:
+                if obj / np.max(Xika_elements) > 1e3:
                     Xika_elements = Xika_elements + damp * (
                         Xika_elements_new - Xika_elements
                     )

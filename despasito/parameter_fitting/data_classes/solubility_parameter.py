@@ -93,7 +93,7 @@ class Data(ExpDataTemplate):
         self.result_keys = ["rhol", "delta"]
 
         key_list = list(set(thermo_keys + self.result_keys))
-        self.thermodict.update(gtb.check_length(self.thermodict, key_list))
+        self.thermodict.update(gtb.check_length_dict(self.thermodict, key_list))
         self.npoints = np.size(self.thermodict["delta"])
 
         if "xilist" not in self.thermodict and self.Eos.number_of_components > 1:
@@ -110,7 +110,7 @@ class Data(ExpDataTemplate):
         )
 
         self.weights.update(
-            gtb.check_length(self.weights, self.result_keys, lx=self.npoints)
+            gtb.check_length_dict(self.weights, self.result_keys, lx=self.npoints)
         )
         self.weights.update(gtb.set_defaults(self.weights, self.result_keys, 1.0))
 

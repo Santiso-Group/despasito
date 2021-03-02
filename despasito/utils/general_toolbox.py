@@ -328,7 +328,7 @@ def isiterable(array):
     return isiterable
 
 
-def check_length(dictionary, keys, lx=None):
+def check_length_dict(dictionary, keys, lx=None):
 
     """
     This function compared the entries in the provided dictionary to ensure they're the same length.

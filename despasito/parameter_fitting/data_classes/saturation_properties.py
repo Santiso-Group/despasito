@@ -110,7 +110,7 @@ class Data(ExpDataTemplate):
         self.result_keys = ["rhol", "rhov", "Psat"]
 
         key_list = list(set(thermo_keys + self.result_keys))
-        self.thermodict.update(gtb.check_length(self.thermodict, key_list))
+        self.thermodict.update(gtb.check_length_dict(self.thermodict, key_list))
         for key in self.result_keys:
             if key in self.thermodict:
                 self.npoints = np.size(self.thermodict[key])
@@ -131,7 +131,7 @@ class Data(ExpDataTemplate):
         )
 
         self.weights.update(
-            gtb.check_length(self.weights, self.result_keys, lx=self.npoints)
+            gtb.check_length_dict(self.weights, self.result_keys, lx=self.npoints)
         )
         self.weights.update(gtb.set_defaults(self.weights, self.result_keys, 1.0))
 
