@@ -52,7 +52,7 @@ def _calc_Xika_wrap(*args, method_stat, maxiter=500, tol=1e-12, damp=0.1):
                     tol,
                 )
             else:
-                logger.info("Fortran module failed to import, using numba for association sites") 
+                raise ValueError("Fortran module failed to import, using numba for association sites") 
         else:
             if method_stat.numba:
                 Xika, _ = calc_Xika_numba(*args)
@@ -80,7 +80,7 @@ def _calc_Xika_wrap(*args, method_stat, maxiter=500, tol=1e-12, damp=0.1):
                     tol,
                 )
             else:
-                logger.info("Fortran module failed to import, using numba for association sites")
+                raise ValueError("Fortran module failed to import, using numba for association sites")
         else:
             if method_stat.numba:
                 Xika, _ = calc_Xika_numba(*args)
