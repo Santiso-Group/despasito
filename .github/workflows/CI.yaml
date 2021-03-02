@@ -80,16 +80,15 @@ jobs:
       # conda setup requires this special shell
       shell: bash -l {0}
       run: |
-        alias gfortran-10
+        echo $GITHUB_ENV
         python -m pip install -e . --no-deps -vvv
         conda list
 
     - name: Run tests
-
       shell: bash -l {0}
-
       run: |
         pytest -vvv --cov=despasito --cov-report=xml --color=yes despasito/tests
+
     - name: CodeCov
       uses: codecov/codecov-action@v1
       with:
