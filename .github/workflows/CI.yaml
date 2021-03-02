@@ -80,9 +80,10 @@ jobs:
       # conda setup requires this special shell
       shell: bash -l {0}
       run: |
+        echo $PATH
+        which gfortran-10
         python -m pip install -e . --no-deps -vvv
         conda list
-        f2py -c --help-fcompiler
 
     - name: Run tests
       shell: bash -l {0}
