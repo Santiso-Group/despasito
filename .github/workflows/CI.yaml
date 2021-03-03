@@ -74,9 +74,6 @@ jobs:
 
     - name: Install gfortran on mac
       if: matrix.os == 'macOS-latest'
-      env:
-        FC: gfortran-10
-        CC: gcc-10
       #shell: bash -l {0}
       #run: |
       #  conda install -c anaconda gfortran_osx-64
@@ -87,6 +84,10 @@ jobs:
       run: |
         python -m pip install -e . --no-deps -vvv
         conda list
+      if: matrix.os == 'macOS-latest'
+      env:
+        FC: gfortran-10
+        CC: gcc-10
         
     - name: Run tests
       shell: bash -l {0}
