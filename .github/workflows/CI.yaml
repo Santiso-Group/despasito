@@ -25,11 +25,6 @@ jobs:
       - run: sudo apt-get install gfortran
       - run: gfortran --version
 
-  windows:
-    runs-on: windows-latest
-    steps:
-      - run: choco install mingw
-
   test:
     name: Test on ${{ matrix.os }}, Python ${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
@@ -68,6 +63,12 @@ jobs:
       shell: bash -l {0}
       run: |
         conda install -c anaconda gfortran_osx-64
+
+    - name: Check macos gfortran
+      if: matrix.os == 'windows-latest'
+      shell: bash -l {0}
+      run: |
+        conda install -c conda-forge fortran-compiler
 
     - name: test gfortran
       shell: bash -l {0}
