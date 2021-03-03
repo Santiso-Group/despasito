@@ -25,6 +25,23 @@ jobs:
       - run: sudo apt-get install gfortran
       - run: gfortran --version
 
+  windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: git mingw-w64-x86_64-toolchain
+      - name: CI-Build
+        run: |
+          echo 'Running in MSYS2!'
+          ./ci-build.sh
+          
   test:
     name: Test on ${{ matrix.os }}, Python ${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
@@ -63,13 +80,7 @@ jobs:
       shell: bash -l {0}
       run: |
         conda install -c anaconda gfortran_osx-64
-
-    - name: Install mingw on windows
-      if: matrix.os == 'windows-latest'
-      shell: bash -l {0}
-      run: |
-        conda install -c msys2 m2w64-gcc-fortran
-
+        
     - name: Install package
       # conda setup requires this special shell
       shell: bash -l {0}
