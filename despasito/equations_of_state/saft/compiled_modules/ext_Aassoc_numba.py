@@ -62,18 +62,19 @@ def calc_Xika(indices, rho, xi, molecular_composition, nk, Fklab, Kklab, gr_asso
     return Xika_final, err_array
 
 
-@numba.njit(
-    numba.types.Tuple((numba.f8[:, :], numba.f8[:]))(
-        numba.i8[:, :],
-        numba.f8[:],
-        numba.f8[:],
-        numba.f8[:, :],
-        numba.i8[:, :],
-        numba.f8[:, :, :, :],
-        numba.f8[:, :, :, :],
-        numba.f8[:, :, :],
-    )
-)
+#@numba.njit(
+#    numba.types.Tuple((numba.f8[:, :], numba.f8[:]))(
+#        numba.i8[:, :],
+#        numba.f8[:],
+#        numba.f8[:],
+#        numba.f8[:, :],
+#        numba.i8[:, :],
+#        numba.f8[:, :, :, :],
+#        numba.f8[:, :, :, :],
+#        numba.f8[:, :, :],
+#    )
+#)
+@numba.njit()
 def calc_Xika_4(
     indices, rho, xi, molecular_composition, nk, Fklab, Kklab, gr_assoc
 ):  # , maxiter=500, tol=1e-12, damp=.1
@@ -167,18 +168,19 @@ def calc_Xika_4(
     return Xika_final, err_array
 
 
-@numba.njit(
-    numba.types.Tuple((numba.f8[:, :], numba.f8[:]))(
-        numba.i8[:, :],
-        numba.f8[:],
-        numba.f8[:],
-        numba.f8[:, :],
-        numba.i8[:, :],
-        numba.f8[:, :, :, :],
-        numba.f8[:, :, :, :, :, :],
-        numba.f8[:, :, :],
-    )
-)
+#@numba.njit(
+#    numba.types.Tuple((numba.f8[:, :], numba.f8[:]))(
+#        numba.i8[:, :],
+#        numba.f8[:],
+#        numba.f8[:],
+#        numba.f8[:, :],
+#        numba.i8[:, :],
+#        numba.f8[:, :, :, :],
+#        numba.f8[:, :, :, :, :, :],
+#        numba.f8[:, :, :],
+#    )
+#)
+@numba.njit()
 def calc_Xika_6(
     indices, rho, xi, molecular_composition, nk, Fklab, Kklab, gr_assoc
 ):  # , maxiter=500, tol=1e-12, damp=.1
