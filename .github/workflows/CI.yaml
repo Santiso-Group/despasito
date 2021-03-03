@@ -35,6 +35,12 @@ jobs:
         shell: msys2 {0}
     steps:
       - uses: actions/checkout@v2
+      
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: git mingw-w64-x86_64-toolchain
           
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
@@ -42,10 +48,8 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install python, numpy, + gfortran
-        shell: bash
         run: |
           pacman -S --noconfirm mingw-w64-x86_64-python-pip mingw-w64-x86_64-python3-numpy mingw-w64-x86_64-gcc-fortran
-          which gfortran
         
       - name: Testing Dependencies
         run: |
