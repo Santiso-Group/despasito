@@ -73,26 +73,17 @@ jobs:
       if: matrix.os == 'macOS-latest'
       shell: bash -l {0}
       run: |
-        mkdir -p $GITHUB_WORKSPACE/bin
-        echo "PATH=$GITHUB_WORKSPACE/bin" >> $GITHUB_ENV
+        conda install -c anaconda gfortran_osx-64
+        which gfortran
 
     - name: test gfortran
       shell: bash -l {0}
       if: matrix.os == 'macOS-latest'
-      run: gfortran-10 -v
+      run: gfortran -v
 
-    - name: Install package on mac
+    - name: Install package
       # conda setup requires this special shell
       shell: bash -l {0}
-      if: matrix.os == 'macOS-latest'
-      run: |
-        python -m pip install -e . --no-deps -vvv --install-option='config_fc' --install-option='--f90exec=/usr/local/bin/gfortran-10'
-        conda list
-
-    - name: Install package on linux
-      # conda setup requires this special shell
-      shell: bash -l {0}
-      if: matrix.os == 'ubuntu-latest'
       run: |
         python -m pip install -e . --no-deps -vvv
         conda list
