@@ -75,7 +75,7 @@ jobs:
       run: |
         mkdir -p $GITHUB_WORKSPACE/bin
         echo "PATH=$GITHUB_WORKSPACE/bin" >> $GITHUB_ENV
-        echo $PATH
+        which gfortran-10
         # sudo ln -s /usr/bin/gfortran-10 /usr/bin/gfortran $GITHUB_WORKSPACE/bin/gfortran
 
     - name: test gfortran
