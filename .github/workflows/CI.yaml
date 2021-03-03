@@ -40,13 +40,12 @@ jobs:
         python-version: [3.7, 3.8]
 
     steps:
-    - name: Check mingw options
-      run: |
-        pacman -Ss mingw-w64-x86_64-
 
     - name: Set up msys for Windows # Taken from wavebitscientific/datetime-fortran
       if: matrix.os == 'windows-latest'
       uses: msys2/setup-msys2@v2
+      run: |
+        pacman -Ss mingw-w64-x86_64-
       with:
         update: true
         install: >-
