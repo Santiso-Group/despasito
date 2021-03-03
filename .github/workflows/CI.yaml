@@ -70,7 +70,8 @@ jobs:
     - name: Check macos gfortran
       if: startsWith(matrix.os, 'macOS')
       run: |
-        sudo ln -s /usr/bin/gfortran /usr/bin/gfortran-10
+        echo $PATH
+        ln -s /usr/bin/gfortran-10 ~/.local/bin/gfortran
 
     # More info on options: https://github.com/conda-incubator/setup-miniconda
     - uses: conda-incubator/setup-miniconda@v2
