@@ -30,18 +30,12 @@ jobs:
     steps:
       - run: choco install mingw
 
-  mac:
-    runs-on: macos-latest
-    steps:
-      - run: brew install gfortran 
-
   test:
     name: Test on ${{ matrix.os }}, Python ${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        #os: [windows-latest]
-        os: [ubuntu-latest, macos-latest]
+        os: [windows-latest, ubuntu-latest, macos-latest]
         python-version: [3.7, 3.8]
 
     steps:
@@ -74,7 +68,6 @@ jobs:
       shell: bash -l {0}
       run: |
         conda install -c anaconda gfortran_osx-64
-        which gfortran
 
     - name: test gfortran
       shell: bash -l {0}
