@@ -49,7 +49,7 @@ jobs:
 
       - name: Upgrade pip if necessary
         run: |
-          pacman -S --noconfirm python3-pip mingw-w64-x86_64-python-pip python3-numpy
+          pacman -S --noconfirm mingw-w64-x86_64-python-pip mingw-w64-x86_64-python3-numpy
           python -m pip install --upgrade pip
         
       - name: Testing Dependencies
