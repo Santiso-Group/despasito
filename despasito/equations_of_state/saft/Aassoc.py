@@ -22,6 +22,7 @@ try:
     flag_fortran = True
 except Exception:
     flag_fortran = False
+    logger.warning("Fortran unavailable, using Numba")
 
 from .compiled_modules.ext_Aassoc_cython import calc_Xika as calc_Xika_cython
 from .compiled_modules.ext_Aassoc_numba import calc_Xika as calc_Xika_numba
@@ -35,26 +36,23 @@ def _calc_Xika_wrap(*args, method_stat, maxiter=500, tol=1e-12, damp=0.1):
     indices, rho, xi, molecular_composition, nk, Fklab, Kklab, gr_assoc = args
 
     if len(np.shape(Kklab)) == 4:
-        if method_stat.fortran:
-            if flag_fortran:
-                Xika_init = 0.5 * np.ones(len(indices))
-                Xika = ext_Aassoc_fortran.calc_xika_4(
-                    indices,
-                    constants.molecule_per_nm3 * rho,
-                    Xika_init,
-                    xi,
-                    molecular_composition,
-                    nk,
-                    Fklab,
-                    Kklab,
-                    gr_assoc,
-                    maxiter,
-                    tol,
-                )
-            else:
-                raise ValueError("Fortran module failed to import, using numba for association sites") 
+        if method_stat.fortran and flag_fortran:
+            Xika_init = 0.5 * np.ones(len(indices))
+            Xika = ext_Aassoc_fortran.calc_xika_4(
+                indices,
+                constants.molecule_per_nm3 * rho,
+                Xika_init,
+                xi,
+                molecular_composition,
+                nk,
+                Fklab,
+                Kklab,
+                gr_assoc,
+                maxiter,
+                tol,
+            )
         else:
-            if method_stat.numba:
+            if method_stat.numba or not flag_fortran:
                 Xika, _ = calc_Xika_numba(*args)
             elif method_stat.cython:
                 Xika, _ = calc_Xika_cython(*args)

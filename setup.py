@@ -7,7 +7,7 @@ import os
 from setuptools import find_packages
 import versioneer
 from numpy.distutils.core import Extension, setup
-from numpy.distutils.fcompiler import get_default_fcompiler, available_fcompilers_for_platform
+from numpy.distutils.fcompiler import get_default_fcompiler
 import numpy as np
 import glob
 
@@ -52,8 +52,6 @@ if get_default_fcompiler() != None:
         extensions.append(ext1)
 else:
     print("Fortran compiler is not found, default will use numba")
-
-print(available_fcompilers_for_platform())
 
 # try Extension and compile
 # !!!! Note that we have fortran modules that need to be compiled with "f2py3 -m solv_assoc -c solve_assoc.f90" and the same with solve_assoc_matrix.f90

@@ -111,7 +111,7 @@ T = 323.2
 rho_co2_h2o = np.array([21146.16997993])
 P = np.array([15727315.77])
 
-
+@pytest.mark.skipif(hasattr(sys, 'getwindowsversion'), reason="Issue with f2py Fortran modules on Windows")
 def test_saft_gamma_mie_imported():
     #    """Sample test, will always pass so long as import statement worked"""
     assert "despasito.equations_of_state" in sys.modules
