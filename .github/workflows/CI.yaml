@@ -47,11 +47,9 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Upgrade pip if necessary
+      - name: Install python, numpy, + gfortran
         run: |
-          pacman -S --noconfirm mingw-w64-x86_64-python-pip mingw-w64-x86_64-python3-numpy
-          pacman -S --noconfirm mingw-w64-x86_64-gcc-fortran
-          python -m pip install --upgrade pip
+          pacman -S --noconfirm mingw-w64-x86_64-python-pip mingw-w64-x86_64-python3-numpy mingw-w64-x86_64-gcc-fortran
         
       - name: Testing Dependencies
         run: |
