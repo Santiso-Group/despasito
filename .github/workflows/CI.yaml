@@ -68,7 +68,7 @@ jobs:
       if: matrix.os == 'windows-latest'
       shell: bash -l {0}
       run: |
-        conda install -c takluyver mingw-w64
+        conda install -c msys2 m2w64-gcc-fortran
 
     - name: Install package
       # conda setup requires this special shell
