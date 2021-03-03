@@ -49,16 +49,16 @@ jobs:
 
       - name: Upgrade pip if necessary
         run: |
-          pacman -S --noconfirm python3-pip mingw-w64-x86_64-python-pip
+          pacman -S --noconfirm python3-pip mingw-w64-x86_64-python-pip python3-numpy
           python -m pip install --upgrade pip
         
       - name: Testing Dependencies
         run: |
-          python -m pip install -U pytest pytest-cov codecov numpy
+          python -m pip install -U pytest pytest-cov codecov
         
       - name: Install package
         run: |
-          python -m pip install -e . -vvv
+          python -m pip install -e . -vvv --no-deps
     
       - name: Run tests
         run: |
