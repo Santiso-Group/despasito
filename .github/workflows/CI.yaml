@@ -41,7 +41,7 @@ jobs:
     strategy:
       matrix:
         #os: [windows-latest]
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest, macos-latest]
         python-version: [3.7, 3.8]
 
     steps:
@@ -68,7 +68,7 @@ jobs:
         python -m pip install -U pytest pytest-cov codecov
 
     - name: Check macos gfortran
-      if: startsWith(matrix.os, 'macOS')
+      if: matrix.os == "macOS-latest"
       run: |
         mkdir -p $GITHUB_WORKSPACE/bin
         echo "::add-path::$GITHUB_WORKSPACE/bin"
@@ -76,6 +76,7 @@ jobs:
         chmod +x $GITHUB_WORKSPACE/bin/gfortran
 
     - name: test gfortran
+      if: matrix.os == "macOS-latest"
       run: gfortran -v
 
     # More info on options: https://github.com/conda-incubator/setup-miniconda
