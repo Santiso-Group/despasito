@@ -140,6 +140,9 @@ def test_fortran_available():
     except Exception:
         flag = False
 
+    for key, value in sys.items():
+        print(key, value)
+
     assert flag
 
 
