@@ -42,6 +42,9 @@ def calc_Xika(indices, rho, xi, molecular_composition, nk, Fklab, Kklab, gr_asso
     for i,tmp in enumerate(tmp_array):
         print(np.shape(tmp))
         if np.shape(tmp):
+            print(type(tmp[0]))      
+ 
+        if np.shape(tmp):
             tmp_array[i] = np.array(tmp)
         else:
             tmp_array[i] = np.array([tmp])

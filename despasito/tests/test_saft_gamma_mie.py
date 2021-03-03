@@ -111,7 +111,6 @@ T = 323.2
 rho_co2_h2o = np.array([21146.16997993])
 P = np.array([15727315.77])
 
-@pytest.mark.skipif(hasattr(sys, 'getwindowsversion'), reason="Issue with f2py Fortran modules on Windows")
 def test_saft_gamma_mie_imported():
     #    """Sample test, will always pass so long as import statement worked"""
     assert "despasito.equations_of_state" in sys.modules
@@ -131,7 +130,7 @@ def test_saft_gamma_mie_class_noassoc(
     )
     assert (Eos_class.eos_dict["massi"] == np.array([0.04401, 0.07811])).all()
 
-
+@pytest.mark.skipif(hasattr(sys, 'getwindowsversion'), reason="Issue with f2py Fortran modules on Windows")
 def test_fortran_available():
     from despasito.equations_of_state.saft.compiled_modules import ext_Aassoc_fortran
     try:
@@ -139,9 +138,6 @@ def test_fortran_available():
         flag = True
     except Exception:
         flag = False
-
-    for key, value in sys.items():
-        print(key, value)
 
     assert flag
 
