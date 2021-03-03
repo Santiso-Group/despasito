@@ -68,7 +68,8 @@ jobs:
         python -m pip install -U pytest pytest-cov codecov
 
     - name: Check macos gfortran
-      if: matrix.os == "macOS-latest"
+      if: ${{ matrix.os }} == "macOS-latest"
+      shell: bash
       run: |
         mkdir -p $GITHUB_WORKSPACE/bin
         echo "::add-path::$GITHUB_WORKSPACE/bin"
@@ -76,7 +77,8 @@ jobs:
         chmod +x $GITHUB_WORKSPACE/bin/gfortran
 
     - name: test gfortran
-      if: matrix.os == "macOS-latest"
+      shell: bash
+      if: ${{ matrix.os }} == "macOS-latest"
       run: gfortran -v
 
     # More info on options: https://github.com/conda-incubator/setup-miniconda
