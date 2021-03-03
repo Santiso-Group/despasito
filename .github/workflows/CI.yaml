@@ -55,7 +55,7 @@ jobs:
       - name: Testing Dependencies
         shell: bash
         run: |
-          python -m pip install -U pytest pytest-cov codecov
+          python -m pip install -U pytest pytest-cov codecov numpy
         
       - name: Install package
         run: |
