@@ -75,21 +75,28 @@ jobs:
       run: |
         mkdir -p $GITHUB_WORKSPACE/bin
         echo "PATH=$GITHUB_WORKSPACE/bin" >> $GITHUB_ENV
-        which gfortran-10
-        # sudo ln -s /usr/bin/gfortran-10 /usr/bin/gfortran $GITHUB_WORKSPACE/bin/gfortran
 
     - name: test gfortran
       shell: bash -l {0}
       if: matrix.os == 'macOS-latest'
       run: gfortran-10 -v
 
-    - name: Install package
+    - name: Install package on mac
       # conda setup requires this special shell
       shell: bash -l {0}
+      if: matrix.os == 'macOS-latest'
       run: |
         python -m pip install -e . --no-deps -vvv --install-option='config_fc' --install-option='--f90exec=/usr/local/bin/gfortran-10'
         conda list
 
+    - name: Install package on linux
+      # conda setup requires this special shell
+      shell: bash -l {0}
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        python -m pip install -e . --no-deps -vvv
+        conda list
+        
     - name: Run tests
       shell: bash -l {0}
       run: |
