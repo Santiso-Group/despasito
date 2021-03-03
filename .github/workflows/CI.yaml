@@ -41,7 +41,7 @@ jobs:
 
     steps:
 
-    - name: Set up msys for Windows # Taken from wavebitscientific/datetime-fortran
+    - name: Set up msys for Windows
       if: matrix.os == 'windows-latest'
       uses: msys2/setup-msys2@v2
       with:
@@ -49,6 +49,11 @@ jobs:
         install: >-
           mingw-w64-x86_64-gcc-fortran
           mingw-w64-x86_64-gcc
+
+    - name: Check mingw packages
+      shell: msys2 {0}
+      run: |
+        pacman -Ss i
 
     - uses: actions/checkout@v2
 
