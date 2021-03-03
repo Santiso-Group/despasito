@@ -44,12 +44,14 @@ jobs:
     - name: Set up msys for Windows # Taken from wavebitscientific/datetime-fortran
       if: matrix.os == 'windows-latest'
       uses: msys2/setup-msys2@v2
-      run: |
-        pacman -Ss mingw-w64-x86_64-
       with:
         update: true
         install: >-
           mingw-w64-x86_64-gcc-fortran
+
+    - name: Check mingw packages
+      run: |
+        pacman -Ss mingw-w64-x86_64-
 
     - uses: actions/checkout@v2
 
