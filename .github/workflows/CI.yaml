@@ -53,6 +53,8 @@ jobs:
       if: matrix.os == 'windows-latest'
       shell: bash -l {0}
       run: |
+          which mingw
+          echo $MINGW_DIR
           choco install mingw --force
 
     # More info on options: https://github.com/conda-incubator/setup-miniconda
