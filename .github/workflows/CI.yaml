@@ -87,7 +87,7 @@ jobs:
       # conda setup requires this special shell
       shell: bash -l {0}
       run: |
-        python -m pip install -e . --no-deps -vvv --install-option='config_fc' --install-option='--fcompiler=gfortran-10'
+        python -m pip install -e . --no-deps -vvv --install-option='config_fc' --install-option='--f90exec=gfortran-10'
         conda list
 
     - name: Run tests
