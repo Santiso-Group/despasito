@@ -72,7 +72,8 @@ jobs:
       shell: bash
       run: |
         mkdir -p $GITHUB_WORKSPACE/bin
-        echo "::add-path::$GITHUB_WORKSPACE/bin"
+        echo "PATH=$GITHUB_WORKSPACE/bin" >> $GITHUB_ENV
+        echo $PATH
         ln -s /usr/bin/gfortran-10 $GITHUB_WORKSPACE/bin/gfortran
         chmod +x $GITHUB_WORKSPACE/bin/gfortran
 
