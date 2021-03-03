@@ -70,7 +70,7 @@ jobs:
         python -m pip install -U pytest pytest-cov codecov
 
     - name: Check macos gfortran
-      if: ${{ matrix.os }} == "macOS-latest"
+      if: matrix.os == 'macOS-latest'
       shell: bash -l {0}
       run: |
         mkdir -p $GITHUB_WORKSPACE/bin
@@ -80,7 +80,7 @@ jobs:
 
     - name: test gfortran
       shell: bash -l {0}
-      if: ${{ matrix.os }} == "macOS-latest"
+      if: matrix.os == 'macOS-latest'
       run: gfortran -v
 
     - name: Install package
