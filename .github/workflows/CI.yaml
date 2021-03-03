@@ -37,10 +37,6 @@ jobs:
           msystem: MINGW64
           update: true
           install: git mingw-w64-x86_64-toolchain
-      - name: CI-Build
-        run: |
-          echo 'Running in MSYS2!'
-          ./ci-build.sh
           
   test:
     name: Test on ${{ matrix.os }}, Python ${{ matrix.python-version }}
