@@ -40,7 +40,11 @@ def calc_Xika(indices, rho, xi, molecular_composition, nk, Fklab, Kklab, gr_asso
     # Ensure all inputs are numpy arrays
     tmp_array = [rho, xi, molecular_composition, nk, Fklab, Kklab, gr_assoc]
     for i,tmp in enumerate(tmp_array):
-        tmp_array[i] = np.array(tmp)
+        np.shape(tmp)
+        if np.shape(tmp):
+            tmp_array[i] = np.array(tmp)
+        else:
+            tmp_array[i] = np.array([tmp])
     rho, xi, molecular_composition, nk, Fklab, Kklab, gr_assoc = tmp_array
 
     if l_K == 4:

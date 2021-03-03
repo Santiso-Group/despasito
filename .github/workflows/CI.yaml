@@ -35,7 +35,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [windows-latest]
+        #os: [ubuntu-latest, macos-latest, windows-latest]
         python-version: [3.7, 3.8]
 
     steps:
@@ -91,7 +92,7 @@ jobs:
       shell: bash -l {0}
       run: |
         ls -a despasito/equations_of_state/saft/compiled_modules
-        pytest -vvv --cov=despasito --cov-report=xml --color=yes despasito/tests/test_saft*
+        pytest -vvv --cov=despasito --cov-report=xml --color=yes despasito/tests/test_saft_gamma_mie.py
 
     - name: CodeCov
       uses: codecov/codecov-action@v1
