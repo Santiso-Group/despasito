@@ -74,26 +74,14 @@ jobs:
       run: |
         python -m pip install -U pytest pytest-cov codecov
 
-    #- name: Install gfortran on mac
-    #  if: matrix.os == 'macOS-latest'
-    #  shell: bash -l {0}
-    #  run: |
-    #    conda install -c anaconda gfortran_osx-64
-        
-    - name: Install package Macos
-      # conda setup requires this special shell
+    - name: Install gfortran on mac
       if: matrix.os == 'macOS-latest'
       shell: bash -l {0}
       run: |
-        python -m pip install -e . --no-deps -vvv
-        conda list
-      env:
-        FC: gfortran-10
-        CC: gcc-10
-
-    - name: Install package Linux Windows
+        conda install -c anaconda gfortran_osx-64
+        
+    - name: Install package
       # conda setup requires this special shell
-      if: matrix.os != 'macOS-latest'
       shell: bash -l {0}
       run: |
         python -m pip install -e . --no-deps -vvv
