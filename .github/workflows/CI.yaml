@@ -64,11 +64,11 @@ jobs:
       run: |
         python -m pip install -U pytest pytest-cov codecov
 
-    - name: Install open-cv on Windows
+    - name: Install mingw on Windows
       if: matrix.os == 'windows-latest'
       shell: bash -l {0}
       run: |
-          pip3 install opencv-python
+          choco install mingw --force
 
     - name: Install gfortran on mac
       if: matrix.os == 'macOS-latest'
