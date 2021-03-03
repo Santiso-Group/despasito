@@ -68,7 +68,7 @@ jobs:
       if: matrix.os == 'windows-latest'
       shell: bash -l {0}
       run: |
-        conda install mingw
+        conda install -c takluyver mingw-w64
 
     - name: Install package
       # conda setup requires this special shell
