@@ -78,7 +78,7 @@ jobs:
     #  run: |
     #    conda install -c anaconda gfortran_osx-64
         
-    - name: Install package: Macos
+    - name: Install package Macos
       # conda setup requires this special shell
       if: matrix.os == 'macOS-latest'
       shell: bash -l {0}
@@ -89,7 +89,7 @@ jobs:
         FC: gfortran-10
         CC: gcc-10
 
-    - name: Install package: Linux/Windows
+    - name: Install package Linux Windows
       # conda setup requires this special shell
       shell: bash -l {0}
       run: |
