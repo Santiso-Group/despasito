@@ -50,6 +50,7 @@ jobs:
           mingw-w64-x86_64-gcc-fortran
 
     - name: Check mingw packages
+      shell: msys2 {0}
       run: |
         pacman -Ss mingw-w64-x86_64-
 
@@ -96,6 +97,7 @@ jobs:
 
     - name: Install package Linux Windows
       # conda setup requires this special shell
+      if: matrix.os != 'macOS-latest'
       shell: bash -l {0}
       run: |
         python -m pip install -e . --no-deps -vvv
