@@ -24,7 +24,18 @@ except Exception:
     flag_fortran = False
     logger.warning("Fortran unavailable, using Numba")
 
-from .compiled_modules.ext_Aassoc_cython import calc_Xika as calc_Xika_cython
+try:
+    import cython
+    flag_cython = True
+except Exception:
+    flag_cython = False
+    logger.warning("Cython package is unavailable, using Numba")
+
+try:
+    from .compiled_modules.ext_Aassoc_cython import calc_Xika as calc_Xika_cython
+except Exception:
+    raise ImportError("Cython package is available but module: despasito.equations_of_state.saft.compiled_modules.ext_Aassoc_cython, has not been compiled.")
+
 from .compiled_modules.ext_Aassoc_numba import calc_Xika as calc_Xika_numba
 from .compiled_modules.ext_Aassoc_python import calc_Xika as calc_Xika_python
 
@@ -52,13 +63,15 @@ def _calc_Xika_wrap(*args, method_stat, maxiter=500, tol=1e-12, damp=0.1):
                 tol,
             )
         else:
-            if method_stat.numba or not flag_fortran:
-                Xika, _ = calc_Xika_numba(*args)
-            elif method_stat.cython:
+            if method_stat.cython and flag_cython:
                 Xika, _ = calc_Xika_cython(*args)
             elif method_stat.python:
                 Xika, _ = calc_Xika_python(*args)
                 logger.warning("Using pure python. Consider using 'numba' flag")
+            elif method_stat.numba or not flag_fortran or not flag_cython:
+                Xika, _ = calc_Xika_numba(*args)
+            else:
+                raise ValueError("Appropriate options for calc_Xika have not been defined.")
 
     elif len(np.shape(Kklab)) == 6:
         if method_stat.fortran and flag_fortran:
@@ -77,13 +90,15 @@ def _calc_Xika_wrap(*args, method_stat, maxiter=500, tol=1e-12, damp=0.1):
                 tol,
             )
         else:
-            if method_stat.numba or not flag_fortran:
-                Xika, _ = calc_Xika_numba(*args)
-            elif method_stat.cython:
+            if method_stat.cython and flag_cython:
                 Xika, _ = calc_Xika_cython(*args)
             elif method_stat.python:
                 Xika, _ = calc_Xika_python(*args)
                 logger.warning("Using pure python. Consider using 'numba' flag")
+            elif method_stat.numba or not flag_fortran or not flag_cython:
+                Xika, _ = calc_Xika_numba(*args)
+            else:
+                raise ValueError("Appropriate options for calc_Xika have not been defined.")
 
     return Xika
 

@@ -11,6 +11,12 @@ import numpy as np
 
 import despasito.equations_of_state
 
+try:
+    import cython
+    flag_cython = True
+except Exception:
+    flag_cython = False
+
 xi_co2_ben = np.array([0.2, 0.2])
 beads_co2_ben = ["CO2", "benzene"]
 molecular_composition_co2_ben = np.array([[1.0, 0.0], [0.0, 1.0]])
@@ -249,6 +255,7 @@ def test_saft_gamma_mie_class_assoc_P_numba(
     P = Eos.pressure(rho,T,xi)[0]
     assert P == pytest.approx(15727315.77,abs=1e+3)
 
+@pytest.mark.skipif(not flag_cython, reason="Cython is not installed with this version of python.")
 def test_cython_available():
 
     from despasito.equations_of_state.saft.compiled_modules.ext_Aassoc_cython import (
@@ -280,11 +287,12 @@ def test_cython_available():
 
         flag = True
     except Exception:
+        print("Cython is available on this machine, but the modules haven't been compiled.")
         flag = False
 
     assert flag
 
-@pytest.mark.skip(reason="Cython does not produce the correct result with pytest, allow will in examples")
+@pytest.mark.skip(reason="Cython does not produce the correct result with pytest, should be tested independently in examples")
 def test_saft_gamma_mie_class_assoc_P_cython(
     T=T,
     xi=xi_co2_h2o,

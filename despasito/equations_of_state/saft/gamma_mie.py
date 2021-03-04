@@ -20,6 +20,13 @@ from .compiled_modules.ext_gamma_mie_python import prefactor, calc_Iij
 
 logger = logging.getLogger(__name__)
 
+try:
+    import cython
+    flag_cython = True
+except Exception:
+    flag_cython = False
+    logger.warning("Cython package is unavailable, using Numba")
+
 def _import_supporting_functions(method_stat=None):
     """ Import appropriate functions for compilation mode
     """
@@ -27,11 +34,14 @@ def _import_supporting_functions(method_stat=None):
     if method_stat == None or method_stat.fortran or method_stat.python:
         import despasito.equations_of_state.saft.compiled_modules.ext_gamma_mie_python as cm
 
-    elif method_stat.numba:
-        import despasito.equations_of_state.saft.compiled_modules.ext_gamma_mie_numba as cm
+    elif method_stat.cython and flag_cython:
+        try:
+            import despasito.equations_of_state.saft.compiled_modules.ext_gamma_mie_cython as cm
+        except Exception:
+            raise ImportError("Cython package is available but module: despasito.equations_of_state.saft.compiled_modules.ext_gamma_mie_cython, has not been compiled.")
 
-    elif method_stat.cython:
-        import despasito.equations_of_state.saft.compiled_modules.ext_gamma_mie_cython as cm
+    elif method_stat.numba or not flag_cython:
+        import despasito.equations_of_state.saft.compiled_modules.ext_gamma_mie_numba as cm
 
     else:
         raise ValueError("Unknown instructions for importing supportive functions of SAFT")
