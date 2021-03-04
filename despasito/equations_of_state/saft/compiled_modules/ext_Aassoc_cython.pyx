@@ -1,4 +1,4 @@
-# cython: profile=True,  boundscheck=False, wraparound=False, cdivision=True
+# cython: profile=True
 import numpy as np
 cimport numpy as np
 from libc.stdio cimport printf
@@ -86,6 +86,7 @@ cdef calc_Xika_4(int[:,:] indices, double[:] rho, double[:] xi, double[:,:] nui,
                     b = indices[jnd][2]
                     delta = Fklab[k, l, a, b] * Kklab[k, l, a, b] * gr_assoc[r,i, j]
                     Xika_elements_new[ind] = Xika_elements_new[ind] + const_molecule_per_nm3 * rho[r] * xi[j] * nui[j,l] * nk[l,b] * Xika_elements[jnd] * delta
+                    #printf("[%.14e %.14e %.14e %.14e %.14e %.14e]\n",rho[r], xi[j], nui[j,l], nk[l,b], Xika_elements[jnd], delta)
 
             obj = 0
             Xika_max = 0
@@ -102,7 +103,8 @@ cdef calc_Xika_4(int[:,:] indices, double[:] rho, double[:] xi, double[:,:] nui,
                     for z in range(l_ind):
                         Xika_elements[z] = Xika_elements[z] + damp*(Xika_elements_new[z] - Xika_elements[z])
                 else:
-                    Xika_elements = Xika_elements_new
+                    for z in range(l_ind):
+                        Xika_elements[z] = Xika_elements_new[z]
 
         err_array[r] = obj
         Xika_final[r,:] = Xika_elements

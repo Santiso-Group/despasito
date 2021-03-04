@@ -85,6 +85,7 @@ def calc_Xika(
                             * Kklab[i, j, k, l, a, b]
                             * gr_assoc[r, i, j]
                         )
+                    
                     Xika_elements_new[ind] += (
                         constants.molecule_per_nm3
                         * rho[r]
@@ -94,6 +95,7 @@ def calc_Xika(
                         * Xika_elements_old[jnd]
                         * delta
                     )
+
             Xika_elements_new = 1.0 / Xika_elements_new
             obj = np.sum(np.abs(Xika_elements_new - Xika_elements_old))
 

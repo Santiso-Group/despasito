@@ -185,6 +185,7 @@ def test_saft_gamma_mie_class_assoc_P(
     )
     #   """Test ability to predict P with association sites"""
     P = Eos_class.pressure(rho, T, xi)[0]
+
     assert P == pytest.approx(15727315.77, abs=1e3)
 
 
@@ -253,6 +254,7 @@ def test_saft_gamma_mie_class_assoc_P_numba(
 
 #   """Test ability to predict P with association sites"""
     P = Eos.pressure(rho,T,xi)[0]
+
     assert P == pytest.approx(15727315.77,abs=1e+3)
 
 @pytest.mark.skipif(not flag_cython, reason="Cython is not installed with this version of python.")
@@ -292,7 +294,7 @@ def test_cython_available():
 
     assert flag
 
-@pytest.mark.skip(reason="Cython does not produce the correct result with pytest, should be tested independently in examples")
+@pytest.mark.skipif(not flag_cython, reason="Cython is not installed with this version of python.")
 def test_saft_gamma_mie_class_assoc_P_cython(
     T=T,
     xi=xi_co2_h2o,

@@ -417,6 +417,7 @@ class EosType(EosTemplate):
         indices = Aassoc.assoc_site_indices(
             self.eos_dict["nk"], self.eos_dict["molecular_composition"], xi=xi
         )
+
         Xika = Aassoc._calc_Xika_wrap(
             indices,
             rho,
