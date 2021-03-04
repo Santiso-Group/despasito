@@ -61,7 +61,7 @@ def _calc_Xika_wrap(*args, method_stat, maxiter=500, tol=1e-12, damp=0.1):
                 logger.warning("Using pure python. Consider using 'numba' flag")
 
     elif len(np.shape(Kklab)) == 6:
-        if method_stat.fortran or flag_fortran:
+        if method_stat.fortran and flag_fortran:
             Xika_init = 0.5 * np.ones(len(indices))
             Xika = ext_Aassoc_fortran.calc_xika_6(
                 indices,
