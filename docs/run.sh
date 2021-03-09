@@ -1,6 +1,6 @@
 #! /bin/bash
 
-#conda install sphinx sphinx-argparse sphinx_rtd_theme
+#conda install sphinx sphinx-argparse sphinx_rtd_theme m2r2
 
 rm -rf _build
 rm -rf _autosummary

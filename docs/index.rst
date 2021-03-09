@@ -33,6 +33,15 @@ The second facet is parameterization, not only of the equation of state (EOS) bu
    utils
 
 .. toctree::
+   :maxdepth: 2
+   :caption: Contributing:
+   
+   contribute_intro
+   contribute_eos
+   contribute_thermo
+   contribute_fitparams
+
+.. toctree::
    :maxdepth: 1
    :caption: Examples:
 

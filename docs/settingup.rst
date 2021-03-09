@@ -32,7 +32,7 @@ The first three lines are used in producing our EOS object. The `bead_config` li
 
 The last 4 lines for thermodynamic calculation instructions, although only `calculation_type` is actually required. The other lines depend on the calculation type being used. In this case, defining the pressure is optional, if it was missing DESPASITO would assume atmospheric pressure.
 
-See :ref:`calc-types` for a list of available types of thermodynamic calculations.
+See :ref:`calculation-types` for a list of available types of thermodynamic calculations.
 
 `EOSgroup.json`::
     
@@ -97,5 +97,5 @@ and for SAFT-:math:`\gamma`-Mie,
 
     "eos": "saft.gamma_mie"
 
-See :ref:`eos-types` for a list of available equations of state.
+See :ref:`EOS-types` for a list of available equations of state.
 
