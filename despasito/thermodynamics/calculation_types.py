@@ -1170,14 +1170,15 @@ def verify_eos(Eos, **sys_dict):
     """
 
     ## Extract and check input data
-    if "xilist" not in sys_dict and Eos.number_of_components == 2:
-        tmp = np.linspace(0, 1, 11)
-        xi_list = np.array([[x, 1.0 - x] for x in tmp])
-        logger.info("Use array of mole fractions")
-    else:
-        raise ValueError(
-            "Must have at least 2 components. With more that 2 components, the mole fractions need to be specified"
-        )
+    if "xilist" not in sys_dict:
+        if Eos.number_of_components == 2:
+            tmp = np.linspace(0, 1, 11)
+            sys_dict["xilist"] = np.array([[x, 1.0 - x] for x in tmp])
+            logger.info("Use array of mole fractions")
+        else:   
+            raise ValueError(
+                "Must have at least 2 components. With more that 2 components, the mole fractions need to be specified"
+            )
 
     thermo_keys = ["Tlist", "xilist", "Plist"]
     thermo_dict = gtb.check_length_dict(sys_dict, thermo_keys)
@@ -1204,7 +1205,7 @@ def verify_eos(Eos, **sys_dict):
 
     inputs = [
         (
-            thermo_dict["Plist"],
+            thermo_dict["Plist"][i],
             thermo_dict["Tlist"][i],
             thermo_dict["xilist"][i],
             Eos,
@@ -1252,7 +1253,7 @@ def _verify_eos_wrapper(args):
         log_phiv, residual_v1, residual_v2 = np.nan, np.nan, np.nan
         logger.debug("Calculation Failed:", exc_info=True)
     else:
-        phiv = Eos.fugacity_coefficient(P, np.array([rhov]), xi, T)
+        phiv = Eos.fugacity_coefficient(P, rhov, xi, T)
         log_phiv = np.log(phiv)
         residual_v1 = calc.fugacity_test_1(P, T, xi, rhov, Eos, **opts)
         residual_v2 = calc.fugacity_test_2(P, T, xi, rhov, Eos, **opts)
@@ -1268,7 +1269,7 @@ def _verify_eos_wrapper(args):
         log_phil, residual_l1, residual_l2 = np.nan, np.nan, np.nan
         logger.debug("Calculation Failed:", exc_info=True)
     else:
-        phil = Eos.fugacity_coefficient(P, np.array([rhol]), xi, T)
+        phil = Eos.fugacity_coefficient(P, rhol, xi, T)
         log_phil = np.log(phil)
         residual_l1 = calc.fugacity_test_1(P, T, xi, rhol, Eos, **opts)
         residual_l2 = calc.fugacity_test_2(P, T, xi, rhol, Eos, **opts)

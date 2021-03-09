@@ -472,7 +472,7 @@ class EosType(EosTemplate):
         # derivative of Aideal_broglie here wrt to rho is 1/rho
         rho = self._check_density(rho)
         P_tmp = gtb.central_difference(
-            rho, self.helmholtz_energy, args=(T, xi), step_size=step_size
+            rho, self.helmholtz_energy, args=(T, xi), step_size=step_size, relative=True
         )
         pressure = P_tmp * T * constants.R * rho ** 2
 
@@ -507,6 +507,22 @@ class EosType(EosTemplate):
                     len(xi), self.number_of_components
                 )
             )
+
+        if gtb.isiterable(T):
+            if len(T) == 1:
+                T = T[0]
+            else:
+                raise ValueError("Temperature must be given as a scalar.")
+        if gtb.isiterable(rho):
+            if len(rho) == 1:
+                rho = rho[0]
+            else:
+                raise ValueError("Density must be given as a scalar.")
+        if gtb.isiterable(P):
+            if len(P) == 1:
+                P = P[0]
+            else:
+                raise ValueError("Pressure must be given as a scalar.")
 
         rho = self._check_density(rho)
         logZ = np.log(P / (rho * T * constants.R))

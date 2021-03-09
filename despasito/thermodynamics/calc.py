@@ -910,7 +910,7 @@ def calc_vapor_fugacity_coefficient(P, T, yi, Eos, density_opts={}, **kwargs):
     elif flagv == 3:
         phiv = np.array([np.nan, np.nan])
     else:
-        phiv = Eos.fugacity_coefficient(P, np.array([rhov]), yi, T)
+        phiv = Eos.fugacity_coefficient(P, rhov, yi, T)
 
     return phiv, rhov, flagv
 
@@ -953,7 +953,7 @@ def calc_liquid_fugacity_coefficient(P, T, xi, Eos, density_opts={}, **kwargs):
     if flagl == 3:
         phil = np.array([np.nan, np.nan])
     else:
-        phil = Eos.fugacity_coefficient(P, np.array([rhol]), xi, T)
+        phil = Eos.fugacity_coefficient(P, rhol, xi, T)
 
     return phil, rhol, flagl
 
@@ -4036,9 +4036,9 @@ def constrain_Ki(Ki0, min_mole_fraction0=0, max_mole_fraction0=1, **kwargs):
 
     return Ki, flag_reset
 
-
-def fugacity_test_1(P, T, xi, rho, Eos, step_size=1e-5, **kwargs):
+def mixture_fugacity_coefficient(P, T, xi, rho, Eos):
     r"""
+    Mixture fugacity coefficient d(ln(φ)) = np.sum(xi*ln(φi))
     
     Parameters
     ----------
@@ -4049,7 +4049,57 @@ def fugacity_test_1(P, T, xi, rho, Eos, step_size=1e-5, **kwargs):
     xi : numpy.ndarray
         Liquid mole fraction of each component, sum(xi) should equal 1.0
     rho : float
-        [mol/:math:`m^3`] Density array. Length depends on values in density_opts
+        [mol/:math:`m^3`] Molar density
+    Eos : obj
+        An instance of the defined EOS class to be used in thermodynamic computations.
+
+    Returns
+    -------
+    fugacity_coefficient_mixture : float
+        fugacity coefficient of mixture
+    """
+
+    tmp_test = [gtb.isiterable(x) for x in [P, T, xi[0], rho]]
+    if sum(tmp_test) > 1:
+        raise ValueError("Only one input may be an array representing different system conditions.")
+
+    coefficient = []
+    if tmp_test[0]:
+        for p in P:
+            coefficient.append(np.sum(xi*np.log(Eos.fugacity_coefficient(p, rho, xi, T))))
+        coefficient = np.array(coefficient)
+    elif tmp_test[1]:
+        for t in T:
+            coefficient.append(np.sum(xi*np.log(Eos.fugacity_coefficient(P, rho, xi, t))))
+        coefficient = np.array(coefficient)
+    elif tmp_test[2]:
+        for xi_tmp in xi:
+            coefficient.append(np.sum(xi*np.log(Eos.fugacity_coefficient(P, rho, xi_tmp, T))))
+        coefficient = np.array(coefficient)
+    elif tmp_test[3]:
+        for rho_tmp in rho:
+            coefficient.append(np.sum(xi*np.log(Eos.fugacity_coefficient(P, rho_tmp, xi, T))))
+        coefficient = np.array(coefficient)
+    else:
+        coefficient = np.sum(xi*np.log(Eos.fugacity_coefficient(P, rho, xi, T)))
+
+    return coefficient
+
+
+def fugacity_test_1(P, T, xi, rho, Eos, step_size=1e-5, **kwargs):
+    r"""
+    A consistency test where d(ln φ)/dP = (Z-1)/P.
+    
+    Parameters
+    ----------
+    P : float
+        [Pa] Pressure of the system
+    T : float
+        [K] Temperature of the system
+    xi : numpy.ndarray
+        Liquid mole fraction of each component, sum(xi) should equal 1.0
+    rho : float
+        [mol/:math:`m^3`] Molar density
     Eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
     step_size : float, Optional, default=1e-5
@@ -4062,6 +4112,10 @@ def fugacity_test_1(P, T, xi, rho, Eos, step_size=1e-5, **kwargs):
         
     """
 
+    tmp_test = [gtb.isiterable(x) for x in [P, T, xi[0], rho]]
+    if sum(tmp_test) > 0:
+        raise ValueError("All inputs should be scalar.")
+
     if len(kwargs) > 0:
         logger.debug(
             "'fugacity_test_1' does not use the following keyword arguments: {}".format(
@@ -4069,20 +4123,16 @@ def fugacity_test_1(P, T, xi, rho, Eos, step_size=1e-5, **kwargs):
             )
         )
 
-    if not gtb.isiterable(rho):
-        rho = np.array([rho])
-
     Z = P / (rho * T * constants.R)
-    dP = P * step_size
-    log_phi_1 = np.sum(xi * np.log(Eos.fugacity_coefficient(P + dP, rho, xi, T)))
-    log_phi_2 = np.sum(xi * np.log(Eos.fugacity_coefficient(P - dP, rho, xi, T)))
-    residual = (log_phi_1 - log_phi_2) / (2 * dP) - (Z - 1) / P
+    dlnPhidP = gtb.central_difference(P, mixture_fugacity_coefficient, step_size=step_size, args=(T, xi, rho, Eos))
+    residual = dlnPhidP - (Z - 1) / P
 
     return residual
 
 
-def fugacity_test_2(P, T, xi, rho, Eos, fractional_change=1e-1, **kwargs):
+def fugacity_test_2(P, T, xi, rho, Eos, step_size=1e+1, **kwargs):
     r"""
+    A consistency test where np.sum( xi * d(ln φ)) = 0 at constant temperature and pressure.
     
     Parameters
     ----------
@@ -4093,17 +4143,21 @@ def fugacity_test_2(P, T, xi, rho, Eos, fractional_change=1e-1, **kwargs):
     xi : numpy.ndarray
         Liquid mole fraction of each component, sum(xi) should equal 1.0
     rho : float
-        [mol/:math:`m^3`] Density array. Length depends on values in density_opts
+        [mol/:math:`m^3`] Molar density
     Eos : obj
         An instance of the defined EOS class to be used in thermodynamic computations.
-    fractional_change : float, Optional, default=1e-1
-        !!!!!!!!NoteHere!!!!!
+    step_size : float, Optional, default=1e-5
+        Step size in central difference method
 
     Returns
     -------
     Residual : float
         
     """
+
+    tmp_test = [gtb.isiterable(x) for x in [P, T, xi[0], rho]]
+    if sum(tmp_test) > 0:
+        raise ValueError("All inputs should be scalar.")
 
     if len(kwargs) > 0:
         logger.debug(
@@ -4113,17 +4167,9 @@ def fugacity_test_2(P, T, xi, rho, Eos, fractional_change=1e-1, **kwargs):
         )
 
     ncomp = len(xi)
-    if not gtb.isiterable(rho):
-        rho = np.array([rho])
-
-    #    drho = rho * step_size
-    #    log_phi_1 = np.log(Eos.fugacity_coefficient(P, rho+drho, xi, T))
-    #    log_phi_2 = np.log(Eos.fugacity_coefficient(P, rho-drho, xi, T))
-    #    residual = np.sum(xi*(log_phi_1-log_phi_2)/(2*drho))
-
     ind = np.where(xi > np.finfo("float").eps)[0]
     if len(ind) == 1:
-        logger.error("Fugacity test two is for multicomponent systems.")
+        logger.error("fugacity_test_2 is for multicomponent systems.")
     elif len(ind) != ncomp:
         logger.info(
             "There is not a significant amount of components {} in solution".format(
@@ -4131,25 +4177,17 @@ def fugacity_test_2(P, T, xi, rho, Eos, fractional_change=1e-1, **kwargs):
             )
         )
 
-    #    dy = step_size
-    #    dphi = np.zeros((2,ncomp))
-    #    for j, delta in enumerate((dy, -dy)):
-    #        y_tmp = np.copy(xi)
-    #        y_tmp[ind[0]] += delta
-    #        y_tmp[ind[-1]] -= delta
-    #        dphi[j,:] = np.log(Eos.fugacity_coefficient(P, rho, y_tmp, T))
-    #    dphidx = (dphi[0] - dphi[1]) / (2.0 * dy)
+    #    drho = rho * step_size
+    #    log_phi_1 = np.log(Eos.fugacity_coefficient(P, rho+drho, xi, T))
+    #    log_phi_2 = np.log(Eos.fugacity_coefficient(P, rho-drho, xi, T))
+    #    residual = np.sum(xi*(log_phi_1-log_phi_2)/(2*drho))
 
-    log_phi = np.zeros((2, ncomp))
-    for i, factor in enumerate([1.0, (1 - fractional_change)]):
-        log_phi[i, :] = np.log(Eos.fugacity_coefficient(P * factor, rho, xi, T))
-    dphidx = log_phi[0] - log_phi[1]
+    dlnPhidrho = gtb.central_difference(rho,
+        lambda x : np.array([np.log(Eos.fugacity_coefficient(P, rho_tmp, xi, T)) for rho_tmp in x]), 
+        step_size=step_size
+    )
 
-    # Why fractional change not here?
-
-    residual = np.sum(xi * dphidx)
-
-    return residual
+    return np.sum(xi * dlnPhidrho)*2*step_size
 
 
 def activity_coefficient(P, T, xi, yi, Eos, **kwargs):

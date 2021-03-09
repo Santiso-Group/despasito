@@ -77,17 +77,6 @@ def test_thermo_import():
     assert "despasito.thermodynamics" in sys.modules
 
 
-def test_bubble_pressure(Eos=Eos_co2_h2o, Tlist=Tlist, xilist=xilist):
-    output = thermo.thermo(
-        Eos,
-        calculation_type="bubble_pressure",
-        **{"Tlist": Tlist, "xilist": xilist, "Pmin": [6900000], "Pmax": [7100000]}
-    )
-    assert output["P"][0] == pytest.approx(7005198.6, abs=5e1) and output["yi"][
-        0
-    ] == pytest.approx([0.98779049, 0.01220951], abs=1e-4)
-
-
 def test_saturation_properties(Eos=Eos_co2_h2o, Tlist=Tlist):
 
     output = thermo.thermo(
@@ -143,3 +132,14 @@ def test_activity_coefficient(
     assert output["gamma"][0] == pytest.approx(
         np.array([7.23733364e04, 6.30243983e-01]), abs=1e-2
     )
+
+
+def test_bubble_pressure(Eos=Eos_co2_h2o, Tlist=Tlist, xilist=xilist):
+    output = thermo.thermo(
+        Eos,
+        calculation_type="bubble_pressure",
+        **{"Tlist": Tlist, "xilist": xilist, "Pmin": [6900000], "Pmax": [7100000]}
+    )
+    assert output["P"][0] == pytest.approx(7005198.6, abs=5e1) and output["yi"][
+        0
+    ] == pytest.approx([0.98779049, 0.01220951], abs=1e-4)

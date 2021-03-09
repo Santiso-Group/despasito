@@ -258,6 +258,22 @@ class EosType(EosTemplate):
             :math:`\mu_i`, Array of fugacity coefficient values for each component
         """
 
+        if gtb.isiterable(T):
+            if len(T) == 1:
+                T = T[0]
+            else:
+                raise ValueError("Temperature must be given as a scalar.")
+        if gtb.isiterable(rho):
+            if len(rho) == 1:
+                rho = rho[0]
+            else:
+                raise ValueError("Density must be given as a scalar.")
+        if gtb.isiterable(P):
+            if len(P) == 1:
+                P = P[0]
+            else:
+                raise ValueError("Pressure must be given as a scalar.")
+
         if T != self.T:
             self.T = T
             self._calc_temp_dependent_parameters(T)

@@ -9,7 +9,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def solve_root(func, args=None, method="bisect", x0=None, bounds=None, options={}):
+def solve_root(func, args=(), method="bisect", x0=None, bounds=None, options={}):
     """
     This function will setup and dispatch thermodynamic jobs.
 
@@ -265,14 +265,14 @@ def solve_root(func, args=None, method="bisect", x0=None, bounds=None, options={
     return solution
 
 
-def central_difference(x, func, step_size=1e-5, args=None):
+def central_difference(x, func, step_size=1e-5, relative=False, args=()):
     """
     Take the derivative of a dependent variable calculated with a given function using the central difference method.
     
     Parameters
     ----------
     x : numpy.ndarray
-        Independent variable to take derivative with respect too, using the central difference method.
+        Independent variable to take derivative with respect too, using the central difference method. Must be first input of the function.
     func : function
         Function used in job to calculate dependent factor. This function should have a single output.
     step_size : float, Optional, default=1E-5
@@ -285,17 +285,22 @@ def central_difference(x, func, step_size=1e-5, args=None):
         Array of derivative of y with respect to x, given an array of independent variables.
     """
 
-    if not isinstance(x, np.ndarray):
+    if not isiterable(x):
+        x - np.array([x])
+    elif not isinstance(x, np.ndarray):
         x = np.array(x)
 
-    lx = np.size(x)
-    step = x * step_size
-    if not isiterable(step):
-        step = np.array([step])
-    step = np.array(
-        [2 * np.finfo(float).eps if xx < np.finfo(float).eps else xx for xx in step]
-    )
+    if relative:
+        step = x * step_size
+        if not isiterable(step):
+            step = np.array([step])
+        step = np.array(
+            [2 * np.finfo(float).eps if xx < np.finfo(float).eps else xx for xx in step]
+        )
+    else:
+        step = step_size
 
+    lx = np.size(x)
     y = func(np.append(x + step, x - step), *args)
     dydx = (y[:lx] - y[lx:]) / (2.0 * step)
 
