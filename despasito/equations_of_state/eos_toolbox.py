@@ -50,7 +50,7 @@ def partial_density_central_difference(
     xi : list[float]
         Mole fraction of each component
     rho : float
-        Molar density of system [mol/m^3]
+        Molar density of system [:math:`mol/m^3`]
     T : float
         Temperature of the system [K]
     func : function
@@ -109,7 +109,7 @@ def _partial_density_wrapper(rhoi, T, func):
     Parameters
     ----------
     rhoi : float
-        Molar density of each component, add up to the total density [mol/m^3]
+        Molar density of each component, add up to the total density [:math:`mol/m^3`]
     T : float
         Temperature of the system [K]
     func : function
@@ -137,7 +137,7 @@ def calc_massi(molecular_composition, bead_library, beads):
     Parameters
     ----------
     molecular_composition : numpy.ndarray
-        :math:`\\nu_{i,k}/k_B`. Array of number of components by number of bead types. Defines the number of each type of group in each component.
+        :math:`\nu_{i,k}/k_B`. Array of number of components by number of bead types. Defines the number of each type of group in each component.
     bead_library : dict
         A dictionary where bead names are the keys to access EOS self interaction parameters:
         
@@ -149,7 +149,7 @@ def calc_massi(molecular_composition, bead_library, beads):
     Returns
     -------
     massi : numpy.ndarray
-        Bead mass corresponding to array 'beads' [kg/mol]
+        Bead mass corresponding to array ``beads`` [kg/mol]
     """
     massi = np.zeros(len(molecular_composition))
     for i in range(len(molecular_composition)):
@@ -244,25 +244,25 @@ def check_bead_parameters(bead_library0, parameter_defaults):
     return bead_library
 
 
-def cross_interaction_from_dict(beads, bead_library, mixing_dict, cross_library={}):
+def cross_interaction_from_dict(beads, bead_library, combining_dict, cross_library={}):
     r"""
-    Computes matrices of cross interaction parameters defined as the keys in the mixing dict parameter are extracted from the bead_library and then the cross library.
+    Computes matrices of cross interaction parameters defined as the keys in the combining dict parameter are extracted from the bead_library and then the cross library.
         
     Parameters
     ----------
     beads : list[str]
         List of unique bead names used among components
     bead_library : dict
-        A dictionary where bead names are the keys to access EOS self interaction parameters. Those to be calculated are defined by the keys of mixing_dict
-    mixing_dict : dict
-        This dictionary contains those bead parameters that should be placed in a matrix and the mixing rules for the cross parameters
+        A dictionary where bead names are the keys to access EOS self interaction parameters. Those to be calculated are defined by the keys of combining_dict
+    combining_dict : dict
+        This dictionary contains those bead parameters that should be placed in a matrix and the combining rules for the cross parameters
     cross_library : dict, Optional, default={}
-        Optional library of bead cross interaction parameters. As many or as few of the desired parameters may be defined for whichever group combinations are desired. If this matrix isn't provided, the SAFT mixing rules are used.
+        Optional library of bead cross interaction parameters. As many or as few of the desired parameters may be defined for whichever group combinations are desired. If this matrix isn't provided, the SAFT combining rules are used.
         
     Returns
     -------
     output : dict
-        Dictionary of outputs, with the same keys used in mixing dict for the respective interaction matrix
+        Dictionary of outputs, with the same keys used in combining dict for the respective interaction matrix
         
     """
 
@@ -270,7 +270,7 @@ def cross_interaction_from_dict(beads, bead_library, mixing_dict, cross_library=
 
     # Set-up output dictionaries
     output = {}
-    for key in mixing_dict:
+    for key in combining_dict:
         output[key] = np.zeros((nbeads, nbeads))
         for k in range(nbeads):
             output[key][k, k] = bead_library[beads[k]][key]
@@ -279,7 +279,7 @@ def cross_interaction_from_dict(beads, bead_library, mixing_dict, cross_library=
     for (i, beadname) in enumerate(beads):
         for (j, beadname2) in enumerate(beads):
             if j > i:
-                for key in mixing_dict:
+                for key in combining_dict:
                     if (
                         cross_library.get(beadname, {})
                         .get(beadname2, {})
@@ -300,15 +300,15 @@ def cross_interaction_from_dict(beads, bead_library, mixing_dict, cross_library=
                                 bead_library[beadname],
                                 bead_library[beadname2],
                                 key,
-                                **mixing_dict[key]
+                                **combining_dict[key]
                             )
-                        #                            if mixing_dict[key]["function"]=="multipole":
+                        #                            if combining_dict[key]["function"]=="multipole":
                         #                                logger.debug("Multipole: {} {}, {}".format(beadname,beadname2,tmp))
                         except Exception:
                             raise ValueError(
                                 "Unable to calculate '{}' with '{}' method, for beads: '{}' '{}'".format(
                                     key,
-                                    mixing_dict[key]["function"],
+                                    combining_dict[key]["function"],
                                     beadname,
                                     beadname2,
                                 )
@@ -337,7 +337,7 @@ def construct_dummy_bead_library(input_dict, keys=None):
     Returns
     -------
     output_dict : dict
-        Dictionary of outputs, with the same keys used in mixing dict for the respective interaction matrix
+        Dictionary of outputs, with the same keys used in combining dict for the respective interaction matrix
         
     """
 
@@ -377,13 +377,13 @@ def combining_rules(beadA, beadB, parameter, function="mean", **kwargs):
         Name of parameter for which a mixed value is needed
     function : str, Optional, default=mean
         Mixing rule function found in `despasito.equations_of_state.combining_rule_types.py`
-    kwargs : dict, Optional, default={}
+    kwargs :
         Keyword arguments used in other averaging function
         
     Returns
     -------
     output_dict : dict
-        Dictionary with keyword of parameter and Mixed interaction parameter. If mixing rule type outputs more than one updated variable, it will also be included
+        Dictionary with keyword of parameter and mixed interaction parameter. If combining rule type outputs more than one updated variable, it will also be included
     """
 
     calc_list = [o[0] for o in getmembers(combining_rule_types) if isfunction(o[1])]
@@ -392,7 +392,7 @@ def combining_rules(beadA, beadB, parameter, function="mean", **kwargs):
             func = getattr(combining_rule_types, function)
     except Exception:
         raise ImportError(
-            "The mixing rule type, '{}', was not found\nThe following calculation types are supported: {}".format(
+            "The combining rule type, '{}', was not found\nThe following calculation types are supported: {}".format(
                 function, ", ".join(calc_list)
             )
         )

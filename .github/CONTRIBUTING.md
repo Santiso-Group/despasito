@@ -1,7 +1,7 @@
 ## How to Contribute
 
 We welcome contributions from external contributors, and this document
-describes how to merge code changes into despasito. We welcome contributions from everyone in the form of bug fixes, new features, documentation and suggestions. 
+describes how to merge code changes into despasito. We welcome contributions from everyone in the form of bug fixes, new features, documentation, and suggestions. 
 
 ### Release Procedure
 
@@ -51,7 +51,8 @@ Updates will *only* be considered if:
  * A test is included in an relevant existing or new test_\*.py file that doesn't involve an unwarranted increase in testing time.
  * Running pre-pull-request testing below exits with no errors and minimal code quality issues.
  
- I reserve the right to request you to modify the update as I see fit for any reason prior to inclusion. Modifications might be made for example:
+ 
+I reserve the right to request you to modify the update as I see fit for any reason prior to inclusion. Modifications might be made for example:
 
 * To provide consistent style or naming.
 * To alleviate obvious code issues.

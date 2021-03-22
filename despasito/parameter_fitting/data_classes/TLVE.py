@@ -23,6 +23,8 @@ class Data(ExpDataTemplate):
     r"""
     Object for Temperature dependent VLE data. 
 
+    This object is initiated in :func:`~despasito.parameter_fitting.fit` with the keyword, ``exp_data[*]["data_class_type"]="TLVE"``.
+
     This data could be evaluated with bubble_pressure or dew_pressure. Most entries in the exp. dictionary are converted to attributes. 
 
     Parameters
@@ -30,11 +32,11 @@ class Data(ExpDataTemplate):
     data_dict : dict
         Dictionary of exp data of TLVE temperature dependent liquid vapor equilibria
 
-        * calculation_type (str) - Optional, default='bubble_pressure', 'dew_pressure' is also acceptable
+        * calculation_type (str) - Optional, default='bubble_pressure', However, 'dew_pressure' is also acceptable
         * eos_obj (obj) - Equation of state object
         * T (list) - List of temperature values for calculation
         * xi(yi) (list) - List of liquid (or vapor) mole fractions used in bubble_pressure (or dew_pressure) calculation.
-        * weights (dict) - A dictionary where each key is the header used in the exp. data file. The value associated with a header can be a list as long as the number of data points to multiply by the objective value associated with each point, or a float to multiply the objective value of this data set.
+        * weights (dict) - A dictionary where each key is a system constraint (e.g. T or xi) which is also a header used in an optional exp. data file. The value associated with a header can be a list as long as the number of data points to multiply by the objective value associated with each point, or a float to multiply the objective value of this data set.
         * density_opts (dict) - Optional, default={}, Dictionary of options used in calculating pressure vs. mole fraction curves.
         * kwargs for :func:`~despasito.parameter_fitting.fit_functions.obj_function_form`
 
@@ -44,8 +46,6 @@ class Data(ExpDataTemplate):
         Data type, in this case TLVE
     Eos : obj
         Equation of state object
-    weights : dict, Optional, default: {"some_property": 1.0 ...}
-        Dictionary corresponding to thermodict, with weighting factor or vector for each system property used in fitting
     obj_opts : dict
         Keywords to compute the objective function with :func:`~despasito.parameter_fitting.fit_functions.obj_function_form`.
     npoints : int
@@ -55,8 +55,11 @@ class Data(ExpDataTemplate):
     thermodict : dict
         Dictionary of inputs needed for thermodynamic calculations
     
-        - calculation_type (str) default=phasexiT or phaseyiT
+        - calculation_type (str) default=bubble_pressure or dew_pressure
         - density_opts (dict) default={"min_density_fraction":(1.0 / 300000.0), "density_increment":10.0, "max_volume_increment":1.0E-4}
+
+    weights : dict, Optional, default: {"some_property": 1.0 ...}
+        Dictionary with keys corresponding to those in thermodict, with weighting factor or vector for each system property used in fitting
   
     """
 
@@ -235,7 +238,7 @@ class Data(ExpDataTemplate):
                         **self.obj_opts
                     )
 
-        logger.debug(
+        logger.info(
             "Obj. breakdown for {}: P {}, zi {}".format(
                 self.name, obj_value[0], obj_value[1]
             )

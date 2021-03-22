@@ -114,7 +114,7 @@ def assoc_site_indices(nk, molecular_composition, xi=None):
     nk : numpy.ndarray
         A matrix of (Nbeads x Nsites) Contains for each bead the number of each type of site
     molecular_composition : numpy.ndarray
-        :math:`\\nu_{i,k}/k_B`. Array of number of components by number of bead types. Defines the number of each type of group in each component.
+        :math:`\nu_{i,k}/k_B`. Array of number of components by number of bead types. Defines the number of each type of group in each component.
     xi : numpy.ndarray, Optional, default=None
         Mole fraction of each component, sum(xi) should equal 1.0
     
@@ -154,7 +154,7 @@ def initiate_assoc_matrices(beads, bead_library, molecular_composition):
     
     Generate matrices used for association site calculations.
     
-    Compute epsilonHB (interaction energy for association term),Kklab (association interaction bonding volume,nk (number of sites )
+    Compute epsilonHB (interaction energy for association term), Kklab (association interaction bonding volume, and nk (number of sites )
     
     Parameters
     ----------
@@ -166,7 +166,7 @@ def initiate_assoc_matrices(beads, bead_library, molecular_composition):
         - Nk\*: Optional, The number of sites of from list sitenames. Asterisk represents string from sitenames.
 
     molecular_composition : numpy.ndarray
-        :math:`\\nu_{i,k}/k_B`. Array of number of components by number of bead types. Defines the number of each type of group in each component.
+        :math:`\nu_{i,k}/k_B`. Array of number of components by number of bead types. Defines the number of each type of group in each component.
 
     Returns
     ----------
@@ -235,9 +235,9 @@ def calc_assoc_matrices(
     
     Generate matrices used for association site calculations.
     
-    Compute epsilonHB (interaction energy for association term),Kklab (association interaction bonding volume, nk (number of sites )
+    Compute epsilonHB (interaction energy for association term), Kklab (association interaction bonding volume, and nk (number of sites )
 
-    Note: Some papers use r instead of Kklab, provide function to calculate Kklab in that case (see Papaioannou 2014)
+    Note: Some papers use rc_klab instead of Kklab. In those cases, a function to calculate Kklab is needed (see Papaioannou 2014).
 
     Parameters
     ----------
@@ -253,7 +253,7 @@ def calc_assoc_matrices(
         - Nk-\*: Optional, The number of sites of from list sitenames. Asterisk represents string from sitenames.
 
     molecular_composition : numpy.ndarray
-        :math:`\\nu_{i,k}/k_B`. Array of number of components by number of bead types. Defines the number of each type of group in each component.
+        :math:`\nu_{i,k}/k_B`. Array of number of components by number of bead types. Defines the number of each type of group in each component.
     cross_library : dict, Optional, default={}
         A dictionary where bead names are the keys to access a dictionary of a second tier of bead names. This structure contains the EOS cross interaction parameters:
 

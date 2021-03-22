@@ -26,7 +26,6 @@ Supporting Modules
 
    despasito.equations_of_state.eos_toolbox
    despasito.equations_of_state.combining_rule_types
-   despasito.equations_of_state.constants
 
 
 

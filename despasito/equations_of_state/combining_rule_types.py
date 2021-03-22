@@ -148,7 +148,7 @@ def mie_exponent(beadA, beadB, parameter):
 def square_well_berthelot(beadA, beadB, parameter, weighting_parameters=[]):
     r"""
     Calculates cross interaction parameter according to the calculation method provided.
-    square_well Berthelot geometric mean: c = np.sqrt(a[0]*b[0]) * np.sqrt(a[1]**3 * b[1]**3) / ((a[1] + b[1])/2)**3
+    Square_well Berthelot geometric mean: c = np.sqrt(a[0]*b[0]) * np.sqrt(a[1]**3 * b[1]**3) / ((a[1] + b[1])/2)**3
     
     Parameters
     ----------
@@ -189,8 +189,7 @@ def multipole(
     beadA, beadB, parameter, temperature=None, mode="curve fit", scaled=False
 ):
     r"""
-    Calculates cross interaction parameter according to the calculation method provided.
-    square_well Berthelot geometric mean: c = np.sqrt(a[0]*b[0]) * np.sqrt(a[1]**3 * b[1]**3) / ((a[1] + b[1])/2)**3 
+    Calculates cross interaction parameter according to the calculation method provided with the plug-in `MAPSCI <https://github.com/jaclark5/mapsci>`_.
     
     Parameters
     ----------

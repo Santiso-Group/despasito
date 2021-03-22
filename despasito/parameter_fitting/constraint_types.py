@@ -1,3 +1,6 @@
+""" Optional constraint functions extracted for :func:`~despasito.parameter_fitting.fit_functions.global_minimization` method.
+"""
+
 import numpy as np
 
 

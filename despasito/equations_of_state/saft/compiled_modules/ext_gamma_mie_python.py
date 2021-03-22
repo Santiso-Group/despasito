@@ -331,7 +331,7 @@ def calc_Bkl_eff(rho, l_ii_avg, Cmol2seg, dii_avg, epsilonii_avg, x0ii, zetax):
 
 def calc_da1sii_drhos(rho, Cmol2seg, l_ii_avg, zetax, epsilonii_avg, dii_avg):
     r""" 
-    Return a1s,ii_avg(rho*Cmol2seg,l_ii_avg) in K as defined in eq. 25.
+    Return the derivative of a1s,ii_avg(rho*Cmol2seg,l_ii_avg) with represent to number density in Kelvin 
     
     Used in the calculation of the first order term of the perturbation expansion corresponding to the mean-attractive energy.
 

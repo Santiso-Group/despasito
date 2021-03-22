@@ -16,7 +16,7 @@ class ExpDataTemplate(ABC):
     Parameters
     ----------
     data_dict : dict
-        Dictionary of exp data of TLVE temperature dependent liquid vapor equilibria
+        Dictionary of exp data
 
         * calculation_type (str) - Optional, default=*to be set*
         * eos_obj (obj) - Equation of state object
@@ -28,11 +28,11 @@ class ExpDataTemplate(ABC):
     Attributes
     ----------
     name : str
-        Data type, in this case TLVE
+        Data type, name of module, "To be set"
     Eos : obj
         Equation of state object
     weights : dict, Optional, default: {"some_property": 1.0 ...}
-        Dictionary corresponding to thermodict, with weighting factor or vector for each system property used in fitting
+        Dictionary corresponding to thermo_dict, with weighting factor or vector for each system property used in fitting
     obj_opts : dict
         Keywords to compute the objective function with :func:`~despasito.parameter_fitting.fit_functions.obj_function_form`.
     npoints : int

@@ -291,7 +291,7 @@ def calc_zetaxstar(rho, Cmol2seg, xskl, sigmakl):
     Parameters
     ----------
     rho : numpy.ndarray
-        Number density of system [mol/m^3]
+        Number density of system [:math:`mol/m^3`]
     Cmol2seg : float
         Conversion factor from from molecular number density, :math:`\rho`, to segment (i.e. group) number density, :math:`\rho_S`. Shown in eq. 13
     xskl : numpy.ndarray
@@ -322,7 +322,7 @@ def calc_zetax(rho, Cmol2seg, xskl, dkl):
     Parameters
     ----------
     rho : numpy.ndarray
-        Number density of system [mol/m^3]
+        Number density of system [:math:`mol/m^3`]
     Cmol2seg : float
         Conversion factor from from molecular number density, :math:`\rho`, to segment (i.e. group) number density, :math:`\rho_S`. Shown in eq. 13
     xskl : numpy.ndarray
@@ -346,7 +346,7 @@ def calc_zetax(rho, Cmol2seg, xskl, dkl):
 
 def calc_KHS(zetax):
     r"""
-    Calculate (length of densities) isothermal compressibility of system with packing fraction zetax
+    Calculate (length of density array) isothermal compressibility of system with packing fraction zetax
     
     Parameters
     ----------

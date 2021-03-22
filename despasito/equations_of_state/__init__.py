@@ -31,25 +31,25 @@ logger = logging.getLogger(__name__)
 
 
 def initiate_eos(
-    eos="saft.gamma_mie", numba=False, cython=False, python=False, **input_dict
+    eos="saft.gamma_mie", numba=False, cython=False, python=False, **kwargs
 ):
     """
     Interface between the user and our library of equations of state (EOS).
 
-    Input the name of a desired EOS and a factory design pattern with a dictionary will search available classes to allow easy implementation of new EOS.
+    Input the name of a desired EOS and available classes are automatically searched to allow easy implementation of new EOS.
 
     Parameters
     ----------
     eos : str, Optional, default="saft.gamma_mie"
-        Name of EOS, see EOS Types in the documentation for additional options. Input should be in the form EOSfamily.EOSname (e.g. saft.gamme_mie).
-    input_dict : dict, Optional
-        A dictionary of inputs for the desired EOS. See specific EOS documentation for required inputs.
+        Name of EOS, see :ref:`EOS-types` in the documentation for additional options. Input should be in the form EOSfamily.EOSname (e.g. saft.gamme_mie).
     numba : bool, Optional, default=False
-        If True, numba Just-In-Time compilation is used.
+        If True and available for chosen EOS, numba Just-In-Time compilation is used.
     cython : bool, Optional, default=False
-        If True, cython pre-compiled modules are used.
+        If True and available for chosen EOS, cython pre-compiled modules are used.
     python : bool, Optional, default=False
-        If True, pure python is used for everything, note that if association sites are present in the SAFT EOS, this is detrimentally slow
+        If True and available for chosen EOS, pure python is used for everything, note that if association sites are present in the SAFT EOS, this is detrimentally slow
+    kwargs
+        Other keyword argument inputs for the desired EOS. See specific EOS documentation for required inputs.
                 
     Returns
     -------
@@ -57,7 +57,7 @@ def initiate_eos(
         An instance of the defined EOS class to be used in thermodynamic computations.
     """
 
-    input_dict["method_stat"] = method_stat(numba=numba, cython=cython, python=python)
+    kwargs["method_stat"] = method_stat(numba=numba, cython=cython, python=python)
 
     factory_families = [
         "saft"
@@ -78,7 +78,7 @@ def initiate_eos(
             eos_module = import_module(
                 "." + eos_fam, package="despasito.equations_of_state." + eos_fam
             )
-            input_dict["saft_name"] = eos_type
+            kwargs["saft_name"] = eos_type
 
         else:
             eos_module = import_module(
@@ -91,7 +91,7 @@ def initiate_eos(
                 eos, class_name, eos_type, eos_fam
             )
         )
-    instance = eos_class(**input_dict)
+    instance = eos_class(**kwargs)
 
     logger.info("Created {} Eos object".format(eos))
 

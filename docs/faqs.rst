@@ -11,7 +11,7 @@ Thermodynamics
 
 Parameter Fitting
 ##################
-**Q: After fitting the parameters there are several suitable parameter sets, which do I pick?**
+**Q: After fitting the parameters, there are several suitable parameter sets, which set do I pick?**
 
 **A:** Consider including additional experimental data, such as liquid density or second derivative properties.
 
@@ -24,7 +24,7 @@ SAFT-:math:`\gamma`-Mie
 
 :math:`\epsilon^{Sim} = S^2\epsilon^{EOS}`
 
-Testing this relationship with simulations showed approximate agreement. Although is established that the shape factor characterizes the extent to which a group contributes toward the thermo-physical properties of a chain, it also provides a link to the geometry. This factor is needed for the EOS to properly represent a molecule's surface area and volume, otherwise this group contribution method suffers from unrealistic representations.
+Testing this relationship with simulations showed approximate agreement. Although it is established that the shape factor characterizes the extent to which a group contributes toward the thermo-physical properties of a chain, it also provides a link to the geometry. This factor is needed for the EOS to properly represent a molecule's surface area and volume, otherwise this group contribution method suffers from unrealistic representations.
 
 
 

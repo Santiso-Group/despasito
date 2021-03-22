@@ -17,7 +17,7 @@ def solve_root(func, args=(), method="bisect", x0=None, bounds=None, options={})
     ----------
     func : function
         Function used in job. Can be any of the following scipy methods: "brent", "least_squares", "TNC", "L-BFGS-B", "SLSQP", 'hybr', 'lm', 'linearmixing', 'diagbroyden', 'excitingmixing', 'krylov', 'df-sane', 'anderson', 'hybr_broyden1', 'hybr_broyden2', 'broyden1', 'broyden2', 'bisect'.
-    args : list, Optional, default=None
+    args : tuple, Optional, default=()
         Each entry of this list contains the input arguments for each job
     method : str, Optional, default="bisect"
         Choose the method used to solve the dew point calculation
@@ -276,9 +276,12 @@ def central_difference(x, func, step_size=1e-5, relative=False, args=()):
     func : function
         Function used in job to calculate dependent factor. This function should have a single output.
     step_size : float, Optional, default=1E-5
-        This function calculates a relative step size for each independent variable. Each step is equal x * step_size.
-    args : list, Optional, default=None
+        Either the step size used in the central difference method, or if ``relative=True``, this variable is a scaling factor so that the step size for each value of x is x * step_size.
+    args : tuple, Optional, default=()
         Each entry of this list contains the input arguments for each job
+    relative : bool, Optional, default=False
+        If False, the step_size is directly used to calculate the derivative. If true, step_size becomes a scaling factor, where the step size for each value of x becomes step_size*x.
+
     Returns
     -------
     dydx : numpy.ndarray
@@ -300,8 +303,8 @@ def central_difference(x, func, step_size=1e-5, relative=False, args=()):
     else:
         step = step_size
 
-    lx = np.size(x)
     y = func(np.append(x + step, x - step), *args)
+    lx = int(len(y)/2)
     dydx = (y[:lx] - y[lx:]) / (2.0 * step)
 
     return dydx
@@ -311,7 +314,7 @@ def isiterable(array):
     """
     Check if variable is an iterable type with a length (e.g. np.array or list).
 
-    Note that this could be tested with isinstance(array, Iterable), however array=np.array(1.0) would pass that test and then fail in len(array).
+    Note that this could be tested with ``isinstance(array, Iterable)``, however ``array=np.array(1.0)`` would pass that test and then fail in ``len(array)``.
 
     Parameters
     ----------
@@ -336,16 +339,16 @@ def isiterable(array):
 def check_length_dict(dictionary, keys, lx=None):
 
     """
-    This function compared the entries in the provided dictionary to ensure they're the same length.
+    This function compared the entries, keys, in the provided dictionary to ensure they're the same length.
 
-    All entries will be made into numpy arrays. If a float or array of length one is provided, it will be expanded to the length of other arrays.
+    All entries in the list ``keys``, will be made into numpy arrays (if present). If a float or array of length one is provided, it will be expanded to the length of other arrays.
 
     Parameters
     ----------
     dictionary : dict
-        Dictionary of what should be arrays of identical size.
+        Dictionary containing all or some of the keywords, ``keys``, of what should be arrays of identical size.
     keys : list
-        Keys for array entries
+        Possible keywords representing array entries
     lx : int, Optional, default=None
         The size that arrays should conform to
 
@@ -394,18 +397,18 @@ def check_length_dict(dictionary, keys, lx=None):
 def set_defaults(dictionary, keys, values, lx=None):
 
     """
-    This function checks a dictionary for the given keys, and if a given key isn't present, the appropriate value is added to the dictionary.
+    This function checks a dictionary for the given keys, and if it's not there, the appropriate value is added to the dictionary.
 
     Parameters
     ----------
     dictionary : dict
         Dictionary of data
     keys : list
-        Keys that should be present (of the same length as `lx`)
+        Keys that should be present (of the same length as ``lx``)
     values : list
         Default values for the keys that aren't in dictionary
     lx : int, Optional, default=None
-        If not None, and values[i] is a float, the key will be set to an array of length, lx, populated by values[i] 
+        If not None, and values[i] is a float, the key will be set to an array of length, ``lx``, populated by ``values[i]`` 
 
     Returns
     -------

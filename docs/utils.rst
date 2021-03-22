@@ -2,8 +2,7 @@
 Utilities
 =========================
 
-
-Click below!
+This module contains general functions that could be used beyond the function of this package.
 
 .. currentmodule:: despasito
 .. autosummary::

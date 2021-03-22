@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 def append_data_file_path(input_dict, path="."):
     r"""
-   Appends path to data file(s).
+   Appends path from command line option to data file(s).
 
    Parameters
    ----------
@@ -65,16 +65,16 @@ def extract_calc_data(input_fname, path=".", **thermo_dict):
     input_fname : str
         The file name of a .json file in the current directory containing (1) the paths to equation of state parameters, (2) :mod:`~despasito.thermodynamics.calculation_types` and inputs for thermodynamic calculations (e.g. density options for :func:`~despasito.thermodynamics.calc.pressure_vs_volume_arrays`).
     path : str, Optional, default="."
-        Path to `input_fname`
+        Path to ``input_fname``
     thermo_dict
         Additional keyword arguments
 
     Returns
     -------
     eos_dict : dict
-        Dictionary of bead definitions and parameters used to later initialize Eos object. :func:`despasito.equations_of_state.initiate_eos`
+        Dictionary of keyword arguments representing bead definitions and parameters used to later initialize Eos object. :func:`despasito.equations_of_state.initiate_eos`
     thermo_dict : dict
-        Dictionary of instructions for thermodynamic calculations or parameter fitting. :func:`despasito.thermodynamics.thermo`
+        Dictionary of keyword arguments for thermodynamic calculations or parameter fitting. :func:`despasito.thermodynamics.thermo`
     output_file : str
         Output from calculation. Default is None, but an alternative can be defined as output_file keyword argument.
     """
@@ -164,7 +164,7 @@ def extract_calc_data(input_fname, path=".", **thermo_dict):
 def file2paramdict(filename, delimiter=" "):
 
     r"""
-    Converted file directly into a dictionary.
+    Converted text file into a dictionary.
 
     Each line in the input file is a key followed by a value in the resulting dictionary.
 
@@ -198,32 +198,6 @@ def file2paramdict(filename, delimiter=" "):
     return dictionary
 
 
-def make_xi_matrix(filename):
-
-    r"""
-    Extract system information from input .json file of parameters.
-
-    Parameters
-    ----------
-    filename : str
-        Name of .json file containing system and thermodynamic information. This function deals with the system information.
-
-    Returns
-    -------
-    xi : list[float]
-        Mole fraction of component, only relevant for parameter fitting
-    beads : list[str]
-        List of unique bead names used among components
-    molecular_composition : numpy.ndarray
-        Array of number of components by number of bead types. Defines the number of each type of group in each component.
-    """
-
-    comp = json_to_dict(filename)
-    beads, molecular_composition = process_bead_data(comp)
-
-    return xi, beads, molecular_composition
-
-
 def process_bead_data(bead_data):
 
     r"""
@@ -232,7 +206,7 @@ def process_bead_data(bead_data):
     Parameters
     ----------
     bead_data : list[list]
-        List of strings and dictionaries from .json file
+        List of molecules in the system. Each molecule is represented as a list of beads and each bead is represented as a list with the bead name followed by an integer with the number of beads in that molecule.
 
     Returns
     -------
@@ -272,11 +246,11 @@ def process_param_fit_inputs(thermo_dict):
         - optimization_parameters (dict) - Parameters used in basin fitting algorithm
 
             - fit_bead (str) - Name of bead whose parameters are being fit, should be in bead list of bead_configuration
-            - fit_parameter_names (list[str]) - This list of contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
-            - \*_bounds (list[float]), Optional - This list contains the minimum and maximum of the parameter from a parameter listed in fit_parameter_names, represented in place of the asterisk. See input file instructions for more information.
-            - parameters_guess (list[float]), Optional - Initial guess in parameters being fit. Should be the same length at fit_parameter_names and contain a reasonable guess for each parameter. If this is not provided, a guess is made based on the type of parameter from Eos object.
+            - fit_parameter_names (list[str]) - This list of contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for limitations on supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
+            - \*_bounds (list[float]), Optional - This list contains the minimum and maximum of a parameter from fit_parameter_names, represented by the asterisk. See input file instructions for more information.
+            - parameters_guess (list[float]), Optional - Initial guess in parameters being fit. Should be the same length at fit_parameter_names and contain a reasonable guess for each parameter. If this is not provided, a guess is made based on the type of parameter from the Eos object.
 
-        - *name* (dict) - Dictionary of a data set that the parameters are fit to. Each dictionary is added to the exp_data dictionary before being passed to the fitting algorithm. Each *name* is used as the key in exp_data. *name* is an arbitrary string used to identify the data set and used later in reporting objective function values during the fitting process. See data type objects for more details.
+        - *name* (dict) - Dictionary representing a data set that the parameters are fit to. Each dictionary is added to the exp_data dictionary before being passed to the fitting algorithm. Each *name* is used as the key in exp_data. *name* is an arbitrary string used to identify the data set and used later in reporting objective function values during the fitting process. See data type objects for more details.
 
             - file (str) - File of experimental data 
             - data_class_type (str) - One of the supported data type objects to fit parameters
@@ -285,14 +259,14 @@ def process_param_fit_inputs(thermo_dict):
     Returns
     -------
     new_thermo_dict : dict
-        Dictionary of instructions for thermodynamic calculations or parameter fitting. This dictionary is reformatted and includes imported data. Dictionary values below are altered before being passed on, all other key and value sets are blindly passed on.
+        Dictionary of instructions for thermodynamic calculations or parameter fitting. This dictionary is reformatted and includes imported data. Dictionary values below are altered before being passed on, all other key and value sets are blindly passed.
 
         - optimization_parameters (dict) - Parameters used in basin fitting algorithm
 
             - fit_bead (str) - Name of bead whose parameters are being fit, should be in bead list of bead_configuration
-            - fit_parameter_names (list[str]) - This list of contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
+            - fit_parameter_names (list[str]) - This list of contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for restrictions on supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
             - parameters_guess (list[float]), Optional - Initial guess in parameter. If one is not provided, a guess is made based on the type of parameter from Eos object.
-            - \*_bounds (list[float]), Optional - This list contains the minimum and maximum of the parameter from a parameter listed in fit_parameter_names, represented in place of the asterisk. See input file instructions for more information.
+            - \*_bounds (list[float]), Optional - This list contains the minimum and maximum of a parameter in fit_parameter_names, represented in place of the asterisk. See input file instructions for more information.
 
         - exp_data (dict) - This dictionary is made up of a dictionary for each data set that the parameters are fit to. Each key is an arbitrary string used to identify the data set and used later in reporting objective function values during the fitting process. See data type objects for more details.
 
@@ -327,7 +301,7 @@ def process_exp_data(exp_data_dict):
     r"""
     Convert experimental data dictionary into form used by parameter fitting module. 
 
-    Note that there should be one dictionary per data set. All data is extracted from data files.
+    Note that there should be one dictionary per data set.
 
     Parameters
     ----------
@@ -369,7 +343,7 @@ def process_exp_data_file(fname):
     r"""
     Import data file and convert columns into dictionary entries.
 
-    The headers in the file are the dictionary keys. The top line is skipped, and column headers are the second line. Note that column headers should be thermo properties (e.g. T, P, x1, x2, y1, y2) without suffixes. Mole fractions x1, x2, ... should be in the same order as in the bead_configuration line of the input file. No mole fractions should be left out.
+    The headers in the file are the dictionary keys. The top line is skipped, and column headers are the second line. Note that column headers should be thermo properties defined in :ref:`data-types` (e.g. T, P, x1, x2, y1, y2). Mole fractions x1, x2, ... should be in the same order as in the bead_configuration line of the input file. No mole fractions should be left out.
 
     Parameters
     ----------

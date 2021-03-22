@@ -2,7 +2,7 @@
 Regression tests for the despasito input/output package.
 
 The following functions are not tested because they require importing a file:
-    file2paramdict, extract_calc_data, process_commandline, make_xi_matrix
+    file2paramdict, extract_calc_data, process_commandline
 
 The following functions are not tested because they require exporting a file:
     write_EOSparameters

@@ -14,19 +14,19 @@ from . import calculation_types
 # logger = logging.getLogger(__name__)
 
 
-def thermo(Eos, calculation_type=None, **thermo_dict):
+def thermo(Eos, calculation_type=None, **kwargs):
     """
     Use factory design pattern to search for matching calculation_type with those supported in this module.
     
-    To add a new calculation type, add a new wrapper function to calculation_types.py.
+    To add a new calculation type, add a new wrapper function to ``calculation_types.py``.
 
     Parameters
     ----------
     Eos : obj
-        Equation of state output that writes pressure, max density, and fugacity coefficient.
+        Equation of state object with the following methods: ``pressure``, ``density_max``, and ``fugacity_coefficient``.
     calculation_type : str
         Calculation type supported in :mod:`~despasito.thermodynamics.calculation_types`
-    thermo_dict : dict
+    kwargs
         Other keywords passed to the function, depends on calculation type
 
     Returns
@@ -53,7 +53,7 @@ def thermo(Eos, calculation_type=None, **thermo_dict):
         )
 
     try:
-        output_dict = func(Eos, **thermo_dict)
+        output_dict = func(Eos, **kwargs)
     except Exception:
         raise TypeError("The calculation type, '{}', failed".format(calculation_type))
 

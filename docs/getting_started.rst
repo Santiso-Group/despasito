@@ -12,7 +12,7 @@ Install Package
 
 **Step 1:** Install the prerequisites listed above.
 
-**Step 2:** Install using pip with ``pip install -i https://test.pypi.org/simple/ despasito``
+**Step 2:** Install using pip with ``pip install -i https://test.pypi.org/simple/despasito``
 
 .. note:: If `pip <https://pip.pypa.io/en/stable/>`_ is unavailable, follow the instructions outlined `here <https://pip.pypa.io/en/stable/installing/>`_ for installation. Alternatively, download the master branch from our github page as a zip file, or clone it with git via ``git clone https://github.com/jaclark5/despasito`` in your working directory. Install DESPASITO locally from the working directory with ``python setup.py install --user``.
 

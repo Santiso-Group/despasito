@@ -28,7 +28,7 @@ class MultiprocessingJob:
     Attributes
     ----------
     pool : function
-        This pool is used parallelize jobs
+        This pool is used to parallelize jobs.
     """
 
     def __init__(self, ncores=-1):
@@ -113,7 +113,7 @@ class MultiprocessingJob:
         ----------
         func : function
             Function used in job
-        inputs : list
+        inputs : list[tuple]
             Each entry of this list contains the input arguments for each job
 
         Returns
@@ -141,8 +141,8 @@ class MultiprocessingJob:
         ----------
         func : function
             Function used in job
-        inputs : list
-            Each entry of this list contains the input arguments for each job
+        inputs : tuple
+            The input arguments for this job
 
         Returns
         -------

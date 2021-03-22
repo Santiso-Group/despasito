@@ -88,15 +88,15 @@ class EosType(EosTemplate):
         - etc. depending on SAFT variant
 
     combining_rules : dict, Optional, default=None
-        Provided to overwrite functional form of mixing rules defined for parameters in specific SAFT variant. See appropriate class.
+        Provided to overwrite functional form of combining rules defined for parameters in specific SAFT variant. See appropriate class.
     saft_name : str, Optional, default="gamma_mie"
         Define the SAFT variant, options listed in :func:`~despasito.equations_of_state.saft.saft.saft_type`.
     molecular_composition : numpy.ndarray
-        :math:`\\nu_{i,k}/k_B`. Array of number of components by number of bead types. Defines the number of each type of group in each component, as it corresponds to the `beads` array.
+        :math:`\nu_{i,k}/k_B`. Array of number of components by number of bead types. Defines the number of each type of group in each component, as it corresponds to the ``beads`` array.
     Aideal_method : str, Optional
-        Functional form of ideal gas contribution for Helmholtz energy. Default is defined in SAFT variant.
+        Functional form of ideal gas contribution for Helmholtz energy. Default is defined in SAFT variant defined with ``saft_name``. See :func:`~despasito.equations_of_state.saft.Aideal.Aideal_contribution` for more options.
     reduction_ratio : float, Optional
-        Reduced distance of the sites from the center of the sphere of interaction. This value is used when site position, rd_klab is None. See "func"`~despasito.equations_of_state.saft.Aassoc.calc_bonding_volume` for more details
+        Reduced distance of the sites from the center of the sphere of interaction. This value is used when site position, ``eos_dict['rd_klab'] == None``. See :func:`~despasito.equations_of_state.saft.Aassoc.calc_bonding_volume` for more details.
     method_stat : obj
         EOS object containing the the method status of the available options. 
     kwargs
@@ -107,9 +107,9 @@ class EosType(EosTemplate):
     beads : list[str]
         List of unique bead names used among components
     bead_library : dict
-        A dictionary where bead names are the keys to access EOS self interaction parameters. See **Parameters** section.
+        A dictionary where bead names are the keys to access EOS self interaction parameters. See entry in **Parameters** section.
     cross_library : dict
-        Library of bead cross interaction parameters. As many or as few of the desired parameters may be defined for whichever group combinations are desired. See **Parameters** section.
+        Library of bead cross interaction parameters. As many or as few of the desired parameters may be defined for whichever group combinations are desired. See entry in **Parameters** section.
     number_of_components : int
         Number of components in mixture represented by given EOS object.
     parameter_types : list[str]
@@ -128,20 +128,20 @@ class EosType(EosTemplate):
     saft_source : obj
         Object representing SAFT variant. This attribute can be used to access intermediate calculations.
     eos_dict : dict
-        Temperature value is initially defined as NaN for a placeholder until temperature dependent attributes are initialized by using a method of this class. Others may be added once the SAFT variant object is initiated.
+        Temperature value is initially defined as NaN for a placeholder until temperature dependent attributes are initialized by using a method of this class.
 
-        - molecular_composition (numpy.ndarray) - :math:`\\nu_{i,k}/k_B`. Array of number of components by number of bead types. Defines the number of each type of group in each component
+        - molecular_composition (numpy.ndarray) - :math:`\nu_{i,k}/k_B`. Array containing the number of components by the number of bead types. Defines the number of each type of group in each component
         - residual_helmholtz_contributions (list[str]) - List of methods from the specified saft_source representing contributions to the Helmholtz energy that are functions of density, temperature, and composition 
-        - Aideal_method (str) - "Abroglie" the default functional form of the ideal gas contribution of the Helmholtz energy
-        - massi (list) - List of molecular weight for each group in `beads` array
+        - Aideal_method (str) - Method defined in SAFT variant
+        - massi (list) - List of molecular weight for each group in ``beads`` array
         - flag_assoc (bool) - flag indicating whether there is an association site contribution to the Helmholtz energy
-        - sitenames (list[str]) - List of sitenames for association site interactions. This array is extracted from `bead_library` entries
+        - sitenames (list[str]) - List of sitenames for association site interactions. This array is extracted from ``bead_library`` entries
         - nk (numpy.ndarray) - A matrix of (Nbeads x Nsites) Contains for each bead the number of each type of site
-        - epsilonHB (numpy.ndarray) - Optional: Interaction energy between each bead and association site.
-        - Kklab (numpy.ndarray) - Optional: Bonding volume between each association site
-        - rc_klab, Optional: Cutoff distance for association sites
-        - rd_klab, Optional: Association site position
-        - reduction_ratio (float) - Reduced distance of the sites from the center of the sphere of interaction. This value is used when site position, rd_klab is None
+        - epsilonHB (numpy.ndarray) - Optional, Interaction energy between each bead and association site.
+        - Kklab (numpy.ndarray) - Optional, Bonding volume between each association site
+        - rc_klab, Optional, Cutoff distance for association sites
+        - rd_klab, Optional, Association site position
+        - reduction_ratio (float) - Reduced distance of the sites from the center of the sphere of interaction. This value is used when site position, ``eos_dict['rd_klab'] == None``.
     
     """
 
@@ -250,7 +250,7 @@ class EosType(EosTemplate):
             self.eos_dict["flag_assoc"] = False
 
         if combining_rules != None:
-            logger.info("Accepted new mixing rule definitions")
+            logger.info("Accepted new combining rule definitions")
             self.saft_source.combining_rules.update(combining_rules)
             self.parameter_refresh()
 
@@ -263,7 +263,7 @@ class EosType(EosTemplate):
         Parameters
         ----------
         rho : numpy.ndarray
-            Number density of system [mol/m^3]
+            Number density of system [:math:`mol/m^3`]
         T : float
             Temperature of the system [K]
         xi : numpy.ndarray
@@ -305,7 +305,7 @@ class EosType(EosTemplate):
         Parameters
         ----------
         rho : numpy.ndarray
-            Number density of system [mol/m^3]
+            Number density of system [:math:`mol/m^3`]
         T : float
             Temperature of the system [K]
         xi : numpy.ndarray
@@ -340,13 +340,11 @@ class EosType(EosTemplate):
         Parameters
         ----------
         rho : numpy.ndarray
-            Number density of system [mol/m^3]
+            Number density of system [:math:`mol/m^3`]
         T : float
             Temperature of the system [K]
         xi : numpy.ndarray
             Mole fraction of each component, sum(xi) should equal 1.0
-        massi : numpy.ndarray
-            Vector of component masses that correspond to the mole fractions in xi [kg/mol]
         method : str, Optional, default=Abroglie
             The function name of the method to calculate the ideal contribution of the Helmholtz energy. To add a new one, add a function to: despasito.equations_of_state.saft.Aideal.py
     
@@ -354,6 +352,7 @@ class EosType(EosTemplate):
         -------
         Aideal : numpy.ndarray
             Helmholtz energy of ideal gas for each density given.
+
         """
         if len(xi) != self.number_of_components:
             raise ValueError(
@@ -377,7 +376,7 @@ class EosType(EosTemplate):
         Parameters
         ----------
         rho : numpy.ndarray
-            Number density of system [mol/m^3]
+            Number density of system [:math:`mol/m^3`]
         T : float
             Temperature of the system [K]
         xi : numpy.ndarray
@@ -451,11 +450,11 @@ class EosType(EosTemplate):
         Parameters
         ----------
         rho : numpy.ndarray
-            Number density of system [mol/m^3]
+            Number density of system [:math:`mol/m^3`]
         T : float
             Temperature of the system [K]
         xi : list[float]
-            Mole fraction of each component
+            Mole fraction of each component, sum(xi) should equal 1.0
        
         Returns
         -------
@@ -488,11 +487,11 @@ class EosType(EosTemplate):
         P : float
             Pressure of the system [Pa]
         rho : float
-            Molar density of system [mol/m^3]
+            Molar density of system [:math:`mol/m^3`]
         T : float
             Temperature of the system [K]
         xi : list[float]
-            Mole fraction of each component
+            Mole fraction of each component, sum(xi) should equal 1.0
         log_method : bool, Optional, default=False
             Choose to use a log transform in central difference method. This allows easier calculations for very small numbers.
     
@@ -543,7 +542,7 @@ class EosType(EosTemplate):
         Parameters
         ----------
         xi : list[float]
-            Mole fraction of each component
+            Mole fraction of each component, sum(xi) should equal 1.0
         T : float
             Temperature of the system [K]
         maxpack : float, Optional, default=0.65
@@ -552,7 +551,7 @@ class EosType(EosTemplate):
         Returns
         -------
         max_density : float
-            Maximum molar density [mol/m^3]
+            Maximum molar density [:math:`mol/m^3`]
         """
         if len(xi) != self.number_of_components:
             raise ValueError(
@@ -567,12 +566,12 @@ class EosType(EosTemplate):
 
     def check_bounds(self, parameter, param_name, bounds):
         """
-        Generate initial guesses for the parameters to be fit.
+        Ensures that bounds given for parameter are within the range of feasibility defined in this class. If the bounds are outside of the allowed range, they are adjusted.
         
         Parameters
         ----------
         parameter : str
-            Parameter to be fit. See EOS documentation for supported parameter names.
+            Parameter type to be fit (e.g. for 'epsilon_CO2', this argument will be 'epsilon').
         param_name : str
             Full parameter string to be fit. See EOS documentation for supported parameter names.
         bounds : list
@@ -594,14 +593,14 @@ class EosType(EosTemplate):
         r"""
         Update a single parameter value during parameter fitting process.
 
-        To refresh those parameters that are dependent on to bead_library or cross_library, use method "parameter refresh".
+        To refresh those parameters that are dependent on to bead_library or cross_library, use method ``parameter_refresh``.
         
         Parameters
         ----------
         param_name : str
             Parameter to be fit. See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
         bead_names : list
-            Bead names to be changed. For a self interaction parameter, the length will be 1, for a cross interaction parameter, the length will be two.
+            Bead names to be changed. For a self interaction parameter, the length will be one, for a cross interaction parameter, the length will be two.
         param_value : float
             Value of parameter
         """
@@ -620,7 +619,8 @@ class EosType(EosTemplate):
         r""" 
         To refresh dependent parameters
         
-        Those parameters that are dependent on bead_library and cross_library attributes **must** be updated by running this function after all parameters from update_parameters method have been changed.
+        Those parameters that are dependent on bead_library and cross_library attributes **must** be updated by running this function after all parameters have been adjusted with ``update_parameters`` method.
+
         """
 
         self.saft_source.parameter_refresh(self.bead_library, self.cross_library)
@@ -644,7 +644,7 @@ class EosType(EosTemplate):
         Parameters
         ----------
         rho : numpy.ndarray
-            Number density of system [mol/m^3]
+            Number density of system [:math:`mol/m^3`]
         """
 
         if np.isscalar(rho):

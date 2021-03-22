@@ -2,7 +2,7 @@
 
 r"""
     
-EOS object for SAFT ideal gas contributions to the Helmholtz energy
+EOS object for SAFT ideal gas contributions to the Helmholtz energy with :func:`~despasito.equations_of_state.saft.Aideal.Aideal_contribution`
     
 """
 
@@ -19,14 +19,17 @@ logger = logging.getLogger(__name__)
 def Aideal_contribution(rho, T, xi, massi, method="Abroglie"):
 
     r"""
-    Return a vector of ideal contribution of Helmholtz energy.
+    Return a vector of ideal contribution of the Helmholtz energy.
     
     :math:`\frac{A^{ideal}}{N k_{B} T}`
-    
+
+    Supported methods include: 
+    :func:`~despasito.equations_of_state.saft.Aideal.Abroglie`,
+
     Parameters
     ----------
     rho : numpy.ndarray
-        Number density of system [mol/m^3]
+        Number density of system [:math:`mol/m^3`]
     T : float
         Temperature of the system [K]
     xi : numpy.ndarray
@@ -59,12 +62,10 @@ def Abroglie(rho, T, xi, massi):
     r"""
     Return a vector of ideal contribution of Helmholtz energy derived from Broglie wavelength
     
-    :math:`\frac{A^{ideal}}{N k_{B} T}`
-    
     Parameters
     ----------
     rho : numpy.ndarray
-        Number density of system [mol/m^3]
+        Number density of system [:math:`mol/m^3`]
     T : float
         Temperature of the system [K]
     xi : numpy.ndarray

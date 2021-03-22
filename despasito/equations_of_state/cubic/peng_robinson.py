@@ -205,7 +205,7 @@ class EosType(EosTemplate):
         Parameters
         ----------
         rho : numpy.ndarray
-            Number density of system [mol/m^3]
+            Number density of system [:math:`mol/m^3`]
         T : float
             Temperature of the system [K]
         xi : list[float]
@@ -246,7 +246,7 @@ class EosType(EosTemplate):
         P : float
             Pressure of the system [Pa]
         rho : float
-            Molar density of system [mol/m^3]
+            Molar density of system [:math:`mol/m^3`]
         T : float
             Temperature of the system [K]
         xi : list[float]
@@ -255,7 +255,7 @@ class EosType(EosTemplate):
         Returns
         -------
         fugacity_coefficient : numpy.ndarray
-            :math:`\mu_i`, Array of fugacity coefficient values for each component
+            :math:`\phi_i`, Array of fugacity coefficient values for each component
         """
 
         if gtb.isiterable(T):
@@ -324,7 +324,7 @@ class EosType(EosTemplate):
         Returns
         -------
         max_density : float
-            Maximum molar density [mol/m^3]
+            Maximum molar density [:math:`mol/m^3`]
         """
 
         if T != self.T:

@@ -58,7 +58,7 @@ class SaftType:
     beads : list[str]
         List of unique bead names used among components
     molecular_composition : numpy.ndarray
-        :math:`\\nu_{i,k}/k_B`. Array of number of components by number of bead types. Defines the number of each type of group in each component.
+        :math:`\nu_{i,k}/k_B`. Array containing the number of components by the number of bead types. Defines the number of each type of group in each component.
     bead_library : dict
         A dictionary where bead names are the keys to access EOS self interaction parameters:
     
@@ -67,11 +67,11 @@ class SaftType:
         - mass: Bead mass [kg/mol]
         - lambdar: :math:`\lambda^{r}_{k,k}`, Exponent of repulsive term between groups of type k
         - lambdaa: :math:`\lambda^{a}_{k,k}`, Exponent of attractive term between groups of type k
-        - Sk: Optional, default=1, Shape factor, reflects the proportion which a given segment contributes to the total free energy
+        - Sk: Optional, default=1, Shape factor, reflects the proportion with which a given segment contributes to the total free energy
         - Vks: Optional, default=1, Number of segments in this molecular group
 
     cross_library : dict, Optional, default={}
-        Optional library of bead cross interaction parameters. As many or as few of the desired parameters may be defined for whichever group combinations are desired. If this matrix isn't provided, the SAFT mixing rules are used.
+        Optional library of bead cross interaction parameters. As many or as few of the desired parameters may be defined for whichever group combinations are desired.
 
         - epsilon: :math:`\epsilon_{k,k}/k_B`, Energy well depth scaled by Boltzmann constant
         - sigma: :math:`\sigma_{k,k}`, Size parameter [nm]
@@ -87,15 +87,15 @@ class SaftType:
     beads : list[str]
         List of unique bead names used among components
     bead_library : dict
-        A dictionary where bead names are the keys to access EOS self interaction parameters. See **Parameters** section.
+        A dictionary where bead names are the keys to access EOS self interaction parameters. See entry in **Parameters** section.
     cross_library : dict, Optional, default={}
-        Optional library of bead cross interaction parameters. As many or as few of the desired parameters may be defined for whichever group combinations are desired. If this matrix isn't provided, the SAFT mixing rules are used. See **Parameters** section.
+        Optional library of bead cross interaction parameters. As many or as few of the desired parameters may be defined for whichever group combinations are desired. Any interaction parameters that aren't provided are computed with the appropriate ``combining_rules``. See entry in **Parameters** section.
     Aideal_method : str
         "Abroglie" the default functional form of the ideal gas contribution of the Helmholtz energy
     residual_helmholtz_contributions : list[str]
-        List of methods from the specified saft_source representing contributions to the Helmholtz energy that are functions of density, temperature, and composition. For this variant, [`Amonomer`, `Achain`]
+        List of methods from the specified ``saft_source`` representing contributions to the Helmholtz energy that are functions of density, temperature, and composition. For this variant, [``Amonomer``, ``Achain``]
     parameter_types : list[str]
-        This list of parameter names, "epsilon", "lambdar", "lambdaa", "sigma", and/or "Sk" as well as parameters for the specific SAFT variant. 
+        This list of parameter names, "epsilon", "lambdar", "lambdaa", "sigma", and/or "Sk" as well as parameters for the main saft class. 
     parameter_bound_extreme : dict
         With each parameter name as an entry representing a list with the minimum and maximum feasible parameter value.
 
@@ -116,10 +116,10 @@ class SaftType:
     eos_dict : dict
         Dictionary of parameters and specific settings 
 
-        - molecular_composition (numpy.ndarray) - :math:`\\nu_{i,k}/k_B`. Array of number of components by number of bead types. Defines the number of each type of group in each component.
+        - molecular_composition (numpy.ndarray) - :math:`\nu_{i,k}/k_B`. Array containing the number of components by the number of bead types. Defines the number of each type of group in each component.
         - num_rings (list) - Number of rings in each molecule. This will impact the chain contribution to the Helmholtz energy.
-        - Sk (numpy.ndarray) - Shape factor, reflects the proportion which a given segment contributes to the total free energy. Length of `beads` array.
-        - Vks (numpy.ndarray) - Number of segments in this molecular group. Length of `beads` array.
+        - Sk (numpy.ndarray) - Shape factor, reflects the proportion which a given segment contributes to the total free energy. Length of ``beads`` array.
+        - Vks (numpy.ndarray) - Number of segments in this molecular group. Length of ``beads`` array.
         - Ckl (numpy.ndarray) - Matrix of Mie potential prefactors between beads  (l,k)
         - epsilonkl (numpy.ndarray) - Matrix of Mie potential well depths for groups (k,l)
         - sigmakl (numpy.ndarray) - Matrix of bead diameters (k,l)
@@ -136,7 +136,6 @@ class SaftType:
         - lambdarii_avg (numpy.ndarray) - Matrix of molecule averaged Mie potential attractive exponents (i.j)
         - dii_eff (numpy.ndarray) - Matrix of mole averaged hard sphere equivalent for each bead and interaction between them (i.j)
         - x0ii (numpy.ndarray) - Matrix of sigmaii_avg/dii_eff, sigmaii_avg is the average molecular Mie radius and dii_eff the average molecular hard sphere diameter
-
 
     ncomp : int
         Number of components in the system
@@ -268,7 +267,7 @@ class SaftType:
 
     def calc_component_averaged_properties(self):
         r"""
-        Calculate component averaged properties specific to SAFT-𝛾-Mie        
+        Calculate component averaged properties specific to SAFT-𝛾-Mie for the chain term.    
 
         Attributes
         ----------
@@ -331,7 +330,7 @@ class SaftType:
         Parameters
         ----------
         rho : numpy.ndarray
-            Number density of system [mol/m^3]
+            Number density of system [:math:`mol/m^3`]
         T : float
             Temperature of the system [K]
         xi : numpy.ndarray
@@ -383,7 +382,7 @@ class SaftType:
         Parameters
         ----------
         rho : numpy.ndarray
-            Number density of system [mol/m^3]
+            Number density of system [:math:`mol/m^3`]
         T : float
             Temperature of the system [K]
         xi : numpy.ndarray
@@ -434,7 +433,7 @@ class SaftType:
         Parameters
         ----------
         rho : numpy.ndarray
-            Number density of system [mol/m^3]
+            Number density of system [:math:`mol/m^3`]
         T : float
             Temperature of the system [K]
         xi : numpy.ndarray
@@ -576,7 +575,7 @@ class SaftType:
         Parameters
         ----------
         rho : numpy.ndarray
-            Number density of system [mol/m^3]
+            Number density of system [:math:`mol/m^3`]
         T : float
             Temperature of the system [K]
         xi : numpy.ndarray
@@ -620,14 +619,14 @@ class SaftType:
 
     def Amonomer(self, rho, T, xi):
         r"""
-        Outputs :math:`A^{mono.}/Nk_{B}T`. This is composed
+        Outputs the monomer contribution of the Helmholtz energy, :math:`A^{mono.}/Nk_{B}T`.
         
-        Outputs :math:`A^{HS}/Nk_{B}T, A_1/Nk_{B}T, A_2/Nk_{B}T`, and :math:`A_3/Nk_{B}T` (number of densities) :math:`A^{mono.}/Nk_{B}T` components as well as some related quantities. Eta is really zeta
+        This term is composed of: :math:`A^{HS}/Nk_{B}T + A^{1st order}/Nk_{B}T + A^{2nd order}/Nk_{B}T` + :math:`A^{3rd order}/Nk_{B}T`
     
         Parameters
         ----------
         rho : numpy.ndarray
-            Number density of system [mol/m^3]
+            Number density of system [:math:`mol/m^3`]
         T : float
             Temperature of the system [K]
         xi : numpy.ndarray
@@ -677,7 +676,7 @@ class SaftType:
         Parameters
         ----------
         rho : numpy.ndarray
-            Number density of system [mol/m^3]
+            Number density of system [:math:`mol/m^3`]
         T : float
             Temperature of the system [K]
         xi : numpy.ndarray
@@ -734,7 +733,7 @@ class SaftType:
         Parameters
         ----------
         rho : numpy.ndarray
-            Number density of system [mol/m^3]
+            Number density of system [:math:`mol/m^3`]
         T : float
             Temperature of the system [K]
         xi : numpy.ndarray
@@ -848,7 +847,7 @@ class SaftType:
         Parameters
         ----------
         rho : numpy.ndarray
-            Number density of system [mol/m^3]
+            Number density of system [:math:`mol/m^3`]
         T : float
             Temperature of the system [K]
         xi : numpy.ndarray
@@ -1011,7 +1010,7 @@ class SaftType:
         Parameters
         ----------
         rho : numpy.ndarray
-            Number density of system [mol/m^3]
+            Number density of system [:math:`mol/m^3`]
         T : float
             Temperature of the system [K]
         xi : numpy.ndarray
@@ -1072,7 +1071,7 @@ class SaftType:
         Returns
         -------
         max_density : float
-            Maximum molar density [mol/m^3]
+            Maximum molar density [:math:`mol/m^3`]
         """
 
         self._check_temperature_dependent_parameters(T)
@@ -1097,7 +1096,7 @@ class SaftType:
     @staticmethod
     def calc_fm(alphakl, mlist):
         r"""
-        Calculate list of coefficients used to compute the correction term for :math:`A_{2}/Nk_{B}T` which is related to the fluctuations of attractive energy. where a list of m values are specified in mlist eq. 39
+        Calculate list of coefficients used to compute the correction term for :math:`A_{2nd order}/Nk_{B}T` which is related to the fluctuations of attractive energy. where a list of m values are specified in mlist eq. 39
         
         Parameters
         ----------
@@ -1208,7 +1207,7 @@ class SaftType:
         Parameters
         ----------
         rho : numpy.ndarray
-            Number density of system [mol/m^3]
+            Number density of system [:math:`mol/m^3`]
         T : float
             Temperature of the system [K]
         xi : numpy.ndarray
@@ -1258,7 +1257,7 @@ class SaftType:
         Parameters
         ----------
         rho : numpy.ndarray
-            Number density of system [mol/m^3]
+            Number density of system [:math:`mol/m^3`]
         T : float
             Temperature of the system [K]
         xi : numpy.ndarray
@@ -1315,11 +1314,18 @@ class SaftType:
         ----------
         T : float
             Temperature of the system [K]
+            NoteHere
+        rc_klab : numpy.ndarray
+            This matrix of cutoff distances for association sites for each site type in each group type
+        rd_klab : numpy.ndarray, Optional, default=None
+            Position of association site in each group (nbead, nbead, nsite, nsite)
+        reduction_ratio : float, Optional, default=0.25
+            Reduced distance of the sites from the center of the sphere of interaction. This value is used when site position, rd_klab is None
     
         Returns
         -------
-        gr : numpy.ndarray
-            This matrix is (len(rho) x Ncomp x Ncomp)
+        Kijklab : numpy.ndarray
+            Bonding volume for each molecule and site combination.
         """
 
         self._check_temperature_dependent_parameters(T)
@@ -1412,12 +1418,12 @@ class SaftType:
         Parameters
         ----------
         rho : numpy.ndarray
-            Number density of system [mol/m^3]
+            Number density of system [:math:`mol/m^3`]
 
         Returns
         -------
         rho : numpy.ndarray
-            Number density of system [mol/m^3]
+            Number density of system [:math:`mol/m^3`]
 
         """
 

@@ -2,9 +2,7 @@
 API Documentation
 =================
 
-DESPASITO has been primarily designed as a command line tool but can be used as an imported package.
-
-See examples directory or Input/Output documentation for input file structures.
+DESPASITO has been primarily designed as a command line tool but can be used as an imported package. See :ref:`basic-use` or ``despasito.examples`` directory for more details.
 
 Command Line
 ------------
@@ -17,13 +15,14 @@ Imported Package
 Once installed, DESPASITO can be easily imported with ``import despasito``.
 Each module will then need to replicate our main command line function and call each module in succession.
 
-#. Provide ``input.json`` file name to ``read_input.extract_calc_data`` to obtain the appropriate dictionaries for the equation of state (Eos) object, and the thermodynamic calculation.
-#. Use Eos dictionary of bead types and parameters to generate Eos object used in thermodynamic calculations
-#. Choose calculation type and use Eos object and thermodynamic dictionary to start calculation.
+#. Generate Eos object used in thermodynamic calculations with :func:`initiate_eos <despasito.equations_of_state.initiate_eos>`.
+#. Start thermodynamic calculation with :func:`thermo <despasito.thermodynamics.thermo>` where the calculation type and Eos object will specify the thermodynamic calculation..
 
-Some steps could be skipped if your script already contains the appropriate output of a given step.
+Alternatively, the Eos object can be used for independent study.
 
 The intermediate logging provided in the Input File Schema can also be accessed for imported functions through the :func:`initiate_logger <despasito.initiate_logger>`.
+
+.. _input-schema:
 
 Input File Schema
 -----------------
@@ -34,17 +33,13 @@ ________________
  * **EOSgroup**: (str) - The filename of .json file containing a dictionary of single group parameters used in the desired equation of state (EOS).
  * **EOScross**: (str) - The filename of .json file containing a dictionary of group-group cross interaction parameters used in the desired equation of state (EOS).
  * **calculation_type**: (str) - Any :func:`calculation_type <despasito.thermodynamics.calculation_types>` that is supported by the thermodynamic module
- * **output_file**: (str) Optional - default: despasito_out.txt.
+ * **output_file**: (str) Optional - default: despasito_out.txt. Output file name for results of a thermodynamic calculation.
  * **eos**: (str) Optional - default: ``saft.gamma_mie``. Supported :func:`EOS class <despasito.equations_of_state.initiate_eos>` to be used in thermodynamic computations.
  * **eos_\***: Optional - Any keyword that needs to be passed to an equation of state object should be preceded by "eos\_" to be includes in the eos dictionary. (e.g. num_rings for saft.gamma_mie should be included as eos_num_rings)
  * **\***: Required or optional keywords from the chosen :func:`calculation_type <despasito.thermodynamics.calculation_types>`. See appropriate doc string for more details.
 
-
 Parameter Fitting Keywords
 __________________________
-During parameter fitting, **calculation_type** and **bead_configuration** are optional and can be defined in the experimental data dictionaries instead. If these keywords aren't provided in the experimental data dictionary, these higher level keywords are required for the experimental data dictionaries to inherit.
-
-
  * **optimization_parameters**: The presence of this keyword signifies that a parameter fitting calculation is requested.
 
       * **fit_bead**: (str) - Name of bead whose parameters are being fit, must be in bead list of bead_configuration
@@ -66,9 +61,11 @@ During parameter fitting, **calculation_type** and **bead_configuration** are op
       * **method**: (str), default: 'differential_evolution', Global optimization method used to fit parameters. See :func:`~despasito.parameter_fitting.fit_functions.global_minimization`.
       * **\***: any keyword used by the defined global optimization method.
 
- * minimizer_opts: (dict), Optional - Dictionary used to define minimization type used by the global optimization method
+ * **minimizer_opts**: (dict), Optional - Dictionary used to define minimization type used by the global optimization method
 
       * **method**: (str) - Method available to scipy.optimize.minimize
       * **options**: (dict) - This dictionary contains the kwargs available to the chosen method
+
+See :func:`fit <despasito.parameter_fitting.fit>` for more information.
 
 

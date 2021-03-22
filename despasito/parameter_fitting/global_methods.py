@@ -1,6 +1,6 @@
 """
 
-The function names of this module represents global optimization methods that can be specified.
+The function names of this module represents global optimization methods that can be specified as ``global_opts["method"]`` in :func:`~despasito.parameter_fitting.fit`.
 
 """
 
@@ -26,13 +26,13 @@ def single_objective(
     Parameters
     ----------
     parameters_guess : numpy.ndarray 
-        An array of initial guesses for parameters, these will be optimized throughout the process.
+        An array of initial guesses for parameters.
     bounds : list[tuple]
-        List of length equal to fit_parameter_names with lists of pairs for minimum and maximum bounds of parameter being fit. Defaults are broad, recommend specification.
+        List of length equal to fit_parameter_names with lists of pairs for minimum and maximum bounds of parameter being fit. Defaults from Eos object are broad, so we recommend specification.
     fit_bead : str
-        Name of bead whose parameters are being fit, should be in bead list of bead_configuration
+        Name of bead whose parameters are being fit.
     fit_parameter_names : list[str]
-        This list of contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
+        This list contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
     exp_dict : dict
         Dictionary of experimental data objects.
     global_opts : dict, Optional, default={}
@@ -41,7 +41,8 @@ def single_objective(
     Returns
     -------
     Objective : obj
-        scipy OptimizedResult
+        scipy OptimizedResult object
+
     """
 
     if len(global_opts) > 0:
@@ -79,21 +80,21 @@ def differential_evolution(
     Parameters
     ----------
     parameters_guess : numpy.ndarray 
-        An array of initial guesses for parameters, these will be optimized throughout the process.
+        An array of initial guesses for parameters.
     bounds : list[tuple]
-        List of length equal to fit_parameter_names with lists of pairs for minimum and maximum bounds of parameter being fit. Defaults are broad, recommend specification.
+        List of length equal to fit_parameter_names with lists of pairs for minimum and maximum bounds of parameter being fit. Defaults from Eos object are broad, so we recommend specification.
     fit_bead : str
-        Name of bead whose parameters are being fit, should be in bead list of bead_configuration
+        Name of bead whose parameters are being fit.
     fit_parameter_names : list[str]
-        This list of contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
+        This list contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
     exp_dict : dict
         Dictionary of experimental data objects.
     global_opts : dict, Optional
 
-        - init (str) - type of initiation for population, Optional, default="random" 
-        - write_intermediate_file (str) - If True, an intermediate file will be written from the method callback, default=False
-        - filename (str) - filename for callback output, if provided, `write_intermediate_file` will be set to True, Optional, default=None
-        - obj_cut (float) - Cut-off objective value to write the parameters, if provided, `write_intermediate_file` will be set to True, Optional, default=None
+        - init (str) - Optional, default="random", type of initiation for population
+        - write_intermediate_file (str) - Optional, default=False, If True, an intermediate file will be written from the method callback
+        - filename (str) - Optional, default=None, filename for callback output, if provided, ``write_intermediate_file`` will be set to True
+        - obj_cut (float) - Optional, default=None, Cut-off objective value to write the parameters, if provided, ``write_intermediate_file`` will be set to True
         - etc. Other keywords for scipy.optimize.differential_evolution use the function defaults
 
     constraints : dict, Optional, default=None
@@ -102,7 +103,8 @@ def differential_evolution(
     Returns
     -------
     Objective : obj
-        scipy OptimizedResult
+        scipy OptimizedResult object
+
     """
 
     obj_kwargs = ["obj_cut", "filename", "write_intermediate_file"]
@@ -177,25 +179,25 @@ def shgo(
     Parameters
     ----------
     parameters_guess : numpy.ndarray 
-        An array of initial guesses for parameters, these will be optimized throughout the process.
+        An array of initial guesses for parameters.
     bounds : list[tuple]
-        List of length equal to fit_parameter_names with lists of pairs for minimum and maximum bounds of parameter being fit. Defaults are broad, recommend specification.
+        List of length equal to fit_parameter_names with lists of pairs for minimum and maximum bounds of parameter being fit. Defaults from Eos object are broad, so we recommend specification.
     fit_bead : str
-        Name of bead whose parameters are being fit, should be in bead list of bead_configuration
+        Name of bead whose parameters are being fit.
     fit_parameter_names : list[str]
-        This list of contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
+        This list contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
     exp_dict : dict
         Dictionary of experimental data objects.
     global_opts : dict, Optional, default={}
 
-        - init (str) - type of initiation for population, Optional, default="random" 
-        - etc. Other keywords for scipy.optimize.differential_evolution use the function defaults
+        - init (str) - Optional, default="random", type of initiation for population
+        - etc. Other keywords for scipy.optimize.shgo use the function defaults
 
     minimizer_opts : dict, Optional, default={}
         Dictionary used to define minimization type and the associated options.
 
-        - method (str) - Method available to scipy.optimize.minimize, Optional, default=nelder-mead
-        - options (dict) - This dictionary contains the kwargs available to the chosen method, Optional, default={'maxiter': 50}
+        - method (str) - Optional, default=nelder-mead, Method available to scipy.optimize.minimize
+        - options (dict) - Optional, default={'maxiter': 50}, This dictionary contains the kwargs available to the chosen method
 
     constraints : dict, Optional, default=None
         This dictionary of constraint types and their arguments will be converted into a tuple of dictionaries that is compatible
@@ -203,7 +205,8 @@ def shgo(
     Returns
     -------
     Objective : obj
-        scipy OptimizedResult
+        scipy OptimizedResult object
+
     """
 
     # Options for differential evolution, set defaults in new_global_opts
@@ -270,27 +273,26 @@ def grid_minimization(
     Parameters
     ----------
     parameters_guess : numpy.ndarray 
-        An array of initial guesses for parameters, these will be optimized throughout the process.
+        An array of initial guesses for parameters.
     bounds : list[tuple]
-        List of length equal to fit_parameter_names with lists of pairs for minimum and maximum bounds of parameter being fit. Defaults are broad, recommend specification.
+        List of length equal to fit_parameter_names with lists of pairs for minimum and maximum bounds of parameter being fit. Defaults from Eos object are broad, so we recommend specification.
     fit_bead : str
-        Name of bead whose parameters are being fit, should be in bead list of bead_configuration
+        Name of bead whose parameters are being fit.
     fit_parameter_names : list[str]
-        This list of contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
+        This list contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
     exp_dict : dict
         Dictionary of experimental data objects.
     global_opts : dict, Optional, default={}
 
-        - Ns (int) - Number of grid points along the axes, Optional, default=5
-        - finish (callable) - An optimization function, default=scipy.optimize.minimize
-        - initial_guesses (list) - Replaces grid of values generated with bounds and Ns
-        - etc. Other keywords for scipy.optimize.differential_evolution use the function defaults
+        - Ns (int) - Optional, default=5, Number of grid points along the axes
+        - finish (callable) - Optional, default=scipy.optimize.minimize, A minimization function
+        - initial_guesses (list) - Optional, Replaces grid of values generated with bounds and Ns
 
     minimizer_opts : dict, Optional, default={}
         Dictionary used to define minimization type and the associated options.
 
-        - method (str) - Method available to our `solve_root` function, Optional, default="lm"
-        - options (dict) - This dictionary contains the kwargs available to the chosen method
+        - method (str) - Optional, default="lm", Method available to our `solve_root` function
+        - options (dict) - Optional, default={}, This dictionary contains the kwargs available to the chosen method
 
     constraints : dict, Optional, default=None
         This dictionary of constraint types and their arguments will be converted into a tuple of constraint classes that is compatible
@@ -298,7 +300,8 @@ def grid_minimization(
     Returns
     -------
     Objective : obj
-        scipy OptimizedResult
+        scipy OptimizedResult object
+
     """
 
     # Options for brute, set defaults in new_global_opts
@@ -402,25 +405,26 @@ def brute(
     Parameters
     ----------
     parameters_guess : numpy.ndarray 
-        An array of initial guesses for parameters, these will be optimized throughout the process.
+        An array of initial guesses for parameters.
     bounds : list[tuple]
-        List of length equal to fit_parameter_names with lists of pairs for minimum and maximum bounds of parameter being fit. Defaults are broad, recommend specification.
+        List of length equal to fit_parameter_names with lists of pairs for minimum and maximum bounds of parameter being fit. Defaults from Eos object are broad, so we recommend specification.
     fit_bead : str
-        Name of bead whose parameters are being fit, should be in bead list of bead_configuration
+        Name of bead whose parameters are being fit.
     fit_parameter_names : list[str]
-        This list of contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
+        This list contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
     exp_dict : dict
         Dictionary of experimental data objects.
     global_opts : dict, Optional, default={}
 
-        - Ns (int) - Number of grid points along the axes, Optional, default=5
-        - finish (callable) - An optimization function, default=scipy.optimize.minimize
+        - Ns (int) - Optional, default=5, Number of grid points along the axes
+        - finish (callable) - Optional, default=scipy.optimize.minimize, An optimization function
         - etc. Other keywords for scipy.optimize.brute use the function defaults
 
     Returns
     -------
     Objective : obj
-        scipy OptimizedResult
+        scipy OptimizedResult object
+
     """
 
     # Options for brute, set defaults in new_global_opts
@@ -475,25 +479,25 @@ def basinhopping(
     Parameters
     ----------
     parameters_guess : numpy.ndarray 
-        An array of initial guesses for parameters, these will be optimized throughout the process.
+        An array of initial guesses for parameters.
     bounds : list[tuple]
-        List of length equal to fit_parameter_names with lists of pairs for minimum and maximum bounds of parameter being fit. Defaults are broad, recommend specification.
+        List of length equal to fit_parameter_names with lists of pairs for minimum and maximum bounds of parameter being fit. Defaults from Eos object are broad, so we recommend specification.
     fit_bead : str
-        Name of bead whose parameters are being fit, should be in bead list of bead_configuration
+        Name of bead whose parameters are being fit.
     fit_parameter_names : list[str]
-        This list of contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
+        This list contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
     exp_dict : dict
         Dictionary of experimental data objects.
     global_opts : dict, Optional, default={}
 
-        - niter (int) - The number of basin-hopping iterations, Optional, default=10 
-        - T (float) - The "temperature" parameter for the accept or reject criterion. For best results T should be comparable to the separation (in function value) between local minima., Optional, default=0.5
-        - niter_success (int) Stop the run if the global minimum candidate remains the same for this number of iterations., Optional, default=3
-        - stepsize (float) - Maximum step size for use in the random displacement., Optional, default=0.1
+        - niter (int) - Optional, default=10, The number of basin-hopping iterations 
+        - T (float) - Optional, default=0.5, The "temperature" parameter for the accept or reject criterion. For best results T should be comparable to the separation (in function value) between local minima.
+        - niter_success (int) Optional, default=3, Stop the run if the global minimum candidate remains the same for this number of iterations.
+        - stepsize (float) - Optional, default=0.1, Maximum step size for use in the random displacement.
         - take_step (callable) - Set with custom BasinStep class
-        - write_intermediate_file (str) - If True, an intermediate file will be written from the method callback, default=False
-        - filename (str) - filename for callback output, if provided, `write_intermediate_file` will be set to True, Optional, default=None
-        - obj_cut (float) - Cut-off objective value to write the parameters, if provided, `write_intermediate_file` will be set to True, Optional, default=None
+        - write_intermediate_file (str) - Optional, default=False, If True, an intermediate file will be written from the method callback
+        - filename (str) - Optional, default=None, filename for callback output, if provided, `write_intermediate_file` will be set to True
+        - obj_cut (float) - Optional, default=None, Cut-off objective value to write the parameters, if provided, `write_intermediate_file` will be set to True
         - etc. Other keywords for scipy.optimize.basinhopping use the function defaults
 
     minimizer_opts : dict, Optional, default={}
@@ -505,7 +509,8 @@ def basinhopping(
     Returns
     -------
     Objective : obj
-        scipy OptimizedResult
+        scipy OptimizedResult object
+        
     """
     obj_kwargs = ["obj_cut", "filename", "write_intermediate_file"]
     if "obj_cut" in global_opts:

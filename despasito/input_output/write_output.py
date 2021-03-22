@@ -106,8 +106,6 @@ def writeout_fit_dict(output_dict, output_file="fit_output.txt"):
     """
     Write out result of fitting calculation.
 
-    Import fitting results dictionary to write out fitting results. In the future, the EOS dictionary will be used to generate new parameter .json files.
-
     Parameters
     ----------
     output_dict : dict

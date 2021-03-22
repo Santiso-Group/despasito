@@ -38,7 +38,7 @@ class SaftType:
     beads : list[str]
         List of unique bead names used among components
     molecular_composition : numpy.ndarray
-        :math:`\\nu_{i,k}/k_B`. Array of number of components by number of bead types. Defines the number of each type of group in each component.
+        :math:`\nu_{i,k}/k_B`. Array containing the number of components by the number of bead types. Defines the number of each type of group in each component.
     bead_library : dict
         A dictionary where bead names are the keys to access EOS self interaction parameters:
     
@@ -49,7 +49,7 @@ class SaftType:
         - Vks: Optional, default=1, Number of segments in this molecular group
 
     cross_library : dict, Optional, default={}
-        Optional library of bead cross interaction parameters. As many or as few of the desired parameters may be defined for whichever group combinations are desired. If this matrix isn't provided, the SAFT mixing rules are used.
+        Optional library of bead cross interaction parameters. As many or as few of the desired parameters may be defined for whichever group combinations are desired. If this matrix isn't provided, the SAFT ``combining_rules`` are used.
         
         - epsilon: :math:`\epsilon_{k,l}/k_B`, Energy parameter, well depth, scaled by Boltzmann Constant
         - sigma: :math:`\sigma_{k,k}`, Size parameter, contact distance [nm]
@@ -63,13 +63,13 @@ class SaftType:
     beads : list[str]
         List of unique bead names used among components
     bead_library : dict
-        A dictionary where bead names are the keys to access EOS self interaction parameters. See **Parameters** section.
+        A dictionary where bead names are the keys to access EOS self interaction parameters. See entry in **Parameters** section.
     cross_library : dict
-        Library of bead cross interaction parameters. As many or as few of the desired parameters may be defined for whichever group combinations are desired. See **Parameters** section.
+        Library of bead cross interaction parameters. As many or as few of the desired parameters may be defined for whichever group combinations are desired. See entry in **Parameters** section.
     Aideal_method : str
         "Abroglie" the default functional form of the ideal gas contribution of the Helmholtz energy
     residual_helmholtz_contributions : list[str]
-        List of methods from the specified saft_source representing contributions to the Helmholtz energy that are functions of density, temperature, and composition. For this variant, [`Amonomer`, `Achain`]
+        List of methods from the specified saft_source representing contributions to the Helmholtz energy that are functions of density, temperature, and composition. For this variant, [``Amonomer``, ``Achain``]
     parameter_types : list[str]
         This list of parameter names, "epsilon", "lambda", "sigma", and/or "Sk" as well as parameters for the specific SAFT variant. 
     parameter_bound_extreme : dict
@@ -81,7 +81,7 @@ class SaftType:
         - Sk: [0.1,1.0]
 
     combining_rules : dict
-        Contains functional form and additional information for calculating cross interaction parameters that are not found in `cross_library`. Function must be one of those contained in :mod:`~despasito.equations_of_state.combining_rule_types`. The default values are:
+        Contains functional form and additional information for calculating cross interaction parameters that are not found in ``cross_library``. Function must be one of those contained in :mod:`~despasito.equations_of_state.combining_rule_types`. The default values are:
 
         - sigma: {"function": "mean"}
         - lambda: {"function": "weighted_mean","weighting_parameters": ["sigma"]}
@@ -90,10 +90,10 @@ class SaftType:
     eos_dict : dict
         Dictionary of parameters and specific settings 
 
-        - molecular_composition (numpy.ndarray) - :math:`\\nu_{i,k}/k_B`. Array of number of components by number of bead types. Defines the number of each type of group in each component.
+        - molecular_composition (numpy.ndarray) - :math:`\nu_{i,k}/k_B`. Array containing the number of components by the number of bead types. Defines the number of each type of group in each component.
         - num_rings (list) - Number of rings in each molecule. This will impact the chain contribution to the Helmholtz energy.
-        - Sk (numpy.ndarray) - Shape factor, reflects the proportion which a given segment contributes to the total free energy. Length of `beads` array.
-        - Vks (numpy.ndarray) - Number of segments in this molecular group. Length of `beads` array.
+        - Sk (numpy.ndarray) - Shape factor, reflects the proportion which a given segment contributes to the total free energy. Length of ``beads`` array.
+        - Vks (numpy.ndarray) - Number of segments in this molecular group. Length of ``beads`` array.
         - epsilon_kl (numpy.ndarray) - Matrix of well depths for groups (k,l)
         - sigma_kl (numpy.ndarray) - Matrix of bead diameters (k,l)
         - lambda_kl (numpy.ndarray) - Matrix of range of potential well depth (k,l)
@@ -144,7 +144,7 @@ class SaftType:
                 "function": "square_well_berthelot",
                 "weighting_parameters": ["sigma", "lambda"],
             },
-        }  # Note in this EOS object, the mixing rules for the group parameters are also used for their corresponding molecular averaged parameters.
+        }  # Note in this EOS object, the combining rules for the group parameters are also used for their corresponding molecular averaged parameters.
 
         if not hasattr(self, "eos_dict"):
             self.eos_dict = {}
@@ -285,7 +285,7 @@ class SaftType:
         Parameters
         ----------
         rho : numpy.ndarray
-            Number density of system [mol/m^3]
+            Number density of system [:math:`mol/m^3`]
         xi : numpy.ndarray
             Mole fraction of each component, sum(xi) should equal 1.0
         
@@ -319,7 +319,7 @@ class SaftType:
         Parameters
         ----------
         rho : numpy.ndarray
-            Number density of system [mol/m^3]
+            Number density of system [:math:`mol/m^3`]
         xi : numpy.ndarray
             Mole fraction of each component, sum(xi) should equal 1.0
         zetax : numpy.ndarray, Optional, default=None
@@ -372,7 +372,7 @@ class SaftType:
         Parameters
         ----------
         rho : numpy.ndarray
-            Number density of system [mol/m^3]
+            Number density of system [:math:`mol/m^3`]
         xi : numpy.ndarray
             Mole fraction of each component, sum(xi) should equal 1.0
         zetax : numpy.ndarray, Optional, default=None
@@ -425,7 +425,7 @@ class SaftType:
         Parameters
         ----------
         rho : numpy.ndarray
-            Number density of system [mol/m^3]
+            Number density of system [:math:`mol/m^3`]
         T : float
             Temperature of the system [K]
         xi : numpy.ndarray
@@ -459,7 +459,7 @@ class SaftType:
         Parameters
         ----------
         rho : numpy.ndarray
-            Number density of system [mol/m^3]
+            Number density of system [:math:`mol/m^3`]
         T : float
             Temperature of the system [K]
         xi : numpy.ndarray
@@ -496,7 +496,7 @@ class SaftType:
         Parameters
         ----------
         rho : numpy.ndarray
-            Number density of system [mol/m^3]
+            Number density of system [:math:`mol/m^3`]
         T : float
             Temperature of the system [K]
         xi : numpy.ndarray
@@ -552,7 +552,7 @@ class SaftType:
         Parameters
         ----------
         rho : numpy.ndarray
-            Number density of system [mol/m^3]
+            Number density of system [:math:`mol/m^3`]
         T : float
             Temperature of the system [K]
         xi : numpy.ndarray
@@ -591,7 +591,7 @@ class SaftType:
         Parameters
         ----------
         rho : numpy.ndarray
-            Number density of system [mol/m^3]
+            Number density of system [:math:`mol/m^3`]
         xi : numpy.ndarray
             Mole fraction of each component, sum(xi) should equal 1.0
         zetax : numpy.ndarray, Optional, default=None
@@ -626,7 +626,7 @@ class SaftType:
         Parameters
         ----------
         rho : numpy.ndarray
-            Number density of system [mol/m^3]
+            Number density of system [:math:`mol/m^3`]
         xi : numpy.ndarray
             Mole fraction of each component, sum(xi) should equal 1.0
         
@@ -667,7 +667,7 @@ class SaftType:
         Parameters
         ----------
         rho : numpy.ndarray
-            Number density of system [mol/m^3]
+            Number density of system [:math:`mol/m^3`]
         T : float
             Temperature of the system [K]
         xi : numpy.ndarray
@@ -730,7 +730,7 @@ class SaftType:
         Parameters
         ----------
         rho : numpy.ndarray
-            Number density of system [mol/m^3]
+            Number density of system [:math:`mol/m^3`]
         T : float
             Temperature of the system [K]
         xi : numpy.ndarray
@@ -779,7 +779,7 @@ class SaftType:
         Returns
         -------
         max_density : float
-            Maximum molar density [mol/m^3]
+            Maximum molar density [:math:`mol/m^3`]
         """
 
         self._check_composition_dependent_parameters(xi)
@@ -806,7 +806,7 @@ class SaftType:
         Parameters
         ----------
         rho : numpy.ndarray
-            Number density of system [mol/m^3]
+            Number density of system [:math:`mol/m^3`]
         T : float
             Temperature of the system [K]
         xi : numpy.ndarray
@@ -926,12 +926,12 @@ class SaftType:
         Parameters
         ----------
         rho : numpy.ndarray
-            Number density of system [mol/m^3]
+            Number density of system [:math:`mol/m^3`]
 
         Returns
         -------
         rho : numpy.ndarray
-            Number density of system [mol/m^3]
+            Number density of system [:math:`mol/m^3`]
         """
 
         if np.isscalar(rho):

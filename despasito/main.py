@@ -25,7 +25,7 @@ def get_parser():
 
     ## Define parser functions and arguments
     parser = argparse.ArgumentParser(
-        description=r"DESPASITO: Determining Equilibrium State and Parametrization Application for SAFT, Intended for Thermodynamic Output.  This is an open-source application for thermodynamic calculations and parameter fitting for the Statistical Associating Fluid Theory (SAFT) EOS and SAFT-𝛾-Mie coarse-grained simulations."
+        description=r"DESPASITO: Determining Equilibrium State and Parametrization Application for SAFT, Intended for Thermodynamic Output.  This is an open-source application for thermodynamic calculations and parameter fitting for equations of state (EOS) like the Statistical Associating Fluid Theory (SAFT) EOS."
     )
     parser.add_argument(
         "-i",
@@ -45,7 +45,7 @@ def get_parser():
         nargs="?",
         dest="logFile",
         default="despasito.log",
-        help="Output a log file. The default name is despasito.log.",
+        help="Name of output a log file.",
     )
     parser.add_argument(
         "-n",
@@ -59,7 +59,7 @@ def get_parser():
         "-p",
         "--path",
         default=".",
-        help="Set the location of the data/library files (e.g. SAFTcross, etc.) for despasito to look for",
+        help="Set the location of the data/library files (e.g. SAFTcross, etc.) where despasito will look.",
     )
     parser.add_argument(
         "--numba",
