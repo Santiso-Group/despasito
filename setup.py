@@ -8,11 +8,11 @@ from setuptools import find_packages
 import versioneer
 from numpy.distutils.core import Extension, setup
 from numpy.distutils.fcompiler import get_default_fcompiler
-import numpy as np
 import glob
 
 short_description = __doc__.split("\n")
-fpath = os.path.join("despasito", "equations_of_state", "saft", "compiled_modules")
+fpath = os.path.join("despasito", "equations_of_state", "saft",
+                     "compiled_modules")
 extensions = []
 
 if sys.version_info.minor > 8:
@@ -23,21 +23,24 @@ if sys.version_info.minor > 8:
 try:
     from Cython.Build import cythonize
     flag_cython = True
-except:
-    print('Cython not available on your system. Proceeding without C-extentions.')
+except Exception:
+    print(
+        'Cython not available on your system. Proceeding without C-extentions.'
+    )
     flag_cython = False
 
 if flag_cython:
-    cython_list = glob.glob(os.path.join(fpath,"*.pyx"))
+    cython_list = glob.glob(os.path.join(fpath, "*.pyx"))
     for cyext in cython_list:
         name = os.path.split(cyext)[-1].split(".")[-2]
         cy_ext_1 = Extension(name=name, sources=[cyext], include_dirs=[fpath])
         extensions.extend(
-            cythonize(
-                [cy_ext_1],
-                compiler_directives={'language_level': 3, 'cdivision': False, "boundscheck": True}
-            )
-        )
+            cythonize([cy_ext_1],
+                      compiler_directives={
+                          'language_level': 3,
+                          'cdivision': False,
+                          "boundscheck": True
+                      }))
 
 # from https://github.com/pytest-dev/pytest-runner#conditional-requirement
 needs_pytest = {"pytest", "test", "ptr"}.intersection(sys.argv)
@@ -46,7 +49,7 @@ pytest_runner = ["pytest-runner"] if needs_pytest else []
 try:
     with open("README.md", "r") as handle:
         long_description = handle.read()
-except:
+except Exception:
     long_description = "\n".join(short_description[2:])
 
 if get_default_fcompiler() != None:
@@ -96,7 +99,7 @@ setup(
     #            'Mac OS-X',
     #            'Unix',
     #            'Windows'],            # Valid platforms your code works on, adjust to your flavor
-    python_requires=">=3.6, <=3.8.8",          # Python version restrictions
+    python_requires=">=3.6, <=3.8.8",  # Python version restrictions
 
     # Manual control if final package is compressible or not, set False to prevent the .egg from being made
     zip_safe=False,
