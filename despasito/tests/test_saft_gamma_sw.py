@@ -9,7 +9,6 @@ import despasito.equations_of_state
 import copy
 
 import pytest
-import sys
 import numpy as np
 
 bead = ["H2O"]

@@ -6,7 +6,7 @@
 """
 
 import numpy as np
-import logging
+#import logging
 
 from despasito.equations_of_state import constants
 from despasito.equations_of_state.interface import EosTemplate

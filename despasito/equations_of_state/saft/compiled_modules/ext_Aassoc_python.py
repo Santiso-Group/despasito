@@ -2,7 +2,6 @@
 
 import numpy as np
 import logging
-import os
 
 from despasito.equations_of_state import constants
 

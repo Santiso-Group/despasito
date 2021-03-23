@@ -2,7 +2,6 @@
 Contains constants used in the other files.    
 """
 
-import numpy as np
 
 # physical constants
 

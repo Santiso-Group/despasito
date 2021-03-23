@@ -1,7 +1,6 @@
 """ Functions needed for parameter fitting process.
 """
 
-import os
 import numpy as np
 import logging
 from inspect import getmembers, isfunction

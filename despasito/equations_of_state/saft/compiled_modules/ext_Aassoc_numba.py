@@ -108,21 +108,19 @@ def calc_Xika_4(
     tol = 1e-12
     damp = 0.1
 
-    ncomp, nbeads = molecular_composition.shape
-    nsitesmax = nk.shape[1]
     nrho = len(rho)
     l_ind = len(indices)
 
     #    Xika_final = np.ones((nrho,ncomp, nbeads, nsitesmax))
-    Xika_final = np.ones((nrho, len(indices)))
+    Xika_final = np.ones((nrho, l_ind))
     err_array = np.zeros(nrho)
 
     # Parallelize here, wrt rho!
-    Xika_elements = 0.5 * np.ones(len(indices))
+    Xika_elements = 0.5 * np.ones(l_ind)
     for r in range(nrho):
         for knd in range(maxiter):
 
-            Xika_elements_new = np.ones(len(Xika_elements))
+            Xika_elements_new = np.ones(l_ind)
             ind = 0
             for iind in range(l_ind):
                 i, k, a = indices[iind]
@@ -214,21 +212,19 @@ def calc_Xika_6(
     tol = 1e-12
     damp = 0.1
 
-    ncomp, nbeads = molecular_composition.shape
-    nsitesmax = nk.shape[1]
     nrho = len(rho)
     l_ind = len(indices)
 
     #    Xika_final = np.ones((nrho,ncomp, nbeads, nsitesmax))
-    Xika_final = np.ones((nrho, len(indices)))
+    Xika_final = np.ones((nrho, l_ind))
     err_array = np.zeros(nrho)
 
     # Parallelize here, wrt rho!
-    Xika_elements = 0.5 * np.ones(len(indices))
+    Xika_elements = 0.5 * np.ones(l_ind)
     for r in range(nrho):
         for knd in range(maxiter):
 
-            Xika_elements_new = np.ones(len(Xika_elements))
+            Xika_elements_new = np.ones(l_ind)
             ind = 0
             for iind in range(l_ind):
                 i, k, a = indices[iind]

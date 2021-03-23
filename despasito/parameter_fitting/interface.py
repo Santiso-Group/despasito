@@ -19,6 +19,7 @@ class ExpDataTemplate(ABC):
         Dictionary of exp data
 
         * calculation_type (str) - Optional, default=*to be set*
+        * MultiprocessingObject (obj) - Optional, Initiated :class:`~despasito.utils.parallelization.MultiprocessingJob` 
         * eos_obj (obj) - Equation of state object
         * weights (dict) - A dictionary where each key is the header used in the exp. data file. The value associated with a header can be a list as long as the number of data points to multiply by the objective value associated with each point, or a float to multiply the objective value of this data set.
         * density_opts (dict) - Optional, default={}, Dictionary of options used in calculating pressure vs. mole fraction curves.
@@ -128,7 +129,7 @@ class ExpDataTemplate(ABC):
             self.Eos.parameter_refresh()
 
     @abstractmethod
-    def objective(self, Eos):
+    def objective(self):
         """ Float representing objective function of from comparing predictions to experimental data.
         """
         pass

@@ -6,7 +6,6 @@ r"""
 """
 
 import numpy as np
-import sys
 
 from despasito.equations_of_state import constants
 

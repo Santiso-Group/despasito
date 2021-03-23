@@ -8,8 +8,6 @@ r"""
 
 import numpy as np
 import logging
-import os
-import sys
 
 
 import despasito.equations_of_state.eos_toolbox as tb
@@ -683,7 +681,6 @@ class SaftType:
 
         rho = self._check_density(rho)
         self._check_composition_dependent_parameters(xi)
-        kT = T * constants.kb
 
         if zetax is None:
             zetax = self.reduced_density(rho, xi)[:, 3]

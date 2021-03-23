@@ -4,7 +4,6 @@ Unit and regression test for the despasito package.
 
 # Import package, test suite, and other packages as needed
 import copy
-import os
 import pytest
 import sys
 import numpy as np

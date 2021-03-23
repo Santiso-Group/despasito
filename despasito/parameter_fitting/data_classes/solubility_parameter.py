@@ -8,7 +8,6 @@ import logging
 from despasito.thermodynamics import thermo
 from despasito.parameter_fitting import fit_functions as ff
 from despasito.parameter_fitting.interface import ExpDataTemplate
-from despasito.utils.parallelization import MultiprocessingJob
 from despasito import fundamental_constants as constants
 import despasito.utils.general_toolbox as gtb
 
@@ -33,6 +32,7 @@ class Data(ExpDataTemplate):
         Dictionary of exp data of saturation properties.
 
         * calculation_type (str) - Optional, default='solubility_parameter'
+        * MultiprocessingObject (obj) - Optional, Initiated :class:`~despasito.utils.parallelization.MultiprocessingJob` 
         * eos_obj (obj) - Equation of state object
         * T (list) - List of temperature values for calculation
         * P (list) - List of pressure values used in calculations

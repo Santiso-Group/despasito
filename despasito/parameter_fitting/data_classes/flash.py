@@ -31,6 +31,7 @@ class Data(ExpDataTemplate):
         Dictionary of exp data of type flash.
 
         * calculation_type (str) - Optional, default='flash'
+        * MultiprocessingObject (obj) - Optional, Initiated :class:`~despasito.utils.parallelization.MultiprocessingJob`
         * eos_obj (obj) - Equation of state object
         * T (list) - List of temperature values for calculation
         * P (list) - List of pressure values for calculation

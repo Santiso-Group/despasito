@@ -7,7 +7,6 @@ r"""
     An additional class with variant specifics imported from ``saft_type.py`` completes the EOS.
     
 """
-import sys
 import numpy as np
 import logging
 
@@ -221,7 +220,6 @@ class EosType(EosTemplate):
             self.cross_library = {}
         else:
             self.cross_library = kwargs["cross_library"]
-            self.cross_library = self.cross_library
 
         if "massi" not in self.eos_dict:
             self.eos_dict["massi"] = tb.calc_massi(

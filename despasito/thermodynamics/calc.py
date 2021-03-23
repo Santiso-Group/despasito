@@ -3,7 +3,6 @@ This module contains our thermodynamic calculations. Calculation of pressure, fu
     
 """
 
-import sys
 import numpy as np
 from scipy import interpolate
 import scipy.optimize as spo
@@ -1806,19 +1805,17 @@ def calc_Prange_yi(
     flag_min = False
     flag_max = False
     flag_critical = False
-    flag_liquid = False
     flag_vapor = False
     p = Prange[0]
     for z in range(maxiter):
 
         # Vapor properties
-        phiv, rhov, flagv = calc_vapor_fugacity_coefficient(
+        phiv, _, flagv = calc_vapor_fugacity_coefficient(
             p, T, yi, Eos, density_opts=density_opts
         )
         if any(np.isnan(phiv)):
             logger.error("Estimated minimum pressure is too high.")
             flag_max = True
-            flag_liquid = True
             ObjRange[1] = np.inf
             Prange[1] = p
             if flag_hard_min:
@@ -1851,7 +1848,6 @@ def calc_Prange_yi(
                 flag_vapor = True
                 Prange[1] = p
                 ObjRange[1] = obj
-                phiv_max, flagv_max = phiv_min, flagv_min
                 if flag_hard_min:
                     p = (Prange[1] - Prange[0]) / 2 + Prange[0]
                 else:
@@ -2005,7 +2001,7 @@ def calc_Prange_yi(
     ObjArray = [ObjRange[1]]
     for z in range(maxiter):
         # Calculate objective value
-        phiv, rhov, flagv = calc_vapor_fugacity_coefficient(
+        phiv, _, flagv = calc_vapor_fugacity_coefficient(
             p, T, yi, Eos, density_opts=density_opts
         )
         xi_range, phil, flagl = calc_liquid_composition(
@@ -2293,7 +2289,7 @@ def calc_vapor_composition(
         yi_tmp = yi / np.sum(yi)
 
         # Try yi
-        phiv, rhov, flagv = calc_vapor_fugacity_coefficient(
+        phiv, _, flagv = calc_vapor_fugacity_coefficient(
             P, T, yi_tmp, Eos, density_opts=density_opts
         )
 
@@ -2308,11 +2304,11 @@ def calc_vapor_composition(
                 )
                 flag_trivial_sol = False
                 if np.any(np.isnan(yi_tmp)):
-                    phiv, rhov, flagv = [np.nan, np.nan, 3]
+                    phiv, _, flagv = [np.nan, np.nan, 3]
                     yinew = yi_tmp
                     break
                 else:
-                    phiv, rhov, flagv = calc_vapor_fugacity_coefficient(
+                    phiv, _, flagv = calc_vapor_fugacity_coefficient(
                         P, T, yi_tmp, Eos, density_opts=density_opts
                     )
                     yinew = calc_new_mole_fractions(xi, phil, phiv, phase="vapor")
@@ -2339,11 +2335,11 @@ def calc_vapor_composition(
                 yi_tmp /= np.sum(yi_tmp)
 
             if np.any(np.isnan(yi_tmp)):
-                phiv, rhov, flagv = [np.nan, np.nan, 3]
+                phiv, _, flagv = [np.nan, np.nan, 3]
                 yinew = yi_tmp
                 break
             else:
-                phiv, rhov, flagv = calc_vapor_fugacity_coefficient(
+                phiv, _, flagv = calc_vapor_fugacity_coefficient(
                     P, T, yi_tmp, Eos, density_opts=density_opts
                 )
                 yinew = calc_new_mole_fractions(xi, phil, phiv, phase="vapor")
@@ -2442,7 +2438,7 @@ def calc_vapor_composition(
         )
         yi = y1.x[0]
         yi2 = np.array([yi, 1 - yi])
-        phiv, rhov, flagv = calc_vapor_fugacity_coefficient(
+        phiv2, _, flagv2 = calc_vapor_fugacity_coefficient(
             P, T, yi2, Eos, density_opts=density_opts
         )
         obj = objective_find_yi(yi2, P, T, phil, xi, Eos, density_opts=density_opts)
@@ -2568,7 +2564,7 @@ def calc_liquid_composition(
                 xi_tmp = find_new_xi(
                     P, T, phiv, yi, Eos, density_opts=density_opts, **kwargs
                 )
-                flag_check_vapor = False
+                flag_check_liquid = False
             else:
                 logger.debug(
                     "    Composition produces trivial solution, using random guess to reset"
@@ -2701,13 +2697,12 @@ def find_new_yi(
     tmp = np.count_nonzero(~np.isnan(obj_ext))
     logger.debug("    Number of valid mole fractions: {}".format(tmp))
     if tmp == 0:
-        yi_tmp = np.nan
-        obj_tmp = np.nan
+        yi_final = np.nan
+        obj_final = np.nan
     else:
         # Remove any NaN
         obj_tmp = obj_ext[~np.isnan(obj_ext)]
         yi_tmp = yi_ext[~np.isnan(obj_ext)]
-        flag_tmp = flag_ext[~np.isnan(obj_ext)]
 
         # Fit spline
         spline = interpolate.Akima1DInterpolator(yi_tmp, obj_tmp)
@@ -2892,23 +2887,23 @@ def bracket_bounding_yi(
             if np.abs(bounds[1] - bounds[0]) < tol:
                 break
 
-    ind_array = np.where(flag_bounds == 0)[0]
-    if np.size(ind_array) == 1:
-        ind = ind_array[0]
-    else:
-        ind = np.where(obj_bounds == np.min(obj_bounds))[0][0]
+        ind_array = np.where(flag_bounds == 0)[0]
+        if np.size(ind_array) == 1:
+            ind = ind_array[0]
+        else:
+            ind = np.where(obj_bounds == np.min(obj_bounds))[0][0]
 
-    y1, flagv = bounds[ind], flag_bounds[ind]
-    if i == maxiter - 1:
-        logger.debug(
-            "    Bouncing mole fraction, max iterations ended with, y1={}, flagv={}".format(
-                y1, flagv
+        y1, flagv = bounds[ind], flag_bounds[ind]
+        if i == maxiter - 1:
+            logger.debug(
+                "    Bouncing mole fraction, max iterations ended with, y1={}, flagv={}".format(
+                    y1, flagv
+                )
             )
-        )
-    else:
-        logger.debug(
-            "    Bouncing mole fractions converged to y1={}, flagv={}".format(y1, flagv)
-        )
+        else:
+            logger.debug(
+                "    Bouncing mole fractions converged to y1={}, flagv={}".format(y1, flagv)
+            )
 
     return np.array([y1, 1 - y1]), flagv
 
@@ -3037,7 +3032,6 @@ def find_new_xi(
         # Remove any NaN
         obj_tmp = obj_ext[~np.isnan(obj_ext)]
         xi_tmp = xi_ext[~np.isnan(obj_ext)]
-        flag_tmp = flag_ext[~np.isnan(obj_ext)]
 
         spline = interpolate.Akima1DInterpolator(xi_tmp, obj_tmp)
         xi_min = spline.derivative().roots()
@@ -3751,7 +3745,7 @@ def calc_flash(
         )
 
     Psat, Ki0, xi, yi, phil, phiv = [
-        np.zeros(Eos.number_of_components) for i in np.arange(6)
+        np.zeros(Eos.number_of_components) for _ in np.arange(6)
     ]
 
     # Calculate Psat and Ki
@@ -3958,7 +3952,7 @@ def constrain_Ki(Ki0, min_mole_fraction0=0, max_mole_fraction0=1, **kwargs):
     elif Ki[0] < Ki[1] and (Ki[0] > 1 or Ki[0] < 0):
         Ki[0] = eps
 
-    if min_mole_fraction0 > 0:
+    if min_mole_fraction0 >= 0 and min_mole_fraction0 <= 1:
         bound_min_x0 = (1 - min_mole_fraction0 * Ki[0]) / (1 - min_mole_fraction0)
         bound_min_y0 = (1 - min_mole_fraction0) * Ki[0] / (Ki[0] - min_mole_fraction0)
 
@@ -3981,7 +3975,7 @@ def constrain_Ki(Ki0, min_mole_fraction0=0, max_mole_fraction0=1, **kwargs):
             "Mole fractions can only be constrained to a value between 0 and 1"
         )
 
-    if max_mole_fraction0 < 1:
+    if max_mole_fraction0 <= 1 and max_mole_fraction0 >= 0:
         bound_max_x0 = (1 - max_mole_fraction0 * Ki[0]) / (1 - max_mole_fraction0)
         bound_max_y0 = (1 - max_mole_fraction0) * Ki[0] / (Ki[0] - max_mole_fraction0)
 

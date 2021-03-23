@@ -4,7 +4,6 @@ Unit and regression test for the despasito package.
 
 # Import package, test suite, and other packages as needed
 import despasito
-import pytest
 import logging
 import random
 import os
@@ -24,7 +23,7 @@ def test_despasito_log_file():
         despasito.initiate_logger(log_file=False)
         try:
             os.remove(fname)
-        except:
+        except Exception:
             print("Error removing log file")
     else:
         flag = False

@@ -32,6 +32,7 @@ class Data(ExpDataTemplate):
         Dictionary of exp data of type liquid density.
 
         * calculation_type (str) - Optional, default='liquid_properties'
+        * MultiprocessingObject (obj) - Optional, Initiated :class:`~despasito.utils.parallelization.MultiprocessingJob`
         * eos_obj (obj) - Equation of state object
         * T (list) - List of temperature values for calculation
         * xi (list) - List of liquid mole fractions used in liquid_properties calculations

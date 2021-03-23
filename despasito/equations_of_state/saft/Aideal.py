@@ -8,7 +8,6 @@ EOS object for SAFT ideal gas contributions to the Helmholtz energy with :func:`
 
 import numpy as np
 import logging
-import sys
 
 from despasito.equations_of_state import constants
 import despasito.equations_of_state.eos_toolbox as tb

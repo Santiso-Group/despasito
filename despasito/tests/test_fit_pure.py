@@ -5,10 +5,8 @@ Unit and regression test for the despasito package.
 # Import package, test suite, and other packages as needed
 import despasito.input_output.read_input as ri
 import despasito.parameter_fitting as fit
-import despasito.parameter_fitting.fit_functions as funcs
 import despasito.equations_of_state
 import pytest
-import copy
 import sys
 import numpy as np
 

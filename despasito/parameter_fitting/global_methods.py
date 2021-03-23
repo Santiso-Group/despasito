@@ -8,7 +8,6 @@ import os
 import numpy as np
 import logging
 import scipy.optimize as spo
-from inspect import getmembers
 
 from despasito.utils.parallelization import MultiprocessingJob
 from . import fit_functions as ff
@@ -512,7 +511,7 @@ def basinhopping(
         scipy OptimizedResult object
         
     """
-    obj_kwargs = ["obj_cut", "filename", "write_intermediate_file"]
+
     if "obj_cut" in global_opts:
         obj_cut = global_opts["obj_cut"]
         del global_opts["obj_cut"]

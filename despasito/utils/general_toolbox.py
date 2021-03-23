@@ -1,7 +1,6 @@
 """ General functions that can be used by multiple modules
 """
 
-import sys
 import numpy as np
 import scipy.optimize as spo
 import logging

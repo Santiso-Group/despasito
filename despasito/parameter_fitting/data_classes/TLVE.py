@@ -33,6 +33,7 @@ class Data(ExpDataTemplate):
         Dictionary of exp data of TLVE temperature dependent liquid vapor equilibria
 
         * calculation_type (str) - Optional, default='bubble_pressure', However, 'dew_pressure' is also acceptable
+        * MultiprocessingObject (obj) - Optional, Initiated :class:`~despasito.utils.parallelization.MultiprocessingJob`
         * eos_obj (obj) - Equation of state object
         * T (list) - List of temperature values for calculation
         * xi(yi) (list) - List of liquid (or vapor) mole fractions used in bubble_pressure (or dew_pressure) calculation.

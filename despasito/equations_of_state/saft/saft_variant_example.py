@@ -8,8 +8,6 @@ r"""
 
 import numpy as np
 import logging
-import os
-import sys
 
 import despasito.equations_of_state.eos_toolbox as tb
 from despasito.equations_of_state import constants

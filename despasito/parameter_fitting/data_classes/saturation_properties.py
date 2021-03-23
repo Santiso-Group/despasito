@@ -32,6 +32,7 @@ class Data(ExpDataTemplate):
         Dictionary of exp data of saturation properties.
 
         * calculation_type (str) - Optional, default='saturation_properties'
+        * MultiprocessingObject (obj) - Optional, Initiated :class:`~despasito.utils.parallelization.MultiprocessingJob`
         * eos_obj (obj) - Equation of state object
         * T (list) - List of temperature values for calculation
         * xi (list) - (or yi) List of liquid mole fractions used in saturation properties calculations, should be one for the molecule of focus and zero for the remainder.

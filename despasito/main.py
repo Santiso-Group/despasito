@@ -149,7 +149,7 @@ def run(filename="input.json", path=".", **kwargs):
             write_output.writeout_thermo_dict(
                 output_dict, thermo_dict["calculation_type"], **file_dict
             )
-        except:
+        except Exception:
             logger.info("Final Output: {}".format(output_dict))
 
     if thermo_dict["MultiprocessingObject"].flag_use_mp:
