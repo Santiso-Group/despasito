@@ -1,4 +1,4 @@
-# Temporarily change directory to $HOME to install software
+wget -q https://repo.continuum.io/miniconda/$MINICONDA# Temporarily change directory to $HOME to install software
 pushd .
 cd $HOME
 # Make sure some level of pip is installed
@@ -16,12 +16,15 @@ else
     MINICONDA=Miniconda3-latest-Linux-x86_64.sh
 fi
 MINICONDA_HOME=$HOME/miniconda
-MINICONDA_MD5=$(curl -s https://repo.continuum.io/miniconda/ | grep -A3 $MINICONDA | sed -n '4p' | sed -n 's/ *<td>\(.*\)<\/td> */\1/p')
-wget -q https://repo.continuum.io/miniconda/$MINICONDA
+wget -q https://repo.anaconda.com/miniconda/$MINICONDA
+
+# Check that miniconda is available to download
+MINICONDA_MD5=$(wget -qO- https://repo.anaconda.com/miniconda/ | grep -A3 $MINICONDA | sed -n '4p' | sed -n 's/ *<td>\(.*\)<\/td> */\1/p')
 if [[ $MINICONDA_MD5 != $(md5sum $MINICONDA | cut -d ' ' -f 1) ]]; then
     echo "Miniconda MD5 mismatch"
     exit 1
 fi
+
 bash $MINICONDA -b -p $MINICONDA_HOME
 
 # Configure miniconda

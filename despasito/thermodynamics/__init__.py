@@ -5,59 +5,56 @@ This package will take in an equation of state object, and any user defined vari
 
 """
 
-# Add imports here
 from inspect import getmembers, isfunction
-#import logging
 
-from . import calc_types
+# import logging
 
-def thermo(eos, thermo_dict):
+from . import calculation_types
+
+# logger = logging.getLogger(__name__)
+
+
+def thermo(Eos, calculation_type=None, **kwargs):
     """
-    Use factory design pattern to search for matching calctype with those supported in this module.
+    Use factory design pattern to search for matching calculation_type with those supported in this module.
     
-    To add a new calculation type, add a function to thermo.py in the thermodynamics module..
+    To add a new calculation type, add a new wrapper function to ``calculation_types.py``.
 
     Parameters
     ----------
-        eos : obj
-            Equation of state output that writes pressure, max density, and chemical potential
-        thermo_dict : dict
-            Other keywords passed to the function, depends on calculation type
-                
+    Eos : obj
+        Equation of state object with the following methods: ``pressure``, ``density_max``, and ``fugacity_coefficient``.
+    calculation_type : str
+        Calculation type supported in :mod:`~despasito.thermodynamics.calculation_types`
+    kwargs
+        Other keywords passed to the function, depends on calculation type
 
     Returns
     -------
-        output_dict : dict
-            Output of dictionary containing given and calculated values
+    output_dict : dict
+        Output of dictionary containing given and calculated values
     """
 
-    #logger = logging.getLogger(__name__)
-
-    try:
-        calctype = thermo_dict['calculation_type']
-    except:
-        raise Exception('No calculation type specified')
+    if calculation_type == None:
+        raise ValueError("No calculation type specified")
 
     # Extract available calculation types
-    calc_list = [o[0] for o in getmembers(calc_types) if isfunction(o[1])]
+    calc_list = [o[0] for o in getmembers(calculation_types) if isfunction(o[1])]
 
     # Unpack inputs and check
-    sys_dict, kwargs = {}, {}
-    for key, value in thermo_dict.items():
-        if key not in ['output_file','calculation_type']:
-            sys_dict[key] = value
-        elif key != 'calculation_type':
-            kwargs[key] = value
+    try:
+        func = getattr(calculation_types, calculation_type)
+
+    except Exception:
+        raise ImportError(
+            "The calculation type, '{}', was not found\nThe following calculation types are supported: {}".format(
+                calculation_type, ", ".join(calc_list)
+            )
+        )
 
     try:
-        func = getattr(calc_types, calctype)
-    except:
-        raise ImportError("The calculation type, '"+calctype+"', was not found\nThe following calculation types are supported: "+", ".join(calc_list))
-
-    try:
-        output_dict = func(eos, sys_dict, **kwargs)
-    except:
-        raise TypeError("The calculation type, '"+calctype+"', failed")
+        output_dict = func(Eos, **kwargs)
+    except Exception:
+        raise TypeError("The calculation type, '{}', failed".format(calculation_type))
 
     return output_dict
-

@@ -1,0 +1,10 @@
+{
+    "bead_configuration": [[["CH3", 1],["CH2",1],["OH", 1]], [["CH3", 1],["CH2",3],["OH", 1]]], 
+    "eos": "saft.gamma_sw",
+    "EOSgroup": "../../library/SWgroup.json",
+    "EOScross": "../../library/SWcross.json",
+    "calculation_type" : "bubble_pressure",
+    "pressure_options": {"maxiter":15},
+    "Tlist" : [352.3],
+    "xilist": [[0.938, 0.062]]
+}

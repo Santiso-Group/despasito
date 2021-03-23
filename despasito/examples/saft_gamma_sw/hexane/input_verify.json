@@ -1,0 +1,8 @@
+{
+    "bead_configuration": [[["CH3", 2],["CH2", 4]],[["CH3", 2]]], 
+    "eos": "saft.gamma_sw",
+    "EOSgroup": "../../library/SWgroup.json",
+    "EOScross": "../../library/SWcross.json",
+    "output_file": "out_sw.txt",
+    "calculation_type" : "verify_eos"
+}

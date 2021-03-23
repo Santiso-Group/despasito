@@ -1,0 +1,10 @@
+{
+    "bead_configuration": [[["CH3", 2],["CH2",4]], [["CH3", 2],["CH2",5]]],
+    "EOSgroup": "../../library/SAFTgroup.json",
+    "EOScross": "../../library/SAFTcross.json",
+    "output_file": "out_yi.txt",
+    "calculation_type" : "vapor_properties",
+    "Tlist" : [320.0],
+    "Plist" : [1e+5],
+    "yilist": [[0.4,0.6]]
+}

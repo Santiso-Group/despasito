@@ -1,5 +1,7 @@
-{{ fullname | escape | underline}}
+{{ name | escape | underline}}
 
 .. currentmodule:: {{ module }}
+
+{{ fullname }}
 
 .. auto{{ objtype }}:: {{ objname }}

@@ -1,0 +1,8 @@
+{
+    "EOSgroup": "SAFTgroup.json",
+    "Tlist": [313],
+    "bead_configuration": [[["a(CH)2",3]]],
+    "calculation_type": "liquid_properties",
+    "eos_num_rings": [1]
+}
+

@@ -2,21 +2,22 @@ DESPASITO
 ==============================
 [//]: # (Badges)
 [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
-[![Travis Build Status](https://travis-ci.org/jaclark5/DESPASITO.png)](https://travis-ci.org/jaclark5/DESPASITO)
-[![AppVeyor Build status](https://ci.appveyor.com/api/projects/status/yt3903wlq4gcvdkf/branch/master?svg=true)](https://ci.appveyor.com/project/jaclark5/DESPASITO/branch/master)
+[![GitHub Actions Build Status](https://github.com/jaclark5/despasito/workflows/CI/badge.svg)](https://github.com/jaclark5/despasito/actions?query=workflow%3ACI)
 [![codecov](https://codecov.io/gh/jaclark5/DESPASITO/branch/master/graph/badge.svg)](https://codecov.io/gh/jaclark5/DESPASITO/branch/master)
 [![Documentation Status](https://readthedocs.org/projects/despasito/badge/?version=latest)](https://despasito.readthedocs.io)
 [![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/jaclark5/despasito.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/jaclark5/despasito/context:python)
 
-DESPASITO: Determining Equilibrium State and Parametrization: Application for SAFT, Intended for Thermodynamic Output
+DESPASITO: Determining Equilibrium State and Parametrization Application for SAFT, Intended for Thermodynamic Output
 
 **WARNING!** This package is not ready for distribution.
 
 First open-source application for thermodynamic calculations and parameter fitting for the Statistical Associating Fluid Theory (SAFT) EOS and SAFT-𝛾-Mie coarse-grained simulations. This software has two primary facets. 
 
-The first facet is a means to evaluate the SAFT-𝛾-Mie EOS for binary VLE. This framework allows easy implementation of more advanced thermodynamic calculations as well as additional forms of SAFT or other equations of state. Feel free to contribute!
+The first facet is a means to evaluate implicit equations of state (EOS), such as the focus of this package, SAFT-𝛾-Mie. This framework allows easy implementation of more advanced thermodynamic calculations as well as additional forms of SAFT or other equations of state. Feel free to contribute!
 
-The second facet is parameterization, not only of the equation of state (EOS) but also for simulations. The SAFT-𝛾-Mie formalism is an attractive source of simulation parameters as it offers a means to directly link the intermolecular potential with thermodynamic properties. This application has the ability to fit EOS parameters to experimental thermodynamic data in a top down approach for self and cross interaction parameters. We also process an expanded multipole mixing rule for cross interaction parameters. It should be noted that it is recommended to fine tune simulation parameters in an iterative fashion, but previous works have found close agreement with those fit to the EOS.
+The second facet is parameterization of the equation of state (EOS), some of which are useful for coarse-grained (CG) simulations. The SAFT-𝛾-Mie formalism is an attractive source of simulation parameters as it offers a means to directly link the intermolecular potential with thermodynamic properties. This application has the ability to fit EOS parameters to experimental thermodynamic data in a top down approach for self and cross interaction parameters. 
+
+In another work nearing publication, we present a method of predicting cross-interaction parameters for SAFT-𝛾-Mie from multipole moments derived from DFT calculations. This method is easily implemented in using the package, [MAPSCI](https://github.com/jaclark5/mapsci) as a plug-in. It should be noted that it is recommended to additionally fine tune simulation parameters in an iterative fashion, but previous works have found close agreement with those fit to the EOS.
 
 Installation
 ------------

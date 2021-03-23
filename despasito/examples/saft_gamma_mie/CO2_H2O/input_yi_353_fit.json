@@ -1,0 +1,19 @@
+{
+    "bead_configuration": [[["CO2m", 1]], [["H2O353", 1]]],
+    "EOSgroup": "../../library/SAFTgroup.json",
+    "EOScross": "../../library/SAFTcross.json",
+    "optimization_parameters": {
+        "fit_bead" : "CO2m",
+        "fit_parameter_names": ["epsilon_H2O353"],
+        "parameters_guess" : [432.69]
+    },
+    "Wiley": {
+        "data_class_type": "TLVE",
+        "calculation_type": "dew_pressure",
+        "T": [353],
+        "P": [4.05e+6],
+        "xi": [[0.008, 0.992]],
+        "yi": [[0.9857, 0.0143]]
+    },
+    "global_opts": {"method": "single_objective"}
+}

@@ -1,0 +1,11 @@
+{
+    "bead_configuration": [[["CH3", 2],["CH2",2]]], 
+    "EOSgroup": "../../library/SAFTgroup.json",
+    "EOScross": "../../library/SAFTcross.json",
+    "output_file": "out_solubility.txt",
+    "calculation_type" : "solubility_parameter",
+    "pressure_options": {"maxiter":15},
+    "Tlist" : [298.15],
+    "Plist" : [101325.0],
+    "xilist": [[1.0]]
+}

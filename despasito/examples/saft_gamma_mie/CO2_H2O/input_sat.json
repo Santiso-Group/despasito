@@ -1,0 +1,9 @@
+{
+    "bead_configuration": [[["CO2", 1]], [["H2O", 1]]],
+    "EOSgroup": "../../library/SAFTgroup.json",
+    "EOScross": "../../library/SAFTcross.json",
+    "output_file": "out_xi.txt",
+    "calculation_type" : "saturation_properties",
+    "Tlist" : [323.2],
+    "xilist": [[0.00, 1.00]]
+}

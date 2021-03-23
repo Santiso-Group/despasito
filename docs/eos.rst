@@ -4,10 +4,10 @@ Equations of State
 
 Here we list list the available equations of state and the function used to access them. 
 
-.. autofunction:: despasito.equations_of_state.eos
+.. autofunction:: despasito.equations_of_state.initiate_eos
 
 
-.. _eos-types:
+.. _EOS-types:
 
 Available EOS
 -------------
@@ -15,19 +15,17 @@ Available EOS
 .. toctree::
    :maxdepth: 1
 
-   saft_gamma_mie
+   saft
    peng-robinson
 
+Supporting Modules
+---------------------
 
-Adding an EOS
--------------
+.. autosummary::
+   :toctree: _autosummary
 
-Adding an EOS family is easily implemented by adding a new directory to the ``equations_of_state`` directory. A new EOS is then added by adding a module with the desired EOS inside that is derived from our EOS interface (shown below).
+   despasito.equations_of_state.eos_toolbox
+   despasito.equations_of_state.combining_rule_types
 
-.. note:: In the future, a USER folder will be included in our program so that users can collect all of their personal additions and modifications to DESPASITO in one location.
-
-.. automodule::
-   despasito.equations_of_state.interface
-   :members:
 
 

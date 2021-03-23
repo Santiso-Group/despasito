@@ -1,5 +1,4 @@
 # -- coding: utf8 --
-
 r"""
     
     EOS object for SAFT-:math:`\gamma`-Mie
@@ -11,375 +10,1047 @@ r"""
 import numpy as np
 import logging
 
-from . import constants
-from . import gamma_mie_funcs as funcs
-# Later this line will be in an abstract class file in this directory, and all versions of SAFT will reference it
-from despasito.equations_of_state.interface import EOStemplate
+import despasito.equations_of_state.eos_toolbox as tb
+from despasito.equations_of_state import constants
+import despasito.equations_of_state.saft.saft_toolbox as stb
+from despasito.equations_of_state.saft import Aassoc
+from .compiled_modules.ext_gamma_mie_python import prefactor, calc_Iij
 
-# ________________ Saft Family ______________
-# NoteHere: Insert SAFT family abstract class in this directory to clean up
+logger = logging.getLogger(__name__)
 
+try:
+    import cython
+    flag_cython = True
+except ImportError:
+    flag_cython = False
+    logger.warning("Cython package is unavailable, using Numba")
 
-class saft_gamma_mie(EOStemplate):
+def _import_supporting_functions(method_stat=None):
+    """ Import appropriate functions for compilation mode
+    """
+
+    if method_stat == None or method_stat.fortran or method_stat.python:
+        import despasito.equations_of_state.saft.compiled_modules.ext_gamma_mie_python as cm
+
+    elif method_stat.cython and flag_cython:
+        try:
+            import despasito.equations_of_state.saft.compiled_modules.ext_gamma_mie_cython as cm
+        except Exception:
+            raise ImportError("Cython package is available but module: despasito.equations_of_state.saft.compiled_modules.ext_gamma_mie_cython, has not been compiled.")
+
+    elif method_stat.numba or not flag_cython:
+        import despasito.equations_of_state.saft.compiled_modules.ext_gamma_mie_numba as cm
+
+    else:
+        raise ValueError("Unknown instructions for importing supportive functions of SAFT")
+
+    return cm
+
+class SaftType:
 
     r"""
-    Initialize EOS object for SAFT-:math:`\gamma`-Mie.
-    
-    All input and calculated parameters are defined as hidden attributes.
+    Object of SAFT-𝛾-Mie
     
     Parameters
     ----------
     beads : list[str]
         List of unique bead names used among components
-    nui : numpy.ndarray
-        :math:`\\nu_{i,k}/k_B`. Array of number of components by number of bead types. Defines the number of each type of group in each component.
-    beadlibrary : dict
+    molecular_composition : numpy.ndarray
+        :math:`\nu_{i,k}/k_B`. Array containing the number of components by the number of bead types. Defines the number of each type of group in each component.
+    bead_library : dict
         A dictionary where bead names are the keys to access EOS self interaction parameters:
-
+    
         - epsilon: :math:`\epsilon_{k,k}/k_B`, Energy well depth scaled by Boltzmann constant
-        - sigma: :math:`\sigma_{k,k}`, Size parameter [m]
+        - sigma: :math:`\sigma_{k,k}`, Size parameter [nm]
         - mass: Bead mass [kg/mol]
-        - l_r: :math:`\lambda^{r}_{k,k}`, Exponent of repulsive term between groups of type k
-        - l_a: :math:`\lambda^{a}_{k,k}`, Exponent of attractive term between groups of type k\
-        - Vks: :math:`V_{k,s}`, Number of groups, k, in component
-        - Sk: Optional, :math:`S_{k}`, Shape parameter of group k
-        - epsilon*: Optional, Interaction energy between each bead and association site. Asterisk represents string from sitenames.
-        - K**: Optional, Bonding volume between each association site. Asterisk represents two strings from sitenames.
-        - Nk*: Optional, The number of sites of from list sitenames. Asterisk represents string from sitenames.
+        - lambdar: :math:`\lambda^{r}_{k,k}`, Exponent of repulsive term between groups of type k
+        - lambdaa: :math:`\lambda^{a}_{k,k}`, Exponent of attractive term between groups of type k
+        - Sk: Optional, default=1, Shape factor, reflects the proportion with which a given segment contributes to the total free energy
+        - Vks: Optional, default=1, Number of segments in this molecular group
 
-    crosslibrary : dict, Optional, default: {}
+    cross_library : dict, Optional, default={}
         Optional library of bead cross interaction parameters. As many or as few of the desired parameters may be defined for whichever group combinations are desired.
 
-        - epsilon: :math:`\epsilon_{k,l}/k_B`, Energy parameter scaled by Boltzmann Constant
-        - l_r: :math:`\lambda^{r}_{k,l}`, Exponent of repulsive term between groups of type k and l
-        - epsilon*: Optional, Interaction energy between each bead and association site. Asterisk represents string from sitenames.
-        - K**: Optional, Bonding volume between each association site. Asterisk represents two strings from sitenames.
+        - epsilon: :math:`\epsilon_{k,k}/k_B`, Energy well depth scaled by Boltzmann constant
+        - sigma: :math:`\sigma_{k,k}`, Size parameter [nm]
+        - mass: Bead mass [kg/mol]
+        - lambdar: :math:`\lambda^{r}_{k,k}`, Exponent of repulsive term between groups of type k
+        - lambdaa: :math:`\lambda^{a}_{k,k}`, Exponent of attractive term between groups of type k
 
-    sitenames : list[str], Optional, default: ["H", "e1", "e2"]
-        List of unique association sites used among components
+    num_rings : list
+        Number of rings in each molecule. This will impact the chain contribution to the Helmholtz energy.
         
     Attributes
     ----------
-    T : float, default: numpy.nan
+    beads : list[str]
+        List of unique bead names used among components
+    bead_library : dict
+        A dictionary where bead names are the keys to access EOS self interaction parameters. See entry in **Parameters** section.
+    cross_library : dict, Optional, default={}
+        Optional library of bead cross interaction parameters. As many or as few of the desired parameters may be defined for whichever group combinations are desired. Any interaction parameters that aren't provided are computed with the appropriate ``combining_rules``. See entry in **Parameters** section.
+    Aideal_method : str
+        "Abroglie" the default functional form of the ideal gas contribution of the Helmholtz energy
+    residual_helmholtz_contributions : list[str]
+        List of methods from the specified ``saft_source`` representing contributions to the Helmholtz energy that are functions of density, temperature, and composition. For this variant, [``Amonomer``, ``Achain``]
+    parameter_types : list[str]
+        This list of parameter names, "epsilon", "lambdar", "lambdaa", "sigma", and/or "Sk" as well as parameters for the main saft class. 
+    parameter_bound_extreme : dict
+        With each parameter name as an entry representing a list with the minimum and maximum feasible parameter value.
+
+        - epsilon: [100.,1000.]
+        - lambdar: [6.0,100.]
+        - lambdaa: [3.0,100.]
+        - sigma: [0.1,10.0]
+        - Sk: [0.1,1.0]
+  
+    combining_rules : dict
+        Contains functional form and additional information for calculating cross interaction parameters that are not found in `cross_library`. Function must be one of those contained in :mod:`~despasito.equations_of_state.combining_rule_types`. The default values are:
+
+        - sigma: {"function": "mean"}
+        - lambdar: {"function": "mie_exponent"}
+        - lambdar: {"function": "mie_exponent"}
+        - epsilon: {"function": "volumetric_geometric_mean", "weighting_parameters": ["sigma"]}
+
+    eos_dict : dict
+        Dictionary of parameters and specific settings 
+
+        - molecular_composition (numpy.ndarray) - :math:`\nu_{i,k}/k_B`. Array containing the number of components by the number of bead types. Defines the number of each type of group in each component.
+        - num_rings (list) - Number of rings in each molecule. This will impact the chain contribution to the Helmholtz energy.
+        - Sk (numpy.ndarray) - Shape factor, reflects the proportion which a given segment contributes to the total free energy. Length of ``beads`` array.
+        - Vks (numpy.ndarray) - Number of segments in this molecular group. Length of ``beads`` array.
+        - Ckl (numpy.ndarray) - Matrix of Mie potential prefactors between beads  (l,k)
+        - epsilonkl (numpy.ndarray) - Matrix of Mie potential well depths for groups (k,l)
+        - sigmakl (numpy.ndarray) - Matrix of bead diameters (k,l)
+        - lambdarkl (numpy.ndarray) - Matrix of repulsive Mie exponent for groups (k,l)
+        - lambdaakl (numpy.ndarray) - Matrix of attractive Mie exponent for groups (k,l)
+        - dkl (numpy.ndarray) - Matrix of hard sphere equivalent for each bead and interaction between them (l,k)
+        - x0kl (numpy.ndarray) - Matrix of sigmakl/dkl, sigmakl is the Mie radius for groups (k,l)
+        - Cmol2seg (float) - Conversion factor from from molecular number density, :math:`\rho`, to segment (i.e. group) number density, :math:`\rho_S`.
+        - xskl (numpy.ndarray) - Matrix of mole fractions of bead (i.e. segment or group) k multiplied by that of bead l
+        - alphakl (np.array) - (Ngroup,Ngroup) "A dimensionless form of the integrated vdW energy of the Mie potential" eq. 33
+        - epsilonii_avg (numpy.ndarray) - Matrix of molecule averaged well depths (i.j)
+        - sigmaii_avg (numpy.ndarray) - Matrix of molecule averaged Mie diameter  (i.j)
+        - lambdaaii_avg (numpy.ndarray) - Matrix of molecule averaged Mie potential attractive exponents  (i.j)
+        - lambdarii_avg (numpy.ndarray) - Matrix of molecule averaged Mie potential attractive exponents (i.j)
+        - dii_eff (numpy.ndarray) - Matrix of mole averaged hard sphere equivalent for each bead and interaction between them (i.j)
+        - x0ii (numpy.ndarray) - Matrix of sigmaii_avg/dii_eff, sigmaii_avg is the average molecular Mie radius and dii_eff the average molecular hard sphere diameter
+
+    ncomp : int
+        Number of components in the system
+    nbeads : int
+        Number of beads in system that are shared among components
+    xi : numpy.ndarray
+        Mole fraction of each molecule in mixture. Default initialization is np.nan
+    T : float
         Temperature value is initially defined as NaN for a placeholder until temperature dependent attributes are initialized by using a method of this class.
     
     """
 
-    def __init__(self, kwargs):
+    def __init__(self, **kwargs):
 
-        #logger = logging.getLogger(__name__)
-
-        # Self interaction parameters
-        self._nui = kwargs['nui']
-        self._beads = kwargs['beads']
-        self._beadlibrary = kwargs['beadlibrary']
-
-        massi = np.zeros(len(self._nui))
-        for i in range(len(self._nui)):
-            for k in range(np.size(self._beads)):
-                massi[i] += self._nui[i, k] * self._beadlibrary[self._beads[k]]["mass"]
-        self._massi = massi
-
-        # Cross interaction parameters
-        if 'crosslibrary' in kwargs:
-            crosslibrary = kwargs['crosslibrary']
+        if "method_stat" in kwargs:
+            self.method_stat = kwargs["method_stat"]
+            del kwargs["method_stat"]
         else:
-            crosslibrary = {}
+            self.method_stat = None
 
-        epsilonkl, sigmakl, l_akl, l_rkl, Ckl = funcs.calc_interaction_matrices(self._beads, self._beadlibrary, crosslibrary=crosslibrary)
+        self._cm = _import_supporting_functions(self.method_stat)
 
-        self._crosslibrary = crosslibrary
-        self._epsilonkl = epsilonkl
-        self._sigmakl = sigmakl
-        self._l_akl = l_akl
-        self._l_rkl = l_rkl
-        self._Ckl = Ckl
+        self.Aideal_method = "Abroglie"
+        self.parameter_types = ["epsilon", "sigma", "lambdar", "lambdaa", "Sk"]
+        self._parameter_defaults = {
+            "epsilon": None,
+            "lambdar": None,
+            "lambdaa": None,
+            "sigma": None,
+            "Sk": 1.0,
+            "Vks": 1.0,
+        }
+        self.parameter_bound_extreme = {
+            "epsilon": [100.0, 1000.0],
+            "sigma": [0.1, 1.0],
+            "lambdar": [6.0, 100.0],
+            "lambdaa": [3.0, 100.0],
+            "Sk": [0.1, 1.0],
+        }
+        self.residual_helmholtz_contributions = ["Amonomer", "Achain"]
+        self.combining_rules = {
+            "sigma": {"function": "mean"},
+            "lambdar": {"function": "mie_exponent"},
+            "lambdaa": {"function": "mie_exponent"},
+            "epsilon": {
+                "function": "volumetric_geometric_mean",
+                "weighting_parameters": ["sigma"],
+            },
+        }
 
-        # Association sites
-        if 'sitenames' in kwargs:
-            self._sitenames = kwargs['sitenames']
+        self._mixing_temp_dependence = None
+
+        if not hasattr(self, "eos_dict"):
+            self.eos_dict = {}
+
+        needed_attributes = ["molecular_composition", "beads", "bead_library"]
+        for key in needed_attributes:
+            if key not in kwargs:
+                raise ValueError(
+                    "The one of the following inputs is missing: {}".format(
+                        ", ".join(tmp)
+                    )
+                )
+            elif key == "molecular_composition":
+                self.eos_dict[key] = kwargs[key]
+            elif not hasattr(self, key):
+                setattr(self, key, kwargs[key])
+
+        self.bead_library = tb.check_bead_parameters(
+            self.bead_library, self._parameter_defaults
+        )
+
+        if "cross_library" not in kwargs:
+            self.cross_library = {}
         else:
-            self._sitenames = ["H", "e1", "e2"]
+            self.cross_library = kwargs["cross_library"]
 
-        epsilonHB, Kklab, nk = funcs.calc_assoc_matrices(self._beads, self._beadlibrary, sitenames=self._sitenames, crosslibrary=self._crosslibrary)
-
-        self._epsilonHB = epsilonHB
-        self._Kklab = Kklab
-        self._nk = nk
+        if "Vks" not in self.eos_dict:
+            self.eos_dict["Vks"] = tb.extract_property(
+                "Vks", self.bead_library, self.beads, default=1.0
+            )
+        if "Sk" not in self.eos_dict:
+            self.eos_dict["Sk"] = tb.extract_property(
+                "Sk", self.bead_library, self.beads, default=1.0
+            )
 
         # Initialize temperature attribute
-        self.T = np.nan
+        if not hasattr(self, "T"):
+            self.T = np.nan
+        if not hasattr(self, "xi"):
+            self.xi = np.nan
 
-    def _temp_dependent_variables(self, T):
+        if not hasattr(self, "nbeads") or not hasattr(self, "ncomp"):
+            self.ncomp, self.nbeads = np.shape(self.eos_dict["molecular_composition"])
 
-        """
-        Temperature dependent variables are initialized or updated.
-    
-        Parameters
-        ----------
-        T : float, default: numpy.nan
-            Temperature of the system [K]
-    
+        # Initiate cross interaction terms
+        output = tb.cross_interaction_from_dict(
+            self.beads,
+            self.bead_library,
+            self.combining_rules,
+            cross_library=self.cross_library,
+        )
+        self.eos_dict["sigmakl"] = output["sigma"]
+        self.eos_dict["epsilonkl"] = output["epsilon"]
+        self.eos_dict["lambdaakl"] = output["lambdaa"]
+        self.eos_dict["lambdarkl"] = output["lambdar"]
+
+        # compute alphakl eq. 33
+        self.eos_dict["Ckl"] = prefactor(
+            self.eos_dict["lambdarkl"], self.eos_dict["lambdaakl"]
+        )
+        self.eos_dict["alphakl"] = self.eos_dict["Ckl"] * (
+            (1.0 / (self.eos_dict["lambdaakl"] - 3.0))
+            - (1.0 / (self.eos_dict["lambdarkl"] - 3.0))
+        )
+
+        # Initiate average interaction terms
+        self.calc_component_averaged_properties()
+
+        if "num_rings" in kwargs:
+            self.eos_dict["num_rings"] = kwargs["num_rings"]
+            logger.info(
+                "Accepted component ring structure: {}".format(kwargs["num_rings"])
+            )
+        else:
+            self.eos_dict["num_rings"] = np.zeros(
+                len(self.eos_dict["molecular_composition"])
+            )
+
+    def calc_component_averaged_properties(self):
+        r"""
+        Calculate component averaged properties specific to SAFT-𝛾-Mie for the chain term.    
+
         Attributes
         ----------
-        T : float, default: numpy.nan
-            Temperature of the system
-        """
-
-        #logger = logging.getLogger(__name__)
-
-        dkk, dkl, x0kl = funcs.calc_hard_sphere_matricies(self._beads, self._beadlibrary, self._sigmakl, T)
-        self.T = T
-        self._dkk = dkk
-        self._dkl = dkl
-        self._x0kl = x0kl
-
-    def _xi_dependent_variables(self, xi):
-
-        """
-        Variables dependent on composition are initialized or updated.
+        output : dict
+            Dictionary of outputs, the following possibilities are calculated if all relevant beads have those properties.
     
-        Parameters
-        ----------
-        xi : list[float]
-            Mole fraction of component
-
+            - epsilonii_avg (numpy.ndarray) - Matrix of molecule averaged well depths
+            - sigmaii_avg (numpy.ndarray) - Matrix of molecule averaged Mie diameter
+            - lambdaaii_avg (numpy.ndarray) - Matrix of molecule averaged Mie potential attractive exponents
+            - lambdarii_avg (numpy.ndarray) - Matrix of molecule averaged Mie potential attractive exponents
+    
         """
 
-        #logger = logging.getLogger(__name__)
+        zki = np.zeros((self.ncomp, self.nbeads), float)
+        zkinorm = np.zeros(self.ncomp, float)
 
-        Cmol2seg, xsk, xskl = funcs.calc_composition_dependent_variables(xi, self._nui, self._beads, self._beadlibrary)
-        self._Cmol2seg = Cmol2seg
-        self._xsk = xsk
-        self._xskl = xskl
+        output = {}
+        output["epsilonii_avg"] = np.zeros(self.ncomp, float)
+        output["sigmaii_avg"] = np.zeros(self.ncomp, float)
+        output["lambdarii_avg"] = np.zeros(self.ncomp, float)
+        output["lambdaaii_avg"] = np.zeros(self.ncomp, float)
 
-    def P(self, rho, T, xi):
-        """
-        Compute pressure given system information.
-       
+        # compute zki
+        for i in range(self.ncomp):
+            for k in range(self.nbeads):
+                zki[i, k] = (
+                    self.eos_dict["molecular_composition"][i, k]
+                    * self.eos_dict["Vks"][k]
+                    * self.eos_dict["Sk"][k]
+                )
+                zkinorm[i] += zki[i, k]
+
+        for i in range(self.ncomp):
+            for k in range(self.nbeads):
+                zki[i, k] = zki[i, k] / zkinorm[i]
+
+        for i in range(self.ncomp):
+            for k in range(self.nbeads):
+                for l in range(self.nbeads):
+                    output["sigmaii_avg"][i] += (
+                        zki[i, k] * zki[i, l] * self.eos_dict["sigmakl"][k, l] ** 3
+                    )
+                    output["epsilonii_avg"][i] += (
+                        zki[i, k] * zki[i, l] * self.eos_dict["epsilonkl"][k, l]
+                    )
+                    output["lambdarii_avg"][i] += (
+                        zki[i, k] * zki[i, l] * self.eos_dict["lambdarkl"][k, l]
+                    )
+                    output["lambdaaii_avg"][i] += (
+                        zki[i, k] * zki[i, l] * self.eos_dict["lambdaakl"][k, l]
+                    )
+            output["sigmaii_avg"][i] = output["sigmaii_avg"][i] ** (1 / 3.0)
+
+        self.eos_dict.update(output)
+
+    def Ahard_sphere(self, rho, T, xi):
+        r"""
+        Outputs monomer contribution to the Helmholtz energy, :math:`A^{HS}/Nk_{B}T`.
+        
         Parameters
         ----------
         rho : numpy.ndarray
-            Number density of system [mol/m^3]
+            Number density of system [:math:`mol/m^3`]
         T : float
             Temperature of the system [K]
-        xi : list[float]
-            Mole fraction of each component
-       
-        Returns
-        -------
-        P : numpy.ndarray
-            Array of pressure values [Pa] associated with each density and so equal in length
-        """
-
-        #logger = logging.getLogger(__name__)
-
-        if len(xi) != len(self._nui):
-            raise ValueError("Number of components in mole fraction list doesn't match components in nui. Check bead_config.")
-
-        if T != self.T:
-            self._temp_dependent_variables(T)
-
-        self._xi_dependent_variables(xi)
+        xi : numpy.ndarray
+            Mole fraction of each component, sum(xi) should equal 1.0
         
-        if np.isscalar(rho):
-            rho = np.array([rho])
-        elif type(rho) != np.ndarray:
-            rho = np.array(rho)
-
-        rho = rho*constants.Nav
-
-        step = np.sqrt(np.finfo(float).eps) *rho * 10000.0
-        # Decreasing step size by 2 orders of magnitude didn't reduce noise in P values
-        nrho = np.size(rho)
-
-        # computer rho+step and rho-step for better a bit better performance
-        A = funcs.calc_A(np.append(rho + step, rho - step), xi, T, self._beads, self._beadlibrary, self._massi, self._nui, self._Cmol2seg, self._xsk, self._xskl, self._dkk, self._epsilonkl, self._sigmakl, self._dkl, self._l_akl, self._l_rkl, self._Ckl,self._x0kl, self._epsilonHB, self._Kklab, self._nk)
-
-        P_tmp = (A[:nrho]-A[nrho:])*((constants.kb*T)/(2.0*step))*rho**2
-
-        return P_tmp
-
-    def fugacity_coefficient(self, P, rho, xi, T, dy=1e-4):
-
+        Returns
+        -------
+        Ahard_sphere : numpy.ndarray
+            Helmholtz energy of monomers for each density given.
         """
-        Compute fugacity coefficient.
-      
+
+        rho = self._check_density(rho)
+        self._check_temperature_dependent_parameters(T)
+        self._check_composition_dependent_parameters(xi)
+
+        eta = np.zeros((np.size(rho), 4))
+        for m in range(4):
+            eta[:, m] = (
+                rho
+                * constants.molecule_per_nm3
+                * self.eos_dict["Cmol2seg"]
+                * (
+                    np.sum(
+                        np.sqrt(np.diag(self.eos_dict["xskl"]))
+                        * (np.diag(self.eos_dict["dkl"]) ** m)
+                    )
+                    * (np.pi / 6.0)
+                )
+            )
+
+        tmp = 6.0 / (np.pi * rho * constants.molecule_per_nm3)
+        if self.ncomp == 1:
+            tmp1 = 0
+        else:
+            tmp1 = np.log1p(-eta[:, 3]) * (
+                eta[:, 2] ** 3 / (eta[:, 3] ** 2) - eta[:, 0]
+            )
+        tmp2 = 3.0 * eta[:, 2] / (1 - eta[:, 3]) * eta[:, 1]
+        tmp3 = eta[:, 2] ** 3 / (eta[:, 3] * ((1.0 - eta[:, 3]) ** 2))
+
+        AHS = tmp * (tmp1 + tmp2 + tmp3)
+
+        return AHS
+
+    def Afirst_order(self, rho, T, xi, zetax=None):
+        r"""
+        Outputs :math:`A^{1st order}/Nk_{B}T`. This is the first order term in the high-temperature perturbation expansion
+        
         Parameters
         ----------
-        P : float
-            Pressure of the system [Pa]
-        rho : float
-            Molar density of system [mol/m^3]
+        rho : numpy.ndarray
+            Number density of system [:math:`mol/m^3`]
         T : float
             Temperature of the system [K]
-        xi : list[float]
-            Mole fraction of each component
+        xi : numpy.ndarray
+            Mole fraction of each component, sum(xi) should equal 1.0
+        zetax : numpy.ndarray, Optional, default=None
+            Matrix of hypothetical packing fraction based on hard sphere diameter for groups (k,l)
+        
+        Returns
+        -------
+        Afirst_order : numpy.ndarray
+            Helmholtz energy of monomers for each density given.
+        """
+
+        rho = self._check_density(rho)
+        self._check_temperature_dependent_parameters(T)
+        self._check_composition_dependent_parameters(xi)
+
+        if zetax is None:
+            zetax = stb.calc_zetax(
+                rho,
+                self.eos_dict["Cmol2seg"],
+                self.eos_dict["xskl"],
+                self.eos_dict["dkl"],
+            )
+
+        # compute components of eq. 19
+        a1kl = self._cm.calc_a1ii(
+            rho,
+            self.eos_dict["Cmol2seg"],
+            self.eos_dict["dkl"],
+            self.eos_dict["lambdaakl"],
+            self.eos_dict["lambdarkl"],
+            self.eos_dict["x0kl"],
+            self.eos_dict["epsilonkl"],
+            zetax,
+        )
+
+        # eq. 18
+        a1 = np.einsum("ijk,jk->i", a1kl, self.eos_dict["xskl"])
+        A1 = (self.eos_dict["Cmol2seg"] / T) * a1  # Units of K
+
+        return A1
+
+    def Asecond_order(self, rho, T, xi, zetaxstar=None, zetax=None, KHS=None):
+        r"""
+        Outputs :math:`A^{2nd order}/Nk_{B}T`. This is the second order term in the high-temperature perturbation expansion
+        
+        Parameters
+        ----------
+        rho : numpy.ndarray
+            Number density of system [:math:`mol/m^3`]
+        T : float
+            Temperature of the system [K]
+        xi : numpy.ndarray
+            Mole fraction of each component, sum(xi) should equal 1.0
+        zetaxstar : numpy.ndarray, Optional, default=None
+            Matrix of hypothetical packing fraction based on sigma for groups (k,l)
+        zetax : numpy.ndarray, Optional, default=None
+            Matrix of hypothetical packing fraction based on hard sphere diameter for groups (k,l)
+        KHS : numpy.ndarray, Optional, default=None
+            (length of densities) isothermal compressibility of system with packing fraction zetax
+        
+        Returns
+        -------
+        Asecond_order : numpy.ndarray
+            Helmholtz energy of monomers for each density given.
+        """
+
+        rho = self._check_density(rho)
+        self._check_temperature_dependent_parameters(T)
+        self._check_composition_dependent_parameters(xi)
+
+        if zetax is None:
+            zetax = stb.calc_zetax(
+                rho,
+                self.eos_dict["Cmol2seg"],
+                self.eos_dict["xskl"],
+                self.eos_dict["dkl"],
+            )
+
+        if zetaxstar is None:
+            zetaxstar = stb.calc_zetaxstar(
+                rho,
+                self.eos_dict["Cmol2seg"],
+                self.eos_dict["xskl"],
+                self.eos_dict["sigmakl"],
+            )
+
+        if KHS is None:
+            KHS = stb.calc_KHS(zetax)
+
+        ## compute a2kl, eq. 30 #####
+
+        # compute f1, f2, and f3 for eq. 32
+        fmlist123 = self.calc_fm(self.eos_dict["alphakl"], np.array([1, 2, 3]))
+
+        chikl = (
+            np.einsum("i,jk", zetaxstar, fmlist123[0])
+            + np.einsum("i,jk", zetaxstar ** 5, fmlist123[1])
+            + np.einsum("i,jk", zetaxstar ** 8, fmlist123[2])
+        )
+
+        a1s_2la = self._cm.calc_a1s(
+            rho,
+            self.eos_dict["Cmol2seg"],
+            2.0 * self.eos_dict["lambdaakl"],
+            zetax,
+            self.eos_dict["epsilonkl"],
+            self.eos_dict["dkl"],
+        )
+        a1s_2lr = self._cm.calc_a1s(
+            rho,
+            self.eos_dict["Cmol2seg"],
+            2.0 * self.eos_dict["lambdarkl"],
+            zetax,
+            self.eos_dict["epsilonkl"],
+            self.eos_dict["dkl"],
+        )
+        a1s_lalr = self._cm.calc_a1s(
+            rho,
+            self.eos_dict["Cmol2seg"],
+            self.eos_dict["lambdaakl"] + self.eos_dict["lambdarkl"],
+            zetax,
+            self.eos_dict["epsilonkl"],
+            self.eos_dict["dkl"],
+        )
+        B_2la = self._cm.calc_Bkl(
+            rho,
+            2.0 * self.eos_dict["lambdaakl"],
+            self.eos_dict["Cmol2seg"],
+            self.eos_dict["dkl"],
+            self.eos_dict["epsilonkl"],
+            self.eos_dict["x0kl"],
+            zetax,
+        )
+        B_2lr = self._cm.calc_Bkl(
+            rho,
+            2.0 * self.eos_dict["lambdarkl"],
+            self.eos_dict["Cmol2seg"],
+            self.eos_dict["dkl"],
+            self.eos_dict["epsilonkl"],
+            self.eos_dict["x0kl"],
+            zetax,
+        )
+        B_lalr = self._cm.calc_Bkl(
+            rho,
+            self.eos_dict["lambdaakl"] + self.eos_dict["lambdarkl"],
+            self.eos_dict["Cmol2seg"],
+            self.eos_dict["dkl"],
+            self.eos_dict["epsilonkl"],
+            self.eos_dict["x0kl"],
+            zetax,
+        )
+
+        a2kl = (
+            (self.eos_dict["x0kl"] ** (2.0 * self.eos_dict["lambdaakl"]))
+            * (a1s_2la + B_2la)
+            / constants.molecule_per_nm3
+            - (
+                (
+                    2.0
+                    * self.eos_dict["x0kl"]
+                    ** (self.eos_dict["lambdaakl"] + self.eos_dict["lambdarkl"])
+                )
+                * (a1s_lalr + B_lalr)
+                / constants.molecule_per_nm3
+            )
+            + (
+                (self.eos_dict["x0kl"] ** (2.0 * self.eos_dict["lambdarkl"]))
+                * (a1s_2lr + B_2lr)
+                / constants.molecule_per_nm3
+            )
+        )
+        a2kl *= (
+            (1.0 + chikl) * self.eos_dict["epsilonkl"] * (self.eos_dict["Ckl"] ** 2)
+        )  # *(KHS/2.0)
+
+        a2kl = np.einsum("i,ijk->ijk", KHS / 2.0, a2kl)
+
+        # eq. 29
+        a2 = np.einsum("ijk,jk->i", a2kl, self.eos_dict["xskl"])
+        A2 = (self.eos_dict["Cmol2seg"] / (T ** 2)) * a2
+
+        return A2
+
+    def Athird_order(self, rho, T, xi, zetaxstar=None):
+        r"""
+        Outputs :math:`A^{3rd order}/Nk_{B}T`. This is the third order term in the high-temperature perturbation expansion
+        
+        Parameters
+        ----------
+        rho : numpy.ndarray
+            Number density of system [:math:`mol/m^3`]
+        T : float
+            Temperature of the system [K]
+        xi : numpy.ndarray
+            Mole fraction of each component, sum(xi) should equal 1.0
+        zetaxstar : numpy.ndarray, Optional, default=None
+            Matrix of hypothetical packing fraction based on sigma for groups (k,l)
+        
+        Returns
+        -------
+        Athird_order : numpy.ndarray
+            Helmholtz energy of monomers for each density given.
+        """
+
+        rho = self._check_density(rho)
+        self._check_temperature_dependent_parameters(T)
+        self._check_composition_dependent_parameters(xi)
+
+        if zetaxstar is None:
+            zetaxstar = stb.calc_zetaxstar(
+                rho,
+                self.eos_dict["Cmol2seg"],
+                self.eos_dict["xskl"],
+                self.eos_dict["sigmakl"],
+            )
+
+        # compute a3kl
+        fmlist456 = self.calc_fm(self.eos_dict["alphakl"], np.array([4, 5, 6]))
+
+        a3kl = np.einsum(
+            "i,jk", zetaxstar, -(self.eos_dict["epsilonkl"] ** 3) * fmlist456[0]
+        ) * np.exp(
+            np.einsum("i,jk", zetaxstar, fmlist456[1])
+            + np.einsum("i,jk", zetaxstar ** 2, fmlist456[2])
+        )  # a3kl=-(epsilonkl**3)*fmlist456[0]*zetaxstar*np.exp((fmlist456[1]*zetaxstar)+(fmlist456[2]*(zetaxstar**2)))
+
+        # eq. 37
+        a3 = np.einsum("ijk,jk->i", a3kl, self.eos_dict["xskl"])
+        A3 = (self.eos_dict["Cmol2seg"] / (T ** 3)) * a3
+
+        return A3
+
+    def Amonomer(self, rho, T, xi):
+        r"""
+        Outputs the monomer contribution of the Helmholtz energy, :math:`A^{mono.}/Nk_{B}T`.
+        
+        This term is composed of: :math:`A^{HS}/Nk_{B}T + A^{1st order}/Nk_{B}T + A^{2nd order}/Nk_{B}T` + :math:`A^{3rd order}/Nk_{B}T`
+    
+        Parameters
+        ----------
+        rho : numpy.ndarray
+            Number density of system [:math:`mol/m^3`]
+        T : float
+            Temperature of the system [K]
+        xi : numpy.ndarray
+            Mole fraction of each component, sum(xi) should equal 1.0
     
         Returns
         -------
-        mui : numpy.ndarray
-            Array of chemical potential values for each component
+        Amonomer : numpy.ndarray
+            Helmholtz energy of monomers for each density given.
         """
 
-        #logger = logging.getLogger(__name__)
+        if np.all(rho >= self.density_max(xi, T, maxpack=1.0)):
+            raise ValueError(
+                "Density values should not all be greater than {}, or calc_Amono will fail in log calculation.".format(
+                    self.density_max(xi, T)
+                )
+            )
 
-        if len(xi) != len(self._nui):
-            raise ValueError("Number of components in mole fraction list doesn't match components in nui. Check bead_config.")
+        rho = self._check_density(rho)
+        self._check_temperature_dependent_parameters(T)
+        self._check_composition_dependent_parameters(xi)
 
-        if len(rho.shape) > 1:
-            rho = rho[0]
+        zetax = stb.calc_zetax(
+            rho, self.eos_dict["Cmol2seg"], self.eos_dict["xskl"], self.eos_dict["dkl"]
+        )
+        zetaxstar = stb.calc_zetaxstar(
+            rho,
+            self.eos_dict["Cmol2seg"],
+            self.eos_dict["xskl"],
+            self.eos_dict["sigmakl"],
+        )
+        Amonomer = (
+            self.Ahard_sphere(rho, T, xi)
+            + self.Afirst_order(rho, T, xi, zetax=zetax)
+            + self.Asecond_order(rho, T, xi, zetax=zetax, zetaxstar=zetaxstar)
+            + self.Athird_order(rho, T, xi, zetaxstar=zetaxstar)
+        )
 
-        if T != self.T:
-            self._temp_dependent_variables(T)
+        return Amonomer
 
-        self._xi_dependent_variables(xi)
+    def gdHS(self, rho, T, xi, zetax=None):
+        r"""
+        The zeroth order expansion term in calculating the radial distribution function of a Mie fluid. 
 
-        Z = P / (rho * T * constants.Nav * constants.kb)
-        phi_tmp = np.zeros(len(xi))
-
-#        #### Traditional Central Difference Method
-#        # Set step size in finite difference method
-#        exp = np.floor(np.log10(rho))-3 # Make sure step size is three orders of magnitude lower
-#        drho = 10**exp
-#        logger.debug("    Compute phi for density, {}, with step size {}.".format(rho,drho))
-#
-#        # compute phi
-#        Ares = funcs.calc_Ares(rho *  constants.Nav, xi, T, self._beads, self._beadlibrary, self._massi, self._nui, self._Cmol2seg, self._xsk, self._xskl, self._dkk, self._epsilonkl, self._sigmakl, self._dkl, self._l_akl, self._l_rkl, self._Ckl,self._x0kl, self._epsilonHB, self._Kklab, self._nk)
-#        rhoi = rho*np.array(xi,float)
-#        for i in range(np.size(phi_tmp)):
-#            dAres = np.zeros(2)
-#            for j, delta in enumerate((drho, -drho)):
-#                rhoi_temp = np.copy(rhoi)
-#                if rhoi_temp[i] != 0.:
-#                    rhoi_temp[i] += delta
-#                dAres[j] = self._calc_dAres_drhoi_wrap(T, rhoi_temp)
-#            phi_tmp[i] = Ares + rho*(dAres[0] - dAres[1]) / (2.0 * drho) - np.log(Z) 
-#            #with open("OldPhi.csv","a") as f:
-#            #    f.write("{}, {}, {}, {}, {}, {}, {}\n".format(i,xi[i],phi_tmp[i], Ares, rho, dAres, drho))
-
-        #### Transform y=log(rhoi) Central Difference Method without worrying about negative mole fractions 
-        # Set step size in finite difference method
-        y = np.log(rho*np.array(xi,float))
-        #dy = 0.05
-
-        # compute phi
-        Ares = funcs.calc_Ares(rho *  constants.Nav, xi, T, self._beads, self._beadlibrary, self._massi, self._nui, self._Cmol2seg, self._xsk, self._xskl, self._dkk, self._epsilonkl, self._sigmakl, self._dkl, self._l_akl, self._l_rkl, self._Ckl,self._x0kl, self._epsilonHB, self._Kklab, self._nk)
-        for i in range(np.size(phi_tmp)):
-            if xi[i] != 0.0:
-                dAres = np.zeros(2)
-                for j, delta in enumerate((dy, -dy)):
-                    y_temp = np.copy(y)
-                    y_temp[i] += delta
-                    dAres[j] = self._calc_dAres_drhoi_wrap(T, np.exp(y_temp))
-                phi_tmp[i] = np.exp(Ares + rho/np.exp(y[i])*(dAres[0] - dAres[1]) / (2.0 * dy) - np.log(Z))
-            else:
-                phi_tmp[i] = 0.0 # This should be zero, but to prevent the thermo calculation from complaining about diving by zero we give it a value, the mole fraction is zero though, so it'll go away.
-        ##########################################
-
-        # Reset composition dependent variables
-        self._xi_dependent_variables(xi)
-
-        return phi_tmp
-
-    def _calc_dAres_drhoi_wrap(self, T, rhoi):
-        """
-        Compute derivative of Helmholtz energy wrt to density.
-      
+        This is also known as the hard sphere radial distribution function.
+        
         Parameters
         ----------
+        rho : numpy.ndarray
+            Number density of system [:math:`mol/m^3`]
         T : float
             Temperature of the system [K]
-        rhoi : float
-            Molar density of each component, add up to the total density [mol/m^3]
+        xi : numpy.ndarray
+            Mole fraction of each component, sum(xi) should equal 1.0
+        zetax : numpy.ndarray, Optional, default=None
+            Matrix of hypothetical packing fraction based on hard sphere diameter for groups (k,l)
+        
+        Returns
+        -------
+        gdHS : numpy.ndarray
+            Hard sphere radial distribution function
+        """
+
+        rho = self._check_density(rho)
+        self._check_temperature_dependent_parameters(T)
+        self._check_composition_dependent_parameters(xi)
+
+        if zetax is None:
+            zetax = stb.calc_zetax(
+                rho,
+                self.eos_dict["Cmol2seg"],
+                self.eos_dict["xskl"],
+                self.eos_dict["dkl"],
+            )
+
+        km = np.zeros((np.size(rho), 4))
+        gdHS = np.zeros((np.size(rho), np.size(xi)))
+
+        km[:, 0] = -np.log(1.0 - zetax) + (
+            42.0 * zetax - 39.0 * zetax ** 2 + 9.0 * zetax ** 3 - 2.0 * zetax ** 4
+        ) / (6.0 * (1.0 - zetax) ** 3)
+        km[:, 1] = (zetax ** 4 + 6.0 * zetax ** 2 - 12.0 * zetax) / (
+            2.0 * (1.0 - zetax) ** 3
+        )
+        km[:, 2] = -3.0 * zetax ** 2 / (8.0 * (1.0 - zetax) ** 2)
+        km[:, 3] = (-zetax ** 4 + 3.0 * zetax ** 2 + 3.0 * zetax) / (
+            6.0 * (1.0 - zetax) ** 3
+        )
+
+        for i in range(self.ncomp):
+            gdHS[:, i] = np.exp(
+                km[:, 0]
+                + km[:, 1] * self.eos_dict["x0ii"][i]
+                + km[:, 2] * self.eos_dict["x0ii"][i] ** 2
+                + km[:, 3] * self.eos_dict["x0ii"][i] ** 3
+            )
+
+        return gdHS
+
+    def g1(self, rho, T, xi, zetax=None):
+        r"""
+        Calculate the first order expansion term in calculating the radial distribution function of a Mie fluid
+        
+        Parameters
+        ----------
+        rho : numpy.ndarray
+            Number density of system [:math:`mol/m^3`]
+        T : float
+            Temperature of the system [K]
+        xi : numpy.ndarray
+            Mole fraction of each component, sum(xi) should equal 1.0
+        zetax : numpy.ndarray, Optional, default=None
+            Matrix of hypothetical packing fraction based on hard sphere diameter for groups (k,l)
+        
+        Returns
+        -------
+        g1 : numpy.ndarray
+            First order expansion term in calculating the radial distribution function of a Mie fluid
+        """
+
+        rho = self._check_density(rho)
+        self._check_temperature_dependent_parameters(T)
+        self._check_composition_dependent_parameters(xi)
+
+        if zetax is None:
+            zetax = stb.calc_zetax(
+                rho,
+                self.eos_dict["Cmol2seg"],
+                self.eos_dict["xskl"],
+                self.eos_dict["dkl"],
+            )
+
+        da1iidrhos = self._cm.calc_da1iidrhos(
+            rho,
+            self.eos_dict["Cmol2seg"],
+            self.eos_dict["dii_eff"],
+            self.eos_dict["lambdaaii_avg"],
+            self.eos_dict["lambdarii_avg"],
+            self.eos_dict["x0ii"],
+            self.eos_dict["epsilonii_avg"],
+            zetax,
+        )
+
+        a1sii_lambdaaii_avg = self._cm.calc_a1s_eff(
+            rho,
+            self.eos_dict["Cmol2seg"],
+            self.eos_dict["lambdaaii_avg"],
+            zetax,
+            self.eos_dict["epsilonii_avg"],
+            self.eos_dict["dii_eff"],
+        )
+        a1sii_lambdarii_avg = self._cm.calc_a1s_eff(
+            rho,
+            self.eos_dict["Cmol2seg"],
+            self.eos_dict["lambdarii_avg"],
+            zetax,
+            self.eos_dict["epsilonii_avg"],
+            self.eos_dict["dii_eff"],
+        )
+
+        Bii_lambdaaii_avg = self._cm.calc_Bkl_eff(
+            rho,
+            self.eos_dict["lambdaaii_avg"],
+            self.eos_dict["Cmol2seg"],
+            self.eos_dict["dii_eff"],
+            self.eos_dict["epsilonii_avg"],
+            self.eos_dict["x0ii"],
+            zetax,
+        )
+        Bii_lambdarii_avg = self._cm.calc_Bkl_eff(
+            rho,
+            self.eos_dict["lambdarii_avg"],
+            self.eos_dict["Cmol2seg"],
+            self.eos_dict["dii_eff"],
+            self.eos_dict["epsilonii_avg"],
+            self.eos_dict["x0ii"],
+            zetax,
+        )
+
+        Cii = prefactor(self.eos_dict["lambdarii_avg"], self.eos_dict["lambdaaii_avg"])
+
+        tmp1 = 1.0 / (
+            2.0
+            * np.pi
+            * self.eos_dict["epsilonii_avg"]
+            * self.eos_dict["dii_eff"] ** 3
+            * constants.molecule_per_nm3 ** 2
+        )
+        tmp11 = 3.0 * da1iidrhos
+        tmp21 = (
+            Cii
+            * self.eos_dict["lambdaaii_avg"]
+            * (self.eos_dict["x0ii"] ** self.eos_dict["lambdaaii_avg"])
+        )
+        tmp22 = np.einsum(
+            "ij,i->ij",
+            (a1sii_lambdaaii_avg + Bii_lambdaaii_avg),
+            1.0 / (rho * self.eos_dict["Cmol2seg"]),
+        )
+        tmp31 = (
+            Cii
+            * self.eos_dict["lambdarii_avg"]
+            * (self.eos_dict["x0ii"] ** self.eos_dict["lambdarii_avg"])
+        )
+        tmp32 = np.einsum(
+            "ij,i->ij",
+            (a1sii_lambdarii_avg + Bii_lambdarii_avg),
+            1.0 / (rho * self.eos_dict["Cmol2seg"]),
+        )
+        g1 = tmp1 * (tmp11 - tmp21 * tmp22 + tmp31 * tmp32)
+
+        return g1
+
+    def g2(self, rho, T, xi, zetax=None):
+        r"""
+        Calculate the second order expansion term in calculating the radial distribution function of a Mie fluid
+        
+        Parameters
+        ----------
+        rho : numpy.ndarray
+            Number density of system [:math:`mol/m^3`]
+        T : float
+            Temperature of the system [K]
+        xi : numpy.ndarray
+            Mole fraction of each component, sum(xi) should equal 1.0
+        zetax : numpy.ndarray, Optional, default=None
+            Matrix of hypothetical packing fraction based on hard sphere diameter for groups (k,l)
+        
+        Returns
+        -------
+        g2 : numpy.ndarray
+            Second order expansion term in calculating the radial distribution function of a Mie fluid
+        """
+
+        rho = self._check_density(rho)
+        self._check_temperature_dependent_parameters(T)
+        self._check_composition_dependent_parameters(xi)
+
+        if zetax is None:
+            zetax = stb.calc_zetax(
+                rho,
+                self.eos_dict["Cmol2seg"],
+                self.eos_dict["xskl"],
+                self.eos_dict["dkl"],
+            )
+        zetaxstar = stb.calc_zetaxstar(
+            rho,
+            self.eos_dict["Cmol2seg"],
+            self.eos_dict["xskl"],
+            self.eos_dict["sigmakl"],
+        )
+        KHS = stb.calc_KHS(zetax)
+
+        Cii = prefactor(self.eos_dict["lambdarii_avg"], self.eos_dict["lambdaaii_avg"])
+
+        phi7 = np.array([10.0, 10.0, 0.57, -6.7, -8.0])
+        alphaii = Cii * (
+            (1.0 / (self.eos_dict["lambdaaii_avg"] - 3.0))
+            - (1.0 / (self.eos_dict["lambdarii_avg"] - 3.0))
+        )
+        theta = np.exp(self.eos_dict["epsilonii_avg"] / T) - 1.0
+
+        gammacii = np.zeros((np.size(rho), np.size(xi)))
+        for i in range(self.ncomp):
+            gammacii[:, i] = (
+                phi7[0]
+                * (-np.tanh(phi7[1] * (phi7[2] - alphaii[i])) + 1.0)
+                * zetaxstar
+                * theta[i]
+                * np.exp(phi7[3] * zetaxstar + phi7[4] * (zetaxstar ** 2))
+            )
+
+        da2iidrhos = self._cm.calc_da2ii_1pchi_drhos(
+            rho,
+            self.eos_dict["Cmol2seg"],
+            self.eos_dict["epsilonii_avg"],
+            self.eos_dict["dii_eff"],
+            self.eos_dict["x0ii"],
+            self.eos_dict["lambdarii_avg"],
+            self.eos_dict["lambdaaii_avg"],
+            zetax,
+        )
+
+        a1sii_2lambdaaii_avg = self._cm.calc_a1s_eff(
+            rho,
+            self.eos_dict["Cmol2seg"],
+            2.0 * self.eos_dict["lambdaaii_avg"],
+            zetax,
+            self.eos_dict["epsilonii_avg"],
+            self.eos_dict["dii_eff"],
+        )
+        a1sii_2lambdarii_avg = self._cm.calc_a1s_eff(
+            rho,
+            self.eos_dict["Cmol2seg"],
+            2.0 * self.eos_dict["lambdarii_avg"],
+            zetax,
+            self.eos_dict["epsilonii_avg"],
+            self.eos_dict["dii_eff"],
+        )
+        a1sii_lambdarii_avglambdaaii_avg = self._cm.calc_a1s_eff(
+            rho,
+            self.eos_dict["Cmol2seg"],
+            self.eos_dict["lambdaaii_avg"] + self.eos_dict["lambdarii_avg"],
+            zetax,
+            self.eos_dict["epsilonii_avg"],
+            self.eos_dict["dii_eff"],
+        )
+
+        Bii_2lambdaaii_avg = self._cm.calc_Bkl_eff(
+            rho,
+            2.0 * self.eos_dict["lambdaaii_avg"],
+            self.eos_dict["Cmol2seg"],
+            self.eos_dict["dii_eff"],
+            self.eos_dict["epsilonii_avg"],
+            self.eos_dict["x0ii"],
+            zetax,
+        )
+        Bii_2lambdarii_avg = self._cm.calc_Bkl_eff(
+            rho,
+            2.0 * self.eos_dict["lambdarii_avg"],
+            self.eos_dict["Cmol2seg"],
+            self.eos_dict["dii_eff"],
+            self.eos_dict["epsilonii_avg"],
+            self.eos_dict["x0ii"],
+            zetax,
+        )
+        Bii_lambdaaii_avglambdarii_avg = self._cm.calc_Bkl_eff(
+            rho,
+            self.eos_dict["lambdaaii_avg"] + self.eos_dict["lambdarii_avg"],
+            self.eos_dict["Cmol2seg"],
+            self.eos_dict["dii_eff"],
+            self.eos_dict["epsilonii_avg"],
+            self.eos_dict["x0ii"],
+            zetax,
+        )
+
+        eKC2 = np.einsum(
+            "i,j->ij",
+            KHS / rho / self.eos_dict["Cmol2seg"],
+            self.eos_dict["epsilonii_avg"] * (Cii ** 2),
+        )
+
+        g2MCA = (
+            1.0
+            / (
+                2.0
+                * np.pi
+                * (self.eos_dict["epsilonii_avg"] ** 2)
+                * self.eos_dict["dii_eff"] ** 3
+                * constants.molecule_per_nm3 ** 2
+            )
+        ) * (
+            (3.0 * da2iidrhos)
+            - (
+                eKC2
+                * self.eos_dict["lambdarii_avg"]
+                * (self.eos_dict["x0ii"] ** (2.0 * self.eos_dict["lambdarii_avg"]))
+            )
+            * (a1sii_2lambdarii_avg + Bii_2lambdarii_avg)
+            + eKC2
+            * (self.eos_dict["lambdarii_avg"] + self.eos_dict["lambdaaii_avg"])
+            * (
+                self.eos_dict["x0ii"]
+                ** (self.eos_dict["lambdarii_avg"] + self.eos_dict["lambdaaii_avg"])
+            )
+            * (a1sii_lambdarii_avglambdaaii_avg + Bii_lambdaaii_avglambdarii_avg)
+            - eKC2
+            * self.eos_dict["lambdaaii_avg"]
+            * (self.eos_dict["x0ii"] ** (2.0 * self.eos_dict["lambdaaii_avg"]))
+            * (a1sii_2lambdaaii_avg + Bii_2lambdaaii_avg)
+        )
+
+        g2 = (1.0 + gammacii) * g2MCA
+
+        return g2
+
+    def Achain(self, rho, T, xi):
+        r"""
+        Outputs the chain term for the Helmholtz energy, :math:`A^{chain}/Nk_{B}T`.
+    
+        Parameters
+        ----------
+        rho : numpy.ndarray
+            Number density of system [:math:`mol/m^3`]
+        T : float
+            Temperature of the system [K]
+        xi : numpy.ndarray
+            Mole fraction of each component, sum(xi) should equal 1.0
     
         Returns
         -------
-        Ares : float
-            Helmholtz energy give number of moles, length of array rho
+        Achain : numpy.ndarray
+            Helmholtz energy of monomers for each density given.
         """
 
-        #logger = logging.getLogger(__name__)
+        rho = self._check_density(rho)
+        self._check_temperature_dependent_parameters(T)
+        self._check_composition_dependent_parameters(xi)
 
-        if T != self.T:
-            self._temp_dependent_variables(T)
+        zetax = stb.calc_zetax(
+            rho, self.eos_dict["Cmol2seg"], self.eos_dict["xskl"], self.eos_dict["dkl"]
+        )
+        gdHS = self.gdHS(rho, T, xi, zetax=zetax)
+        g1 = self.g1(rho, T, xi, zetax=zetax)
+        g2 = self.g2(rho, T, xi, zetax=zetax)
 
-        # Calculate new xi values
-        rho = np.array([np.sum(rhoi)])
-        xi = rhoi/rho
+        gii = gdHS * np.exp(
+            (self.eos_dict["epsilonii_avg"] * g1 / (T * gdHS))
+            + (((self.eos_dict["epsilonii_avg"] / T) ** 2) * g2 / gdHS)
+        )
 
-        self._xi_dependent_variables(xi)
+        Achain = 0.0
+        for i in range(self.ncomp):
+            beadsum = -1.0 + self.eos_dict["num_rings"][i]
+            for k in range(self.nbeads):
+                beadsum += (
+                    self.eos_dict["molecular_composition"][i, k]
+                    * self.eos_dict["Vks"][k]
+                    * self.eos_dict["Sk"][k]
+                )
+            Achain -= xi[i] * beadsum * np.log(gii[:, i])
 
-        Cmol2seg, xsk, xskl = funcs.calc_composition_dependent_variables(xi, self._nui, self._beads, self._beadlibrary)
+        if np.any(np.isnan(Achain)):
+            logger.error("Some Helmholtz values are NaN, check energy parameters.")
 
-        Ares = funcs.calc_Ares(rho * constants.Nav, xi, T, self._beads, self._beadlibrary, self._massi, self._nui, Cmol2seg, xsk, xskl, self._dkk, self._epsilonkl, self._sigmakl, self._dkl, self._l_akl, self._l_rkl, self._Ckl, self._x0kl, self._epsilonHB, self._Kklab, self._nk)
-
-        return Ares
-
-    def _chemicalpotential_old(self, P, rho, xi, T):
-        """
-        Compute chemical potential given system information.
-      
-        Parameters
-        ----------
-        P : float
-            Pressure of the system [Pa]
-        rho : float
-            Molar density of system [mol/m^3]
-        T : float
-            Temperature of the system [K]
-        xi : list[float]
-            Mole fraction of each component
-    
-        Returns
-        -------
-        mui : numpy.ndarray
-            Array of chemical potential values for each component
-        """
-
-        logger = logging.getLogger(__name__)
-
-        if len(xi) != len(self._nui):
-            raise ValueError("Number of components in mole fraction list doesn't match components in nui. Check bead_config.")
-
-        if T != self.T:
-            self._temp_dependent_variables(T)
-
-        self._xi_dependent_variables(xi)
-
-        daresdxi = np.zeros_like(xi)
-        mui = np.zeros_like(xi)
-
-        # Set step size in finite difference method
-        dnmol = 1.0E-4
-        xi = np.array(xi,float)
-        xi_tmp = xi[xi!=0.]
-        if any(xi_tmp-dnmol < 0.):
-            exp = np.floor(np.log10(min(xi_tmp)))-2 # Make sure step size is two orders of magnitude lower
-            logger.debug("    Mole fraction, {}, is smaller than increment, {}. Use new increment, {}.".format(xi,dnmol,10**exp))
-            dnmol = 10**exp
-
-        # compute mui
-        for i in range(np.size(mui)):
-            dAres = np.zeros(2)
-            ares = funcs.calc_Ares(rho * constants.Nav, xi, T, self._beads, self._beadlibrary, self._massi, self._nui, self._Cmol2seg, self._xsk, self._xskl,self._dkk, self._epsilonkl, self._sigmakl, self._dkl, self._l_akl, self._l_rkl, self._Ckl, self._x0kl, self._epsilonHB, self._Kklab, self._nk)
-            for j, delta in enumerate((dnmol, -dnmol)):
-                xi_temp = np.copy(xi)
-                if xi_temp[i] != 0.:
-                    xi_temp[i] += delta
-                Cmol2seg_tmp, xsk_tmp, xskl_tmp = funcs.calc_composition_dependent_variables(xi_temp, self._nui, self._beads, self._beadlibrary)
-                # xi_temp/=(nmol+delta)
-                dAres[j] = funcs.calc_Ares(rho * constants.Nav, xi_temp, T, self._beads, self._beadlibrary, self._massi, self._nui, Cmol2seg_tmp, xsk_tmp, xskl_tmp, self._dkk, self._epsilonkl, self._sigmakl, self._dkl, self._l_akl, self._l_rkl, self._Ckl, self._x0kl, self._epsilonHB, self._Kklab, self._nk)
-            daresdxi[i] = (dAres[0] - dAres[1]) / (2.0 * dnmol)
-
-        # compute Z
-        Z = P / (rho * T * constants.Nav * constants.kb)
-
-        xjdaresdxj = np.sum(xi * daresdxi)
-        for i in range(np.size(mui)):
-            mui[i] = ares + Z - 1.0 + daresdxi[i] - xjdaresdxj - np.log(Z)
-    
-        return mui
+        return Achain
 
     def density_max(self, xi, T, maxpack=0.65):
 
@@ -392,331 +1063,535 @@ class saft_gamma_mie(EOStemplate):
             Mole fraction of each component
         T : float
             Temperature of the system [K]
-        maxpack : float, Optional, default: 0.65
+        maxpack : float, Optional, default=0.65
             Maximum packing fraction
         
         Returns
         -------
-        maxrho : float
-            Maximum molar density [mol/m^3]
+        max_density : float
+            Maximum molar density [:math:`mol/m^3`]
         """
 
-        #logger = logging.getLogger(__name__)
-
-        if T != self.T:
-            self._temp_dependent_variables(T)
-
-        self._xi_dependent_variables(xi)
+        self._check_temperature_dependent_parameters(T)
+        self._check_composition_dependent_parameters(xi)
 
         # estimate the maximum density based on the hard sphere packing fraction
         # etax, assuming a maximum packing fraction specified by maxpack
-        maxrho = maxpack * 6.0 / (self._Cmol2seg * np.pi * np.sum(self._xskl * (self._dkl**3))) / constants.Nav
 
-        return maxrho
+        max_density = (
+            maxpack
+            * 6.0
+            / (
+                self.eos_dict["Cmol2seg"]
+                * np.pi
+                * np.sum(self.eos_dict["xskl"] * (self.eos_dict["dkl"] ** 3))
+            )
+            / constants.molecule_per_nm3
+        )
 
-    def param_guess(self, param_name, bead_names):
-        """
-        Generate initial guesses for the parameters to be fit.
+        return max_density
 
-        Parameters
-        ----------
-        param_name : str
-            Parameter to be fit. See EOS mentation for supported parameter names.
-        bead_names : list
-            Bead names to be changed. For a self interaction parameter, the length will be 1, for a cross interaction parameter, the length will be two.
-
-        Returns
-        -------
-        param_initial_guess : numpy.ndarray, 
-            An initial guess for parameter, it will be optimized throughout the process.
-        """
-
-        #logger = logging.getLogger(__name__)
-
-        param_types = ["epsilon", "sigma", "l_r", "l_a", "Sk", "K"]
-
-        if len(bead_names) > 2:
-            raise ValueError("The bead names {} were given, but only a maximum of 2 are permitted.".format(", ".join(bead_names)))
-        if not set(bead_names).issubset(self._beads):
-            raise ValueError("The bead names {} were given, but they are not in the allowed list: {}".format(", ".join(bead_names),", ".join(self._beads)))
-
-        # Non bonded parameters
-        if (param_name in ["epsilon", "sigma", "l_r", "l_a", "Sk"]):
-            # Self interaction parameter
-            if len(bead_names) == 1:
-                if bead_names[0] in self._beadlibrary:
-                    param_value = self._beadlibrary[bead_names[0]][param_name]
-                else:
-                    param_value = self.check_bounds(param_name, bead_names, np.empty(2))[1]/2
-            # Cross interaction parameter
-            elif len(bead_names) == 2:
-                if bead_names[1] in self._crosslibrary and bead_names[0] in self._crosslibrary[bead_names[1]]:
-                    param_value = self._crosslibrary[bead_names[1]][bead_names[0]][param_name]
-                elif bead_names[0] in self._crosslibrary and bead_names[1] in self._crosslibrary[bead_names[0]]:
-                    param_value = self._crosslibrary[bead_names[0]][bead_names[1]][param_name]
-                else:
-                    param_value = self.check_bounds(param_name, bead_names, np.empty(2))[1]/2
-
-        # Association Sites
-        elif any([param_name.startswith('epsilon'), param_name.startswith('K')]):
-            tmp = [param_name.startswith('epsilon'), param_name.startswith('K')]
-            # Ensure sitenames are valid and on list
-            if tmp[0] == True: tmp_name_full = param_name.replace("epsilon","")
-            elif tmp[1] == True: tmp_name_full = param_name.replace("K","")
-            flag = 0
-
-            for site1 in self._sitenames:
-                if tmp_name_full.startswith(site1):
-                    tmp_name = tmp_name_full.replace(site1,"")
-                    for site2 in self._sitenames:
-                        if tmp_name == site2:
-                            flag = 1
-                            break
-                    if flag == 1:
-                        break
-            if flag == 0:
-                raise ValueError("site_names should be two different sites in the list: {}. You gave: {}".format(tmp_name_full,", ".join(sitenames=self._sitenames)))
-
-            tmp_nm = param_name+"".join(site_names)
-            # Self interaction parameter
-            if len(bead_names) == 1:
-                if bead_names[0] in self._beadlibrary and tmp_nm in self._beadlibrary[bead_names[0]]:
-                    param_value = self._beadlibrary[bead_names[0]][tmp_nm]
-            # Cross interaction parameter
-            elif len(bead_names) == 2:
-                if bead_names[1] in self._crosslibrary and bead_names[0] in self._crosslibrary[bead_names[1]]:
-                    param_value = self._crosslibrary[bead_names[1]][bead_names[0]][tmp_nm]
-                elif bead_names[0] in self._crosslibrary and bead_names[1] in self._crosslibrary[bead_names[0]]:
-                    param_value = self._crosslibrary[bead_names[0]][bead_names[1]][tmp_nm]
-                else:
-                    param_value = self.check_bounds(param_name, bead_names, np.empty(2))[1]/2
-
-        else:
-            raise ValueError("The parameter name {} is not found in the allowed parameter types: {}".format(param_name,", ".join(param_types)))
-
-        return param_value
-
-    def check_bounds(self, fit_bead, param_name, bounds):
-        """
-        Generate initial guesses for the parameters to be fit.
-        
-        Parameters
-        ----------
-        fit_bead : str
-            Name of bead being fit
-        param_name : str
-            Parameter to be fit. See EOS mentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
-        param_value : float
-            Value of parameter
-        
-        Returns
-        -------
-        bounds : list
-            A screened and possibly corrected low and a high value for the parameter, param_name
-        """
-        
-        logger = logging.getLogger(__name__)
-        param_bound_extreme = {"epsilon":[0.,1000.], "sigma":[0.,9e-9], "l_r":[0.,100.], "l_a":[0.,100.], "Sk":[0.,1.], "epsilon-a":[0.,5000.], "K":[0.,10000.]}
-
-        bead_names = [fit_bead]
-
-        fit_params_list = param_name.split("_")
-        param_name = fit_params_list[0]
-        if len(fit_params_list) > 1:
-            if fit_params_list[0] == "l":
-                if fit_params_list[1] in ["r","a"]:
-                    param_name = "_".join([fit_params_list[0],fit_params_list[1]])
-                    fit_params_list.remove(fit_params_list[1])
-
-            if len(fit_params_list) > 1:
-                bead_names.append(fit_params_list[1])
-        
-        if len(bead_names) > 2:
-            raise ValueError("The bead names {} were given, but only a maximum of 2 are permitted.".format(", ".join(bead_names)))
-        if not set(bead_names).issubset(self._beads):
-            raise ValueError("The bead names {} were given, but they are not in the allowed list: {}".format(", ".join(bead_names),", ".join(self._beads)))
-        
-        bounds_new = np.zeros(2)
-        # Non bonded parameters
-        if (param_name in param_bound_extreme):
-            # Self interaction parameter
-            if len(bead_names) == 1:
-                if bounds[0] < param_bound_extreme[param_name][0]:
-                    logger.debug("Given {} lower boundary, {}, is less than what is recommended by eos object. Using value of {}.".format(param_name,bounds[0],param_bound_extreme[param_name][0]))
-                    bounds_new[0] = param_bound_extreme[param_name][0]
-                else:
-                    bounds_new[0] = bounds[0]
-        
-                if (bounds[1] > param_bound_extreme[param_name][1] or bounds[1] < 1e-32):
-                    logger.debug("Given {} upper boundary, {}, is greater than what is recommended by eos object. Using value of {}.".format(param_name,bounds[1],param_bound_extreme[param_name][1]))
-                    bounds_new[1] = param_bound_extreme[param_name][1]
-                else:
-                    bounds_new[1] = bounds[1]
-                        
-            # Cross interaction parameter
-            elif len(bead_names) == 2:
-                if bounds[0] < param_bound_extreme[param_name][0]:
-                    logger.debug("Given {}_{} lower boundary, {}, is less than what is recommended by eos object. Using value of {}.".format(param_name,bead_names[1],bounds[0],param_bound_extreme[param_name][0]))
-                    bounds_new[0] = param_bound_extreme[param_name][0]
-                else:
-                    bounds_new[0] = bounds[0]
-
-                if (bounds[1] > param_bound_extreme[param_name][1] or bounds[1] < 1e-32):
-                    logger.debug("Given {}_{} upper boundary, {}, is greater than what is recommended by eos object. Using value of {}.".format(param_name,bead_names[1],bounds[1],param_bound_extreme[param_name][1]))
-                    bounds_new[1] = param_bound_extreme[param_name][1]
-                else:
-                    bounds_new[1] = bounds[1]
-        
-        # Association Sites
-        elif any([param_name.startswith('epsilon'), param_name.startswith('K')]):
-            tmp = [param_name.startswith('epsilon'), param_name.startswith('K')]
-            # Ensure sitenames are valid and on list
-            if tmp[0] == True:
-                param_name_tmp = "epsilon-a"
-            elif tmp[1] == True:
-                param_name_tmp = "K"
-
-            if bounds[0] < param_bound_extreme[param_name_tmp][0]:
-                logger.debug("Given {} lower boundary, {}, is less than what is recommended by eos object. Using value of {}.".format(param_name,bounds[0],param_bound_extreme[param_name_tmp][0]))
-                bounds_new[0] = param_bound_extreme[param_name][0]
-            else:
-                bounds_new[0] = bounds[0]
-
-            if (bounds[1] > param_bound_extreme[param_name_tmp][1] or bounds[1] < 1e-32):
-                logger.debug("Given {} upper boundary, {}, is greater than what is recommended by eos object. Using value of {}.".format(param_name,bounds[1],param_bound_extreme[param_name_tmp][1]))
-                bounds_new[1] = param_bound_extreme[param_name][1]
-            else:
-                bounds_new[1] = bounds[1]
-                
-        else:
-            raise ValueError("The parameter name {} is not found in the allowed parameter types: {}".format(param_name,", ".join(param_types)))
-        
-        return bounds_new
-    
-    def update_parameters(self, fit_bead, param_name, param_value):
+    @staticmethod
+    def calc_fm(alphakl, mlist):
         r"""
-        Update a single parameter value during parameter fitting process.
-
-        To refresh those parameters that are dependent on to _beadlibrary or _crosslibrary, use method "parameter refresh".
+        Calculate list of coefficients used to compute the correction term for :math:`A_{2nd order}/Nk_{B}T` which is related to the fluctuations of attractive energy. where a list of m values are specified in mlist eq. 39
         
         Parameters
         ----------
-        fit_bead : str
-            Name of bead being fit
-        param_name : str
-            Parameter to be fit. See EOS mentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
-        param_value : float
-            Value of parameter
+        alphakl : numpy.ndarray
+            (Ngroup,Ngroup) "A dimensionless form of the integrated vdW energy of the Mie potential" eq. 33
+        mlist : numpy.ndarray
+            (number of m values) an array of integers used in the calculation of :math:`A^{mono}`
+        
+        Returns
+        -------
+        fmlist : numpy.ndarray
+            List of coefficients used to compute the correction term for :math:`A_{2}` which is related to the fluctuations of attractive energy.
         """
 
-        #logger = logging.getLogger(__name__)
-
-        param_types = ["epsilon", "sigma", "l_r", "l_a", "Sk", "K"]
-
-        bead_names = [fit_bead]
-
-        fit_params_list = param_name.split("_")
-        param_name = fit_params_list[0]
-        if len(fit_params_list) > 1:
-            if fit_params_list[0] == "l":
-                if fit_params_list[1] in ["r","a"]:
-                    param_name = "_".join([fit_params_list[0],fit_params_list[1]])
-                    fit_params_list.remove(fit_params_list[1])
-
-            if len(fit_params_list) > 1:
-                bead_names.append(fit_params_list[1])
-
-        if len(bead_names) > 2:
-            raise ValueError("The bead names {} were given, but only a maximum of 2 are permitted.".format(", ".join(bead_names)))
-        if not set(bead_names).issubset(self._beads):
-            raise ValueError("The bead names {} were given, but they are not in the allowed list: {}".format(", ".join(bead_names),", ".join(self._beads)))
-
-        # Non bonded parameters
-        if (param_name in ["epsilon", "sigma", "l_r", "l_a", "Sk"]):
-            # Self interaction parameter
-            if len(bead_names) == 1:
-                if bead_names[0] in self._beadlibrary:
-                    self._beadlibrary[bead_names[0]][param_name] = param_value
-                else:
-                    self._beadlibrary[bead_names[0]] = {param_name: param_value}
-            # Cross interaction parameter
-            elif len(bead_names) == 2:
-                if bead_names[1] in self._crosslibrary and bead_names[0] in self._crosslibrary[bead_names[1]]:
-                    self._crosslibrary[bead_names[1]][bead_names[0]][param_name] = param_value
-                elif bead_names[0] in self._crosslibrary:
-                    if bead_names[1] in self._crosslibrary[bead_names[0]]:
-                        self._crosslibrary[bead_names[0]][bead_names[1]][param_name] = param_value
-                    else:
-                        self._crosslibrary[bead_names[0]][bead_names[1]] = {param_name: param_value} 
-                else:
-                    self._crosslibrary[bead_names[0]] = {bead_names[1]: {param_name: param_value}}
-
-        # Association Sites
-        elif any([param_name.startswith('epsilon'), param_name.startswith('K')]):
-            tmp = [param_name.startswith('epsilon'), param_name.startswith('K')]
-            # Ensure sitenames are valid and on list
-            if tmp[0] == True: tmp_name_full = param_name.replace("epsilon","")
-            elif tmp[1] == True: tmp_name_full = param_name.replace("K","")
-            flag = 0
-
-            for site1 in self._sitenames:
-                if tmp_name_full.startswith(site1):
-                    tmp_name = tmp_name_full.replace(site1,"")
-                    for site2 in self._sitenames:
-                        if tmp_name == site2:
-                            flag = 1
-                            break
-                    if flag == 1:
-                        break
-            if flag == 0:
-                raise ValueError("site_names should be two different sites in the list: {}. You gave: {}".format(tmp_name_full,", ".join(sitenames=self._sitenames)))
-
-            tmp_nm = param_name+"".join(site_names)
-            # Self interaction parameter
-            if len(bead_names) == 1:
-                if bead_names[0] in self._beadlibrary and tmp_nm in self._beadlibrary[bead_names[0]]:
-                    self._beadlibrary[bead_names[0]][tmp_nm] = param_value
-                else:
-                    self._beadlibrary[bead_names[0]] = {tmp_nm: param_value}
-            # Cross interaction parameter
-            elif len(bead_names) == 2:
-                if bead_names[1] in self._crosslibrary and bead_names[0] in self._crosslibrary[bead_names[1]]:
-                    self._crosslibrary[bead_names[1]][bead_names[0]][tmp_nm] = param_value
-                elif bead_names[0] in self._crosslibrary:
-                    if bead_names[1] in self._crosslibrary[bead_names[0]]:
-                        self._crosslibrary[bead_names[0]][bead_names[1]][tmp_nm] = param_value
-                    else:
-                        self._crosslibrary[bead_names[0]][bead_names[1]] = {tmp_nm: param_value}
-                else:
-                    self._crosslibrary[bead_names[0]] = {bead_names[1]: {tmp_nm: param_value}}
-
+        if np.size(np.shape(alphakl)) == 2:
+            fmlist = np.zeros(
+                (np.size(mlist), np.size(alphakl, axis=0), np.size(alphakl, axis=0))
+            )
+        elif np.size(np.shape(alphakl)) == 1:
+            fmlist = np.zeros((np.size(mlist), np.size(alphakl, axis=0)))
         else:
-            raise ValueError("The parameter name {} is not found in the allowed parameter types: {}".format(param_name,", ".join(param_types)))
+            logger.error("Unexpected shape in calc_fm")
+        mlist = mlist - 1
 
-    def parameter_refresh(self):
+        phimn = np.array(
+            [
+                [
+                    7.53655570e00,
+                    -3.76046300e01,
+                    7.17459530e01,
+                    -4.68355200e01,
+                    -2.46798200e00,
+                    -5.02720000e-01,
+                    8.09568830e00,
+                ],
+                [
+                    -3.59440000e02,
+                    1.82560000e03,
+                    -3.16800000e03,
+                    1.88420000e03,
+                    -8.23760000e-01,
+                    -3.19350000e00,
+                    3.70900000e00,
+                ],
+                [
+                    1.55090000e03,
+                    -5.07010000e03,
+                    6.53460000e03,
+                    -3.28870000e03,
+                    -2.71710000e00,
+                    2.08830000e00,
+                    0.00000000e00,
+                ],
+                [
+                    -1.19932000e00,
+                    9.06363200e00,
+                    -1.79482000e01,
+                    1.13402700e01,
+                    2.05214200e01,
+                    -5.66377000e01,
+                    4.05368300e01,
+                ],
+                [
+                    -1.91128000e03,
+                    2.13901750e04,
+                    -5.13207000e04,
+                    3.70645400e04,
+                    1.10374200e03,
+                    -3.26461000e03,
+                    2.55618100e03,
+                ],
+                [
+                    9.23690000e03,
+                    -1.29430000e05,
+                    3.57230000e05,
+                    -3.15530000e05,
+                    1.39020000e03,
+                    -4.51820000e03,
+                    4.24160000e03,
+                ],
+                [
+                    1.00000000e01,
+                    1.00000000e01,
+                    5.70000000e-01,
+                    -6.70000000e00,
+                    -8.00000000e00,
+                    0.00000000e00,
+                    0.00000000e00,
+                ],
+            ]
+        )
+
+        for i, m in enumerate(mlist):
+            for n in range(4):
+                fmlist[i] += phimn[m, n] * (alphakl ** n)
+            dum = np.ones_like(fmlist[i])
+            for n in range(4, 7):
+                dum += phimn[m, n] * (alphakl ** (n - 3.0))
+            fmlist[i] = fmlist[i] / dum
+
+        return fmlist
+
+    def calc_gr_assoc(self, rho, T, xi, Ktype="ijklab"):
+        r"""
+            
+        Reference fluid pair correlation function used in calculating association sites
+        
+        Parameters
+        ----------
+        rho : numpy.ndarray
+            Number density of system [:math:`mol/m^3`]
+        T : float
+            Temperature of the system [K]
+        xi : numpy.ndarray
+            Mole fraction of each component, sum(xi) should equal 1.0
+        Ktype : str, Optional, default='ijklab'
+            Indicates which radial distribution function to return
+
+            - 'ijklab': The bonding volume was calculated from self.calc_Kijklab, return gHS_dij)
+            - 'klab': The bonding volume was provided to saft.py so use temperature-density polynomial correlation
+    
+        Returns
+        -------
+        Iij : numpy.ndarray
+            A temperature-density polynomial correlation of the association integral for a Lennard-Jones monomer. This matrix is (len(rho) x Ncomp x Ncomp)
+        """
+
+        rho = self._check_density(rho)
+        self._check_temperature_dependent_parameters(T)
+        self._check_composition_dependent_parameters(xi)
+
+        if Ktype == "klab":
+            gr = calc_Iij(
+                rho,
+                T,
+                xi,
+                self.eos_dict["epsilonii_avg"],
+                self.eos_dict["sigmaii_avg"],
+                self.eos_dict["sigmakl"],
+                self.eos_dict["xskl"],
+            )
+        elif Ktype == "ijklab":
+            gr = self.calc_gdHS_assoc(rho, T, xi)
+        else:
+            raise ValueError(
+                "Ktype does not indicate a known gr_assoc for this saft type."
+            )
+
+        return gr
+
+    def calc_gdHS_assoc(self, rho, T, xi):
+        r"""
+            
+        Radial distribution function at contact.
+
+        Papaioannou J. Chem. Phys. 140, 054107 (2014)
+        
+        Parameters
+        ----------
+        rho : numpy.ndarray
+            Number density of system [:math:`mol/m^3`]
+        T : float
+            Temperature of the system [K]
+        xi : numpy.ndarray
+            Mole fraction of each component, sum(xi) should equal 1.0
+    
+        Returns
+        -------
+        gr : numpy.ndarray
+            This matrix is (len(rho) x Ncomp x Ncomp)
+        """
+
+        rho = self._check_density(rho)
+        self._check_temperature_dependent_parameters(T)
+        self._check_composition_dependent_parameters(xi)
+
+        eta = np.zeros((np.size(rho), 2))
+        for m in range(2, 4):
+            eta[:, m] = (
+                rho
+                * constants.molecule_per_nm3
+                * self.eos_dict["Cmol2seg"]
+                * (
+                    np.sum(
+                        np.sqrt(np.diag(self.eos_dict["xskl"]))
+                        * (np.diag(self.eos_dict["dkl"]) ** m)
+                    )
+                    * (np.pi / 6.0)
+                )
+            )
+
+        gr = np.zeros((len(rho), self.ncomp, self.ncomp))
+        tmp0 = 1 / (1 - eta[:, 1])
+        tmp1 = eta[:, 0] / (1 - eta[:, 1]) ** 2
+        tmp2 = eta[:, 0] ** 2 / (1 - eta[:, 1]) ** 3
+        for i in range(ncomp):
+            for j in range(ncomp):
+                tmp = (
+                    self.eos_dict["dii_eff"][i]
+                    * self.eos_dict["dii_eff"][j]
+                    / (self.eos_dict["dii_eff"][i] + self.eos_dict["dii_eff"][j])
+                )
+                gr[:, i, j] = tmp0 + 3 * tmp * tmp1 + 2 * tmp ** 2 * tmp2
+
+        return gr
+
+    def calc_Kijklab(self, T, rc_klab, rd_klab=None, reduction_ratio=0.25):
+        r"""
+            
+        Calculation of association site bonding volume, dependent on molecule in addition to group
+
+        Papaioannou J. Chem. Phys. 140, 054107 (2014)
+        
+        Parameters
+        ----------
+        T : float
+            Temperature of the system [K]
+            NoteHere
+        rc_klab : numpy.ndarray
+            This matrix of cutoff distances for association sites for each site type in each group type
+        rd_klab : numpy.ndarray, Optional, default=None
+            Position of association site in each group (nbead, nbead, nsite, nsite)
+        reduction_ratio : float, Optional, default=0.25
+            Reduced distance of the sites from the center of the sphere of interaction. This value is used when site position, rd_klab is None
+    
+        Returns
+        -------
+        Kijklab : numpy.ndarray
+            Bonding volume for each molecule and site combination.
+        """
+
+        self._check_temperature_dependent_parameters(T)
+
+        dij_bar = np.zeros((self.ncomp, self.ncomp))
+        for i in range(self.ncomp):
+            for j in range(self.ncomp):
+                dij_bar[i, j] = np.mean(
+                    [self.eos_dict["dii_eff"][i], self.eos_dict["dii_eff"][j]]
+                )
+
+        Kijklab = Aassoc.calc_bonding_volume(
+            rc_klab, dij_bar, rd_klab=rd_klab, reduction_ratio=reduction_ratio
+        )
+
+        return Kijklab
+
+    def parameter_refresh(self, bead_library, cross_library):
         r""" 
         To refresh dependent parameters
         
-        Those parameters that are dependent on _beadlibrary and _crosslibrary attributes **must** be updated by running this function after all parameters from update_parameters method have been changed.
+        Those parameters that are dependent on bead_library and cross_library attributes **must** be updated by running this function after all parameters from update_parameters method have been changed.
+
+        Attributes
+        ----------
+        alphakl : np.array
+            (Ngroup,Ngroup) "A dimensionless form of the integrated vdW energy of the Mie potential" eq. 33
+        eos_dict : dict
+            The following entries are updated:
+
+            - Ckl (numpy.ndarray) - Matrix of Mie potential prefactors between beads  (l,k)
+            - epsilonkl (numpy.ndarray) - Matrix of Mie potential well depths for groups (k,l)
+            - sigmakl (numpy.ndarray) - Matrix of bead diameters (k,l)
+            - lambdarkl (numpy.ndarray) - Matrix of repulsive Mie exponent for groups (k,l)
+            - lambdaakl (numpy.ndarray) - Matrix of attractive Mie exponent for groups (k,l)
+            - Cmol2seg (float) - Conversion factor from from molecular number density, :math:`\rho`, to segment (i.e. group) number density, :math:`\rho_S`.
+            - xskl (numpy.ndarray) - Matrix of mole fractions of bead (i.e. segment or group) k multiplied by that of bead l
+
         """
 
-        #logger = logging.getLogger(__name__)
+        self.bead_library.update(bead_library)
+        self.cross_library.update(cross_library)
+
+        self.eos_dict["Sk"] = tb.extract_property(
+            "Sk", self.bead_library, self.beads, default=1.0
+        )
+
+        output = tb.cross_interaction_from_dict(
+            self.beads,
+            self.bead_library,
+            self.combining_rules,
+            cross_library=self.cross_library,
+        )
+        self.eos_dict["sigmakl"] = output["sigma"]
+        self.eos_dict["epsilonkl"] = output["epsilon"]
+        self.eos_dict["lambdaakl"] = output["lambdaa"]
+        self.eos_dict["lambdarkl"] = output["lambdar"]
 
         # Update Non bonded matrices
-        self._epsilonkl, self._sigmakl, self._l_akl, self._l_rkl, self._Ckl = funcs.calc_interaction_matrices(self._beads, self._beadlibrary, crosslibrary=self._crosslibrary)
+        if not np.isnan(self.T) and self.T != None:
+            self._check_temperature_dependent_parameters(self.T)
+        else:
+            self._check_temperature_dependent_parameters(298)
 
-        # Update Association site matrices
-        self._epsilonHB, self._Kklab, self._nk = funcs.calc_assoc_matrices(self._beads,self._beadlibrary,sitenames=self._sitenames,crosslibrary=self._crosslibrary)
+        # Initiate average interaction terms
+        self.calc_component_averaged_properties()
 
-        # Update temperature dependent variables
-        if np.isnan(self.T) == False:
-            self._temp_dependent_variables(self.T)
+        if not np.any(np.isnan(self.xi)):
+            self.eos_dict["Cmol2seg"], self.eos_dict[
+                "xskl"
+            ] = stb.calc_composition_dependent_variables(
+                self.xi,
+                self.eos_dict["molecular_composition"],
+                self.bead_library,
+                self.beads,
+            )
 
+        self.eos_dict["Ckl"] = prefactor(
+            self.eos_dict["lambdarkl"], self.eos_dict["lambdaakl"]
+        )
+        self.eos_dict["alphakl"] = self.eos_dict["Ckl"] * (
+            (1.0 / (self.eos_dict["lambdaakl"] - 3.0))
+            - (1.0 / (self.eos_dict["lambdarkl"] - 3.0))
+        )
+
+    def _check_density(self, rho):
+        r"""
+        This function checks that the density array is in the correct format for further calculations.
+        
+        Parameters
+        ----------
+        rho : numpy.ndarray
+            Number density of system [:math:`mol/m^3`]
+
+        Returns
+        -------
+        rho : numpy.ndarray
+            Number density of system [:math:`mol/m^3`]
+
+        """
+
+        if np.isscalar(rho):
+            rho = np.array([rho])
+        elif type(rho) != np.ndarray:
+            rho = np.array(rho)
+        if len(np.shape(rho)) == 2:
+            rho = rho[0]
+
+        if any(np.isnan(rho)):
+            raise ValueError("NaN was given as a value of density, rho")
+        elif rho.size == 0:
+            raise ValueError("No value of density, rho, was given")
+        elif any(rho < 0.0):
+            raise ValueError("Density values cannot be negative.")
+
+        return rho
+
+    def _check_temperature_dependent_parameters(self, T):
+        r"""
+        This function checks that the temperature dependent parameters are computed for the correct value. If not, they are recomputed.
+        
+        Parameters
+        ----------
+        T : float
+            Temperature of the system [K]
+            
+        Attributes
+        ---------
+        T : float
+            Updated temperature value
+        eos_dict : dict
+            The following entries are updated:
+
+            - dkl (numpy.ndarray) - Matrix of hard sphere equivalent for each bead and interaction between them (l,k)
+            - x0kl (numpy.ndarray) - Matrix of sigmakl/dkl, sigmakl is the Mie radius for groups (k,l)
+            - etc. Other matrices will also be updated if temperature dependent multipole mixing rules are used.
+
+        """
+
+        if self.T != T:
+            self.T = T
+            # Check for temperature dependent mixing rule
+            if self._mixing_temp_dependence == None:
+                self._mixing_temp_dependence = False
+                for key, value in self.combining_rules.items():
+                    if "temperature" in value:
+                        self._mixing_temp_dependence = True
+                        if "additional_outputs" in value:
+                            for params in value["additional_outputs"]:
+                                self.combining_rules[params]["function"] = "None"
+                        self.combining_rules[key]["temperature"] = T
+            else:
+                for key, value in self.combining_rules.items():
+                    if "temperature" in value:
+                        self.combining_rules[key]["temperature"] = T
+
+            if self._mixing_temp_dependence:
+                output = tb.cross_interaction_from_dict(
+                    self.beads,
+                    self.bead_library,
+                    self.combining_rules,
+                    cross_library=self.cross_library,
+                )
+                self.eos_dict["sigmakl"] = output["sigma"]
+                self.eos_dict["epsilonkl"] = output["epsilon"]
+                self.eos_dict["lambdaakl"] = output["lambdaa"]
+                self.eos_dict["lambdarkl"] = output["lambdar"]
+
+                # compute alphakl eq. 33
+                self.eos_dict["Ckl"] = prefactor(
+                    self.eos_dict["lambdarkl"], self.eos_dict["lambdaakl"]
+                )
+                self.eos_dict["alphakl"] = self.eos_dict["Ckl"] * (
+                    (1.0 / (self.eos_dict["lambdaakl"] - 3.0))
+                    - (1.0 / (self.eos_dict["lambdarkl"] - 3.0))
+                )
+                self.calc_component_averaged_properties()
+
+            self.eos_dict["dkl"], self.eos_dict[
+                "x0kl"
+            ] = stb.calc_hard_sphere_matricies(
+                T, self.eos_dict["sigmakl"], self.bead_library, self.beads, prefactor
+            )
+            self._update_chain_temperature_dependent_variables(T)
+
+    def _check_composition_dependent_parameters(self, xi):
+        r"""
+        This function checks that the composition dependent parameters are computed for the correct value. If not, they are recomputed.
+        
+        Parameters
+        ----------
+        xi : numpy.ndarray
+            Mole fraction of each component, sum(xi) should equal 1.0
+        
+        Attributes
+        ---------
+        xi : numpy.ndarray
+            Component mole fractions are updated
+        eos_dict : dict
+            The following entries are updated:
+
+            - Cmol2seg (float) - Conversion factor from from molecular number density, :math:`\rho`, to segment (i.e. group) number density, :math:`\rho_S`.
+            - xskl (numpy.ndarray) - Matrix of mole fractions of bead (i.e. segment or group) k multiplied by that of bead l
+
+        """
+        xi = np.array(xi)
+        if not np.all(self.xi == xi):
+            self.eos_dict["Cmol2seg"], self.eos_dict[
+                "xskl"
+            ] = stb.calc_composition_dependent_variables(
+                xi,
+                self.eos_dict["molecular_composition"],
+                self.bead_library,
+                self.beads,
+            )
+            self.xi = xi
+
+    def _update_chain_temperature_dependent_variables(self, T):
+        r"""
+        This function checks that the temperature dependent parameters for the chain contribution are computed for the correct value. If not, they are recomputed.
+        
+        Parameters
+        ----------
+        T : float
+            Temperature of the system [K]
+        
+        Attributes
+        ---------
+        T : float
+            Updated temperature value
+        eos_dict : dict
+            The following entries are updated:
+
+            - dii_eff (numpy.ndarray) - Matrix of mole averaged hard sphere equivalent for each bead and interaction between them (i.j)
+            - x0ii (numpy.ndarray) - Matrix of sigmaii_avg/dii_eff, sigmaii_avg is the average molecular Mie radius and dii_eff the average molecular hard sphere diameter
+
+        """
+
+        zki = np.zeros((self.ncomp, self.nbeads), float)
+        zkinorm = np.zeros(self.ncomp, float)
+        dii_eff = np.zeros((self.ncomp), float)
+        # compute zki
+        for i in range(self.ncomp):
+            for k in range(self.nbeads):
+                zki[i, k] = (
+                    self.eos_dict["molecular_composition"][i, k]
+                    * self.eos_dict["Vks"][k]
+                    * self.eos_dict["Sk"][k]
+                )
+                zkinorm[i] += zki[i, k]
+
+        for i in range(self.ncomp):
+            for k in range(self.nbeads):
+                zki[i, k] = zki[i, k] / zkinorm[i]
+
+        for i in range(self.ncomp):
+            for k in range(self.nbeads):
+                for l in range(self.nbeads):
+                    dii_eff[i] += (
+                        zki[i, k] * zki[i, l] * self.eos_dict["dkl"][k, l] ** 3
+                    )
+            dii_eff[i] = dii_eff[i] ** (1 / 3.0)
+        self.eos_dict["dii_eff"] = dii_eff
+
+        # compute x0ii
+        self.eos_dict["x0ii"] = self.eos_dict["sigmaii_avg"] / dii_eff
 
     def __str__(self):
 
-        string = "Beads:" + str(self._beads) + "\n"
-        string += "T:" + str(self.T) + "\n"
+        string = "Beads: {}".format(self.beads)
         return string
-
-

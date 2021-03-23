@@ -1,0 +1,9 @@
+{
+    "bead_configuration": [[["CO2", 1]], [["H2O", 1]]],
+    "EOSgroup": "../../library/SAFTgroup.json",
+    "EOScross": "../../library/SAFTcross.json",
+    "output_file": "out_yi.txt",
+    "calculation_type" : "dew_pressure",
+    "Tlist" : [323.2,323.2],
+    "yilist": [[0.9954,	0.0046],[0.9963,0.0037]]
+}

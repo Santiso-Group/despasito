@@ -1,0 +1,89 @@
+{
+    "OH": {
+        "epsilon": 336.839, 
+        "lambda": 1.740, 
+        "sigma": 4.723e-1, 
+        "Sk": 0.223, 
+        "Vks": 1,
+        "mass": 0.017007,
+        "Nk-a": 2,
+        "Nk-b": 1,
+        "epsilonHB-a-b": 2583.781,
+        "epsilonHB-a-a": 0.0,
+        "epsilonHB-b-b": 0.0,
+        "rc-a-b": 0.2358,
+        "rc-a-a": 0.0,
+        "rc-b-b": 0.0
+    },
+    "C=O": {
+        "epsilon": 386.833,
+        "lambda": 1.782,
+        "sigma": 2.787e-1,
+        "Sk": 0.482,
+        "Vks": 2,
+        "Nk-a": 2,
+        "epsilonHB-a-a": 0.0,
+        "rc-a-a": 0.0,
+        "mass": 0.02801
+    },
+    "COOH": {
+        "epsilon": 269.285,
+        "lambda": 1.538,
+        "sigma": 2.806e-1,
+        "Sk": 0.644,
+        "Vks": 3,
+        "Nk-a": 2,
+        "Nk-b": 1,
+        "epsilonHB-b-b": 3594.295,
+        "epsilonHB-a-b": 0.0,
+        "epsilonHB-a-a": 0.0,
+        "rc-b-b": 0.2244,
+        "rc-a-a": 0.0,
+        "rc-a-b": 0.0,
+        "mass": 0.045018
+    },
+    "H2O": {
+        "epsilon": 250.0,
+        "lambda": 1.7889,
+        "sigma": 3.0342e-1,
+        "Sk": 1.0,
+        "Vks": 1.0,
+        "Nk-e": 2,
+        "Nk-H": 2,
+        "epsilonHB-e-H": 1400.0,
+        "rc-e-H": 0.210822,
+        "mass": 0.018015
+    },
+    "CH3": {
+        "epsilon": 252.601, 
+        "lambda": 1.413, 
+        "sigma": 3.810e-1, 
+        "Sk": 0.667, 
+        "Vks": 1,
+        "mass": 0.01503502
+    }, 
+    "aCH": {
+        "epsilon": 240.600,
+        "lambda": 1.765,
+        "sigma": 3.241e-1,
+        "Sk": 0.390,
+        "Vks": 1,
+        "mass": 0.013018
+    },
+    "aCCH2": {
+        "epsilon": 273.274,
+        "lambda": 1.772,
+        "sigma": 4.159e-1,
+        "Sk": 0.644,
+        "Vks": 1,
+        "mass": 0.026036
+    },
+    "CH2": {
+        "epsilon": 240.482, 
+        "lambda": 1.661, 
+        "sigma": 4.027e-1, 
+        "Sk": 0.333, 
+        "Vks": 1,
+        "mass": 0.01402708
+    }  
+}

@@ -1,0 +1,10 @@
+{
+    "bead_configuration": [[["CO2", 1]], [["H2O", 1]]], 
+    "EOSgroup": "../../library/SAFTgroup.json",
+    "EOScross": "../../library/SAFTcross.json",
+    "output_file": "out_vapor.txt",
+    "calculation_type" : "vapor_properties",
+    "Tlist" : [323.2],
+    "yilist": [[0.9954, 0.0046]],
+    "Plist": [4492927.45]
+}

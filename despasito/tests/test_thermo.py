@@ -10,64 +10,136 @@ import pytest
 import sys
 import numpy as np
 
-Tlist = [323.2]
-xilist = [[0.01,0.99]]
-yilist = [[0.97702, 0.02298]]
-Plist = [4492927.45]
+Tlist = [353.0]
+xilist = [[0.002065, 0.997935]]
+yilist = [[0.98779049, 0.01220951]]
+Plist = [7000000.0]
 rho_co2_h2o = np.array([19986.78358869])
-P = np.array([4099056.163132072])
 
-beads_co2_h2o = ['CO2', 'H2O']
-nui_co2_h2o = np.array([[1., 0.],[0., 1.]])
-beadlibrary_co2_h2o = {'CO2': {'epsilon': 207.89, 'l_a': 5.055, 'l_r': 26.408, 'sigma': 3.05e-10, 'Sk': 0.8468, 'Vks': 2, 'mass': 0.04401, 'NkH': 1, 'Nka1': 1},'H2O': {'epsilon': 266.68, 'l_a': 6.0, 'l_r': 17.02, 'sigma': 3.0063e-10, 'Sk': 1.0, 'Vks': 1, 'mass': 0.018015, 'NkH': 2, 'Nke1': 2, 'epsilonHe1': 1985.4, 'KHe1': 1.0169e-28}}
-crosslibrary_co2_h2o = {'CO2': {'H2O': {'epsilon': 226.38, 'epsilonHe1': 2200.0, 'KHe1': 9.1419e-29}}}
-sitenames_co2_h2o = ['H', 'e1', 'a1'] 
-epsilonHB_co2_h2o = np.array([[[[   0.,     0.,     0. ], \
-                       [   0.,     0.,     0. ], \
-                       [   0.,     0.,     0. ]], \
-                      [[   0.,  2200.,     0. ], \
-                       [   0.,     0.,     0. ], \
-                       [   0.,     0.,     0. ]]], \
-                     [[[   0.,     0.,     0. ], \
-                       [2200.,     0.,     0. ], \
-                       [   0.,     0.,     0. ]], \
-                      [[   0.,  1985.4,    0. ], \
-                       [1985.4,    0.,     0. ], \
-                       [   0.,     0.,     0. ]]]])
-eos_co2_h2o = despasito.equations_of_state.eos(eos="saft.gamma_mie",beads=beads_co2_h2o,nui=nui_co2_h2o,beadlibrary=beadlibrary_co2_h2o,crosslibrary=crosslibrary_co2_h2o,sitenames=sitenames_co2_h2o)
+bead_library = {
+    "H2O353": {
+        "epsilon": 479.56,
+        "lambdaa": 6.0,
+        "lambdar": 8.0,
+        "sigma": 3.0029e-1,
+        "Sk": 1.0,
+        "Vks": 1,
+        "mass": 0.018015,
+    },
+    "CO2": {
+        "epsilon": 353.55,
+        "lambdaa": 6.66,
+        "lambdar": 23.0,
+        "sigma": 3.741e-1,
+        "Sk": 1.0,
+        "Vks": 1,
+        "mass": 0.04401,
+    },
+    "CH3CH2CH2-": {
+        "Sk": 1.0,
+        "Vks": 1.0,
+        "epsilon": 342.0,
+        "lambdaa": 6.0,
+        "lambdar": 15.0,
+        "mass": 0.04309,
+        "sigma": 0.45089,
+    },
+}
+cross_library = {
+    "CO2": {"H2O353": {"epsilon": 432.69}},
+    "H2O353": {"CH3CH2CH2-": {"epsilon": 315.7604284}},
+}
+
+beads_co2_h2o = ["CO2", "H2O353"]
+molecular_composition_co2_h2o = np.array([[1.0, 0.0], [0.0, 1.0]])
+Eos_co2_h2o = despasito.equations_of_state.initiate_eos(
+    eos="saft.gamma_mie",
+    beads=beads_co2_h2o,
+    molecular_composition=molecular_composition_co2_h2o,
+    bead_library=bead_library,
+    cross_library=cross_library,
+    numba=True,
+)
+
+beads_co2_h2o = ["H2O353", "CH3CH2CH2-"]
+molecular_composition_co2_h2o = np.array([[1.0, 0.0], [0.0, 2.0]])
+Eos_h2o_hexane = despasito.equations_of_state.initiate_eos(
+    eos="saft.gamma_mie",
+    beads=beads_co2_h2o,
+    molecular_composition=molecular_composition_co2_h2o,
+    bead_library=bead_library,
+    cross_library=cross_library,
+)
+
 
 def test_thermo_import():
-#    """Sample test, will always pass so long as import statement worked"""
+    #    """Sample test, will always pass so long as import statement worked"""
     assert "despasito.thermodynamics" in sys.modules
 
-def test_phase_xiT(eos=eos_co2_h2o,Tlist=Tlist,xilist=xilist):
 
-    output = thermo.thermo(eos,{"calculation_type":"phase_xiT","Tlist":Tlist,"xilist":xilist})
-        
-#    assert output["P"][0]==pytest.approx(1223211.573700886,abs=1e+1) and output["yi"][0]==pytest.approx([0.94880358, 0.05119642],abs=1e-4)
-    assert output["P"][0]==pytest.approx(3042623.2,abs=1e+1) and output["yi"][0]==pytest.approx([0.97701902, 0.02298098],abs=1e-4)
+def test_saturation_properties(Eos=Eos_co2_h2o, Tlist=Tlist):
 
-#def test_phase_yiT(eos=eos_co2_h2o,Tlist=Tlist,yilist=yilist):
-#    output = thermo.thermo(eos,{"calculation_type":"phase_yiT","Tlist":Tlist,"yilist":yilist})
-#    assert output["P"][0]==pytest.approx(1174228.60,abs=1e+1) and output["xi"][0]==pytest.approx([0.04803023, 0.95196977],abs=1e-4)
+    output = thermo.thermo(
+        Eos,
+        calculation_type="saturation_properties",
+        **{"Tlist": Tlist, "xilist": [np.array([0.0, 1.0])]}
+    )
 
-def test_sat_props(eos=eos_co2_h2o,Tlist=Tlist):
+    assert output["Psat"][0] == pytest.approx(46266.2, abs=1e1) and output["rhol"][
+        0
+    ] == pytest.approx(53883.63, abs=1e-1), output["rhol"][0] == pytest.approx(
+        2371.38970066, abs=1e-1
+    )
 
-    output = thermo.thermo(eos,{"calculation_type":"sat_props","Tlist":Tlist,"xilist":[np.array([0.0, 1.0])]})
 
-    assert output["Psat"][0]==pytest.approx(12314.30,abs=1e+1) and output["rhol"][0]==pytest.approx(54700.25,abs=1e-1), output["rhol"][0]==pytest.approx(2371.38970066,abs=1e-1)
+def test_liquid_properties(Eos=Eos_co2_h2o, Tlist=Tlist, xilist=xilist, Plist=Plist):
 
-def test_liquid_properties(eos=eos_co2_h2o,Tlist=Tlist,xilist=xilist,Plist=Plist):
+    output = thermo.thermo(
+        Eos,
+        calculation_type="liquid_properties",
+        **{"Tlist": Tlist, "Plist": Plist, "xilist": xilist}
+    )
 
-    output = thermo.thermo(eos,{"calculation_type":"liquid_properties","Tlist":Tlist,"Plist":Plist,"xilist":xilist})
+    assert output["rhol"][0] == pytest.approx(53831.6, abs=1e-1) and output["phil"][
+        0
+    ] == pytest.approx(np.array([403.98, 6.8846e-03]), abs=1e-1)
 
-#    assert output["rhol"][0]==pytest.approx(54072.87630577754,abs=1e-1) and output["phil"][0]==pytest.approx(np.array([2646.44010, 0.120295122]),abs=1e-1)
-    assert output["rhol"][0]==pytest.approx(54156.297,abs=1e-1) and output["phil"][0]==pytest.approx(np.array([6.04140887e+01, 2.79514245e-03]),abs=1e-1)
 
-def test_vapor_properties(eos=eos_co2_h2o,Tlist=Tlist,yilist=yilist,Plist=Plist):
+def test_vapor_properties(Eos=Eos_co2_h2o, Tlist=Tlist, yilist=yilist, Plist=Plist):
 
-    output = thermo.thermo(eos,{"calculation_type":"vapor_properties","Tlist":Tlist,"Plist":Plist,"yilist":yilist})
+    output = thermo.thermo(
+        Eos,
+        calculation_type="vapor_properties",
+        **{"Tlist": Tlist, "Plist": Plist, "yilist": yilist}
+    )
 
-#    assert output["rhov"][0]==pytest.approx(37.85937201,abs=1e-1) and output["phiv"][0]==pytest.approx(np.array([2.45619145, 0.37836741]),abs=1e-1)
-    assert output["rhov"][0]==pytest.approx(2156.81,abs=1e-1) and output["phiv"][0]==pytest.approx(np.array([0.90729601, 0.13974291]),abs=1e-1)
-    
+    assert output["rhov"][0] == pytest.approx(2938.3, abs=1e-1) and output["phiv"][
+        0
+    ] == pytest.approx(np.array([0.865397, 0.63848]), abs=1e-1)
+
+
+def test_activity_coefficient(
+    Eos=Eos_h2o_hexane, Tlist=Tlist, xilist=xilist, yilist=yilist, Plist=Plist
+):
+
+    output = thermo.thermo(
+        Eos,
+        calculation_type="activity_coefficient",
+        **{"Tlist": Tlist, "Plist": Plist, "yilist": yilist, "xilist": xilist}
+    )
+
+    print(output["gamma"])
+    assert output["gamma"][0] == pytest.approx(
+        np.array([7.23733364e04, 6.30243983e-01]), abs=1e-2
+    )
+
+
+def test_bubble_pressure(Eos=Eos_co2_h2o, Tlist=Tlist, xilist=xilist):
+    output = thermo.thermo(
+        Eos,
+        calculation_type="bubble_pressure",
+        **{"Tlist": Tlist, "xilist": xilist, "Pmin": [6900000], "Pmax": [7100000]}
+    )
+    assert output["P"][0] == pytest.approx(7005198.6, abs=5e1) and output["yi"][
+        0
+    ] == pytest.approx([0.98779049, 0.01220951], abs=1e-4)

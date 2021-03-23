@@ -4,7 +4,7 @@ Thermodynamic Calculations
 
 .. autofunction:: despasito.thermodynamics.thermo
 
-.. _calc-types:
+.. _calculation-types:
 
 Available Calculation Types
 ---------------------------
@@ -15,7 +15,7 @@ Click below!
 .. autosummary::
    :toctree: _autosummary
 
-   thermodynamics.calc_types
+   thermodynamics.calculation_types
 
 Supporting Thermodynamic Functions
 ----------------------------------

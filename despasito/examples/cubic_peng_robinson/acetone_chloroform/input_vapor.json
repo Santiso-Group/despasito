@@ -1,0 +1,11 @@
+{
+    "bead_configuration": [[["acetone", 1]], [["chloroform", 1]]],
+    "eos": "cubic.peng_robinson",
+    "EOSgroup": "../../library/PRgroup.json",
+    "EOScross": "PRcross.json",
+    "output_file": "out_vapor.txt",
+    "calculation_type" : "vapor_properties",
+    "Tlist" : [335.75, 336.65, 337.25, 337.55, 336.95, 335.85, 334.65, 333.45, 332.15],
+    "yilist": [[0.06, 0.94], [0.143, 0.857], [0.23, 0.77], [0.36, 0.64], [0.514, 0.486], [0.646, 0.354], [0.751, 0.249], [0.83, 0.17], [0.89, 0.11]],
+    "Plist": [101330.0, 101330.0, 101330.0, 101330.0, 101330.0, 101330.0, 101330.0, 101330.0, 101330.0]
+}

@@ -1,0 +1,8 @@
+{
+    "bead_configuration": [[["CH3", 2],["CH2" , 1]]],
+    "EOSgroup": "../../library/SAFTgroup.json",
+    "output_file": "out_propane_saturation.txt",
+    "calculation_type" : "saturation_properties",
+    "method" : "hybr",
+    "Tlist" : [100.0, 125.0, 150.0, 175.0, 200.0, 225.0, 250.0, 275.0, 300.0, 325.0, 350.0]
+}

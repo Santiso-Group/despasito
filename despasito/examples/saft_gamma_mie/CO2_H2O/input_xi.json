@@ -1,0 +1,11 @@
+{
+    "bead_configuration": [[["CO2", 1]], [["H2O", 1]]],
+    "EOSgroup": "../../library/SAFTgroup.json",
+    "EOScross": "../../library/SAFTcross.json",
+    "output_file": "out_xi.txt",
+    "calculation_type" : "bubble_pressure",
+    "pressure_options": {"method": "least_squares", "maxiter":50},
+    "mole_fraction_options": {"maxiter":30},
+    "Tlist" : [323.2],
+    "xilist": [[0.01, 0.99]]
+}

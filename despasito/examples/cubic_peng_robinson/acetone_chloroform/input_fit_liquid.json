@@ -1,0 +1,20 @@
+{
+    "bead_configuration": [[["acetone", 1]], [["chloroform", 1]]],
+    "eos": "cubic.peng_robinson",
+    "EOSgroup": "../../library/PRgroup.json",
+    "EOScross": "PRcross.json",
+    "output_file": "out_fit.txt",
+    "optimization_parameters": {
+        "fit_bead" : "acetone",
+        "fit_parameter_names": ["kij_chloroform", "omega"]
+    },
+    "Knovel": {
+        "data_class_type": "liquid_density",
+        "calculation_type": "liquid_properties",
+        "xi": [[0.098, 0.902], [0.186, 0.814], [0.266, 0.734], [0.36, 0.64],[0.468, 0.532], [0.578, 0.422], [0.673, 0.327], [0.755, 0.245], [0.827, 0.173]],
+        "P": [101330],
+        "T": [335.75, 336.65, 337.25, 337.55, 336.95, 335.85, 334.65, 333.45, 332.15],    
+        "rhol": [ 12540, 12430, 12320, 12200, 12060, 11930, 11810, 11710, 11620]
+    },
+    "global_opts": {"method": "brute", "Ns": 2}
+}

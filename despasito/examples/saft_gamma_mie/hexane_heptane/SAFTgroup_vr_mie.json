@@ -1,0 +1,20 @@
+{
+    "CH_hex": {
+        "epsilon": 376.35, 
+        "lambdaa": 6.0, 
+        "lambdar": 19.57, 
+        "sigma": 4.508e-1, 
+        "Sk": 1.0, 
+        "Vks": 2,
+        "mass": 0.086178
+    }, 
+    "CH_hep": {
+        "epsilon": 436.12, 
+        "lambdaa": 6.0, 
+        "lambdar": 23.81, 
+        "sigma": 4.7657e-1, 
+        "Sk": 1.0, 
+        "Vks": 2,
+        "mass": 0.100205
+    } 
+}
