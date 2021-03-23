@@ -1,0 +1,12 @@
+theme: jekyll-theme-leap-day
+
+title: DESPASITO
+description: "Determining Equilibrium State and Parametrization: Application for SAFT, Intended for Thermodynamic Output"
+logo: 
+show_downloads: 
+google_analytics: 
+
+
+footer-links:
+  email: jaclark5@ncsu.edu
+  github: https://github.com/jaclark5/despasito
