@@ -10,3 +10,5 @@ path_classifiers:
     - devtools/*
   generated:
     - despasito/_version.py
+queries:
+- exclude: py/test-equals-none
