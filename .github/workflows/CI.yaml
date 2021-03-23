@@ -29,7 +29,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - run: choco install mingw
-
+      
   test:
     name: Test on ${{ matrix.os }}, Python ${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
