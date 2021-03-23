@@ -2849,7 +2849,6 @@ def bracket_bounding_yi(
         )
         y1 = bounds[1]
         flagv = flag_bounds[1]
-        i = maxiter - 1
 
     else:
         flag_high_vapor = False
@@ -3684,8 +3683,8 @@ def calc_flash(
     density_opts={},
     maxiter=200,
     tol=1e-9,
-    max_mole_fraction0=1,
-    min_mole_fraction0=0,
+    max_mole_fraction0=1.0,
+    min_mole_fraction0=0.0,
     Psat_set=1e7,
     **kwargs
 ):
@@ -3952,7 +3951,7 @@ def constrain_Ki(Ki0, min_mole_fraction0=0, max_mole_fraction0=1, **kwargs):
     elif Ki[0] < Ki[1] and (Ki[0] > 1 or Ki[0] < 0):
         Ki[0] = eps
 
-    if min_mole_fraction0 >= 0 and min_mole_fraction0 <= 1:
+    if 0.0 <= min_mole_fraction0 <= 1.0:
         bound_min_x0 = (1 - min_mole_fraction0 * Ki[0]) / (1 - min_mole_fraction0)
         bound_min_y0 = (1 - min_mole_fraction0) * Ki[0] / (Ki[0] - min_mole_fraction0)
 
@@ -3970,12 +3969,12 @@ def constrain_Ki(Ki0, min_mole_fraction0=0, max_mole_fraction0=1, **kwargs):
             else:
                 flag[1] = True
 
-    elif min_mole_fraction0 < 0 or min_mole_fraction0 > 1:
+    elif min_mole_fraction0 < 0.0 or min_mole_fraction0 > 1.0:
         raise ValueError(
             "Mole fractions can only be constrained to a value between 0 and 1"
         )
 
-    if max_mole_fraction0 <= 1 and max_mole_fraction0 >= 0:
+    if 0.0 <= max_mole_fraction0 <= 1.0:
         bound_max_x0 = (1 - max_mole_fraction0 * Ki[0]) / (1 - max_mole_fraction0)
         bound_max_y0 = (1 - max_mole_fraction0) * Ki[0] / (Ki[0] - max_mole_fraction0)
 
@@ -3993,7 +3992,7 @@ def constrain_Ki(Ki0, min_mole_fraction0=0, max_mole_fraction0=1, **kwargs):
             else:
                 flag[3] = True
 
-    elif max_mole_fraction0 < 0 or max_mole_fraction0 > 1:
+    elif max_mole_fraction0 < 0.0 or max_mole_fraction0 > 1.0:
         raise ValueError(
             "Mole fractions can only be constrained to a value between 0 and 1"
         )

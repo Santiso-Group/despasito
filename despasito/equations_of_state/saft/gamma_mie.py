@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 try:
     import cython
     flag_cython = True
-except Exception:
+except ImportError:
     flag_cython = False
     logger.warning("Cython package is unavailable, using Numba")
 

@@ -11,4 +11,4 @@ path_classifiers:
   generated:
     - despasito/_version.py
 queries:
-- exclude: py/test-equals-none
+  - exclude: py/test-equals-none
