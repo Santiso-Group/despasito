@@ -19,6 +19,10 @@ The second facet is parameterization of the equation of state (EOS), some of whi
 
 In another work nearing publication, we present a method of predicting cross-interaction parameters for SAFT-𝛾-Mie from multipole moments derived from DFT calculations. This method is easily implemented in using the package, [MAPSCI](https://github.com/jaclark5/mapsci) as a plug-in. It should be noted that it is recommended to additionally fine tune simulation parameters in an iterative fashion, but previous works have found close agreement with those fit to the EOS.
 
+Documentation
+--------------
+Check out our [Documentation](https://despasito.readthedocs.io):
+
 Installation
 ------------
 **NOTE:** DESPASITO is not yet available conda-forge, but it is available with pip.
