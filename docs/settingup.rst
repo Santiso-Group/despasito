@@ -5,6 +5,8 @@ Setting-up a Thermodynamic Calculation
 
 .. contents:: :local:
 
+See documentation below for a walk-through or :ref:`input-schema` for a condensed outline of available options.
+
 .. _basic-use:
 
 Basic Use

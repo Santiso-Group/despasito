@@ -4,6 +4,8 @@ API Documentation
 
 DESPASITO has been primarily designed as a command line tool but can be used as an imported package. See :ref:`basic-use` or ``despasito.examples`` directory for more details.
 
+.. contents:: :local:
+
 Command Line
 ------------
 .. argparse::
@@ -59,7 +61,7 @@ __________________________
  * **global_opts**: (dict), Optional - Specify details of global optimization method.
 
       * **method**: (str), default: 'differential_evolution', Global optimization method used to fit parameters. See :func:`~despasito.parameter_fitting.fit_functions.global_minimization`.
-      * **\***: any keyword used by the defined global optimization method.
+      * **\***: any keyword used by the defined global optimization method. Note that unless the keyword, ``workers`` is provided, the thermodynamic calculation will we split among the cores. Check the global optimization method to ensure it uses the ``workers`` keyword.
 
  * **minimizer_opts**: (dict), Optional - Dictionary used to define minimization type used by the global optimization method
 

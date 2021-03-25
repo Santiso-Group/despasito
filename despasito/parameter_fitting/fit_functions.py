@@ -243,7 +243,7 @@ def global_minimization(global_method, *args, **kwargs):
     exp_dict : dict
         Dictionary of experimental data objects.
     global_opts : dict, Optional
-        Key word arguments of global optimization algorithm. See specific options in :mod:`~despasito.parameter_fitting.global_methods` 
+        Keyword arguments of global optimization algorithm. See specific options in :mod:`~despasito.parameter_fitting.global_methods`. Note that unless in the keyword, ``workers`` is provided, the thermodynamic calculations will we split among the cores. Check the global optimization method to ensure it uses the ``workers`` keyword. 
     minimizer_opts : dict, Optional
         Dictionary used to define minimization type and the associated options.
 

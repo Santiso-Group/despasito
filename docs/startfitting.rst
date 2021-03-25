@@ -5,6 +5,8 @@ Get Started Fitting Parameters
 
 .. contents:: :local:
 
+See documentation below for a walk-through or :ref:`input-schema` for a condensed outline of available options.
+
 Files to Fit Parameters
 ########################
 In this tutorial we will assume the user has already read and understood our *Setting-up a Thermodynamic Calculation* tutorial. Setting up an input file for parameter fitting is similar to writing a thermodynamic input script. Again, two files are needed for a basic calculation:
