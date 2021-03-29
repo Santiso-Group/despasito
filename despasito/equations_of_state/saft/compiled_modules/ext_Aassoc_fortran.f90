@@ -51,7 +51,7 @@ subroutine calc_Xika_4(indices,rho,Xika_init,xi,nui,nk,Fklab,Kklab,Iij,maxiter,t
     real(8), intent(in) :: tol
     real(8), intent(out), dimension(0:nrho-1,0:nind-1) :: Xika_final
     real(8), dimension(0:nind-1) :: Xika,obj_func,Xika0
-    integer :: i,iter
+    integer :: i,iter,j
     
     
     Xika=Xika_init
@@ -63,7 +63,10 @@ subroutine calc_Xika_4(indices,rho,Xika_init,xi,nui,nk,Fklab,Kklab,Iij,maxiter,t
             call calc_Xika_inner_4(Xika0,indices,xi,rho(i),nui,nk,Fklab,Kklab,Iij(i,:,:),obj_func,Xika,ncomp,nbeads,nsitemax,nind)            
             if(maxval(dabs(obj_func)).lt.tol) exit
         enddo
-        Xika_final(i,:)=Xika
+
+        do j=0, nind-1
+            Xika_final(i,j)=Xika(j)
+        enddo
         !write(*,*) i,iter,Xika,obj_func
     end do
     !write(*,*) i,rho(i),Xika,Xika_final(i,:,:,:)
@@ -122,7 +125,7 @@ subroutine calc_Xika_6(indices,rho,Xika_init,xi,nui,nk,Fklab,Kklab,Iij,maxiter,t
     real(8), intent(in) :: tol
     real(8), intent(out), dimension(0:nrho-1,0:nind-1) :: Xika_final
     real(8), dimension(0:nind-1) :: Xika,obj_func,Xika0
-    integer :: i,iter
+    integer :: i,iter,j
 
 
     Xika=Xika_init
@@ -134,7 +137,10 @@ subroutine calc_Xika_6(indices,rho,Xika_init,xi,nui,nk,Fklab,Kklab,Iij,maxiter,t
             call calc_Xika_inner_6(Xika0,indices,xi,rho(i),nui,nk,Fklab,Kklab,Iij(i,:,:),obj_func,Xika,ncomp,nbeads,nsitemax,nind)
             if(maxval(dabs(obj_func)).lt.tol) exit
         enddo
-        Xika_final(i,:)=Xika
+        
+        do j=0, nind-1
+            Xika_final(i,j)=Xika(j)
+        enddo
         !write(*,*) i,iter,Xika,obj_func
     end do
     !write(*,*) i,rho(i),Xika,Xika_final(i,:,:,:)
