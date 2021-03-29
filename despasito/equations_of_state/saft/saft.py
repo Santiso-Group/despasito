@@ -247,6 +247,9 @@ class EosType(EosTemplate):
         if np.size(np.where(self.eos_dict["epsilonHB"] != 0.0)) == 0:
             self.eos_dict["flag_assoc"] = False
 
+        if self.eos_dict["flag_assoc"]:
+            self.T = None
+
         if combining_rules != None:
             logger.info("Accepted new combining rule definitions")
             self.saft_source.combining_rules.update(combining_rules)
@@ -394,15 +397,22 @@ class EosType(EosTemplate):
 
         rho = self._check_density(rho)
 
+        indices = Aassoc.assoc_site_indices(
+            self.eos_dict["nk"], self.eos_dict["molecular_composition"], xi=xi
+        )
+
         # compute F_klab
         Fklab = np.exp(self.eos_dict["epsilonHB"] / T) - 1.0
         if "rc_klab" in self.eos_dict:
-            opts = {}
-            keys = ["rd_klab", "reduction_ratio"]
-            for key in keys:
-                if key in self.eos_dict:
-                    opts[key] = self.eos_dict[key]
-            Kklab = self.saft_source.calc_Kijklab(T, self.eos_dict["rc_klab"], **opts)
+            if "Kijklab" not in self.eos_dict or T != self.T:
+                opts = {}
+                keys = ["rd_klab", "reduction_ratio"]
+                for key in keys:
+                    if key in self.eos_dict:
+                        opts[key] = self.eos_dict[key]
+                self.eos_dict["Kijklab"] = self.saft_source.calc_Kijklab(T, self.eos_dict["rc_klab"], **opts)
+                self.T = T
+            Kklab = self.eos_dict["Kijklab"]
             Ktype = "ijklab"
         else:
             Kklab = self.eos_dict["Kklab"]
@@ -411,9 +421,6 @@ class EosType(EosTemplate):
         gr_assoc = self.saft_source.calc_gr_assoc(rho, T, xi, Ktype=Ktype)
 
         # Compute Xika: with python with numba  {BottleNeck}
-        indices = Aassoc.assoc_site_indices(
-            self.eos_dict["nk"], self.eos_dict["molecular_composition"], xi=xi
-        )
 
         Xika = Aassoc._calc_Xika_wrap(
             indices,

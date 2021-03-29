@@ -368,7 +368,7 @@ def initialize_constraints(constraints, constraint_type):
     return tuple(new_constraints)
 
 
-def compute_obj(beadparams, fit_bead, fit_parameter_names, exp_dict, bounds):
+def compute_obj(beadparams, fit_bead, fit_parameter_names, exp_dict, bounds, frozen_parameters=None):
     r"""
     Fit defined parameters for equation of state object with given experimental data. 
 
@@ -387,6 +387,8 @@ def compute_obj(beadparams, fit_bead, fit_parameter_names, exp_dict, bounds):
         Dictionary of experimental data objects.
     bounds : list[tuple]
         List of length equal to fit_parameter_names with lists of pairs containing minimum and maximum bounds of parameters being fit. Defaults from Eos object are broad, so we recommend specification.
+    frozen_parameters : numpy.ndarray, Optional, default=None
+        List of first parameters in the fit_parameter_names list that are frozen during minimization. This feature is currently used in the :func:`~despasito.parameter_fitting.global_methods.grid_minimization` method, enabled with the ``split_grid_minimization`` feature.
 
     Returns
     -------
@@ -398,9 +400,12 @@ def compute_obj(beadparams, fit_bead, fit_parameter_names, exp_dict, bounds):
     # Update bead_library with test parameters
 
     if len(beadparams) != len(fit_parameter_names):
-        raise ValueError(
-            "The length of initial guess vector should be the same number of parameters to be fit."
-        )
+        if np.any(frozen_parameters != None):
+            beadparams = np.array(list(frozen_parameters) + list(beadparams))
+        else:
+            raise ValueError(
+                "The length of initial guess vector should be the same number of parameters to be fit."
+            )
 
     logger.info(
         (" {}: {}," * len(fit_parameter_names)).format(

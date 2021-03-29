@@ -127,12 +127,6 @@ def assoc_site_indices(nk, molecular_composition, xi=None):
     for bead in nk:
         bead_sites.append([i for i, site in enumerate(bead) if site != 0])
 
-    ## Indices of components will minimal mole fractions
-    # if xi is not None:
-    #    zero_frac = np.where(np.array(xi)<np.finfo("float").eps)[0]
-    # else:
-    #    zero_frac = np.array([])
-
     for i, comp in enumerate(molecular_composition):
         # if i not in zero_frac:
         for j, bead in enumerate(comp):

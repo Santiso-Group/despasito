@@ -286,6 +286,7 @@ def grid_minimization(
         - Ns (int) - Optional, default=5, Number of grid points along the axes
         - finish (callable) - Optional, default=scipy.optimize.minimize, A minimization function
         - initial_guesses (list) - Optional, Replaces grid of values generated with bounds and Ns
+        - split_grid_minimization (int) - Optional, default=0, Choose index of first parameter to fit, while the grid is formed from those before. For example, if 4 parameters are defined and ``split_grid_minimization==2``, then a grid is formed for the first two parameters ``parameters_guess[:2]``, and the remaining parameters, ``parameters_guess[2:]`` are minimized.
 
     minimizer_opts : dict, Optional, default={}
         Dictionary used to define minimization type and the associated options.
@@ -305,7 +306,7 @@ def grid_minimization(
 
     # Options for brute, set defaults in new_global_opts
     flag_use_mp_object = False
-    new_global_opts = {"Ns": 5, "finish": spo.minimize}
+    new_global_opts = {"Ns": 5, "finish": spo.minimize, "split_grid_minimization": 0}
     if global_opts:
         for key, value in global_opts.items():
             if key == "MultiprocessingObject":
@@ -329,7 +330,6 @@ def grid_minimization(
 
     # Set up options for minimizer
     new_minimizer_opts = {"method": "lm"}
-    # new_minimizer_opts = {"method": 'L-BFGS-B'}
     if minimizer_opts:
         for key, value in minimizer_opts.items():
             if key == "method":
@@ -346,22 +346,42 @@ def grid_minimization(
     if "initial_guesses" in global_opts:
         x0_array = global_opts["initial_guesses"]
     else:
-        # Initialization taken from scipy.optimize.brute
-        N = len(bounds)
-        lrange = list(bounds)
-        for k in range(N):
-            if type(lrange[k]) is not type(slice(None)):
-                if len(lrange[k]) < 3:
-                    lrange[k] = tuple(lrange[k]) + (complex(global_opts["Ns"]),)
-                lrange[k] = slice(*lrange[k])
+        # Initialization based on implementation in scipy.optimize.brute
+        if global_opts["split_grid_minimization"] == 0:
+            N = len(bounds)
+            lrange = list(bounds)
+            for k in range(N):
+                if type(lrange[k]) is not type(slice(None)):
+                    if len(lrange[k]) < 3:
+                        lrange[k] = tuple(lrange[k]) + (complex(global_opts["Ns"]),)
+                    lrange[k] = slice(*lrange[k])
+        else:
+            if type(global_opts["split_grid_minimization"]) != int:
+                raise ValueError("Option, split_grid_minimization, must be an integer")
+            N = len(bounds[:global_opts["split_grid_minimization"]])
+            lrange = list(bounds[:global_opts["split_grid_minimization"]])
+            for k in range(N):
+                if type(lrange[k]) is not type(slice(None)):
+                    if len(lrange[k]) < 3:
+                        lrange[k] = tuple(lrange[k]) + (complex(global_opts["Ns"]),)
+                    lrange[k] = slice(*lrange[k])
+
         if N == 1:
             lrange = lrange[0]
+
         x0_array = np.mgrid[lrange]
         inpt_shape = x0_array.shape
         if N > 1:
             x0_array = np.reshape(x0_array, (inpt_shape[0], np.prod(inpt_shape[1:]))).T
 
-    inputs = [(x0, args, bounds, constraints, minimizer_opts) for x0 in x0_array]
+    if global_opts["split_grid_minimization"] != 0:
+        min_parameters = list(parameters_guess[global_opts["split_grid_minimization"]:])
+        inputs = [(min_parameters, (*args, x0), bounds, constraints, minimizer_opts) for x0 in x0_array]
+
+    else:
+        inputs = [(x0, args, bounds, constraints, minimizer_opts) for x0 in x0_array]
+
+    lx = len(x0_array)
 
     # Start computation
     if flag_use_mp_object:
@@ -374,11 +394,20 @@ def grid_minimization(
         )
 
     # Choose final output
+    if global_opts["split_grid_minimization"] != 0:
+        x0_new = np.zeros((lx,len(parameters_guess)))
+        results_new = np.zeros((lx,len(parameters_guess)))
+        for i in range(len(x0_array)):
+            x0_new[i] = np.array(list(x0_array[i])+list(min_parameters))
+            results_new[i] = np.array(list(x0_array[i])+list(results[i]))
+        results = results_new
+        x0_array = x0_new
+
     result = [fval[0], results[0]]
     logger.info("For bead: {} and parameters {}".format(fit_bead, fit_parameter_names))
-    for i in range(len(x0_array)):
+    for i in range(lx):
         tmp_result = results[i]
-        logger.info("x0: {}, xf: {}, obj: {}".format(x0_array[i], results[i], fval[i]))
+        logger.info("x0: {}, xf: {}, obj: {}".format(x0_array[i], tmp_result, fval[i]))
         if result[0] > fval[i]:
             result = [fval[i], tmp_result]
 
@@ -386,9 +415,9 @@ def grid_minimization(
         x=result[1],
         fun=result[0],
         success=True,
-        nit=len(x0) * global_opts["Ns"],
+        nit=lx * global_opts["Ns"],
         message="Termination successful with {} grid points and the minimum value minimized. Note that parameters may be outside of the given bounds because of the minimizing function.".format(
-            len(x0) * global_opts["Ns"]
+            lx * global_opts["Ns"]
         ),
     )
 
@@ -591,7 +620,8 @@ def _grid_minimization_wrapper(args):
 
     x0, obj_args, bounds, constraints, opts = args
 
-    # !!!!!! constraints !!!!!!!
+    if constraints != None:
+        logger.warning("Constraints defined, but grid_minimization does not support their use.")
 
     if "method" in opts:
         method = opts["method"]
@@ -611,6 +641,7 @@ def _grid_minimization_wrapper(args):
     except Exception:
         result = np.nan * np.ones(len(x0))
 
+    # Return NaN if the parameters didn't change
     if np.sum(np.abs(result - x0)) < 1e-6:
         result = np.nan * np.ones(len(x0))
 

@@ -7,14 +7,11 @@ import os
 import logging
 import logging.handlers
 
-quiet = False
-
 parser = get_parser()
 args = parser.parse_args()
 
 ## Extract arguments
 if args.verbose == 0:
-    quiet = True
     args.verbose = 20
 elif args.verbose < 4:
     args.verbose = (4 - args.verbose) * 10
@@ -37,7 +34,7 @@ log_file_handler.setFormatter(
 log_file_handler.setLevel(args.verbose)
 logger.addHandler(log_file_handler)
 
-if quiet == False:
+if args.console:
     # Set up logging to console
     console_handler = logging.StreamHandler()  # sys.stderr
     console_handler.setFormatter(

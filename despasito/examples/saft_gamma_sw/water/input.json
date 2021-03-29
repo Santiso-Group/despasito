@@ -5,5 +5,5 @@
     "EOScross": "../../library/SWcross.json",
     "calculation_type" : "liquid_properties",
     "output_file": "out_sw.txt",
-    "Tlist": 580.0
+    "Tlist": [580.0, 580.0]
 }

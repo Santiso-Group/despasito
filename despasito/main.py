@@ -62,6 +62,12 @@ def get_parser():
         help="Set the location of the data/library files (e.g. SAFTcross, etc.) where despasito will look.",
     )
     parser.add_argument(
+        "-c",
+        "--console",
+        action="store_true",
+        help="Enable logs to print to standard output.",
+    )
+    parser.add_argument(
         "--numba",
         action="store_true",
         help="Turn on Numba's JIT compilation for accelerated computation",

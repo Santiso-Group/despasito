@@ -2,7 +2,7 @@
 import numpy as np
 
 import despasito
-import despasito.input_output as io
+import despasito.input_output.read_input as io
 import despasito.thermodynamics as thermo
 import despasito.equations_of_state
 
