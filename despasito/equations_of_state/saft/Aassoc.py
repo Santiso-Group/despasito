@@ -23,14 +23,15 @@ except ImportError:
 try:
     import cython
     flag_cython = True
-except ImportError:
+except ModuleNotFoundError:
     flag_cython = False
     logger.warning("Cython package is unavailable, using Numba")
 
-try:
-    from .compiled_modules.ext_Aassoc_cython import calc_Xika as calc_Xika_cython
-except ImportError:
-    raise ImportError("Cython package is available but module: despasito.equations_of_state.saft.compiled_modules.ext_Aassoc_cython, has not been compiled.")
+if flag_cython:
+    try:
+        from .compiled_modules.ext_Aassoc_cython import calc_Xika as calc_Xika_cython
+    except ImportError:
+        raise ImportError("Cython package is available but module: despasito.equations_of_state.saft.compiled_modules.ext_Aassoc_cython, has not been compiled.")
 
 from .compiled_modules.ext_Aassoc_numba import calc_Xika as calc_Xika_numba
 from .compiled_modules.ext_Aassoc_python import calc_Xika as calc_Xika_python
