@@ -58,7 +58,6 @@ def _calc_Xika_wrap(*args, method_stat, maxiter=500, tol=1e-12, damp=0.1):
                 maxiter,
                 tol,
             )
-            print(Xika, indices, rho, xi, molecular_composition, nk, Fklab, Kklab, gr_assoc)
         else:
             if method_stat.cython and flag_cython:
                 Xika, _ = calc_Xika_cython(*args)

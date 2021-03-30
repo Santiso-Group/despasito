@@ -61,6 +61,7 @@ subroutine calc_Xika_4(indices,rho,Xika_init,xi,nui,nk,Fklab,Kklab,Iij,maxiter,t
         do iter=0, maxiter-1
             Xika0=Xika
             call calc_Xika_inner_4(Xika0,indices,xi,rho(i),nui,nk,Fklab,Kklab,Iij(i,:,:),obj_func,Xika,ncomp,nbeads,nsitemax,nind)            
+            write(*,*) iter, Xika
             if(maxval(dabs(obj_func)).lt.tol) exit
         enddo
 
