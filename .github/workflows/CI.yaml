@@ -35,8 +35,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-latest]
-       # os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
         python-version: [3.7, 3.8]
 
     steps:
@@ -79,7 +78,7 @@ jobs:
       if: matrix.os == 'macOS-latest'
       shell: bash -l {0}
       run: |
-        conda install -c anaconda gfortran_osx-64
+        conda install -c conda-forge gfortran_osx-64=4.8.5=h22b1bf0_8
         
     - name: Install package
       # conda setup requires this special shell
@@ -92,7 +91,7 @@ jobs:
       shell: bash -l {0}
       run: |
         ls -a despasito/equations_of_state/saft/compiled_modules
-        pytest -vvv --cov=despasito --cov-report=xml --color=yes despasito/tests/test_saft_gamma_mie.py
+        pytest -vvv --cov=despasito --cov-report=xml --color=yes despasito/tests/
 
     - name: CodeCov
       uses: codecov/codecov-action@v1
