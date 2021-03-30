@@ -290,11 +290,9 @@ class EosType(EosTemplate):
 
         Ares = np.zeros(len(rho))
         for res in self.eos_dict["residual_helmholtz_contributions"]:
-            print(res, getattr(self.saft_source, res)(rho, T, xi))
             Ares += getattr(self.saft_source, res)(rho, T, xi)
 
         if self.eos_dict["flag_assoc"]:
-            print("Aassoc", self.Aassoc(rho, T, xi))
             Ares += self.Aassoc(rho, T, xi)
 
         return Ares
@@ -331,8 +329,6 @@ class EosType(EosTemplate):
         A = self.residual_helmholtz_energy(rho, T, xi) + self.Aideal(
             rho, T, xi, method=self.eos_dict["Aideal_method"]
         )
-
-        print("Aideal", self.Aideal(rho, T, xi, method=self.eos_dict["Aideal_method"]))
 
         return A
 
@@ -449,6 +445,8 @@ class EosType(EosTemplate):
                     * self.eos_dict["nk"][k, a]
                     * tmp
                 )
+
+        print(Xika, Fklab, Kklab, gr_assoc, Assoc_contribution)
 
         return Assoc_contribution
 
