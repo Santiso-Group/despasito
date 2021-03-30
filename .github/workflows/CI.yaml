@@ -78,7 +78,7 @@ jobs:
       if: matrix.os == 'macOS-latest'
       shell: bash -l {0}
       run: |
-        conda install -c conda-forge gfortran_osx-64=4.8.5=h22b1bf0_8
+        conda install -c conda-forge gfortran_osx-64
         
     - name: Install package
       # conda setup requires this special shell
