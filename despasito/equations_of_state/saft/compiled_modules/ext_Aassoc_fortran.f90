@@ -67,7 +67,7 @@ subroutine calc_Xika_4(indices,rho,Xika_init,xi,nui,nk,Fklab,Kklab,Iij,maxiter,t
         do j=0, nind-1
             Xika_final(i,j)=Xika(j)
         enddo
-        !write(*,*) i,iter,Xika,obj_func
+        write(*,*) i,iter,Xika,obj_func
     end do
     !write(*,*) i,rho(i),Xika,Xika_final(i,:,:,:)
 end subroutine

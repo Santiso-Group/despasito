@@ -446,8 +446,6 @@ class EosType(EosTemplate):
                     * tmp
                 )
 
-        print(Xika, Fklab, Kklab, gr_assoc, Assoc_contribution)
-
         return Assoc_contribution
 
     def pressure(self, rho, T, xi, step_size=1e-6):
