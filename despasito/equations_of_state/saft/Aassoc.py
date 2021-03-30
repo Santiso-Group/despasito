@@ -135,7 +135,7 @@ def assoc_site_indices(nk, molecular_composition, xi=None):
                 for k in bead_sites[j]:
                     indices.append([i, j, k])
 
-    indices = np.array([np.array(x) for x in indices], dtype=np.int)
+    indices = np.array([np.array(x) for x in indices], dtype=int)
 
     return indices
 
