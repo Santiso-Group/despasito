@@ -91,7 +91,7 @@ jobs:
       shell: bash -l {0}
       run: |
         ls -a despasito/equations_of_state/saft/compiled_modules
-        pytest -vvv --cov=despasito --cov-report=xml --color=yes despasito/tests/
+        pytest -vvv --cov=despasito --cov-report=xml --color=yes despasito/tests
 
     - name: CodeCov
       uses: codecov/codecov-action@v1
