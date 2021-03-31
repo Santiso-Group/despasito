@@ -52,7 +52,7 @@ __________________________
  * **\***: Experimental data dictionaries may be defined using any keyword, although this key is later used in distinguishing the respective objective function value. Any number of experimental data dictionaries may be included. A keyword is specified as an experimental data structure with the presence of the keyword "data_class_type" and an entry.
 
       * **data_class_type**: (str) Must be a supported :ref:`data class <data-types>` for fitting
-      * **calctype**: (str) Optional - Any :func:`calculation_type <despasito.thermodynamics.calculation_types>` that is supported by the thermodynamic module
+      * **calculation_type**: (str) Optional - Any :func:`calculation_type <despasito.thermodynamics.calculation_types>` that is supported by the thermodynamic module
       * **file**: (str) Optional - File of experimental data, See fitting :ref:`data class <data-types>` for file headers
       * **bead_configuration**: (list[float]), Optional - Initial guess in parameter. If one is not provided, a guess is made based on the type of parameter from Eos object. This allows the specified bead to be fit using multiple systems.
       * **weights**: (dict) - A dictionary where each key is the header used in the exp. data file. The value associated with a header can be a list as long as the number of data points to multiply by the objective value associated with each point, or a float to multiply the objective value of this data set.

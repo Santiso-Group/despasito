@@ -291,7 +291,7 @@ def grid_minimization(
     minimizer_opts : dict, Optional, default={}
         Dictionary used to define minimization type and the associated options.
 
-        - method (str) - Optional, default="lm", Method available to our `solve_root` function
+        - method (str) - Optional, default="least_squares", Method available to our :func:`~despasito.utils.general_toolbox.solve_root` function
         - options (dict) - Optional, default={}, This dictionary contains the kwargs available to the chosen method
 
     constraints : dict, Optional, default=None
@@ -329,7 +329,7 @@ def grid_minimization(
     logger.info("Grid Minimization Options: {}".format(global_opts))
 
     # Set up options for minimizer
-    new_minimizer_opts = {"method": "lm"}
+    new_minimizer_opts = {"method": "least_squares"}
     if minimizer_opts:
         for key, value in minimizer_opts.items():
             if key == "method":
@@ -365,6 +365,7 @@ def grid_minimization(
                     if len(lrange[k]) < 3:
                         lrange[k] = tuple(lrange[k]) + (complex(global_opts["Ns"]),)
                     lrange[k] = slice(*lrange[k])
+            bounds = bounds[global_opts["split_grid_minimization"]:]
 
         if N == 1:
             lrange = lrange[0]
@@ -626,8 +627,16 @@ def _grid_minimization_wrapper(args):
     if "method" in opts:
         method = opts["method"]
         del opts["method"]
-    else:
-        method = "least_squares"
+
+    result = gtb.solve_root(
+        ff.compute_obj,
+        args=obj_args,
+        method=method,
+        x0=x0,
+        bounds=bounds,
+        options=opts,
+    )
+    sys.exit("stop")
 
     try:
         result = gtb.solve_root(
