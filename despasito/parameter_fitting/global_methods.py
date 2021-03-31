@@ -628,16 +628,6 @@ def _grid_minimization_wrapper(args):
         method = opts["method"]
         del opts["method"]
 
-    result = gtb.solve_root(
-        ff.compute_obj,
-        args=obj_args,
-        method=method,
-        x0=x0,
-        bounds=bounds,
-        options=opts,
-    )
-    sys.exit("stop")
-
     try:
         result = gtb.solve_root(
             ff.compute_obj,
