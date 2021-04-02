@@ -32,8 +32,8 @@ Input File Schema
 General Keywords
 ________________
  * **bead_configuration**: (list[list[list]]) - This list contains the system components. Each component is defined as a list of the bead types of which it is composed. Each bead type is represented by a list where the first entry is the bead name (used in the EOSgroup file) and second entry is the integer number of beads in the component. See tutorial, :ref:`settingup-label`.
- * **EOSgroup**: (str) - The filename of .json file containing a dictionary of single group parameters used in the desired equation of state (EOS).
- * **EOScross**: (str) - The filename of .json file containing a dictionary of group-group cross interaction parameters used in the desired equation of state (EOS).
+ * **EOSgroup**: (str) - The filename of a file in the JSON format containing a dictionary of single group parameters used in the desired equation of state (EOS).
+ * **EOScross**: (str) - The filename of file in the JSON format containing a dictionary of group-group cross interaction parameters used in the desired equation of state (EOS).
  * **calculation_type**: (str) - Any :func:`calculation_type <despasito.thermodynamics.calculation_types>` that is supported by the thermodynamic module.
  * **output_file**: (str) Optional - default: despasito_out.txt. Output file name for results of a thermodynamic calculation.
  * **eos**: (str) Optional - default: ``saft.gamma_mie``. Supported :func:`EOS class <despasito.equations_of_state.initiate_eos>` to be used in thermodynamic computations.

@@ -12,14 +12,14 @@ import numpy as np
 def write_EOSparameters(library, filename):
 
     """
-    Sort and export dictionary of input parameters into .json file.
+    Sort and export dictionary of input parameters into file in JSON format.
 
     Parameters
     ----------
     library : dict
-        Dictionary of parameters to be sorted and exported 
+        Dictionary of parameters to be sorted and exported.
     filename : str
-        Filename (with or without path) of .json file of parameters
+        Filename (with or without path) of parameter files in JSON format.
 
     """
 

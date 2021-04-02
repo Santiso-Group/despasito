@@ -676,6 +676,10 @@ def saturation_properties(Eos, **sys_dict):
     """
 
     ## Extract and check input data
+
+    if "xilist" in sys_dict and not gtb.isiterable(sys_dict["xilist"][0]):
+        sys_dict["xilist"] = np.array([sys_dict["xilist"]], float)
+
     thermo_keys = ["Tlist", "xilist"]
     thermo_dict = gtb.check_length_dict(sys_dict, thermo_keys)
     if "Tlist" not in thermo_dict:
@@ -794,6 +798,10 @@ def liquid_properties(Eos, **sys_dict):
     """
 
     ## Extract and check input data
+
+    if "xilist" in sys_dict and not gtb.isiterable(sys_dict["xilist"][0]):
+        sys_dict["xilist"] = np.array([sys_dict["xilist"]], float)
+
     thermo_keys = ["Tlist", "xilist", "Plist"]
     thermo_dict = gtb.check_length_dict(sys_dict, thermo_keys)
     npoints = len(thermo_dict[list(thermo_dict.keys())[0]])
@@ -916,6 +924,10 @@ def vapor_properties(Eos, **sys_dict):
     """
 
     ## Extract and check input data
+
+    if "yilist" in sys_dict and not gtb.isiterable(sys_dict["yilist"][0]):
+        sys_dict["yilist"] = np.array([sys_dict["yilist"]], float)
+
     thermo_keys = ["Tlist", "yilist", "Plist"]
     thermo_dict = gtb.check_length_dict(sys_dict, thermo_keys)
     npoints = len(thermo_dict[list(thermo_dict.keys())[0]])
@@ -1037,6 +1049,9 @@ def solubility_parameter(Eos, **sys_dict):
         - delta: Hidebrand solubility parameter given system conditions
 
     """
+
+    if "xilist" in sys_dict and not gtb.isiterable(sys_dict["xilist"][0]):
+        sys_dict["xilist"] = np.array([sys_dict["xilist"]], float)
 
     ## Extract and check input data
     thermo_keys = ["Tlist", "xilist", "Plist"]
@@ -1179,6 +1194,8 @@ def verify_eos(Eos, **sys_dict):
             raise ValueError(
                 "Must have at least 2 components. With more that 2 components, the mole fractions need to be specified"
             )
+    elif "xilist" in sys_dict and not gtb.isiterable(sys_dict["xilist"][0]):
+        sys_dict["xilist"] = np.array([sys_dict["xilist"]], float)
 
     thermo_keys = ["Tlist", "xilist", "Plist"]
     thermo_dict = gtb.check_length_dict(sys_dict, thermo_keys)

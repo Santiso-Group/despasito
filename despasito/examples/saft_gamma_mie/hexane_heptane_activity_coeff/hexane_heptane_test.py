@@ -19,9 +19,9 @@ Eos = despasito.equations_of_state.initiate_eos(
 output = thermo.thermo(
     Eos, 
     calculation_type="liquid_properties", 
-    Tlist=[320.0], 
-    Plist=[1e+5], 
-    xilist=np.array([[0.4, 0.6]]),
+    Tlist=320.0, 
+    Plist=1e+5, 
+    xilist=np.array([0.4, 0.6]),
 )
 
 print("Thermo Output",output)
