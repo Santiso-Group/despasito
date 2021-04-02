@@ -15,9 +15,14 @@ First open-source application for thermodynamic calculations and parameter fitti
 
 The first facet is a means to evaluate implicit equations of state (EOS), such as the focus of this package, SAFT-𝛾-Mie. This framework allows easy implementation of more advanced thermodynamic calculations as well as additional forms of SAFT or other equations of state. Feel free to contribute!
 
-The second facet is parameterization of the equation of state (EOS), some of which are useful for coarse-grained (CG) simulations. The SAFT-𝛾-Mie formalism is an attractive source of simulation parameters as it offers a means to directly link the intermolecular potential with thermodynamic properties. This application has the ability to fit EOS parameters to experimental thermodynamic data in a top down approach for self and cross interaction parameters. 
+The second facet is parameterization of equations of state (EOS), some of which are useful for coarse-grained (CG) simulations. The SAFT-𝛾-Mie formalism is an attractive source of simulation parameters as it offers a means to directly link the intermolecular potential with thermodynamic properties. This application has the ability to fit EOS parameters to experimental thermodynamic data in a top down approach for self and cross interaction parameters. 
 
-In another work nearing publication, we present a method of predicting cross-interaction parameters for SAFT-𝛾-Mie from multipole moments derived from DFT calculations. This method is easily implemented in using the package, [MAPSCI](https://github.com/jaclark5/mapsci) as a plug-in. It should be noted that it is recommended to additionally fine tune simulation parameters in an iterative fashion, but previous works have found close agreement with those fit to the EOS.
+In another work nearing publication, we present a method of predicting cross-interaction parameters for SAFT-𝛾-Mie from multipole moments derived from DFT calculations. This method is easily implemented in using the package, [MAPSCI](https://github.com/jaclark5/mapsci) as a plug-in. It should be noted that additional, iterative fine tuning in a simulation parameters may be desired, but previous works have found close agreement between simulation parameters and those fit to the EOS.
+
+Need Assistance?
+---------------
+
+Check out our [Documentation](https://despasito.readthedocs.io/en/latest/) first.
 
 Documentation
 --------------
@@ -25,23 +30,36 @@ Check out our [Documentation](https://despasito.readthedocs.io):
 
 Installation
 ------------
-**NOTE:** DESPASITO is not yet available conda-forge, but it is available with pip.
+**NOTE:** DESPASITO is not yet available in conda-forge, but it is available with pip.
 
 **Prerequisites**:
+  * **Python**: Available for python 3.6 to 3.8 (limited by current compatibility issues with Numba)
   * [NumPy](https://numpy.org): needed for running setup (distutils). Follow instructions outlined [here](https://docs.scipy.org/doc/numpy/user/install.html) for installation.
-  * [SetupTools](https://pypi.org/project/setuptools): needed for running setup (find_packages). Follow instructions outlined [here](https://pythonhosted.org/an_example_pypi_project/setuptools.html) for installation. 
 
-**Step 1:** Install the prerequisites listed above.
+Options
+=======
 
-**Step 2:** Install using pip with ``pip install -i https://test.pypi.org/simple/ despasito``
+**Option 1:** Install from pip: ``pip install despasito``
 
-**NOTE** If [pip](https://pip.pypa.io/en/stable/) is unavailable, follow the instructions outlined [here](https://pip.pypa.io/en/stable/installing/) for installation. Alternatively, download the master branch from our github page as a zip file, or clone it with git via ``git clone https://github.com/jaclark5/despasito`` in your working directory. Install DESPASITO locally from the working directory with ``python setup.py install --user``.
+**Option 2:** Install locally with pip.
+
+ * Step 1: Install the prerequisites listed above.
+ * Step 2: Download the master branch from our github page as a zip file, or clone it with git via ``git clone https://github.com/jaclark5/despasito`` to your working directory.
+ * Step 3: Install with ``pip install despasito/.``, or change directories and run ``pip install .``.
+
+**NOTE** If [pip](https://pip.pypa.io/en/stable/) is unavailable, follow the instructions outlined [here](https://pip.pypa.io/en/stable/installing/) for installation.
+
+**Option 3:** Install locally with python.
+
+ * Step 1: Install the prerequisites listed above.
+ * Step 2: Download the master branch from our github page as a zip file, or clone it with git via ``git clone https://github.com/jaclark5/despasito`` to your working directory.
+ * Step 3: After changing directories, install with ``python setup.py install --user`` .
 
 Command Line Use
 ----------------
 This package has been primarily designed as a command line tool but can be used as an imported package.
 
-In any directory with the appropriate .json input files, run DESPASITO with ``python -m despasito input.json``
+In any directory with the appropriate input files in .json format, run DESPASITO with ``python -m despasito -i input.json``
 
 See [examples](despasito/examples) directory for input file structures.
 

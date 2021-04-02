@@ -11,8 +11,7 @@ logger = logging.getLogger(__name__)
 
 def mean(beadA, beadB, parameter):
     r"""
-    Calculates cross interaction parameter according to the calculation method provided.
-    mean: c = (a+b)/2
+    Calculates cross interaction parameter with a mean: c = (a+b)/2
     
     Parameters
     ----------
@@ -35,8 +34,7 @@ def mean(beadA, beadB, parameter):
 
 def geometric_mean(beadA, beadB, parameter):
     r"""
-    Calculates cross interaction parameter according to the calculation method provided.
-    geometric mean: c = np.sqrt(a*b)
+    Calculates cross interaction parameter with a geometric mean: c = np.sqrt(a*b)
     
     Parameters
     ----------
@@ -59,8 +57,7 @@ def geometric_mean(beadA, beadB, parameter):
 
 def volumetric_geometric_mean(beadA, beadB, parameter, weighting_parameters=[]):
     r"""
-    Calculates cross interaction parameter according to the calculation method provided.
-    volumetric geometric mean: c = np.sqrt(a[0]*b[0]) * np.sqrt(a[1]**3 * b[1]**3) / ((a[1] + b[1])/2)**3
+    Calculates cross interaction parameter with a volumetric geometric mean: c = np.sqrt(a[0]*b[0]) * np.sqrt(a[1]**3 * b[1]**3) / ((a[1] + b[1])/2)**3
     
     Parameters
     ----------
@@ -92,8 +89,7 @@ def volumetric_geometric_mean(beadA, beadB, parameter, weighting_parameters=[]):
 
 def weighted_mean(beadA, beadB, parameter, weighting_parameters=[]):
     r"""
-    Calculates cross interaction parameter according to the calculation method provided.
-    weighted mean: (a[0]*a[1] + b[0]*b[1]) / (a[1] + b[1])
+    Calculates cross interaction parameter with a weighted mean: (a[0]*a[1] + b[0]*b[1]) / (a[1] + b[1])
     
     Parameters
     ----------
@@ -123,8 +119,7 @@ def weighted_mean(beadA, beadB, parameter, weighting_parameters=[]):
 
 def mie_exponent(beadA, beadB, parameter):
     r"""
-    Calculates cross interaction parameter according to the calculation method provided.
-    mie_exponent: 3 + np.sqrt((a-3)*(b-3))
+    Calculates cross interaction parameter like a mie_exponent: 3 + np.sqrt((a-3)*(b-3))
     
     Parameters
     ----------
@@ -147,8 +142,7 @@ def mie_exponent(beadA, beadB, parameter):
 
 def square_well_berthelot(beadA, beadB, parameter, weighting_parameters=[]):
     r"""
-    Calculates cross interaction parameter according to the calculation method provided.
-    Square_well Berthelot geometric mean: c = np.sqrt(a[0]*b[0]) * np.sqrt(a[1]**3 * b[1]**3) / ((a[1] + b[1])/2)**3
+    Calculates cross interaction parameter with a Square_well Berthelot geometric mean: c = np.sqrt(a[0]*b[0]) * np.sqrt(a[1]**3 * b[1]**3) / ((a[1] + b[1])/2)**3
     
     Parameters
     ----------
@@ -189,7 +183,7 @@ def multipole(
     beadA, beadB, parameter, temperature=None, mode="curve fit", scaled=False
 ):
     r"""
-    Calculates cross interaction parameter according to the calculation method provided with the plug-in `MAPSCI <https://github.com/jaclark5/mapsci>`_.
+    Calculates cross interaction parameter with the multipole combining rules from the plug-in `MAPSCI <https://github.com/jaclark5/mapsci>`_.
     
     Parameters
     ----------

@@ -1,7 +1,7 @@
-## How to Contribute
+## Expectations for Contributions
 
 We welcome contributions from external contributors, and this document
-describes how to merge code changes into despasito. We welcome contributions from everyone in the form of bug fixes, new features, documentation, and suggestions. 
+describes how to merge code changes into despasito. We welcome contributions from everyone in the form of bug fixes, new features, documentation, and suggestions. We are happy to take development requests but have to weigh its importance of my supporting projects. See our GitHub page for instructions on making a request.
 
 ### Release Procedure
 

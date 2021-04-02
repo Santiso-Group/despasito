@@ -243,7 +243,7 @@ def global_minimization(global_method, *args, **kwargs):
     exp_dict : dict
         Dictionary of experimental data objects.
     global_opts : dict, Optional
-        Key word arguments of global optimization algorithm. See specific options in :mod:`~despasito.parameter_fitting.global_methods` 
+        Keyword arguments of global optimization algorithm. See specific options in :mod:`~despasito.parameter_fitting.global_methods`. Note that unless in the keyword, ``workers`` is provided, the thermodynamic calculations will we split among the cores. Check the global optimization method to ensure it uses the ``workers`` keyword. 
     minimizer_opts : dict, Optional
         Dictionary used to define minimization type and the associated options.
 
@@ -368,7 +368,7 @@ def initialize_constraints(constraints, constraint_type):
     return tuple(new_constraints)
 
 
-def compute_obj(beadparams, fit_bead, fit_parameter_names, exp_dict, bounds):
+def compute_obj(beadparams, fit_bead, fit_parameter_names, exp_dict, bounds, frozen_parameters=None):
     r"""
     Fit defined parameters for equation of state object with given experimental data. 
 
@@ -387,6 +387,8 @@ def compute_obj(beadparams, fit_bead, fit_parameter_names, exp_dict, bounds):
         Dictionary of experimental data objects.
     bounds : list[tuple]
         List of length equal to fit_parameter_names with lists of pairs containing minimum and maximum bounds of parameters being fit. Defaults from Eos object are broad, so we recommend specification.
+    frozen_parameters : numpy.ndarray, Optional, default=None
+        List of first parameters in the fit_parameter_names list that are frozen during minimization. This feature is currently used in the :func:`~despasito.parameter_fitting.global_methods.grid_minimization` method, enabled with the ``split_grid_minimization`` feature.
 
     Returns
     -------
@@ -398,9 +400,12 @@ def compute_obj(beadparams, fit_bead, fit_parameter_names, exp_dict, bounds):
     # Update bead_library with test parameters
 
     if len(beadparams) != len(fit_parameter_names):
-        raise ValueError(
-            "The length of initial guess vector should be the same number of parameters to be fit."
-        )
+        if np.any(frozen_parameters != None):
+            beadparams = np.array(list(frozen_parameters) + list(beadparams))
+        else:
+            raise ValueError(
+                "The length of initial guess vector should be the same number of parameters to be fit."
+            )
 
     logger.info(
         (" {}: {}," * len(fit_parameter_names)).format(
@@ -519,27 +524,37 @@ def obj_function_form(
             if not np.isnan((data_test[i] - data0[i]) / data0[i])
         ]
     )
+    if gtb.isiterable(weights):
+        weight_tmp = np.array(
+            [
+                weights[i]
+                for i in range(len(data_test))
+                if not np.isnan((data_test[i] - data0[i]) / data0[i])
+            ]
+        )
+    else:
+        weight_tmp = weights
 
     if method == "average-squared-deviation":
-        obj_value = np.mean(data_tmp ** 2 * weights)
+        obj_value = np.mean(data_tmp ** 2 * weight_tmp)
 
     elif method == "sum-squared-deviation":
-        obj_value = np.sum(data_tmp ** 2 * weights)
+        obj_value = np.sum(data_tmp ** 2 * weight_tmp)
 
     elif method == "sum-squared-deviation-boltz":
         data_min = np.min(data_tmp)
         obj_value = np.sum(
-            data_tmp ** 2 * weights * np.exp((data_min - data_tmp) / np.abs(data_min))
+            data_tmp ** 2 * weight_tmp * np.exp((data_min - data_tmp) / np.abs(data_min))
         )
 
     elif method == "sum-deviation-boltz":
         data_min = np.min(data_tmp)
         obj_value = np.sum(
-            data_tmp * weights * np.exp((data_min - data_tmp) / np.abs(data_min))
+            data_tmp * weight_tmp * np.exp((data_min - data_tmp) / np.abs(data_min))
         )
 
     elif method == "percent-absolute-average-deviation":
-        obj_value = np.mean(np.abs(data_tmp) * weights) * 100
+        obj_value = np.mean(np.abs(data_tmp) * weight_tmp) * 100
 
     if len(data_tmp) == 0:
         obj_value = np.nan

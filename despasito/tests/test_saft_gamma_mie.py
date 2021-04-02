@@ -13,7 +13,7 @@ import despasito.equations_of_state
 try:
     import cython
     flag_cython = True
-except ImportError:
+except ModuleNotFoundError:
     flag_cython = False
 
 xi_co2_ben = np.array([0.2, 0.2])

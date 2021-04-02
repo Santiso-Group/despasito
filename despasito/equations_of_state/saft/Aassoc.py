@@ -23,14 +23,15 @@ except ImportError:
 try:
     import cython
     flag_cython = True
-except ImportError:
+except ModuleNotFoundError:
     flag_cython = False
     logger.warning("Cython package is unavailable, using Numba")
 
-try:
-    from .compiled_modules.ext_Aassoc_cython import calc_Xika as calc_Xika_cython
-except ImportError:
-    raise ImportError("Cython package is available but module: despasito.equations_of_state.saft.compiled_modules.ext_Aassoc_cython, has not been compiled.")
+if flag_cython:
+    try:
+        from .compiled_modules.ext_Aassoc_cython import calc_Xika as calc_Xika_cython
+    except ImportError:
+        raise ImportError("Cython package is available but module: despasito.equations_of_state.saft.compiled_modules.ext_Aassoc_cython, has not been compiled.")
 
 from .compiled_modules.ext_Aassoc_numba import calc_Xika as calc_Xika_numba
 from .compiled_modules.ext_Aassoc_python import calc_Xika as calc_Xika_python
@@ -127,12 +128,6 @@ def assoc_site_indices(nk, molecular_composition, xi=None):
     for bead in nk:
         bead_sites.append([i for i, site in enumerate(bead) if site != 0])
 
-    ## Indices of components will minimal mole fractions
-    # if xi is not None:
-    #    zero_frac = np.where(np.array(xi)<np.finfo("float").eps)[0]
-    # else:
-    #    zero_frac = np.array([])
-
     for i, comp in enumerate(molecular_composition):
         # if i not in zero_frac:
         for j, bead in enumerate(comp):
@@ -140,7 +135,7 @@ def assoc_site_indices(nk, molecular_composition, xi=None):
                 for k in bead_sites[j]:
                     indices.append([i, j, k])
 
-    indices = np.array([np.array(x) for x in indices], dtype=np.int)
+    indices = np.array([np.array(x) for x in indices], dtype=int)
 
     return indices
 

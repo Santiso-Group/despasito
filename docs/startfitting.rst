@@ -5,6 +5,8 @@ Get Started Fitting Parameters
 
 .. contents:: :local:
 
+See documentation below for a walk-through or :ref:`input-schema` for a condensed outline of available options.
+
 Files to Fit Parameters
 ########################
 In this tutorial we will assume the user has already read and understood our *Setting-up a Thermodynamic Calculation* tutorial. Setting up an input file for parameter fitting is similar to writing a thermodynamic input script. Again, two files are needed for a basic calculation:
@@ -60,7 +62,7 @@ After this input file, copy the SAFTgroup.json file from the example `despasito/
 
 ``python -m despasito -i input_fit.json -vv``, 
 
-It's that easy!
+It's that easy! The result will be two files. A log file, *despasito.log*, contains the details of the calculaton at the verbosity level INFO. Although the log file contains the calculation results, the output file, *despasito_out.txt* contains the best parameter set found..
 
 .. note:: Try the --jit option to speed it up.
 

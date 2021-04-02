@@ -1,4 +1,6 @@
 
+.. _faqs:
+
 FAQs
 ====
 
@@ -18,6 +20,11 @@ Parameter Fitting
 
 SAFT-:math:`\gamma`-Mie
 #########################
+**Q: Where can I get SAFT parameters?**
+
+**A:** There is not a centralized location for parameters used by all the variants of SAFT. In most cases, one must browse the literature to obtain these parameters. In the case of SAFT-:math:`\gamma`-Mie, the online utility `BottledSAFT <http://www.bottledsaft.org/>`_ contains a database of parameter, as well as a tool to estimate parameters from critical properties.
+
+
 **Q: How can I use parameters from a SAFT equation of state in simulations?**
 
 **A:** There are several references that have shown how to implement various versions of SAFT. An attractive option is the SAFT-:math:`\gamma` EOS since the group contribution approach is comparable to coarse-graining methods. There is a difficulty in applying this EOS as the shape factor, :math:`S_k`, does not seem directly applicable to the method. From the first order expansion of the monomer Helmholtz contribution, Yaroson `[1]`_ showed that the shape factor scales the energy parameter, providing basis for the assertion that:

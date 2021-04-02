@@ -3,7 +3,7 @@ import numpy as np
 cimport numpy as np
 from libc.stdio cimport printf
 
-FTYPE = np.float
+FTYPE = np.float64
 ctypedef np.float_t FTYPE_t
 
 cdef double const_molecule_per_nm3 = 6.02214086e-4 # mol/m^3 to molecules/nm^3 

@@ -34,9 +34,9 @@ def pressure_vs_volume_arrays(
 ):
 
     r"""
-    Give arrays with specific volume and pressure calculated from the given an EOS. 
+    Output arrays with specific volume and pressure arrays calculated from the given EOS. 
 
-    Options for this functions are provided in other functions with the keyword variable `density_opts`
+    This function is fundamental to every calculation, the options of which are passed through higher level calculation with the keyword variable ``density_opts``.
     
     Parameters
     ----------
@@ -3602,7 +3602,7 @@ def hildebrand_solubility(
     r"""
     Calculate the solubility parameter based on temperature and composition. 
 
-    This function is based on the method used in Zeng, Z., Y. Xi, and Y. Li *Calculation of Solubility Parameter Using Perturbed-Chain SAFT and Cubic-Plus-Association Equations of State* Ind. Eng. Chem. Res. 2008, 47, 9663–9669.
+    This function is based on the method used in Zeng, Z., Y. Xi, and Y. Li *Calculation of Solubility Parameter Using Perturbed-Chain SAFT and Cubic-Plus-Association Equations of State* Ind. Eng. Chem. Res. 2008. 47, 9663-9669.
     
     Parameters
     ----------
