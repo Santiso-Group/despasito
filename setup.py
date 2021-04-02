@@ -17,7 +17,7 @@ extensions = []
 
 if sys.version_info.minor > 8:
     raise ValueError(
-        "DESPASITO cannot run on python versions greater than 3.8 due to incompadibilities between python 3.9 and numba."
+        "DESPASITO cannot run on python versions greater than 3.8 due to incompatibilities between python 3.9 and numba."
     )
 
 try:
@@ -25,7 +25,7 @@ try:
     flag_cython = True
 except Exception:
     print(
-        'Cython not available on your system. Proceeding without C-extentions.'
+        'Cython not available on your system. Proceeding without C-extensions.'
     )
     flag_cython = False
 
@@ -62,7 +62,7 @@ else:
     print("Fortran compiler is not found, default will use numba")
 
 # try Extension and compile
-# !!!! Note that we have fortran modules that need to be compiled with "f2py3 -m solv_assoc -c solve_assoc.f90" and the same with solve_assoc_matrix.f90
+# !!!! Note that we have Fortran modules that need to be compiled with "f2py3 -m solv_assoc -c solve_assoc.f90" and the same with solve_assoc_matrix.f90
 
 setup(
     # Self-descriptive entries which should always be present
@@ -87,7 +87,10 @@ setup(
     setup_requires=["numpy", "scipy"] + pytest_runner,
     ext_package=fpath,
     ext_modules=extensions,
-    extras_require={"extra": ["pytest", "numba", "cython"]},
+    extras_require={
+        "extra": ["cython"],
+        "tests": ["pytest"],
+    },
     # Additional entries you may want simply uncomment the lines you want and fill in the data
     # url='http://www.my_package.com',  # Website
     install_requires=[

@@ -62,7 +62,7 @@ After this input file, copy the SAFTgroup.json file from the example `despasito/
 
 ``python -m despasito -i input_fit.json -vv``, 
 
-It's that easy!
+It's that easy! The result will be two files. A log file, *despasito.log*, contains the details of the calculaton at the verbosity level INFO. Although the log file contains the calculation results, the output file, *despasito_out.txt* contains the best parameter set found..
 
 .. note:: Try the --jit option to speed it up.
 

@@ -36,7 +36,7 @@ def writeout_thermo_dict(output_dict, calctype, output_file="thermo_output.txt")
     """
     Write out result of thermodynamic calculation.
 
-    Import dictionary of both input and output data to produce a file. A line in the top clarifies the calculation type done.
+    This file is automatically saved for a thermodynamic calculation (not parameter fitting) using the default ``output_file`` name. Import dictionary of both input and output data to produce a file. A line in the top clarifies the calculation type done. Each system input and output properties (e.g. T, P, etc.) are expressed as a columns.
 
     Parameters
     ----------

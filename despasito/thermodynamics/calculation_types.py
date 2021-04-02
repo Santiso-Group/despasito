@@ -650,7 +650,7 @@ def saturation_properties(Eos, **sys_dict):
     r"""
     Computes the saturated pressure, liquid, and gas density a one component phase at a temperature.
 
-    Input and system information are assessed first.  An output file is generated with T, :math:`P^{sat}`, :math:`\rho^{sat}_{l}, :math:`\rho^{sat}_{v}`
+    Input and system information are assessed first.  An output file is generated with T, :math:`P^{sat}`, :math:`\rho^{sat}_{l}`, and :math:`\rho^{sat}_{v}`.
     
     Parameters
     ----------
@@ -1006,7 +1006,7 @@ def solubility_parameter(Eos, **sys_dict):
     r"""
     Calculate the Hildebrand solubility parameter based on temperature and composition. 
 
-    This function is based on the method used in Zeng, Z., Y. Xi, and Y. Li *Calculation of Solubility Parameter Using Perturbed-Chain SAFT and Cubic-Plus-Association Equations of State* Ind. Eng. Chem. Res. 2008, 47, 9663–9669.
+    This function is based on the method used in Zeng, Z., Y. Xi, and Y. Li *Calculation of Solubility Parameter Using Perturbed-Chain SAFT and Cubic-Plus-Association Equations of State* Ind. Eng. Chem. Res. 2008. 47, 9663-9669.
 
     Input and system information are assessed first. An output file is generated with T, xi, :math:`\rho_{l}`, and :math:`\delta`.
     

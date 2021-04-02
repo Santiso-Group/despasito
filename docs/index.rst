@@ -16,6 +16,14 @@ The second facet is parameterization of the equation of state (EOS), some of whi
 
 In another work nearing publication, we present a method of predicting cross-interaction parameters for SAFT-:math:`\gamma`-Mie from multipole moments derived from DFT calculations. This method is easily implemented in using the package, `MAPSCI <https://github.com/jaclark5/mapsci>`_ as a plug-in. It should be noted that additional, iterative fine tuning in a simulation parameters may be desired, but previous works have found close agreement between simulation parameters and those fit to the EOS.
 
+Need Help?
+----------
+If you're new to DESPASITO, check out our :ref:`basic-use` tutorial. If you're having trouble, you have three options:
+
+#. Review our :ref:`faqs` page
+#. View our ``despasito.examples`` directory for formatted examples
+#. :ref:`issue`.
+
 .. toctree::
    :maxdepth: 1
    :caption: Contents:
@@ -38,10 +46,12 @@ In another work nearing publication, we present a method of predicting cross-int
    :maxdepth: 2
    :caption: Contributing:
    
+   contribute_issues
    contribute_intro
    contribute_eos
    contribute_thermo
    contribute_fitparams
+   contributors
 
 .. toctree::
    :maxdepth: 1

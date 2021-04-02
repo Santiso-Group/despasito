@@ -388,63 +388,69 @@ class EosType(EosTemplate):
         Aassoc : numpy.ndarray
             Helmholtz energy of ideal gas for each density given.
         """
-        if len(xi) != self.number_of_components:
-            raise ValueError(
-                "Number of components in mole fraction list, {}, doesn't match self.number_of_components, {}".format(
-                    len(xi), self.number_of_components
+
+        if self.eos_dict["flag_assoc"]:
+            if len(xi) != self.number_of_components:
+                raise ValueError(
+                    "Number of components in mole fraction list, {}, doesn't match self.number_of_components, {}".format(
+                        len(xi), self.number_of_components
+                    )
                 )
+
+            rho = self._check_density(rho)
+
+            indices = Aassoc.assoc_site_indices(
+                self.eos_dict["nk"], self.eos_dict["molecular_composition"], xi=xi
             )
 
-        rho = self._check_density(rho)
+            # compute F_klab
+            Fklab = np.exp(self.eos_dict["epsilonHB"] / T) - 1.0
+            if "rc_klab" in self.eos_dict:
+                if "Kijklab" not in self.eos_dict or T != self.T:
+                    opts = {}
+                    keys = ["rd_klab", "reduction_ratio"]
+                    for key in keys:
+                        if key in self.eos_dict:
+                            opts[key] = self.eos_dict[key]
+                    self.eos_dict["Kijklab"] = self.saft_source.calc_Kijklab(T, self.eos_dict["rc_klab"], **opts)
+                    self.T = T
+                Kklab = self.eos_dict["Kijklab"]
+                Ktype = "ijklab"
+            else:
+                Kklab = self.eos_dict["Kklab"]
+                Ktype = "klab"
 
-        indices = Aassoc.assoc_site_indices(
-            self.eos_dict["nk"], self.eos_dict["molecular_composition"], xi=xi
-        )
+            gr_assoc = self.saft_source.calc_gr_assoc(rho, T, xi, Ktype=Ktype)
 
-        # compute F_klab
-        Fklab = np.exp(self.eos_dict["epsilonHB"] / T) - 1.0
-        if "rc_klab" in self.eos_dict:
-            if "Kijklab" not in self.eos_dict or T != self.T:
-                opts = {}
-                keys = ["rd_klab", "reduction_ratio"]
-                for key in keys:
-                    if key in self.eos_dict:
-                        opts[key] = self.eos_dict[key]
-                self.eos_dict["Kijklab"] = self.saft_source.calc_Kijklab(T, self.eos_dict["rc_klab"], **opts)
-                self.T = T
-            Kklab = self.eos_dict["Kijklab"]
-            Ktype = "ijklab"
+            # Compute Xika: with python with numba  {BottleNeck}
+
+            Xika = Aassoc._calc_Xika_wrap(
+                indices,
+                rho,
+                xi,
+                self.eos_dict["molecular_composition"],
+                self.eos_dict["nk"],
+                Fklab,
+                Kklab,
+                gr_assoc,
+                method_stat=self.method_stat
+            )
+
+            # Compute A_assoc
+            Assoc_contribution = np.zeros(np.size(rho))
+            for ind, (i, k, a) in enumerate(indices):
+                if self.eos_dict["nk"][k, a] != 0.0:
+                    tmp = np.log(Xika[:, ind]) + ((1.0 - Xika[:, ind]) / 2.0)
+                    Assoc_contribution += (
+                        xi[i]
+                        * self.eos_dict["molecular_composition"][i, k]
+                        * self.eos_dict["nk"][k, a]
+                        * tmp
+                    )
+
         else:
-            Kklab = self.eos_dict["Kklab"]
-            Ktype = "klab"
-
-        gr_assoc = self.saft_source.calc_gr_assoc(rho, T, xi, Ktype=Ktype)
-
-        # Compute Xika: with python with numba  {BottleNeck}
-
-        Xika = Aassoc._calc_Xika_wrap(
-            indices,
-            rho,
-            xi,
-            self.eos_dict["molecular_composition"],
-            self.eos_dict["nk"],
-            Fklab,
-            Kklab,
-            gr_assoc,
-            method_stat=self.method_stat
-        )
-
-        # Compute A_assoc
-        Assoc_contribution = np.zeros(np.size(rho))
-        for ind, (i, k, a) in enumerate(indices):
-            if self.eos_dict["nk"][k, a] != 0.0:
-                tmp = np.log(Xika[:, ind]) + ((1.0 - Xika[:, ind]) / 2.0)
-                Assoc_contribution += (
-                    xi[i]
-                    * self.eos_dict["molecular_composition"][i, k]
-                    * self.eos_dict["nk"][k, a]
-                    * tmp
-                )
+            logger.warning("Association Site contribution was called when the appropriate parameters were not provided. This should not occur.")
+            Assoc_contribution = None
 
         return Assoc_contribution
 

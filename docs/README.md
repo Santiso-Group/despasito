@@ -1,15 +1,12 @@
 # Compiling DESPASITO's Documentation
 
 The docs for this project are built with [Sphinx](http://www.sphinx-doc.org/en/master/).
-To compile the docs, first ensure that Sphinx and the ReadTheDocs theme are installed.
-
+To compile the docs, install Sphinx, the ReadTheDocs theme, and other dependencies.
 
 ```bash
-conda install sphinx sphinx_rtd_theme 
-conda install sphinx-argparse
+conda install sphinx sphinx_rtd_theme sphinx-argparse m2r2
 
 ```
-
 
 Once installed, you can use the `Makefile` in this directory to compile static HTML pages by
 ```bash
