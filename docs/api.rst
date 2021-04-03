@@ -18,7 +18,7 @@ Once installed, DESPASITO can be easily imported with ``import despasito``.
 Each module will then need to replicate our main command line function and call each module in succession.
 
 #. Generate Eos object used in thermodynamic calculations with :func:`initiate_eos <despasito.equations_of_state.initiate_eos>`.
-#. Start thermodynamic calculation with :func:`thermo <despasito.thermodynamics.thermo>` where the calculation type and Eos object will specify the thermodynamic calculation..
+#. Start thermodynamic calculation with :func:`thermo <despasito.thermodynamics.thermo>` where the calculation type and Eos object will specify the thermodynamic calculation.
 
 Alternatively, the Eos object can be used for independent study.
 
@@ -53,7 +53,7 @@ __________________________
 
       * **data_class_type**: (str) Defines a supported :ref:`data class <data-types>` for fitting.
       * **calculation_type**: (str) Optional - Any :func:`calculation_type <despasito.thermodynamics.calculation_types>` that is supported by the thermodynamic module.
-      * **file**: (str) Optional - File of experimental data, See fitting :ref:`data class <data-types>` for file headers
+      * **file**: (str) Optional - File of experimental data, See fitting :ref:`data class <data-types>` for file headers.
       * **bead_configuration**: (list[float]), Optional - Initial guess in parameter. If one is not provided, a guess is made based on the type of parameter from Eos object. This allows the specified bead to be fit using multiple systems.
       * **weights**: (dict) Optional - A dictionary where each key is the header used in the exp. data file. The value associated with a header can be a list as long as the number of data points to multiply by the objective value associated with each point, or a float to multiply the objective value of this data set.
       * **\***: Optional - Instead of a file of experimental data, the relevant arrays may be included here. All other optional entries for the :func:`calculation_type <despasito.thermodynamics.calculation_types>` may be included.
