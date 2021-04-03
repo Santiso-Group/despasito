@@ -3,7 +3,7 @@
 """
 Handles the primary functions
 
-In any directory with the appropriate .json input files, run DESPASITO with ``python -m despasito input.json``
+In any directory with the appropriate input files in the JSON format, run DESPASITO with ``python -m despasito input.json``
 
 """
 
@@ -31,7 +31,7 @@ def get_parser():
         "-i",
         "--input",
         dest="input",
-        help="Input .json file with calculation instructions and path(s) to equation of state parameters. See documentation for explicit explanation. Compile docs or visit https://despasito.readthedocs.io",
+        help="Input file in JSON format with calculation instructions and path(s) to equation of state parameters. See documentation for explicit explanation. Compile docs or visit https://despasito.readthedocs.io",
     )
     parser.add_argument(
         "-v",

@@ -1,4 +1,4 @@
-""" Routines for parsing input .json files to dictionaries for program use.
+""" Routines for parsing input files in JSON format to dictionaries for program use.
 """
 
 import logging
@@ -16,7 +16,7 @@ def append_data_file_path(input_dict, path="."):
    Parameters
    ----------
    input_dict
-       Dictionary of input (json) data 
+       Dictionary of input data 
    path: str
        relative path to append to existing data files 
    """
@@ -33,17 +33,17 @@ def append_data_file_path(input_dict, path="."):
 
 def json_to_dict(filename):
     r"""
-    Extract json file as a dictionary
+    Extract contents of JSON formatted file as a dictionary
 
     Parameters
     ----------
     filename : str
-        File name and path leading to json file location
+        File name and path leading to file (in JSON format) location
   
     Returns
     -------
     dictionary : dict
-        Dictionary resulting from json file
+        Dictionary resulting from file
     """
 
     with open(filename, "r") as f:
@@ -56,14 +56,14 @@ def json_to_dict(filename):
 def extract_calc_data(input_fname, path=".", **thermo_dict):
 
     r"""
-    Parse dictionary from .json input file into a dictionaries.
+    Parse dictionary from input file in JSON format into a dictionary.
 
     Resulting dictionaries are used for creating the equation of state object, and for passing instructions for thermodynamic calculations.
 
     Parameters
     ----------
     input_fname : str
-        The file name of a .json file in the current directory containing (1) the paths to equation of state parameters, (2) :mod:`~despasito.thermodynamics.calculation_types` and inputs for thermodynamic calculations (e.g. density options for :func:`~despasito.thermodynamics.calc.pressure_vs_volume_arrays`).
+        The file name of a file in JSON format in the current directory containing (1) the paths to equation of state parameters, (2) :mod:`~despasito.thermodynamics.calculation_types` and inputs for thermodynamic calculations (e.g. density options for :func:`~despasito.thermodynamics.calc.pressure_vs_volume_arrays`).
     path : str, Optional, default="."
         Path to ``input_fname``
     thermo_dict

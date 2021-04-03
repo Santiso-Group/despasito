@@ -4,7 +4,7 @@ Fit Parameters
 
 This package uses functions from ``input_output``, ``equations_of_state``, and ``thermodynamics`` to fit parameters to experimental data.
 
-input.json files have a different dictionary structure that is processed by :func:`~despasito.input_output.read_input.process_param_fit_inputs`
+input.json files have a different dictionary structure that is processed by :func:`~despasito.input_output.read_input.process_param_fit_inputs`.
 
 """
 
