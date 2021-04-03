@@ -326,7 +326,8 @@ def isiterable(array):
         Will be True if indexing is possible and False if not.
     """
 
-    tmp = np.shape(array)
+    array_tmp = np.array(array, dtype=object)
+    tmp = np.shape(array_tmp)
     if tmp:
         isiterable = True
     else:

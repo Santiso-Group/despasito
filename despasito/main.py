@@ -9,6 +9,7 @@ In any directory with the appropriate input files in the JSON format, run DESPAS
 
 import logging
 import argparse
+import numpy as np
 
 from .input_output import read_input
 from .input_output import write_output
@@ -100,6 +101,8 @@ def run(filename="input.json", path=".", **kwargs):
     kwargs
         Keywords for other aspects of calculation
     """
+
+    np.warnings.filterwarnings('error', category=np.VisibleDeprecationWarning)
 
     # read input file (need to add command line specification)
     logger.info("Begin processing input file: %s" % filename)

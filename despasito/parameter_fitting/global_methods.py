@@ -628,17 +628,26 @@ def _grid_minimization_wrapper(args):
         method = opts["method"]
         del opts["method"]
 
-    try:
-        result = gtb.solve_root(
-            ff.compute_obj,
-            args=obj_args,
-            method=method,
-            x0=x0,
-            bounds=bounds,
-            options=opts,
-        )
-    except Exception:
-        result = np.nan * np.ones(len(x0))
+    result = gtb.solve_root(
+        ff.compute_obj,
+        args=obj_args,
+        method=method,
+        x0=x0,
+        bounds=bounds,
+        options=opts,
+    )
+
+    #try:
+    #    result = gtb.solve_root(
+    #        ff.compute_obj,
+    #        args=obj_args,
+    #        method=method,
+    #        x0=x0,
+    #        bounds=bounds,
+    #        options=opts,
+    #    )
+    #except Exception:
+    #    result = np.nan * np.ones(len(x0))
 
     # Return NaN if the parameters didn't change
     if np.sum(np.abs(result - x0)) < 1e-6:
