@@ -9,8 +9,6 @@ DESPASITO
 
 DESPASITO: Determining Equilibrium State and Parametrization Application for SAFT, Intended for Thermodynamic Output
 
-**WARNING!** This package is not ready for distribution.
-
 First open-source application for thermodynamic calculations and parameter fitting for the Statistical Associating Fluid Theory (SAFT) EOS and SAFT-𝛾-Mie coarse-grained simulations. This software has two primary facets. 
 
 The first facet is a means to evaluate implicit equations of state (EOS), such as the focus of this package, SAFT-𝛾-Mie. This framework allows easy implementation of more advanced thermodynamic calculations as well as additional forms of SAFT or other equations of state. Feel free to contribute!
