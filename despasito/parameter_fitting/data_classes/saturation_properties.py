@@ -65,6 +65,8 @@ class Data(ExpDataTemplate):
 
     def __init__(self, data_dict):
 
+        data_dict = data_dict.copy()
+
         super().__init__(data_dict)
 
         # If required items weren't defined, set defaults

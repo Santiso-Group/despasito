@@ -64,6 +64,8 @@ class Data(ExpDataTemplate):
 
     def __init__(self, data_dict):
 
+        data_dict = data_dict.copy()
+
         super().__init__(data_dict)
 
         self.name = "solubility_parameter"
