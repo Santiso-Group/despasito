@@ -102,7 +102,8 @@ def run(filename="input.json", path=".", **kwargs):
         Keywords for other aspects of calculation
     """
 
-    np.warnings.filterwarnings('error', category=np.VisibleDeprecationWarning)
+    np.seterr(divide = 'ignore') 
+    #np.warnings.filterwarnings('error', category=np.VisibleDeprecationWarning)
 
     # read input file (need to add command line specification)
     logger.info("Begin processing input file: %s" % filename)
