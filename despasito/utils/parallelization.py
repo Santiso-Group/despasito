@@ -154,6 +154,7 @@ class MultiprocessingJob:
         for i, finput in enumerate(inputs):
             foutput = func(finput)
             output.append(foutput)
+        output = np.array(output, dtype=object)
 
         return np.transpose(output)
 

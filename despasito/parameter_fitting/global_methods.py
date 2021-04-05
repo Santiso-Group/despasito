@@ -106,6 +106,8 @@ def differential_evolution(
 
     """
 
+    global_opts = global_opts.copy()
+
     obj_kwargs = ["obj_cut", "filename", "write_intermediate_file"]
     if "obj_cut" in global_opts:
         obj_cut = global_opts["obj_cut"]
@@ -207,6 +209,8 @@ def shgo(
         scipy OptimizedResult object
 
     """
+
+    global_opts = global_opts.copy()
 
     # Options for differential evolution, set defaults in new_global_opts
     new_global_opts = {"sampling_method": "sobol"}
@@ -345,6 +349,16 @@ def grid_minimization(
     # Set up inputs
     if "initial_guesses" in global_opts:
         x0_array = global_opts["initial_guesses"]
+
+        if global_opts["split_grid_minimization"] != 0:
+            inputs = []
+            for x0 in x0_array:
+                tmp1 = x0[global_opts["split_grid_minimization"]:]
+                tmp2 = x0[:global_opts["split_grid_minimization"]]
+                inputs.append(tmp1, (*args, tmp2), bounds, constraints, minimizer_opts)
+        else:
+            inputs = [(x0, args, bounds, constraints, minimizer_opts) for x0 in x0_array]
+
     else:
         # Initialization based on implementation in scipy.optimize.brute
         if global_opts["split_grid_minimization"] == 0:
@@ -375,12 +389,12 @@ def grid_minimization(
         if N > 1:
             x0_array = np.reshape(x0_array, (inpt_shape[0], np.prod(inpt_shape[1:]))).T
 
-    if global_opts["split_grid_minimization"] != 0:
-        min_parameters = list(parameters_guess[global_opts["split_grid_minimization"]:])
-        inputs = [(min_parameters, (*args, x0), bounds, constraints, minimizer_opts) for x0 in x0_array]
+        if global_opts["split_grid_minimization"] != 0:
+            min_parameters = list(parameters_guess[global_opts["split_grid_minimization"]:])
+            inputs = [(min_parameters, (*args, x0), bounds, constraints, minimizer_opts) for x0 in x0_array]
 
-    else:
-        inputs = [(x0, args, bounds, constraints, minimizer_opts) for x0 in x0_array]
+        else:
+            inputs = [(x0, args, bounds, constraints, minimizer_opts) for x0 in x0_array]
 
     lx = len(x0_array)
 
@@ -542,6 +556,8 @@ def basinhopping(
         
     """
 
+    global_opts = global_opts.copy()
+
     if "obj_cut" in global_opts:
         obj_cut = global_opts["obj_cut"]
         del global_opts["obj_cut"]
@@ -624,10 +640,11 @@ def _grid_minimization_wrapper(args):
     if constraints != None:
         logger.warning("Constraints defined, but grid_minimization does not support their use.")
 
+    opts = opts.copy()
     if "method" in opts:
         method = opts["method"]
         del opts["method"]
-
+        
     try:
         result = gtb.solve_root(
             ff.compute_obj,
@@ -638,10 +655,12 @@ def _grid_minimization_wrapper(args):
             options=opts,
         )
     except Exception:
+        logger.debug("Minimization Failed:", exc_info=True)
         result = np.nan * np.ones(len(x0))
 
     # Return NaN if the parameters didn't change
     if np.sum(np.abs(result - x0)) < 1e-6:
+        logger.debug("Minimization Failed:", exc_info=True)
         result = np.nan * np.ones(len(x0))
 
     logger.info("Starting parameters: {}, converged to: {}".format(x0, result))

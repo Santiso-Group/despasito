@@ -414,48 +414,54 @@ def compute_obj(beadparams, fit_bead, fit_parameter_names, exp_dict, bounds, fro
     )
 
     # Compute obj_function
-    obj_function = []
-    for key, data_obj in exp_dict.items():
-        try:
-            data_obj.update_parameters(fit_bead, fit_parameter_names, beadparams)
-            obj_function.append(data_obj.objective())
-        except Exception:
-            logger.exception(
-                "Failed to evaluate objective function for {} of type {}.".format(
-                    key, data_obj.name
+    if not np.any(np.isnan(beadparams)):
+        obj_function = []
+        for key, data_obj in exp_dict.items():
+            try:
+                data_obj.update_parameters(fit_bead, fit_parameter_names, beadparams)
+                obj_function.append(data_obj.objective())
+            except Exception:
+                logger.exception(
+                    "Failed to evaluate objective function for {} of type {}.".format(
+                        key, data_obj.name
+                    )
                 )
-            )
-            obj_function.append(np.inf)
+                obj_function.append(np.inf)
 
-    obj_total = np.nansum(obj_function)
+        obj_total = np.nansum(obj_function)
+
+        # Add penalty for being out of bounds for the sake of inner minimization
+        for i, param in enumerate(beadparams):
+            if param < bounds[i][0]:
+                logger.debug(
+                    "Adding penalty to {} parameter for being lower than range".format(
+                        fit_parameter_names[i]
+                    )
+                )
+                obj_total += (1e3 * (param - bounds[i][0])) ** 8
+            elif param > bounds[i][1]:
+                logger.debug(
+                    "Adding penalty to {} parameter for being higher than range".format(
+                        fit_parameter_names[i]
+                    )
+                )
+                obj_total += (1e3 * (param - bounds[i][1])) ** 8
+    else:
+        logger.info("One of provided parameters, {}, is NaN".format(beadparams))
+        obj_function = [np.nan for _ in exp_dict]
+        obj_total = np.nansum(obj_function)
+
     if obj_total == 0.0 and np.isnan(np.sum(obj_function)):
         obj_total = np.inf
 
-    # Add penalty for being out of bounds for the sake of inner minimization
-    for i, param in enumerate(beadparams):
-        if param <= bounds[i][0]:
-            logger.debug(
-                "Adding penalty to {} parameter for being lower than range".format(
-                    fit_parameter_names[i]
-                )
-            )
-            obj_total += (1e3 * (param - bounds[i][0])) ** 8
-        elif param >= bounds[i][1]:
-            logger.debug(
-                "Adding penalty to {} parameter for being higher than range".format(
-                    fit_parameter_names[i]
-                )
-            )
-            obj_total += (1e3 * (param - bounds[i][1])) ** 8
-
     # Write out parameters and objective functions for each dataset
     logger.info(
-        "\nParameters: {}\nValues: {}\nExp. Data: {}\nObj. Values: {}\nTotal Obj. Value: {}".format(
-            fit_parameter_names,
-            beadparams,
+        "\nParameters: {}Total Obj.\nValues: {}{}\nExp. Data: {}\nObj. Values: {}".format(
+            ("{}, "*len(fit_parameter_names)).format(*fit_parameter_names),
+            ("{}, "*len(beadparams)).format(*beadparams),
+            obj_total,
             list(exp_dict.keys()),
             obj_function,
-            obj_total,
         )
     )
 

@@ -104,7 +104,7 @@ def fit(
                 exp_data[k2][key] = value
 
     # Generate initial guess and bounds for parameters if none was given
-    optimization_parameters = ff.consolidate_bounds(optimization_parameters)
+    optimization_parameters = ff.consolidate_bounds(optimization_parameters).copy()
     if "bounds" in optimization_parameters:
         bounds = optimization_parameters["bounds"]
         del optimization_parameters["bounds"]
