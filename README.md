@@ -1,6 +1,7 @@
 DESPASITO
 ==============================
 [//]: # (Badges)
+[![DOI](https://zenodo.org/badge/202225860.svg)](https://zenodo.org/badge/latestdoi/202225860)
 [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 [![GitHub Actions Build Status](https://github.com/jaclark5/despasito/workflows/CI/badge.svg)](https://github.com/jaclark5/despasito/actions?query=workflow%3ACI)
 [![codecov](https://codecov.io/gh/jaclark5/DESPASITO/branch/master/graph/badge.svg)](https://codecov.io/gh/jaclark5/DESPASITO/branch/master)

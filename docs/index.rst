@@ -6,6 +6,9 @@
 Welcome to DESPASITO's documentation!
 =========================================================
 
+.. image:: https://zenodo.org/badge/202225860.svg
+   :target: https://zenodo.org/badge/latestdoi/202225860
+
 DESPASITO: Determining Equilibrium State and Parametrization Application for SAFT, Intended for Thermodynamic Output
 
 First open-source application for thermodynamic calculations and parameter fitting for the Statistical Associating Fluid Theory (SAFT) equation of state (EOS) and SAFT-:math:`\gamma`-Mie coarse-grained simulations. This software has two primary facets. 
