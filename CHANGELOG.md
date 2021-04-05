@@ -39,7 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Density and energy parameters are now scaled so that all calculations are within precision limits, removing precision loss in association site calculations.
  - Newer calc_Xika algorithm is implemented in FORTRAN, improving performance.
 
-## [0.1.0] - 2021-04-04
+## [0.2.0] - 2021-04-05
 ### Add
  - Require command line option, --console, to print to standard output
  - Add command line flag to use pure python implementation
