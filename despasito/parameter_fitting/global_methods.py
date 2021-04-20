@@ -348,6 +348,7 @@ def grid_minimization(
 
     # Set up inputs
     if "initial_guesses" in global_opts:
+        del global_opts["Ns"]
         x0_array = global_opts["initial_guesses"]
 
         if global_opts["split_grid_minimization"] != 0:
@@ -355,7 +356,7 @@ def grid_minimization(
             for x0 in x0_array:
                 tmp1 = x0[global_opts["split_grid_minimization"]:]
                 tmp2 = x0[:global_opts["split_grid_minimization"]]
-                inputs.append(tmp1, (*args, tmp2), bounds, constraints, minimizer_opts)
+                inputs.append((tmp1, (*args, tmp2), bounds, constraints, minimizer_opts))
         else:
             inputs = [(x0, args, bounds, constraints, minimizer_opts) for x0 in x0_array]
 
@@ -392,7 +393,6 @@ def grid_minimization(
         if global_opts["split_grid_minimization"] != 0:
             min_parameters = list(parameters_guess[global_opts["split_grid_minimization"]:])
             inputs = [(min_parameters, (*args, x0), bounds, constraints, minimizer_opts) for x0 in x0_array]
-
         else:
             inputs = [(x0, args, bounds, constraints, minimizer_opts) for x0 in x0_array]
 
@@ -410,13 +410,18 @@ def grid_minimization(
 
     # Choose final output
     if global_opts["split_grid_minimization"] != 0:
-        x0_new = np.zeros((lx,len(parameters_guess)))
+        if not "initial_guesses" in global_opts:
+            x0_new = np.zeros((lx,len(parameters_guess)))
         results_new = np.zeros((lx,len(parameters_guess)))
         for i in range(len(x0_array)):
-            x0_new[i] = np.array(list(x0_array[i])+list(min_parameters))
-            results_new[i] = np.array(list(x0_array[i])+list(results[i]))
+            if not "initial_guesses" in global_opts:
+                x0_new[i] = np.array(list(x0_array[i])+list(min_parameters))
+                results_new[i] = np.array(list(x0_array[i])+list(results[i]))
+            else:
+                results_new[i] = np.array(list(x0_array[i][:global_opts["split_grid_minimization"]])+list(results[i]))
         results = results_new
-        x0_array = x0_new
+        if not "initial_guesses" in global_opts:
+            x0_array = x0_new
 
     result = [fval[0], results[0]]
     logger.info("For bead: {} and parameters {}".format(fit_bead, fit_parameter_names))
@@ -430,10 +435,8 @@ def grid_minimization(
         x=result[1],
         fun=result[0],
         success=True,
-        nit=lx * global_opts["Ns"],
-        message="Termination successful with {} grid points and the minimum value minimized. Note that parameters may be outside of the given bounds because of the minimizing function.".format(
-            lx * global_opts["Ns"]
-        ),
+        nit=lx,
+        message="Termination successful with {} grid points and the minimum value minimized. Note that parameters may be outside of the given bounds because of the minimizing function.".format(lx),
     )
 
     return result
