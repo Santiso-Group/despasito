@@ -353,6 +353,7 @@ def grid_minimization(
 
         if global_opts["split_grid_minimization"] != 0:
             inputs = []
+            bounds = bounds[global_opts["split_grid_minimization"]:]
             for x0 in x0_array:
                 tmp1 = x0[global_opts["split_grid_minimization"]:]
                 tmp2 = x0[:global_opts["split_grid_minimization"]]
@@ -658,12 +659,12 @@ def _grid_minimization_wrapper(args):
             options=opts,
         )
     except Exception:
-        logger.debug("Minimization Failed:", exc_info=True)
+        logger.info("Minimization Failed:", exc_info=True)
         result = np.nan * np.ones(len(x0))
 
     # Return NaN if the parameters didn't change
     if np.sum(np.abs(result - x0)) < 1e-6:
-        logger.debug("Minimization Failed:", exc_info=True)
+        logger.info("Minimization Failed:", exc_info=True)
         result = np.nan * np.ones(len(x0))
 
     logger.info("Starting parameters: {}, converged to: {}".format(x0, result))
