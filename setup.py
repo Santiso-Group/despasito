@@ -15,7 +15,7 @@ fpath = os.path.join("despasito", "equations_of_state", "saft",
                      "compiled_modules")
 extensions = []
 
-if sys.version_info.minor > 8:
+if sys.version_info.minor > 10:
     raise ValueError(
         "DESPASITO cannot run on python versions greater than 3.8 due to incompatibilities between python 3.9 and numba."
     )
