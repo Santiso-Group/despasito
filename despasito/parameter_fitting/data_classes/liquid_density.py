@@ -25,6 +25,7 @@ class Data(ExpDataTemplate):
     Object for liquid density data. This data is evaluated with "liquid_properties". 
 
     This object is initiated in :func:`~despasito.parameter_fitting.fit` with the keyword, ``exp_data[*]["data_class_type"]="liquid_density"``.
+    The data could be evaluated with :func:`~despasito.thermodynamics.calculation_types.liquid_properties`
 
     Parameters
     ----------
