@@ -357,6 +357,8 @@ def calc_assoc_matrices(
             for b, site2 in enumerate(sitenames):
                 epsilon_tmp = "-".join(["epsilonHB", site1, site2])
                 K_tmp = "-".join(["K", site1, site2])
+                rc_tmp = "-".join(["rc", site1, site2])
+                rd_tmp = "-".join(["rd", site1, site2])
                 for j, bead2 in enumerate(beads):
                     if i == j:
                         continue
@@ -409,20 +411,25 @@ def calc_assoc_matrices(
                             ]
                             epsilonHB[j, i, b, a] = epsilonHB[i, j, a, b]
 
-                            if flag_Kklab:
+                            if flag_Kklab and K_tmp in cross_library[bead1][bead2]:
                                 Kklab[i, j, a, b] = cross_library[bead1][bead2][K_tmp]
                                 Kklab[j, i, b, a] = Kklab[i, j, a, b]
+                                
+                            if flag_rc_klab and rc_tmp in cross_library[bead1][bead2]:
+                                rc_klab[i, j, a, b] = cross_library[bead1][bead2][rc_tmp]
+                                rc_klab[j, i, b, a] = rc_klab[i, j, a, b]
 
-                    if (
-                        not flag_update
-                        and nk[j][b] != 0
-                        and epsilonHB[j, i, b, a] == 0.0
-                    ):
-                        epsilonHB[i, j, a, b] = np.sqrt(
-                            epsilonHB[i, i, a, a] * epsilonHB[j, j, b, b]
-                        )
-                        epsilonHB[j, i, b, a] = epsilonHB[i, j, a, b]
-                        if flag_Kklab:
+                            if flag_rd_klab and rd_tmp in cross_library[bead1][bead2]:
+                                rd_klab[i, j, a, b] = cross_library[bead1][bead2][rd_tmp]
+                                rd_klab[j, i, b, a] = rd_klab[i, j, a, b]
+
+                    if not flag_update and nk[j][b] != 0:
+                        if epsilonHB[j, i, b, a] == 0.0:
+                            epsilonHB[i, j, a, b] = np.sqrt(
+                                epsilonHB[i, i, a, a] * epsilonHB[j, j, b, b]
+                            )
+                            epsilonHB[j, i, b, a] = epsilonHB[i, j, a, b]
+                        if flag_Kklab and Kklab[i, j, a, b] == 0.0:
                             Kklab[i, j, a, b] = (
                                 (
                                     (Kklab[i, i, a, a]) ** (1.0 / 3.0)
@@ -431,6 +438,14 @@ def calc_assoc_matrices(
                                 / 2.0
                             ) ** 3
                             Kklab[j, i, b, a] = Kklab[i, j, a, b]
+                            
+                        if flag_rc_klab and rc_klab[i, j, a, b] == 0.0:
+                            rc_klab[i, j, a, b] = (rc_klab[i, i, a, a] + rc_klab[j, j, b, b])/2
+                            rc_klab[j, i, b, a] = rc_klab[i, j, a, b]
+                            
+                        if flag_rd_klab and rd_klab[i, j, a, b] == 0.0:
+                            rd_klab[i, j, a, b] = (rd_klab[i, i, a, a] + rd_klab[j, j, b, b])/2
+                            rd_klab[j, i, b, a] = rd_klab[i, j, a, b]
 
     output = {"epsilonHB": epsilonHB}
     if flag_Kklab:
