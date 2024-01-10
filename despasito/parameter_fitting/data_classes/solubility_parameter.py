@@ -25,6 +25,7 @@ class Data(ExpDataTemplate):
     Object for Hildebrand solubility parameters. Evaluated with "solubility_parameter". 
 
     This object is initiated in :func:`~despasito.parameter_fitting.fit` with the keyword, ``exp_data[*]["data_class_type"]="solubility_parameter"``.
+    The data could be evaluated with :func:`~despasito.thermodynamics.calculation_types.solubility_parameter`
 
     Parameters
     ----------
@@ -37,6 +38,8 @@ class Data(ExpDataTemplate):
         * T (list) - List of temperature values for calculation
         * P (list) - List of pressure values used in calculations
         * xi (list) - List of liquid mole fractions used in calculations.
+        * delta (list) - Hidebrand solubility parameter values of given system conditions to evaluate against
+        * rhol (list) - [mol/:math:`m^3`] Evaluated liquid density
         * weights (dict) - A dictionary where each key is a system constraint (e.g. T or xi) which is also a header used in an optional exp. data file. The value associated with a header can be a list as long as the number of data points to multiply by the objective value associated with each point, or a float to multiply the objective value of this data set.
         * density_opts (dict) - Optional, default={"min_density_fraction":(1.0 / 60000.0), "density_increment":10.0, "max_volume_increment":1.0E-4}, Dictionary of options used in calculating pressure vs. mole fraction curves.
         * kwargs for :func:`~despasito.parameter_fitting.fit_functions.obj_function_form`
