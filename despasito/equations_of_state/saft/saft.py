@@ -405,7 +405,7 @@ class EosType(EosTemplate):
             )
 
             # compute F_klab: The association strength between a site of type a on a group of type k of component i and a site of type b on a group of type l of component j., known as the Mayer f-function.
-            Fklab = np.sign(self.eos_dict["epsilonHB"]) * np.exp(np.abs(self.eos_dict["epsilonHB"]) / T) - 1.0
+            Fklab = np.sign(self.eos_dict["epsilonHB"]) * (np.exp(np.abs(self.eos_dict["epsilonHB"]) / T) - 1.0)
             if "rc_klab" in self.eos_dict:
                 if "Kijklab" not in self.eos_dict or T != self.T:
                     opts = {}
