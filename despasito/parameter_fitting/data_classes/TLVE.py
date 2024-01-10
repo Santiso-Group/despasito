@@ -36,6 +36,7 @@ class Data(ExpDataTemplate):
         * MultiprocessingObject (obj) - Optional, Initiated :class:`~despasito.utils.parallelization.MultiprocessingJob`
         * eos_obj (obj) - Equation of state object
         * T (list) - List of temperature values for calculation
+        * P (list) - [Pa] List of pressure values for evaluation
         * xi(yi) (list) - List of liquid (or vapor) mole fractions used in bubble_pressure (or dew_pressure) calculation.
         * weights (dict) - A dictionary where each key is a system constraint (e.g. T or xi) which is also a header used in an optional exp. data file. The value associated with a header can be a list as long as the number of data points to multiply by the objective value associated with each point, or a float to multiply the objective value of this data set.
         * density_opts (dict) - Optional, default={}, Dictionary of options used in calculating pressure vs. mole fraction curves.
