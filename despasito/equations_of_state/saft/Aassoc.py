@@ -262,7 +262,7 @@ def calc_assoc_matrices(
     square_epsilonHB : bool, Optional, default=False
         If True, all of the provided epsilonHB values will be squared in the epsilonHB matrix, thus allowing negative values. In the case of mixtures, the mixing rule
         for the energy parameter is then replaced with the multiplication of two parameters, thus allowing for repulsive association sites. The literature values may then
-        be included as the square root of their reported values values, although the mixing rule result will change.
+        be included as the square root of their reported values, although the mixing rule result will change.
 
     Returns
     -------
