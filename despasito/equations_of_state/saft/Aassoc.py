@@ -102,7 +102,7 @@ def _calc_Xika_wrap(*args, method_stat, maxiter=500, tol=1e-12, damp=0.1):
 
 def assoc_site_indices(nk, molecular_composition, xi=None):
     r"""
-    Make a list of sets of indices that allow quick identification of the relevant association sights.
+    Make a list of sets of indices that allow quick identification of the relevant association sites.
     
     This is needed for solving Xika, the fraction of molecules of component i that are not bonded at a site of type a on group k.
     
@@ -221,6 +221,7 @@ def calc_assoc_matrices(
     cross_library={},
     nk=None,
     sitenames=None,
+    square_epsilonHB=False,
 ):
     r"""
     
@@ -258,7 +259,11 @@ def calc_assoc_matrices(
     }
     sitenames : list, Optional, default=None
         This list shows the names of the various association types found
-    
+    square_epsilonHB : bool, Optional, default=False
+        If True, all of the provided epsilonHB values will be squared in the epsilonHB matrix, thus allowing negative values. In the case of mixtures, the mixing rule
+        for the energy parameter is then replaced with the multiplication of two parameters, thus allowing for repulsive association sites. The literature values may then
+        be included as the square root of their reported values values, although the mixing rule result will change.
+
     Returns
     -------
     output_dict : dict
@@ -327,7 +332,7 @@ def calc_assoc_matrices(
                         )
 
                     if epsilon_tmp in bead_library[bead1]:
-                        epsilonHB[i, i, a, b] = bead_library[bead1][epsilon_tmp]
+                        epsilonHB[i, i, a, b] = bead_library[bead1][epsilon_tmp] if not square_epsilonHB else bead_library[bead1][epsilon_tmp]**2
                         epsilonHB[i, i, b, a] = epsilonHB[i, i, a, b]
                     else:
                         continue
@@ -404,9 +409,7 @@ def calc_assoc_matrices(
                                     )
 
                             flag_update = True
-                            epsilonHB[i, j, a, b] = cross_library[bead1][bead2][
-                                epsilon_tmp
-                            ]
+                            epsilonHB[i, j, a, b] = cross_library[bead1][bead2][epsilon_tmp] if not square_epsilonHB else cross_library[bead1][bead2][epsilon_tmp]**2
                             epsilonHB[j, i, b, a] = epsilonHB[i, j, a, b]
 
                             if flag_Kklab:
@@ -418,9 +421,12 @@ def calc_assoc_matrices(
                         and nk[j][b] != 0
                         and epsilonHB[j, i, b, a] == 0.0
                     ):
-                        epsilonHB[i, j, a, b] = np.sqrt(
-                            epsilonHB[i, i, a, a] * epsilonHB[j, j, b, b]
-                        )
+                        if not square_epsilonHB:
+                            epsilonHB[i, j, a, b] = np.sqrt(
+                                epsilonHB[i, i, a, a] * epsilonHB[j, j, b, b]
+                            )
+                        else:
+                            epsilonHB[i, j, a, b] = epsilonHB[i, i, a, a] * epsilonHB[j, j, b, b]
                         epsilonHB[j, i, b, a] = epsilonHB[i, j, a, b]
                         if flag_Kklab:
                             Kklab[i, j, a, b] = (
