@@ -44,10 +44,10 @@ def bubble_pressure(Eos, **sys_dict):
     output_dict : dict
         Output dictionary containing given and calculated arrays  
 
-        - T: Temperature array generated from given instructions
+        - T: [K] Temperature array generated from given instructions
         - xi: Given array of liquid compositions
         - flagl: Phase flag for liquid given temperature and calculated pressure, a value of 0 is vapor, 1 is liquid, 2 mean a critical fluid, 3 means that neither is true, 4 means we should assume ideal gas
-        - P: Pressure values evaluated for given conditions
+        - P: [Pa] Pressure values evaluated for given conditions
         - yi: Vapor mole fraction evaluated for given conditions
         - flagv: Phase flag for vapor given temperature and calculated pressure, a value of 0 is vapor, 1 is liquid, 2 mean a critical fluid, 3 means that neither is true, 4 means we should assume ideal gas
         - obj: List of objective values
@@ -184,10 +184,10 @@ def dew_pressure(Eos, **sys_dict):
     output_dict : dict
         Output dictionary containing given and calculated values
 
-        - T: Temperature array generated from given instructions
+        - T: [K] Temperature array generated from given instructions
         - yi: Given array of vapor compositions
         - flagv: Phase flag for vapor given temperature and calculated pressure, a value of 0 is vapor, 1 is liquid, 2 mean a critical fluid, 3 means that neither is true, 4 means we should assume ideal gas
-        - P: Pressure values evaluated for given conditions
+        - P: [Pa] Pressure values evaluated for given conditions
         - xi: Liquid mole fraction evaluated for given conditions
         - flagl: Phase flag for liquid given temperature and calculated pressure, a value of 0 is vapor, 1 is liquid, 2 mean a critical fluid, 3 means that neither is true, 4 means we should assume ideal gas
         - obj: List of objective values
@@ -330,14 +330,14 @@ def activity_coefficient(Eos, **sys_dict):
     output_dict : dict
         Output dictionary containing given and calculated values
 
-        - T: Temperature array generated from given instructions
-        - P: Given or calculated array of pressures
+        - T: [K] Temperature array generated from given instructions
+        - P: [Pa] Given or calculated array of pressures
         - xi: Given or calculated array of liquid compositions
         - yi: Given or calculated array of vapor compositions
         - flagv: Phase flag for vapor given temperature and calculated pressure, a value of 0 is vapor, 1 is liquid, 2 mean a critical fluid, 3 means that neither is true, 4 means we should assume ideal gas
         - flagl: Phase flag for liquid given temperature and calculated pressure, a value of 0 is vapor, 1 is liquid, 2 mean a critical fluid, 3 means that neither is true, 4 means we should assume ideal gas
         - obj: List of objective values if a calculation was needed
-        - Psat: List of calculated saturation pressures
+        - Psat: [Pa] List of calculated saturation pressures
         - gamma: List of calculated activity coefficients
 
     """
@@ -549,8 +549,8 @@ def flash(Eos, **sys_dict):
     output_dict : dict
         Output dictionary containing given and calculated values
 
-        - T: Temperature array generated from given instructions
-        - P: Pressure array generated from given instructions
+        - T: [K] Temperature array generated from given instructions
+        - P: [Pa] Pressure array generated from given instructions
         - xi: Given array of liquid compositions
         - flagl: Phase flag for liquid given temperature and calculated pressure, a value of 0 is vapor, 1 is liquid, 2 mean a critical fluid, 3 means that neither is true, 4 means we should assume ideal gas
         - yi: Vapor mole fraction evaluated for given conditions
@@ -668,10 +668,10 @@ def saturation_properties(Eos, **sys_dict):
     output_dict : dict
         Output dictionary containing given and calculated values
 
-        - T: Temperature array generated from given instructions
-        - Psat: Saturation pressure
-        - rhol: Liquid saturation density
-        - rholv: Vapor saturation density
+        - T: [K] Temperature array generated from given instructions
+        - Psat: [Pa] Saturation pressure
+        - rhol: [mol/:math:`m^3`] Liquid saturation density
+        - rholv: [mol/:math:`m^3`] Vapor saturation density
 
     """
 
@@ -788,10 +788,10 @@ def liquid_properties(Eos, **sys_dict):
     output_dict : dict
         Output dictionary containing given and calculated values
 
-        - T: Temperature array generated from given instructions
-        - P: Pressure array generated from given instructions
+        - T: [K] Temperature array generated from given instructions
+        - P: [Pa] Pressure array generated from given instructions
         - xi: Composition generated from given instructions
-        - rhol: Evaluated liquid density
+        - rhol: [mol/:math:`m^3`] Evaluated liquid density
         - phil: Evaluated liquid fugacity coefficient
         - flagl: Phase flag for liquid given temperature and calculated pressure, a value of 0 is vapor, 1 is liquid, 2 mean a critical fluid, 3 means that neither is true, 4 means we should assume ideal gas
 
@@ -914,10 +914,10 @@ def vapor_properties(Eos, **sys_dict):
     output_dict : dict
         Output dictionary containing given and calculated values
 
-        - T: Temperature array generated from given instructions
-        - P: Pressure array generated from given instructions
+        - T: [K] Temperature array generated from given instructions
+        - P: [Pa] Pressure array generated from given instructions
         - yi: Composition generated from given instructions
-        - rhov: Evaluated vapor density
+        - rhov: [mol/:math:`m^3`] Evaluated vapor density
         - phiv: Evaluated vapor fugacity coefficient
         - flagv: Phase flag for vapor given temperature and calculated pressure, a value of 0 is vapor, 1 is liquid, 2 mean a critical fluid, 3 means that neither is true, 4 means we should assume ideal gas
 
@@ -1042,10 +1042,10 @@ def solubility_parameter(Eos, **sys_dict):
     output_dict : dict
         Output dictionary containing given and calculated values
 
-        - T: Temperature array generated from given instructions
-        - P: Pressure array generated from given instructions
+        - T: [K] Temperature array generated from given instructions
+        - P: [Pa] Pressure array generated from given instructions
         - xi: Composition generated from given instructions
-        - rhol: Evaluated liquid density
+        - rhol: [mol/:math:`m^3`] Evaluated liquid density
         - delta: Hidebrand solubility parameter given system conditions
 
     """
@@ -1170,8 +1170,8 @@ def verify_eos(Eos, **sys_dict):
     output_dict : dict
         Output dictionary containing given and calculated values
 
-        - T: Temperature array generated from given instructions
-        - P: Pressure array generated from given instructions
+        - T: [K] Temperature array generated from given instructions
+        - P: [Pa] Pressure array generated from given instructions
         - xi: Composition generated from given instructions
         - residual_v1: Residual of vapor from method one
         - residual_v2: Residual of vapor from method two
