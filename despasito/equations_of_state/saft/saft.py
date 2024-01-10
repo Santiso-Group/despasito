@@ -142,6 +142,9 @@ class EosType(EosTemplate):
         - rc_klab, Optional, Cutoff distance for association sites
         - rd_klab, Optional, Association site position
         - reduction_ratio (float) - Reduced distance of the sites from the center of the sphere of interaction. This value is used when site position, ``eos_dict['rd_klab'] == None``.
+        - square_epsilonHB (bool) - If True, all of the provided epsilonHB values will be squared in the epsilonHB matrix, thus allowing negative values. In the case of mixtures, the mixing rule
+        for the energy parameter is then replaced with the multiplication of two parameters, thus allowing for repulsive association sites. The literature values may then
+        be included as the square root of their reported values, although the mixing rule result will change.
     
     """
 
@@ -229,6 +232,7 @@ class EosType(EosTemplate):
 
         if "reduction_ratio" in kwargs:
             self.eos_dict["reduction_ratio"] = kwargs["reduction_ratio"]
+        self.eos_dict["square_epsilonHB"] = kwargs["square_epsilonHB"] if "square_epsilonHB" in kwargs else False
 
         # Initiate association site terms
         self.eos_dict["sitenames"], self.eos_dict["nk"], self.eos_dict[
@@ -243,6 +247,7 @@ class EosType(EosTemplate):
             sitenames=self.eos_dict["sitenames"],
             cross_library=self.cross_library,
             nk=self.eos_dict["nk"],
+            square_epsilonHB=self.eos_dict["square_epsilonHB"],
         )
         self.eos_dict.update(assoc_output)
         if np.size(np.where(self.eos_dict["epsilonHB"] != 0.0)) == 0:
