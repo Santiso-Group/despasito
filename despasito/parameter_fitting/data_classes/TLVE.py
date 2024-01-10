@@ -25,7 +25,7 @@ class Data(ExpDataTemplate):
 
     This object is initiated in :func:`~despasito.parameter_fitting.fit` with the keyword, ``exp_data[*]["data_class_type"]="TLVE"``.
 
-    This data could be evaluated with bubble_pressure or dew_pressure. Most entries in the exp. dictionary are converted to attributes. 
+    This data could be evaluated with :func:`~despasito.thermodynamics.calculation_types.bubble_pressure` or :func:`~despasito.thermodynamics.calculation_types.dew_pressure`. Most entries in the exp. dictionary are converted to attributes. 
 
     Parameters
     ----------
