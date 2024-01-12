@@ -335,7 +335,7 @@ class EosType(EosTemplate):
         A = self.residual_helmholtz_energy(rho, T, xi) + self.Aideal(
             rho, T, xi, method=self.eos_dict["Aideal_method"]
         )
-
+  
         return A
 
     def Aideal(self, rho, T, xi, method="Abroglie"):

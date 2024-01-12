@@ -132,13 +132,14 @@ def calc_Xika_4(
                         constants.molecule_per_nm3
                         * rho[r]
                         * xi[j]
-                        * molecular_composition[j, l]
-                        * nk[l, b]
+                        * molecular_composition[j,l]
+                        * nk[l,b]
                         * Xika_elements[jnd]
                         * delta
                     )
                     jnd += 1
                 ind += 1
+
             Xika_elements_new = 1.0 / Xika_elements_new
             obj = np.sum(np.abs(Xika_elements_new - Xika_elements))
 
@@ -153,11 +154,7 @@ def calc_Xika_4(
                     Xika_elements = Xika_elements_new
 
         err_array[r] = obj
-
         Xika_final[r, :] = Xika_elements
-        # for jjnd in range(l_ind):
-        #    i,k,a = indices[jjnd]
-        #    Xika_final[r,i,k,a] = Xika_elements[jjnd]
 
     return Xika_final, err_array
 
@@ -231,9 +228,7 @@ def calc_Xika_6(
                 jnd = 0
                 for jjnd in range(l_ind):
                     j, l, b = indices[jjnd]
-                    delta = (
-                        Fklab[k, l, a, b] * Kklab[i, j, k, l, a, b] * gr_assoc[r, i, j]
-                    )
+                    delta = Fklab[k, l, a, b] * Kklab[i, j, k, l, a, b] * gr_assoc[r, i, j]
                     Xika_elements_new[ind] += (
                         constants.molecule_per_nm3
                         * rho[r]
@@ -245,6 +240,7 @@ def calc_Xika_6(
                     )
                     jnd += 1
                 ind += 1
+
             Xika_elements_new = 1.0 / Xika_elements_new
             obj = np.sum(np.abs(Xika_elements_new - Xika_elements))
 
@@ -259,10 +255,6 @@ def calc_Xika_6(
                     Xika_elements = Xika_elements_new
 
         err_array[r] = obj
-
         Xika_final[r, :] = Xika_elements
-        # for jjnd in range(l_ind):
-        #    i,k,a = indices[jjnd]
-        #    Xika_final[r,i,k,a] = Xika_elements[jjnd]
 
     return Xika_final, err_array
