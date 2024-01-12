@@ -456,16 +456,16 @@ def calc_assoc_matrices(
     output = {"epsilonHB": epsilonHB}
     if flag_Kklab:
         output["Kklab"] = Kklab
-    elif flag_rc_klab:
+    if flag_rc_klab:
         output["rc_klab"] = rc_klab
-    elif flag_rd_klab:
+    if flag_rd_klab:
         output["rd_klab"] = rd_klab
 
     if flag_Kklab and flag_rc_klab:
         raise ValueError(
             "Both association site bonding volumes and cutoff distances were provided. This is redundant."
         )
-    elif flag_rd_klab and not flag_rc_klab:
+    if flag_rd_klab and not flag_rc_klab:
         raise ValueError(
             "Association site position were provided, but not cutoff distances."
         )
@@ -488,7 +488,7 @@ def calc_bonding_volume(rc_klab, dij_bar, rd_klab=None, reduction_ratio=0.25):
     rd_klab : numpy.ndarray, Optional, default=None
         Position of association site in each group (nbead, nbead, nsite, nsite)
     reduction_ratio : float, Optional, default=0.25
-        Reduced distance of the sites from the center of the sphere of interaction. This value is used when site position, rd_klab is None
+        Reduced distance of the sites from the center of the sphere of interaction. This value is used when site position, rd_klab is not defined for that site-site interaction.
 
     Returns
     -------
@@ -507,7 +507,7 @@ def calc_bonding_volume(rc_klab, dij_bar, rd_klab=None, reduction_ratio=0.25):
                     for a in range(nsite):
                         for b in range(nsite):
                             if rc_klab[k, l, a, b] != 0:
-                                if rd_klab == None:
+                                if np.all(rd_klab == None) or rd_klab[k, l, a, b] == 0:
                                     rd = reduction_ratio * dij_bar[i, j]
                                 else:
                                     rd = rd_klab[k, l, a, b]
