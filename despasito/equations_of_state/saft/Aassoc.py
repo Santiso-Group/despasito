@@ -299,17 +299,22 @@ def calc_assoc_matrices(
                 if nk1[b] != 0:
                     epsilon_tmp = "-".join(["epsilonHB", site1, site2])
                     K_tmp = "-".join(["K", site1, site2])
+                    if K_tmp not in bead_library[bead1]:
+                        K_tmp = "-".join(["K", site2, site1])
                     rc_tmp = "-".join(["rc", site1, site2])
+                    if rc_tmp not in bead_library[bead1]:
+                        rc_tmp = "-".join(["rc", site2, site1])
                     rd_tmp = "-".join(["rd", site1, site2])
-
+                    if rd_tmp not in bead_library[bead1]:
+                        rd_tmp = "-".join(["rd", site2, site1])
+                    
                     if epsilon_tmp in bead_library[bead1] and (
                         K_tmp not in bead_library[bead1]
                         and rc_tmp not in bead_library[bead1]
                     ):
                         raise ValueError(
-                            "An association site energy parameter for {} was given for bead {}, but not the bonding information. Either K-sitename-sitename or rc-sitename-sitename must be given.".format(
-                                "{}-{}".format(site1, site2), bead1
-                            )
+                            "An association site energy parameter for {}-{} was given for bead {}, but not the bonding information.".format(site1, site2, bead1)
+                            "Either K-{}-{}/K-{}-{} or rc-{}-{}/rc-{}-{} must be given.".format(site1, site2, site2, site1, site1, site2, site2, site1)
                         )
                     elif K_tmp in bead_library[bead1] and rc_tmp in bead_library[bead1]:
                         raise ValueError(
