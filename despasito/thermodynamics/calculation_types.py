@@ -361,7 +361,7 @@ def activity_coefficient(Eos, **sys_dict):
                 mode = None
         else:
             if "Plist" in thermo_dict:
-                thermodict["Pguess"] = thermo_dict["Plist"]
+                thermo_dict["Pguess"] = thermo_dict["Plist"]
                 logger.info("Using given pressure as initial guess")
             mode = "dew_point"
     elif "yilist" not in thermo_dict:
@@ -372,7 +372,7 @@ def activity_coefficient(Eos, **sys_dict):
     else:
         mode = "standard"
 
-    if mode == None:
+    if mode is None:
         raise ValueError(
             "Two of the following system properties must be provided: Tlist, Plist, xilist, or yilist"
         )
