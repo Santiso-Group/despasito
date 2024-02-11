@@ -271,7 +271,7 @@ def global_minimization(global_method, *args, **kwargs):
     except Exception:
         raise ImportError(
             "The global minimization type, '{}', was not found\nThe following calculation types are supported: {}".format(
-                function, ", ".join(calc_list)
+                global_method, ", ".join(calc_list)
             )
         )
 
@@ -323,13 +323,13 @@ def initialize_constraints(constraints, constraint_type):
         except Exception:
             raise ImportError(
                 "The constraint type, '{}', was not found\nThe following types are supported: {}".format(
-                    function, ", ".join(calc_list)
+                    kwargs["function"], ", ".join(calc_list)
                 )
             )
 
         if "args" not in kwargs:
             raise ValueError(
-                "Constraint function, {}, is missing arguements".format(
+                "Constraint function, {}, is missing arguments".format(
                     kwargs["function"]
                 )
             )
@@ -343,14 +343,14 @@ def initialize_constraints(constraints, constraint_type):
                 )
             if kwargs["type"] == "linear":
                 if "kwargs" not in kwargs:
-                    output = LinearConstraint(func, args[0], args[1])
+                    output = LinearConstraint(func, kwargs["args"][0], kwargs["args"][1])
                 else:
-                    output = LinearConstraint(func, args[0], args[1], **kwargs)
+                    output = LinearConstraint(func, kwargs["args"][0], kwargs["args"][1], **kwargs)
             elif kwargs["type"] == "nonlinear":
                 if "kwargs" not in kwargs:
-                    output = NonlinearConstraint(func, args[0], args[1])
+                    output = NonlinearConstraint(func, kwargs["args"][0], kwargs["args"][1])
                 else:
-                    output = NonlinearConstraint(func, args[0], args[1], **kwargs)
+                    output = NonlinearConstraint(func, kwargs["args"][0], kwargs["args"][1], **kwargs)
 
         elif constraint_type == "dict":
             if "type" not in kwargs or kwargs["type"] in ["eq", "ineq"]:
@@ -400,7 +400,7 @@ def compute_obj(beadparams, fit_bead, fit_parameter_names, exp_dict, bounds, fro
     # Update bead_library with test parameters
 
     if len(beadparams) != len(fit_parameter_names):
-        if np.any(frozen_parameters != None):
+        if frozen_parameters is not None:
             beadparams = np.array(list(frozen_parameters) + list(beadparams))
         else:
             raise ValueError(
@@ -448,8 +448,7 @@ def compute_obj(beadparams, fit_bead, fit_parameter_names, exp_dict, bounds, fro
                 obj_total += (1e3 * (param - bounds[i][1])) ** 8
     else:
         logger.info("One of provided parameters, {}, is NaN".format(beadparams))
-        obj_function = [np.nan for _ in exp_dict]
-        obj_total = np.nansum(obj_function)
+        obj_total = np.inf
 
     if obj_total == 0.0 and np.isnan(np.sum(obj_function)):
         obj_total = np.inf

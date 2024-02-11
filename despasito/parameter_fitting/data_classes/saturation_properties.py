@@ -241,5 +241,5 @@ class Data(ExpDataTemplate):
             obj_total = np.inf
         else:
             obj_total = np.nansum(obj_value)
-
+            
         return obj_total
