@@ -79,7 +79,7 @@ def differential_evolution(
     Parameters
     ----------
     parameters_guess : numpy.ndarray 
-        An array of initial guesses for parameters.
+        An array of initial guesses for parameters. Not used in this method.
     bounds : list[tuple]
         List of length equal to fit_parameter_names with lists of pairs for minimum and maximum bounds of parameter being fit. Defaults from Eos object are broad, so we recommend specification.
     fit_bead : str
