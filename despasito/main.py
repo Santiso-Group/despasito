@@ -11,11 +11,10 @@ import logging
 import argparse
 import numpy as np
 
-from .input_output import read_input
-from .input_output import write_output
-from .equations_of_state import initiate_eos
-from .thermodynamics import thermo
-from .parameter_fitting import fit
+from despasito.input_output import read_input, write_output
+from despasito.equations_of_state import initiate_eos
+from despasito.thermodynamics import thermo
+from despasito.parameter_fitting import fit
 
 logger = logging.getLogger(__name__)
 
