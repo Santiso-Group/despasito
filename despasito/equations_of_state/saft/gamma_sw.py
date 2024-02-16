@@ -9,7 +9,6 @@ r"""
 import numpy as np
 import logging
 
-
 import despasito.equations_of_state.eos_toolbox as tb
 from despasito.equations_of_state import constants
 import despasito.equations_of_state.saft.saft_toolbox as stb

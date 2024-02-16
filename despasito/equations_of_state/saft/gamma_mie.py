@@ -1,6 +1,5 @@
 # -- coding: utf8 --
 r"""
-    
     EOS object for SAFT-:math:`\gamma`-Mie
     
     Equations referenced in this code are from V. Papaioannou et al J. Chem. Phys. 140 054107 2014
@@ -153,7 +152,7 @@ class SaftType:
             del kwargs["method_stat"]
         else:
             self.method_stat = None
-
+        self.method_stat = None # NoteHere
         self._cm = _import_supporting_functions(self.method_stat)
 
         self.Aideal_method = "Abroglie"
@@ -340,9 +339,10 @@ class SaftType:
             Helmholtz energy of monomers for each density given.
         """
 
-        rho = self._check_density(rho)
-        self._check_temperature_dependent_parameters(T)
-        self._check_composition_dependent_parameters(xi)
+    # NoteHere
+    #    rho = self._check_density(rho)
+    #    self._check_temperature_dependent_parameters(T)
+    #    self._check_composition_dependent_parameters(xi)
 
         eta = np.zeros((np.size(rho), 4))
         for m in range(4):
@@ -394,9 +394,10 @@ class SaftType:
             Helmholtz energy of monomers for each density given.
         """
 
-        rho = self._check_density(rho)
-        self._check_temperature_dependent_parameters(T)
-        self._check_composition_dependent_parameters(xi)
+# NoteHere
+#        rho = self._check_density(rho)
+#        self._check_temperature_dependent_parameters(T)
+#        self._check_composition_dependent_parameters(xi)
 
         if zetax is None:
             zetax = stb.calc_zetax(
@@ -448,10 +449,10 @@ class SaftType:
         Asecond_order : numpy.ndarray
             Helmholtz energy of monomers for each density given.
         """
-
-        rho = self._check_density(rho)
-        self._check_temperature_dependent_parameters(T)
-        self._check_composition_dependent_parameters(xi)
+#NoteHere
+#        rho = self._check_density(rho)
+#        self._check_temperature_dependent_parameters(T)
+#        self._check_composition_dependent_parameters(xi)
 
         if zetax is None:
             zetax = stb.calc_zetax(
@@ -586,10 +587,10 @@ class SaftType:
         Athird_order : numpy.ndarray
             Helmholtz energy of monomers for each density given.
         """
-
-        rho = self._check_density(rho)
-        self._check_temperature_dependent_parameters(T)
-        self._check_composition_dependent_parameters(xi)
+#NoteHere
+#        rho = self._check_density(rho)
+#        self._check_temperature_dependent_parameters(T)
+#        self._check_composition_dependent_parameters(xi)
 
         if zetaxstar is None:
             zetaxstar = stb.calc_zetaxstar(
@@ -642,10 +643,10 @@ class SaftType:
                     self.density_max(xi, T)
                 )
             )
-
-        rho = self._check_density(rho)
-        self._check_temperature_dependent_parameters(T)
-        self._check_composition_dependent_parameters(xi)
+# NoteHere
+#        rho = self._check_density(rho)
+#        self._check_temperature_dependent_parameters(T)
+#        self._check_composition_dependent_parameters(xi)
 
         zetax = stb.calc_zetax(
             rho, self.eos_dict["Cmol2seg"], self.eos_dict["xskl"], self.eos_dict["dkl"]
@@ -687,10 +688,10 @@ class SaftType:
         gdHS : numpy.ndarray
             Hard sphere radial distribution function
         """
-
-        rho = self._check_density(rho)
-        self._check_temperature_dependent_parameters(T)
-        self._check_composition_dependent_parameters(xi)
+# NoteHere
+#        rho = self._check_density(rho)
+#        self._check_temperature_dependent_parameters(T)
+#        self._check_composition_dependent_parameters(xi)
 
         if zetax is None:
             zetax = stb.calc_zetax(
@@ -744,10 +745,10 @@ class SaftType:
         g1 : numpy.ndarray
             First order expansion term in calculating the radial distribution function of a Mie fluid
         """
-
-        rho = self._check_density(rho)
-        self._check_temperature_dependent_parameters(T)
-        self._check_composition_dependent_parameters(xi)
+# NoteHere
+#        rho = self._check_density(rho)
+#        self._check_temperature_dependent_parameters(T)
+#        self._check_composition_dependent_parameters(xi)
 
         if zetax is None:
             zetax = stb.calc_zetax(
@@ -858,10 +859,10 @@ class SaftType:
         g2 : numpy.ndarray
             Second order expansion term in calculating the radial distribution function of a Mie fluid
         """
-
-        rho = self._check_density(rho)
-        self._check_temperature_dependent_parameters(T)
-        self._check_composition_dependent_parameters(xi)
+# NoteHere
+#        rho = self._check_density(rho)
+#        self._check_temperature_dependent_parameters(T)
+#        self._check_composition_dependent_parameters(xi)
 
         if zetax is None:
             zetax = stb.calc_zetax(
@@ -1019,10 +1020,10 @@ class SaftType:
         Achain : numpy.ndarray
             Helmholtz energy of monomers for each density given.
         """
-
-        rho = self._check_density(rho)
-        self._check_temperature_dependent_parameters(T)
-        self._check_composition_dependent_parameters(xi)
+# NoteHere
+#        rho = self._check_density(rho)
+#        self._check_temperature_dependent_parameters(T)
+#        self._check_composition_dependent_parameters(xi)
 
         zetax = stb.calc_zetax(
             rho, self.eos_dict["Cmol2seg"], self.eos_dict["xskl"], self.eos_dict["dkl"]
@@ -1071,9 +1072,9 @@ class SaftType:
         max_density : float
             Maximum molar density [:math:`mol/m^3`]
         """
-
-        self._check_temperature_dependent_parameters(T)
-        self._check_composition_dependent_parameters(xi)
+# NoteHere
+#        self._check_temperature_dependent_parameters(T)
+#        self._check_composition_dependent_parameters(xi)
 
         # estimate the maximum density based on the hard sphere packing fraction
         # etax, assuming a maximum packing fraction specified by maxpack
@@ -1221,10 +1222,10 @@ class SaftType:
         Iij : numpy.ndarray
             A temperature-density polynomial correlation of the association integral for a Lennard-Jones monomer. This matrix is (len(rho) x Ncomp x Ncomp)
         """
-
-        rho = self._check_density(rho)
-        self._check_temperature_dependent_parameters(T)
-        self._check_composition_dependent_parameters(xi)
+# NoteHere
+#        rho = self._check_density(rho)
+#        self._check_temperature_dependent_parameters(T)
+#        self._check_composition_dependent_parameters(xi)
 
         if Ktype == "klab":
             gr = calc_Iij(
@@ -1266,10 +1267,10 @@ class SaftType:
         gr : numpy.ndarray
             This matrix is (len(rho) x Ncomp x Ncomp)
         """
-
-        rho = self._check_density(rho)
-        self._check_temperature_dependent_parameters(T)
-        self._check_composition_dependent_parameters(xi)
+# NoteHere
+#        rho = self._check_density(rho)
+#        self._check_temperature_dependent_parameters(T)
+#        self._check_composition_dependent_parameters(xi)
 
         eta = np.zeros((np.size(rho), 2))
         for m in range(2, 4):
@@ -1325,8 +1326,8 @@ class SaftType:
         Kijklab : numpy.ndarray
             Bonding volume for each molecule and site combination.
         """
-
-        self._check_temperature_dependent_parameters(T)
+# NoteHere
+#        self._check_temperature_dependent_parameters(T)
 
         dij_bar = np.zeros((self.ncomp, self.ncomp))
         for i in range(self.ncomp):
@@ -1382,11 +1383,12 @@ class SaftType:
         self.eos_dict["lambdaakl"] = output["lambdaa"]
         self.eos_dict["lambdarkl"] = output["lambdar"]
 
-        # Update Non bonded matrices
-        if not np.isnan(self.T) and self.T != None:
-            self._check_temperature_dependent_parameters(self.T)
-        else:
-            self._check_temperature_dependent_parameters(298)
+# NoteHere
+#        # Update Non bonded matrices
+#        if not np.isnan(self.T) and self.T != None:
+#            self._check_temperature_dependent_parameters(self.T)
+#        else:
+#            self._check_temperature_dependent_parameters(298)
 
         # Initiate average interaction terms
         self.calc_component_averaged_properties()

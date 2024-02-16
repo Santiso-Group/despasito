@@ -32,6 +32,7 @@ class MultiprocessingJob:
 
     def __init__(self, ncores=-1):
 
+        multiprocessing.freeze_support()
         self.flag_use_mp = True
         if ncores == -1:
             ncores = multiprocessing.cpu_count()  # includes logical cores!
