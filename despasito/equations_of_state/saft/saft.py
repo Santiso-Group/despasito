@@ -164,7 +164,7 @@ class EosType(EosTemplate):
         # Extract needed variables from saft type file (e.g. gamma_mie)
         self.parameter_types = ["epsilonHB", "K", "rc", "rd"]
         self.parameter_bound_extreme = {
-            "epsilonHB": [-5000.0, 5000.0],
+            "epsilonHB": [100.0, 5000.0],
             "K": [1e-5, 10000.0],
             "rc": [0.1, 10.0],
             "rd": [0.1, 10.0],
@@ -404,8 +404,8 @@ class EosType(EosTemplate):
                 self.eos_dict["nk"], self.eos_dict["molecular_composition"], xi=xi
             )
 
-            # compute F_klab: The association strength between a site of type a on a group of type k of component i and a site of type b on a group of type l of component j., known as the Mayer f-function.
-            Fklab = np.sign(self.eos_dict["epsilonHB"]) * (np.exp(np.abs(self.eos_dict["epsilonHB"]) / T) - 1.0)
+            # compute F_klab
+            Fklab = np.exp(self.eos_dict["epsilonHB"] / T) - 1.0
             if "rc_klab" in self.eos_dict:
                 if "Kijklab" not in self.eos_dict or T != self.T:
                     opts = {}
