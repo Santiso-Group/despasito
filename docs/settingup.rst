@@ -67,13 +67,14 @@ See :ref:`calculation-types` for a list of available types of thermodynamic calc
         }
     }
 
-In the `SAFTgroup.json` file, As many, groups as desired may be defined. Those used in the calculation are specified in the ``bead_configuration`` line. The parameter keys used are defined in the documentation for the chosen EOS object. As an example, the cross-interactions can be defined as follows:
+In the `SAFTgroup.json` file, as many groups as desired may be defined. Those used in the calculation are specified in the ``bead_configuration`` line. The parameter keys are defined in the documentation for the chosen EOS object. As an example, the cross-interactions can be defined as follows:
 
 `SAFTcross.json`::
 
     {
         "CO2": {
             "H2O": {"epsilon": 226.38, "epsilonHB-H-e1":2200.0, "K-H-e1":91.419e-3}
+        }
     }
 
 After creating each of these files, go ahead and run the calculation with:
