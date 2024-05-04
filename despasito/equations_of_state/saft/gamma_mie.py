@@ -1,6 +1,5 @@
 # -- coding: utf8 --
 r"""
-    
     EOS object for SAFT-:math:`\gamma`-Mie
     
     Equations referenced in this code are from V. Papaioannou et al J. Chem. Phys. 140 054107 2014
@@ -15,36 +14,20 @@ from despasito.equations_of_state import constants
 import despasito.equations_of_state.saft.saft_toolbox as stb
 from despasito.equations_of_state.saft import Aassoc
 from .compiled_modules.ext_gamma_mie_python import prefactor, calc_Iij
+import  despasito.equations_of_state.saft.compiled_modules.ext_gamma_mie_numba as ext_numba
+import  despasito.equations_of_state.saft.compiled_modules.ext_gamma_mie_python as ext_python
 
 logger = logging.getLogger(__name__)
-
 try:
     import cython
     flag_cython = True
+    try:
+        import  despasito.equations_of_state.saft.compiled_modules.ext_gamma_mie_cython as ext_cython
+    except ImportError:
+        raise ImportError("Cython package is available but module: despasito.equations_of_state.saft.compiled_modules.ext_Aassoc_cython, has not been compiled.")
 except ModuleNotFoundError:
     flag_cython = False
     logger.warning("Cython package is unavailable, using Numba")
-
-def _import_supporting_functions(method_stat=None):
-    """ Import appropriate functions for compilation mode
-    """
-
-    if method_stat == None or method_stat.fortran or method_stat.python:
-        import despasito.equations_of_state.saft.compiled_modules.ext_gamma_mie_python as cm
-
-    elif method_stat.cython and flag_cython:
-        try:
-            import despasito.equations_of_state.saft.compiled_modules.ext_gamma_mie_cython as cm
-        except Exception:
-            raise ImportError("Cython package is available but module: despasito.equations_of_state.saft.compiled_modules.ext_gamma_mie_cython, has not been compiled.")
-
-    elif method_stat.numba or not flag_cython:
-        import despasito.equations_of_state.saft.compiled_modules.ext_gamma_mie_numba as cm
-
-    else:
-        raise ValueError("Unknown instructions for importing supportive functions of SAFT")
-
-    return cm
 
 class SaftType:
 
@@ -153,8 +136,6 @@ class SaftType:
             del kwargs["method_stat"]
         else:
             self.method_stat = None
-
-        self._cm = _import_supporting_functions(self.method_stat)
 
         self.Aideal_method = "Abroglie"
         self.parameter_types = ["epsilon", "sigma", "lambdar", "lambdaa", "Sk"]
@@ -407,7 +388,7 @@ class SaftType:
             )
 
         # compute components of eq. 19
-        a1kl = self._cm.calc_a1ii(
+        args = (
             rho,
             self.eos_dict["Cmol2seg"],
             self.eos_dict["dkl"],
@@ -415,8 +396,14 @@ class SaftType:
             self.eos_dict["lambdarkl"],
             self.eos_dict["x0kl"],
             self.eos_dict["epsilonkl"],
-            zetax,
+            zetax,            
         )
+        if self.method_stat.cython and flag_cython:
+            a1kl = ext_cython.calc_a1ii(*args)
+        elif self.method_stat.python:
+            a1kl = ext_python.calc_a1ii(*args)
+        else:
+            a1kl = ext_numba.calc_a1ii(*args)
 
         # eq. 18
         a1 = np.einsum("ijk,jk->i", a1kl, self.eos_dict["xskl"])
@@ -483,7 +470,7 @@ class SaftType:
             + np.einsum("i,jk", zetaxstar ** 8, fmlist123[2])
         )
 
-        a1s_2la = self._cm.calc_a1s(
+        args = (
             rho,
             self.eos_dict["Cmol2seg"],
             2.0 * self.eos_dict["lambdaakl"],
@@ -491,7 +478,13 @@ class SaftType:
             self.eos_dict["epsilonkl"],
             self.eos_dict["dkl"],
         )
-        a1s_2lr = self._cm.calc_a1s(
+        if self.method_stat.cython and flag_cython:
+            a1s_2la = ext_cython.calc_a1s(*args)
+        elif self.method_stat.python:
+            a1s_2la = ext_python.calc_a1s(*args)
+        else:
+            a1s_2la = ext_numba.calc_a1s(*args)
+        args = (
             rho,
             self.eos_dict["Cmol2seg"],
             2.0 * self.eos_dict["lambdarkl"],
@@ -499,7 +492,13 @@ class SaftType:
             self.eos_dict["epsilonkl"],
             self.eos_dict["dkl"],
         )
-        a1s_lalr = self._cm.calc_a1s(
+        if self.method_stat.cython and flag_cython:
+            a1s_2lr = ext_cython.calc_a1s(*args)
+        elif self.method_stat.python:
+            a1s_2lr = ext_python.calc_a1s(*args)
+        else:
+            a1s_2lr = ext_numba.calc_a1s(*args)
+        args = (
             rho,
             self.eos_dict["Cmol2seg"],
             self.eos_dict["lambdaakl"] + self.eos_dict["lambdarkl"],
@@ -507,7 +506,13 @@ class SaftType:
             self.eos_dict["epsilonkl"],
             self.eos_dict["dkl"],
         )
-        B_2la = self._cm.calc_Bkl(
+        if self.method_stat.cython and flag_cython:
+            a1s_lalr = ext_cython.calc_a1s(*args)
+        elif self.method_stat.python:
+            a1s_lalr = ext_python.calc_a1s(*args)
+        else:
+            a1s_lalr = ext_numba.calc_a1s(*args)
+        args = (
             rho,
             2.0 * self.eos_dict["lambdaakl"],
             self.eos_dict["Cmol2seg"],
@@ -516,7 +521,13 @@ class SaftType:
             self.eos_dict["x0kl"],
             zetax,
         )
-        B_2lr = self._cm.calc_Bkl(
+        if self.method_stat.cython and flag_cython:
+            B_2la = ext_cython.calc_Bkl(*args)
+        elif self.method_stat.python:
+            B_2la = ext_python.calc_Bkl(*args)
+        else:
+            B_2la = ext_numba.calc_Bkl(*args)
+        args = (
             rho,
             2.0 * self.eos_dict["lambdarkl"],
             self.eos_dict["Cmol2seg"],
@@ -525,7 +536,13 @@ class SaftType:
             self.eos_dict["x0kl"],
             zetax,
         )
-        B_lalr = self._cm.calc_Bkl(
+        if self.method_stat.cython and flag_cython:
+            B_2lr = ext_cython.calc_Bkl(*args)
+        elif self.method_stat.python:
+            B_2lr = ext_python.calc_Bkl(*args)
+        else:
+            B_2lr = ext_numba.calc_Bkl(*args)
+        args = (
             rho,
             self.eos_dict["lambdaakl"] + self.eos_dict["lambdarkl"],
             self.eos_dict["Cmol2seg"],
@@ -534,6 +551,12 @@ class SaftType:
             self.eos_dict["x0kl"],
             zetax,
         )
+        if self.method_stat.cython and flag_cython:
+            B_lalr = ext_cython.calc_Bkl(*args)
+        elif self.method_stat.python:
+            B_lalr = ext_python.calc_Bkl(*args)
+        else:
+            B_lalr = ext_numba.calc_Bkl(*args)
 
         a2kl = (
             (self.eos_dict["x0kl"] ** (2.0 * self.eos_dict["lambdaakl"]))
@@ -757,7 +780,7 @@ class SaftType:
                 self.eos_dict["dkl"],
             )
 
-        da1iidrhos = self._cm.calc_da1iidrhos(
+        args = (
             rho,
             self.eos_dict["Cmol2seg"],
             self.eos_dict["dii_eff"],
@@ -767,8 +790,14 @@ class SaftType:
             self.eos_dict["epsilonii_avg"],
             zetax,
         )
+        if self.method_stat.cython and flag_cython:
+            da1iidrhos = ext_cython.calc_da1iidrhos(*args)
+        elif self.method_stat.python:
+            da1iidrhos = ext_python.calc_da1iidrhos(*args)
+        else:
+            da1iidrhos = ext_numba.calc_da1iidrhos(*args)
 
-        a1sii_lambdaaii_avg = self._cm.calc_a1s_eff(
+        args = (
             rho,
             self.eos_dict["Cmol2seg"],
             self.eos_dict["lambdaaii_avg"],
@@ -776,7 +805,14 @@ class SaftType:
             self.eos_dict["epsilonii_avg"],
             self.eos_dict["dii_eff"],
         )
-        a1sii_lambdarii_avg = self._cm.calc_a1s_eff(
+        if self.method_stat.cython and flag_cython:
+            a1sii_lambdaaii_avg = ext_cython.calc_a1s_eff(*args)
+        elif self.method_stat.python:
+            a1sii_lambdaaii_avg = ext_python.calc_a1s_eff(*args)
+        else:
+            a1sii_lambdaaii_avg = ext_numba.calc_a1s_eff(*args)
+        
+        args = (
             rho,
             self.eos_dict["Cmol2seg"],
             self.eos_dict["lambdarii_avg"],
@@ -784,8 +820,14 @@ class SaftType:
             self.eos_dict["epsilonii_avg"],
             self.eos_dict["dii_eff"],
         )
+        if self.method_stat.cython and flag_cython:
+            a1sii_lambdarii_avg = ext_cython.calc_a1s_eff(*args)
+        elif self.method_stat.python:
+            a1sii_lambdarii_avg = ext_python.calc_a1s_eff(*args)
+        else:
+            a1sii_lambdarii_avg = ext_numba.calc_a1s_eff(*args)
 
-        Bii_lambdaaii_avg = self._cm.calc_Bkl_eff(
+        args = (
             rho,
             self.eos_dict["lambdaaii_avg"],
             self.eos_dict["Cmol2seg"],
@@ -794,7 +836,14 @@ class SaftType:
             self.eos_dict["x0ii"],
             zetax,
         )
-        Bii_lambdarii_avg = self._cm.calc_Bkl_eff(
+        if self.method_stat.cython and flag_cython:
+            Bii_lambdaaii_avg = ext_cython.calc_Bkl_eff(*args)
+        elif self.method_stat.python:
+            Bii_lambdaaii_avg = ext_python.calc_Bkl_eff(*args)
+        else:
+            Bii_lambdaaii_avg = ext_numba.calc_Bkl_eff(*args)
+        
+        args = (
             rho,
             self.eos_dict["lambdarii_avg"],
             self.eos_dict["Cmol2seg"],
@@ -803,6 +852,12 @@ class SaftType:
             self.eos_dict["x0ii"],
             zetax,
         )
+        if self.method_stat.cython and flag_cython:
+            Bii_lambdarii_avg = ext_cython.calc_Bkl_eff(*args)
+        elif self.method_stat.python:
+            Bii_lambdarii_avg = ext_python.calc_Bkl_eff(*args)
+        else:
+            Bii_lambdarii_avg = ext_numba.calc_Bkl_eff(*args)
 
         Cii = prefactor(self.eos_dict["lambdarii_avg"], self.eos_dict["lambdaaii_avg"])
 
@@ -897,7 +952,7 @@ class SaftType:
                 * np.exp(phi7[3] * zetaxstar + phi7[4] * (zetaxstar ** 2))
             )
 
-        da2iidrhos = self._cm.calc_da2ii_1pchi_drhos(
+        args = (
             rho,
             self.eos_dict["Cmol2seg"],
             self.eos_dict["epsilonii_avg"],
@@ -907,8 +962,14 @@ class SaftType:
             self.eos_dict["lambdaaii_avg"],
             zetax,
         )
+        if self.method_stat.cython and flag_cython:
+            da2iidrhos = ext_cython.calc_da2ii_1pchi_drhos(*args)
+        elif self.method_stat.python:
+            da2iidrhos = ext_python.calc_da2ii_1pchi_drhos(*args)
+        else:
+            da2iidrhos = ext_numba.calc_da2ii_1pchi_drhos(*args)
 
-        a1sii_2lambdaaii_avg = self._cm.calc_a1s_eff(
+        args = (
             rho,
             self.eos_dict["Cmol2seg"],
             2.0 * self.eos_dict["lambdaaii_avg"],
@@ -916,7 +977,14 @@ class SaftType:
             self.eos_dict["epsilonii_avg"],
             self.eos_dict["dii_eff"],
         )
-        a1sii_2lambdarii_avg = self._cm.calc_a1s_eff(
+        if self.method_stat.cython and flag_cython:
+            a1sii_2lambdaaii_avg = ext_cython.calc_a1s_eff(*args)
+        elif self.method_stat.python:
+            a1sii_2lambdaaii_avg = ext_python.calc_a1s_eff(*args)
+        else:
+            a1sii_2lambdaaii_avg = ext_numba.calc_a1s_eff(*args)
+        
+        args = (
             rho,
             self.eos_dict["Cmol2seg"],
             2.0 * self.eos_dict["lambdarii_avg"],
@@ -924,7 +992,14 @@ class SaftType:
             self.eos_dict["epsilonii_avg"],
             self.eos_dict["dii_eff"],
         )
-        a1sii_lambdarii_avglambdaaii_avg = self._cm.calc_a1s_eff(
+        if self.method_stat.cython and flag_cython:
+            a1sii_2lambdarii_avg = ext_cython.calc_a1s_eff(*args)
+        elif self.method_stat.python:
+            a1sii_2lambdarii_avg = ext_python.calc_a1s_eff(*args)
+        else:
+            a1sii_2lambdarii_avg = ext_numba.calc_a1s_eff(*args)
+            
+        args = (
             rho,
             self.eos_dict["Cmol2seg"],
             self.eos_dict["lambdaaii_avg"] + self.eos_dict["lambdarii_avg"],
@@ -932,8 +1007,14 @@ class SaftType:
             self.eos_dict["epsilonii_avg"],
             self.eos_dict["dii_eff"],
         )
+        if self.method_stat.cython and flag_cython:
+            a1sii_lambdarii_avglambdaaii_avg = ext_cython.calc_a1s_eff(*args)
+        elif self.method_stat.python:
+            a1sii_lambdarii_avglambdaaii_avg = ext_python.calc_a1s_eff(*args)
+        else:
+            a1sii_lambdarii_avglambdaaii_avg = ext_numba.calc_a1s_eff(*args)
 
-        Bii_2lambdaaii_avg = self._cm.calc_Bkl_eff(
+        args = (
             rho,
             2.0 * self.eos_dict["lambdaaii_avg"],
             self.eos_dict["Cmol2seg"],
@@ -942,7 +1023,14 @@ class SaftType:
             self.eos_dict["x0ii"],
             zetax,
         )
-        Bii_2lambdarii_avg = self._cm.calc_Bkl_eff(
+        if self.method_stat.cython and flag_cython:
+            Bii_2lambdaaii_avg = ext_cython.calc_Bkl_eff(*args)
+        elif self.method_stat.python:
+            Bii_2lambdaaii_avg = ext_python.calc_Bkl_eff(*args)
+        else:
+            Bii_2lambdaaii_avg = ext_numba.calc_Bkl_eff(*args)
+            
+        args = (
             rho,
             2.0 * self.eos_dict["lambdarii_avg"],
             self.eos_dict["Cmol2seg"],
@@ -951,7 +1039,14 @@ class SaftType:
             self.eos_dict["x0ii"],
             zetax,
         )
-        Bii_lambdaaii_avglambdarii_avg = self._cm.calc_Bkl_eff(
+        if self.method_stat.cython and flag_cython:
+            Bii_2lambdarii_avg = ext_cython.calc_Bkl_eff(*args)
+        elif self.method_stat.python:
+            Bii_2lambdarii_avg = ext_python.calc_Bkl_eff(*args)
+        else:
+            Bii_2lambdarii_avg = ext_numba.calc_Bkl_eff(*args)
+            
+        args = (
             rho,
             self.eos_dict["lambdaaii_avg"] + self.eos_dict["lambdarii_avg"],
             self.eos_dict["Cmol2seg"],
@@ -960,6 +1055,12 @@ class SaftType:
             self.eos_dict["x0ii"],
             zetax,
         )
+        if self.method_stat.cython and flag_cython:
+            Bii_lambdaaii_avglambdarii_avg = ext_cython.calc_Bkl_eff(*args)
+        elif self.method_stat.python:
+            Bii_lambdaaii_avglambdarii_avg = ext_python.calc_Bkl_eff(*args)
+        else:
+            Bii_lambdaaii_avglambdarii_avg = ext_numba.calc_Bkl_eff(*args)
 
         eKC2 = np.einsum(
             "i,j->ij",
@@ -1312,7 +1413,6 @@ class SaftType:
         ----------
         T : float
             Temperature of the system [K]
-            NoteHere
         rc_klab : numpy.ndarray
             This matrix of cutoff distances for association sites for each site type in each group type
         rd_klab : numpy.ndarray, Optional, default=None
@@ -1381,6 +1481,7 @@ class SaftType:
         self.eos_dict["epsilonkl"] = output["epsilon"]
         self.eos_dict["lambdaakl"] = output["lambdaa"]
         self.eos_dict["lambdarkl"] = output["lambdar"]
+
 
         # Update Non bonded matrices
         if not np.isnan(self.T) and self.T != None:

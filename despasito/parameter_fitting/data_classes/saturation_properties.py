@@ -25,6 +25,7 @@ class Data(ExpDataTemplate):
     Object for saturation data. This data is evaluated with "saturation_properties". 
 
     This object is initiated in :func:`~despasito.parameter_fitting.fit` with the keyword, ``exp_data[*]["data_class_type"]="saturation_properties"``.
+    The data could be evaluated with :func:`~despasito.thermodynamics.calculation_types.saturation_properties`
 
     Parameters
     ----------
@@ -34,8 +35,11 @@ class Data(ExpDataTemplate):
         * calculation_type (str) - Optional, default='saturation_properties'
         * MultiprocessingObject (obj) - Optional, Initiated :class:`~despasito.utils.parallelization.MultiprocessingJob`
         * eos_obj (obj) - Equation of state object
-        * T (list) - List of temperature values for calculation
+        * T (list) - [K] List of temperature values for calculation
         * xi (list) - (or yi) List of liquid mole fractions used in saturation properties calculations, should be one for the molecule of focus and zero for the remainder.
+        * Psat (list) - [Pa] List of saturation pressure values to evaluate against
+        * rhov (list) - [mol/:math:`m^3`] List of vapor density values to evaluate against
+        * rhol (list) - [mol/:math:`m^3`] List of liquid density values to evaluate against
         * weights (dict) - A dictionary where each key is a system constraint (e.g. T or xi) which is also a header used in an optional exp. data file. The value associated with a header can be a list as long as the number of data points to multiply by the objective value associated with each point, or a float to multiply the objective value of this data set.
         * density_opts (dict) - Optional, default={"min_density_fraction":(1.0 / 60000.0), "density_increment":10.0, "max_volume_increment":1.0E-4}, Dictionary of options used in calculating pressure vs. mole fraction curves.
         * kwargs for :func:`~despasito.parameter_fitting.fit_functions.obj_function_form`
@@ -237,5 +241,5 @@ class Data(ExpDataTemplate):
             obj_total = np.inf
         else:
             obj_total = np.nansum(obj_value)
-
+            
         return obj_total

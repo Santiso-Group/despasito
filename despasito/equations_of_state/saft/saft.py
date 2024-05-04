@@ -79,6 +79,7 @@ class EosType(EosTemplate):
 
     cross_library : dict, Optional, default={}
         Optional library of bead cross interaction parameters. As many or as few of the desired parameters may be defined for whichever group combinations are desired.
+        Note that the astericks below represent first the sitename of the primary bead and second the sitename of the secondary bead in the .json or dictionary structure.
 
         - epsilonHB-\*-\*: Optional, Interaction energy between each bead and association site. Asterisk represents string from sitenames.
         - K-\*-\*: Optional, Bonding volume between each association site. Asterisk represents two strings from sitenames.
@@ -329,7 +330,7 @@ class EosType(EosTemplate):
         A = self.residual_helmholtz_energy(rho, T, xi) + self.Aideal(
             rho, T, xi, method=self.eos_dict["Aideal_method"]
         )
-
+  
         return A
 
     def Aideal(self, rho, T, xi, method="Abroglie"):

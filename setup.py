@@ -15,10 +15,10 @@ fpath = os.path.join("despasito", "equations_of_state", "saft",
                      "compiled_modules")
 extensions = []
 
-if sys.version_info.minor > 8:
-    raise ValueError(
-        "DESPASITO cannot run on python versions greater than 3.8 due to incompatibilities between python 3.9 and numba."
-    )
+#if sys.version_info.minor > 10:
+#    raise ValueError(
+#        "DESPASITO cannot run on python versions greater than 3.8 due to incompatibilities between python 3.9 and numba."
+#    )
 
 try:
     from Cython.Build import cythonize
@@ -102,7 +102,7 @@ setup(
     #            'Mac OS-X',
     #            'Unix',
     #            'Windows'],            # Valid platforms your code works on, adjust to your flavor
-    python_requires=">=3.6, <=3.8.8",  # Python version restrictions
+    python_requires=">=3.6, <3.11",  # Python version restrictions
 
     # Manual control if final package is compressible or not, set False to prevent the .egg from being made
     zip_safe=False,

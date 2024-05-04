@@ -16,7 +16,7 @@ The first facet is a means to evaluate implicit equations of state (EOS), such a
 
 The second facet is parameterization of equations of state (EOS), some of which are useful for coarse-grained (CG) simulations. The SAFT-𝛾-Mie formalism is an attractive source of simulation parameters as it offers a means to directly link the intermolecular potential with thermodynamic properties. This application has the ability to fit EOS parameters to experimental thermodynamic data in a top down approach for self and cross interaction parameters. 
 
-In another work nearing publication, we present a method of predicting cross-interaction parameters for SAFT-𝛾-Mie from multipole moments derived from DFT calculations. This method is easily implemented in using the package, [MAPSCI](https://github.com/jaclark5/mapsci) as a plug-in. It should be noted that additional, iterative fine tuning in a simulation parameters may be desired, but previous works have found close agreement between simulation parameters and those fit to the EOS.
+In another [published work](doi.org/10.1021/acs.jpcb.1c00851), we present a method of predicting cross-interaction parameters for SAFT-𝛾-Mie from multipole moments derived from DFT calculations. This method is easily implemented in using the package, [MAPSCI](https://github.com/jaclark5/mapsci) as a plug-in. It should be noted that additional, iterative fine tuning in simulation parameters may be desired, but previous works have found close agreement between simulation parameters and those fit to the EOS.
 
 Need Assistance?
 ---------------
@@ -44,7 +44,7 @@ Options
 
  * Step 1: Install the prerequisites listed above.
  * Step 2: Download the master branch from our github page as a zip file, or clone it with git via ``git clone https://github.com/jaclark5/despasito`` to your working directory.
- * Step 3: Install with ``pip install despasito/.``, or change directories and run ``pip install .``.
+ * Step 3: Install with ``pip install despasito/.``, or change directories and run ``pip install -e .``.
 
 **NOTE** If [pip](https://pip.pypa.io/en/stable/) is unavailable, follow the instructions outlined [here](https://pip.pypa.io/en/stable/installing/) for installation.
 

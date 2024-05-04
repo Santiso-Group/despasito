@@ -27,12 +27,12 @@ Parameters can be fit for one component at a time, and for as many parameters as
             "epsilon_bounds" : [150.0, 400.0]
         },
         "Wiley": {
-            "data_class_type": "sat_props",
+            "data_class_type": "saturation_properties",
             "calctype": "sat_props",
             "file": "methanol_saturation.csv"
         },
         "Gibbard": {
-            "data_class_type": "sat_props",
+            "data_class_type": "saturation_properties",
             "file": "methanol_psat.csv",
             "weights" : {
                 "Psat" : 0.3,

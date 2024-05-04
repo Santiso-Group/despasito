@@ -43,8 +43,8 @@ See :ref:`calculation-types` for a list of available types of thermodynamic calc
     {
         "CO2": {
             "epsilon": 207.891,
-            "l_a": 5.0550,
-            "l_r": 26.408,
+            "lambdaa": 5.0550,
+            "lambdar": 26.408,
             "sigma": 3.05e-1,
             "Sk": 0.84680,
             "Vks": 2,
@@ -54,8 +54,8 @@ See :ref:`calculation-types` for a list of available types of thermodynamic calc
         },
         "H2O": {
             "epsilon": 266.68,
-            "l_a": 6.0,
-            "l_r": 17.020,
+            "lambdaa": 6.0,
+            "lambdar": 17.020,
             "sigma": 3.0063e-1,
             "Sk": 1.0,
             "Vks": 1,
@@ -67,7 +67,7 @@ See :ref:`calculation-types` for a list of available types of thermodynamic calc
         }
     }
 
-In the `SAFTgroup.json` file, as many groups as desired may be defined. Those used in the calculation are specified in the ``bead_configuration`` line. The parameter keys are defined in the documentation for the chosen EOS object. As an example, the cross-interactions can be defined as follows:
+In the `SAFTgroup.json` file, define as many groups as desired. Those used in the calculation are specified in the ``bead_configuration`` line. The parameter keys used are defined in the documentation for the chosen EOS object. As an example, the cross-interactions can be defined as follows:
 
 `SAFTcross.json`::
 

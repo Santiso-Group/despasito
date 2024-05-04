@@ -365,3 +365,4 @@ class EosTemplate(ABC):
                 self.cross_library[bead_names[0]] = {
                     bead_names[1]: {param_name: param_value}
                 }
+  

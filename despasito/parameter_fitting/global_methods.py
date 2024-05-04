@@ -79,7 +79,7 @@ def differential_evolution(
     Parameters
     ----------
     parameters_guess : numpy.ndarray 
-        An array of initial guesses for parameters.
+        An array of initial guesses for parameters. Not used in this method.
     bounds : list[tuple]
         List of length equal to fit_parameter_names with lists of pairs for minimum and maximum bounds of parameter being fit. Defaults from Eos object are broad, so we recommend specification.
     fit_bead : str
@@ -213,6 +213,7 @@ def shgo(
     global_opts = global_opts.copy()
 
     # Options for differential evolution, set defaults in new_global_opts
+    obj_kwargs = ["obj_cut", "filename", "write_intermediate_file"]
     new_global_opts = {"sampling_method": "sobol"}
     if global_opts:
         for key, value in global_opts.items():
@@ -245,15 +246,11 @@ def shgo(
                 ]:
                     del minimizer_opts["options"][key]
 
-    if minimizer_opts:
-        logger.warning(
-            "Minimization options were given but aren't used in this method."
-        )
-
     result = spo.shgo(
         ff.compute_obj,
         bounds,
         args=(fit_bead, fit_parameter_names, exp_dict, bounds),
+        minimizer_kwargs=minimizer_opts,
         **global_opts
     )
 
@@ -367,17 +364,17 @@ def grid_minimization(
             N = len(bounds)
             lrange = list(bounds)
             for k in range(N):
-                if type(lrange[k]) is not type(slice(None)):
+                if lrange[k] is not None:
                     if len(lrange[k]) < 3:
                         lrange[k] = tuple(lrange[k]) + (complex(global_opts["Ns"]),)
                     lrange[k] = slice(*lrange[k])
         else:
-            if type(global_opts["split_grid_minimization"]) != int:
+            if not isinstance(global_opts["split_grid_minimization"], int):
                 raise ValueError("Option, split_grid_minimization, must be an integer")
             N = len(bounds[:global_opts["split_grid_minimization"]])
             lrange = list(bounds[:global_opts["split_grid_minimization"]])
             for k in range(N):
-                if type(lrange[k]) is not type(slice(None)):
+                if lrange[k] is not None:
                     if len(lrange[k]) < 3:
                         lrange[k] = tuple(lrange[k]) + (complex(global_opts["Ns"]),)
                     lrange[k] = slice(*lrange[k])
@@ -411,17 +408,17 @@ def grid_minimization(
 
     # Choose final output
     if global_opts["split_grid_minimization"] != 0:
-        if not "initial_guesses" in global_opts:
+        if "initial_guesses" not in global_opts:
             x0_new = np.zeros((lx,len(parameters_guess)))
         results_new = np.zeros((lx,len(parameters_guess)))
         for i in range(len(x0_array)):
-            if not "initial_guesses" in global_opts:
+            if "initial_guesses" not in global_opts:
                 x0_new[i] = np.array(list(x0_array[i])+list(min_parameters))
                 results_new[i] = np.array(list(x0_array[i])+list(results[i]))
             else:
                 results_new[i] = np.array(list(x0_array[i][:global_opts["split_grid_minimization"]])+list(results[i]))
         results = results_new
-        if not "initial_guesses" in global_opts:
+        if "initial_guesses" not in global_opts:
             x0_array = x0_new
 
     result = [fval[0], results[0]]
@@ -641,7 +638,7 @@ def _grid_minimization_wrapper(args):
 
     x0, obj_args, bounds, constraints, opts = args
 
-    if constraints != None:
+    if constraints is not None:
         logger.warning("Constraints defined, but grid_minimization does not support their use.")
 
     opts = opts.copy()
@@ -823,12 +820,12 @@ class _WriteParameterResults(object):
             
         """
 
-        if obj_cut == None:
+        if obj_cut is None:
             self.obj_cut = np.inf
         else:
             self.obj_cut = obj_cut
 
-        if filename == None:
+        if filename is None:
             filename = "parameters.txt"
 
         if os.path.isfile(filename):
