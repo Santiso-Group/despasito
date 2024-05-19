@@ -21,9 +21,6 @@ on:
 jobs:
   linux:
     runs-on: ubuntu-latest
-    steps:
-      - run: sudo apt-get install gfortran
-      - run: gfortran --version
 
   windows:
     runs-on: windows-latest
@@ -73,12 +70,6 @@ jobs:
       shell: bash -l {0}
       run: |
         python -m pip install -U pytest pytest-cov codecov
-
-    - name: Install gfortran on mac
-      if: matrix.os == 'macOS-latest'
-      shell: bash -l {0}
-      run: |
-        conda install -c conda-forge gfortran_osx-64
         
     - name: Install package
       # conda setup requires this special shell

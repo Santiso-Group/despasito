@@ -13,12 +13,6 @@ from despasito.equations_of_state import constants
 
 logger = logging.getLogger(__name__)
 
-try:
-    from .compiled_modules import ext_Aassoc_fortran
-    flag_fortran = True
-except ImportError:
-    flag_fortran = False
-    logger.warning("Fortran unavailable, using Numba")
 
 try:
     import cython
@@ -44,58 +38,26 @@ def _calc_Xika_wrap(*args, method_stat, maxiter=500, tol=1e-12, damp=0.1):
     indices, rho, xi, molecular_composition, nk, Fklab, Kklab, gr_assoc = args
 
     if len(np.shape(Kklab)) == 4:
-        if method_stat.fortran and flag_fortran:
-            Xika_init = 0.5 * np.ones(len(indices))
-            Xika = ext_Aassoc_fortran.calc_xika_4(
-                indices,
-                constants.molecule_per_nm3 * rho,
-                Xika_init,
-                xi,
-                molecular_composition,
-                nk,
-                Fklab,
-                Kklab,
-                gr_assoc,
-                maxiter,
-                tol,
-            )
+        if method_stat.cython and flag_cython:
+            Xika, _ = calc_Xika_cython(*args)
+        elif method_stat.python:
+            Xika, _ = calc_Xika_python(*args)
+            logger.warning("Using pure python. Consider using 'numba' flag")
+        elif method_stat.numba or not flag_cython:
+            Xika, _ = calc_Xika_numba(*args)
         else:
-            if method_stat.cython and flag_cython:
-                Xika, _ = calc_Xika_cython(*args)
-            elif method_stat.python:
-                Xika, _ = calc_Xika_python(*args)
-                logger.warning("Using pure python. Consider using 'numba' flag")
-            elif method_stat.numba or not flag_fortran or not flag_cython:
-                Xika, _ = calc_Xika_numba(*args)
-            else:
-                raise ValueError("Appropriate options for calc_Xika have not been defined.")
+            raise ValueError("Appropriate options for calc_Xika have not been defined.")
 
     elif len(np.shape(Kklab)) == 6:
-        if method_stat.fortran and flag_fortran:
-            Xika_init = 0.5 * np.ones(len(indices))
-            Xika = ext_Aassoc_fortran.calc_xika_6(
-                indices,
-                constants.molecule_per_nm3 * rho,
-                Xika_init,
-                xi,
-                molecular_composition,
-                nk,
-                Fklab,
-                Kklab,
-                gr_assoc,
-                maxiter,
-                tol,
-            )
+        if method_stat.cython and flag_cython:
+            Xika, _ = calc_Xika_cython(*args)
+        elif method_stat.python:
+            Xika, _ = calc_Xika_python(*args)
+            logger.warning("Using pure python. Consider using 'numba' flag")
+        elif method_stat.numba or not flag_cython:
+            Xika, _ = calc_Xika_numba(*args)
         else:
-            if method_stat.cython and flag_cython:
-                Xika, _ = calc_Xika_cython(*args)
-            elif method_stat.python:
-                Xika, _ = calc_Xika_python(*args)
-                logger.warning("Using pure python. Consider using 'numba' flag")
-            elif method_stat.numba or not flag_fortran or not flag_cython:
-                Xika, _ = calc_Xika_numba(*args)
-            else:
-                raise ValueError("Appropriate options for calc_Xika have not been defined.")
+            raise ValueError("Appropriate options for calc_Xika have not been defined.")
 
     return Xika
 

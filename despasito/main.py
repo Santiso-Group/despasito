@@ -75,7 +75,7 @@ def get_parser():
     parser.add_argument(
         "--python",
         action="store_true",
-        help="Remove default Fortran module for association site calculations.",
+        help="Run calculation in python without compiled modules.",
     )
     parser.add_argument(
         "--cython",

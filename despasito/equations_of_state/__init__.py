@@ -10,20 +10,18 @@ import logging
 
 class method_stat:
 
-    def __init__(self, numba=False, cython=False, python=False):
+    def __init__(self, numba=True, cython=False, python=False):
 
         self.numba = numba
         self.cython = cython
         self.python = python
 
         if not any([numba, cython, python]):
-            self.fortran = True
-        else:
-            self.fortran = False
+            raise ValueError("Calculation type has not been specified.")
 
     def __str__(self):
 
-        string = "Compilation: numba {}, cython {}, python {}, fortran {}".format(self.numba, self.cython, self.python, self.fortran)
+        string = "Compilation: numba {}, cython {}, python {}".format(self.numba, self.cython, self.python)
 
         return string
 
@@ -31,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 
 def initiate_eos(
-    eos="saft.gamma_mie", numba=False, cython=False, python=False, **kwargs
+    eos="saft.gamma_mie", numba=True, cython=False, python=False, **kwargs
 ):
     """
     Interface between the user and our library of equations of state (EOS).

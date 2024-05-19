@@ -56,7 +56,7 @@ logging.info("Use Numba JIT: {}".format(args.numba))
 kwargs["numba"] = args.numba
 logging.info("Use Cython: {}".format(args.cython))
 kwargs["cython"] = args.cython
-logging.info("Pure Python (no Fortran): {}".format(args.python))
+logging.info("Pure Python: {}".format(args.python))
 kwargs["python"] = args.python
 
 kwargs["MultiprocessingObject"] = MultiprocessingJob(ncores=args.ncores)

@@ -135,17 +135,6 @@ def test_saft_gamma_mie_class_noassoc(
     )
     assert (Eos_class.eos_dict["massi"] == np.array([0.04401, 0.07811])).all()
 
-@pytest.mark.skipif(hasattr(sys, 'getwindowsversion'), reason="Issue with f2py Fortran modules on Windows")
-def test_fortran_available():
-    from despasito.equations_of_state.saft.compiled_modules import ext_Aassoc_fortran
-    try:
-        from despasito.equations_of_state.saft.compiled_modules import ext_Aassoc_fortran
-        flag = True
-    except Exception:
-        flag = False
-
-    assert flag
-
 
 def test_saft_gamma_mie_class_assoc(
     beads=beads_co2_h2o,
