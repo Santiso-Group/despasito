@@ -15,6 +15,7 @@ dependencies:
   - pytest
   - pytest-cov
   - codecov
+  - flake8
 
    # Documentation
   - sphinx
@@ -22,7 +23,7 @@ dependencies:
   - sphinx-argparse
   - m2r2
 
-    # Pip-only installs
+  # Pip-only installs
   #- pip:
-  #  - codecov
+  #  - flake8
 

@@ -78,8 +78,9 @@ jobs:
           name: codecov-${{ matrix.os }}-py${{ matrix.python-version }}
 
       - name: Flake8
+        shell: bash -l {0}
         run: |
-          flake8 despasito --count --max-complexity=10 --max-line-length=79 --show-source --statistics
+          python -m flake8 despasito --count --max-complexity=10 --max-line-length=79 --show-source --statistics
 
   paper:
     runs-on: ubuntu-latest
