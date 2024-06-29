@@ -77,6 +77,10 @@ jobs:
           flags: unittests
           name: codecov-${{ matrix.os }}-py${{ matrix.python-version }}
 
+      - name: Flake8
+        run: |
+          flake8 despasito --count --max-complexity=10 --max-line-length=79 --show-source --statistics
+
   paper:
     runs-on: ubuntu-latest
     name: Paper Draft

@@ -66,6 +66,7 @@ setup(
         "numpy",
         "scipy",
         "numba",
+        "flake8"
     ],
     python_requires=">=3.6, <3.12",
     zip_safe=False,
