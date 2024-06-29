@@ -18,15 +18,7 @@ on:
     #   (from https://help.github.com/en/actions/reference/events-that-trigger-workflows#scheduled-events-schedule)
     - cron: "0 0 * * *"
 
-jobs:
-  linux:
-    runs-on: ubuntu-latest
-
-  windows:
-    runs-on: windows-latest
-    steps:
-      - run: choco install mingw
-      
+jobs: 
   test:
     name: Test on ${{ matrix.os }}, Python ${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
@@ -36,60 +28,54 @@ jobs:
         python-version: ['3.8', '3.9', '3.10']
 
     steps:
+      - uses: actions/checkout@v4
 
-# Not relevant now, but may be needed when f2py issues are solved, for now only numba
-#    - name: Set up msys for Windows
-#      if: matrix.os == 'windows-latest'
-#      uses: msys2/setup-msys2@v2
-#      with:
-#        update: true
-#        install: >-
-#          mingw-w64-x86_64-gcc-fortran
-#          mingw-w64-x86_64-gcc
+      - name: Additional info about the build
+        shell: bash
+        run: |
+          uname -a
+          df -h
+          ulimit -a
 
-    - uses: actions/checkout@v2
+      # More info on options: https://github.com/conda-incubator/setup-miniconda
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+          environment-file: devtools/conda-envs/test_env.yaml
+          activate-environment: test
+          auto-update-conda: false
+          auto-activate-base: false
+          show-channel-urls: true
+          condarc: |
+            channels:
+              - conda-forge
+          create-args: >-
+            python=${{ matrix.python-version }}
 
-    - name: Additional info about the build
-      shell: bash
-      run: |
-        uname -a
-        df -h
-        ulimit -a
-
-    # More info on options: https://github.com/conda-incubator/setup-miniconda
-    - uses: conda-incubator/setup-miniconda@v3
-      with:
-        python-version: ${{ matrix.python-version }}
-        environment-file: devtools/conda-envs/test_env.yaml
-        activate-environment: test
-        auto-update-conda: false
-        auto-activate-base: false
-        show-channel-urls: true
-
-    - name: Testing Dependencies
-      shell: bash -l {0}
-      run: |
-        python -m pip install -U pytest pytest-cov codecov
+      - name: Testing Dependencies
+        shell: bash -l {0}
+        run: |
+          python -m pip install -U pytest pytest-cov codecov
         
-    - name: Install package
-      # conda setup requires this special shell
-      shell: bash -l {0}
-      run: |
-        python -m pip install -e . --no-deps -vvv
-        conda list
+      - name: Install package
+        # conda setup requires this special shell
+        shell: bash -l {0}
+        run: |
+          python -m pip install -e . --no-deps -vvv
+          conda list
         
-    - name: Run tests
-      shell: bash -l {0}
-      run: |
-        ls -a despasito/equations_of_state/saft/compiled_modules
-        pytest -vvv --cov=despasito --cov-report=xml --color=yes despasito/tests/
+      - name: Run tests
+        shell: bash -l {0}
+        run: |
+          ls -a despasito/equations_of_state/saft/compiled_modules
+          pytest -vvv --cov=despasito --cov-report=xml --color=yes despasito/tests/
 
-    - name: CodeCov
-      uses: codecov/codecov-action@v1
-      with:
-        file: ./coverage.xml
-        flags: unittests
-        name: codecov-${{ matrix.os }}-py${{ matrix.python-version }}
+      - name: CodeCov
+        uses: codecov/codecov-action@v1
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-${{ matrix.os }}-py${{ matrix.python-version }}
 
   paper:
     runs-on: ubuntu-latest
