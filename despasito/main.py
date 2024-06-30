@@ -3,8 +3,8 @@
 """
 Handles the primary functions
 
-In any directory with the appropriate input files in the JSON format, run DESPASITO with ``python -m despasito input.json``
-
+In any directory with the appropriate input files in the JSON format, run DESPASITO
+with ``python -m despasito input.json``
 """
 
 import logging
@@ -20,25 +20,37 @@ logger = logging.getLogger(__name__)
 
 
 def get_parser():
-    """ Process line arguments
-    """
+    """Process line arguments"""
 
-    ## Define parser functions and arguments
+    # Define parser functions and arguments
     parser = argparse.ArgumentParser(
-        description=r"DESPASITO: Determining Equilibrium State and Parametrization Application for SAFT, Intended for Thermodynamic Output.  This is an open-source application for thermodynamic calculations and parameter fitting for equations of state (EOS) like the Statistical Associating Fluid Theory (SAFT) EOS."
+        description=(
+            r"DESPASITO: Determining Equilibrium State and Parametrization "
+            + "Application for SAFT, Intended for Thermodynamic Output.  This is an "
+            + "open-source application for thermodynamic calculations and parameter"
+            + " fitting for equations of state (EOS) like the Statistical "
+            + "Associating Fluid Theory (SAFT) EOS."
+        )
     )
     parser.add_argument(
         "-i",
         "--input",
         dest="input",
-        help="Input file in JSON format with calculation instructions and path(s) to equation of state parameters. See documentation for explicit explanation. Compile docs or visit https://despasito.readthedocs.io",
+        help=(
+            "Input file in JSON format with calculation instructions and path(s) to"
+            + " equation of state parameters. See documentation for explicit "
+            + "explanation. Compile docs or visit https://despasito.readthedocs.io"
+        ),
     )
     parser.add_argument(
         "-v",
         "--verbose",
         action="count",
         default=0,
-        help="Verbose level: repeat up to three times for Warning, Info, or Debug levels.",
+        help=(
+            "Verbose level: repeat up to three times for Warning, Info, or Debug "
+            + "levels."
+        ),
     )
     parser.add_argument(
         "--log",
@@ -52,14 +64,20 @@ def get_parser():
         "--ncores",
         dest="ncores",
         type=int,
-        help="Set the number of cores used. A value of -1 will request all possible resources.",
+        help=(
+            "Set the number of cores used. A value of -1 will request all possible "
+            + "resources."
+        ),
         default=1,
     )
     parser.add_argument(
         "-p",
         "--path",
         default=".",
-        help="Set the location of the data/library files (e.g. SAFTcross, etc.) where despasito will look.",
+        help=(
+            "Set the location of the data/library files (e.g. SAFTcross, etc.) where"
+            + " despasito will look."
+        ),
     )
     parser.add_argument(
         "-c",
@@ -87,7 +105,7 @@ def get_parser():
 
 
 def run(filename="input.json", path=".", **kwargs):
-    """ Main function for running despasito calculations.
+    """Main function for running despasito calculations.
 
     All inputs and settings should be in the supplied JSON file(s).
 
@@ -101,8 +119,8 @@ def run(filename="input.json", path=".", **kwargs):
         Keywords for other aspects of calculation
     """
 
-    np.seterr(divide = 'ignore') 
-    #np.warnings.filterwarnings('error', category=np.VisibleDeprecationWarning)
+    np.seterr(divide="ignore")
+    # np.warnings.filterwarnings('error', category=np.VisibleDeprecationWarning)
 
     # read input file (need to add command line specification)
     logger.info("Begin processing input file: %s" % filename)

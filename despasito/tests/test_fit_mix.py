@@ -40,7 +40,7 @@ Eos = despasito.equations_of_state.initiate_eos(
     cross_library=cross_library,
 )
 
-## Exp Data dict
+# Exp Data dict
 Tlist = np.array([353.0])
 xilist = np.array([[0.0128, 0.9872]])
 yilist = np.array([[0.9896, 0.0104]])
@@ -74,7 +74,7 @@ exp_data_flash = {
     }
 }
 
-## Optimization options
+# Optimization options
 optimization_parameters = {
     "fit_bead": "CO2",
     "fit_parameter_names": ["epsilon_H2O353"],
@@ -94,12 +94,16 @@ thermo_dict_flash = {
     "global_opts": {"method": "single_objective"},
 }
 
-def test_dew_pressure(Eos=Eos,thermo_dict=thermo_dict_dew.copy()):
+
+def test_dew_pressure(Eos=Eos, thermo_dict=thermo_dict_dew.copy()):
 
     thermo_dict = ri.process_param_fit_inputs(thermo_dict)
     output = fit.fit(**thermo_dict)
 
-    assert output["parameters_final"][0]==pytest.approx(432.69,abs=1.0) and output["objective_value"]==pytest.approx(854.19,abs=1.0)
+    assert output["parameters_final"][0] == pytest.approx(432.69, abs=1.0) and output[
+        "objective_value"
+    ] == pytest.approx(854.19, abs=1.0)
+
 
 def test_flash(Eos=Eos, thermo_dict=thermo_dict_flash.copy()):
 

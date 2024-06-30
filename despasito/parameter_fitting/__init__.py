@@ -2,13 +2,13 @@
 Fit Parameters
 --------------
 
-This package uses functions from ``input_output``, ``equations_of_state``, and ``thermodynamics`` to fit parameters to experimental data.
+This package uses functions from ``input_output``, ``equations_of_state``, and
+``thermodynamics`` to fit parameters to experimental data.
 
-input.json files have a different dictionary structure that is processed by :func:`~despasito.input_output.read_input.process_param_fit_inputs`.
-
+input.json files have a different dictionary structure that is processed by
+:func:`~despasito.input_output.read_input.process_param_fit_inputs`.
 """
 
-import sys
 import os
 import numpy as np
 from importlib import import_module
@@ -29,70 +29,98 @@ def fit(
     **kwargs
 ):
     r"""
-    Fit parameters for an equation of state object with given experimental data. 
+    Fit parameters for an equation of state object with given experimental data.
 
-    Each set of experimental data is converted to an object with the built in ability to evaluate its part of objective function.
-    To add another type of supported experimental data, add a class to the fit_classes.py file.
+    Each set of experimental data is converted to an object with the built in ability
+    to evaluate its part of objective function.
+    To add another type of supported experimental data, add a class to the
+    fit_classes.py file.
 
     Parameters
     ----------
     optimization_parameters : dict, Optional, default=None
         Parameters used in global fitting algorithm.
 
-        - fit_bead (str) - Name of bead whose parameters are being fit. Should be within bead_configuration.
-        - fit_parameter_names (list[str]) - This list contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of a parameter name followed by the interacting bead's name, separated by an underscore (e.g. epsilon_CO2).
-        - parameters_guess (list[float]), Optional - Initial guess for all parameters being fit. If this is not provided, the Eos object provides a guesses based on the parameter types.
-        - \*_bounds (list[float]), Optional - This list contains the minimum and maximum of the parameter from a parameter listed in fit_parameter_names, represented in place of the asterisk. See , :ref:`startfitting-label`, for more information.
+        - fit_bead (str) - Name of bead whose parameters are being fit. Should be
+        within bead_configuration.
+        - fit_parameter_names (list[str]) - This list contains the name of the
+        parameter being fit (e.g. epsilon). See EOS documentation for supported
+        parameter names. Cross interaction parameter names should be composed of a
+        parameter name followed by the interacting bead's name, separated by an
+        underscore (e.g. epsilon_CO2).
+        - parameters_guess (list[float]), Optional - Initial guess for all parameters
+        being fit. If this is not provided, the Eos object provides a guesses based on
+        the parameter types.
+        - \*_bounds (list[float]), Optional - This list contains the minimum and
+        maximum of the parameter from a parameter listed in fit_parameter_names,
+        represented in place of the asterisk. See , :ref:`startfitting-label`, for
+        more information.
 
     exp_data : dict, Optional, default=None
-        This dictionary is made up of a dictionary for each data set that the parameters are fit to. Each dictionary is converted into an object and saved back to this structure before parameter fitting begins. Each key is an arbitrary string used to identify the data set and used later in reporting objective function values during the fitting process. See data type objects for more details.
+        This dictionary is made up of a dictionary for each data set that the
+        parameters are fit to. Each dictionary is converted into an object and saved
+        back to this structure before parameter fitting begins. Each key is an
+        arbitrary string used to identify the data set and used later in reporting
+        objective function values during the fitting process. See data type objects
+        for more details.
 
-        - data_class_type (str) - One of the supported data type objects to fit parameters, :ref:`data-types`.
-        - eos_obj (obj) - Equation of state output that writes pressure, max density, fugacity coefficient, updates parameters, and evaluates parameter fitting objective function. See equation of state documentation for more details.
+        - data_class_type (str) - One of the supported data type objects to fit
+        parameters, :ref:`data-types`.
+        - eos_obj (obj) - Equation of state output that writes pressure, max density,
+        fugacity coefficient, updates parameters, and evaluates parameter fitting
+        objective function. See equation of state documentation for more details.
 
     global_opts : dict, Optional, default={}
-        Method and keyword arguments used in global optimization method. See :func:`~despasito.parameter_fitting.fit_functions.global_minimization`.
+        Method and keyword arguments used in global optimization method. See
+        :func:`~despasito.parameter_fitting.fit_functions.global_minimization`.
 
-        - method (str), Optional - default='differential_evolution', Global optimization method used to fit parameters. See :func:`~despasito.parameter_fitting.fit_functions.global_minimization`.
+        - method (str), Optional - default='differential_evolution', Global
+        optimization method used to fit parameters. See
+        :func:`~despasito.parameter_fitting.fit_functions.global_minimization`.
         - Additional options, specific to the global optimization method
 
     minimizer_opts : dict, Optional, default=None
         Dictionary used to define minimization type and the associated options.
 
         - method (str) - Method available to ``scipy.optimize.minimize``
-        - options (dict) - This dictionary contains the keyword arguments available to the chosen method
+        - options (dict) - This dictionary contains the keyword arguments available
+        to the chosen method
 
     MultiprocessingObject : obj, Optional
-        Multiprocessing object, :class:`~despasito.utils.parallelization.MultiprocessingJob`
-    kwargs : 
-        Other keywords of instructions for thermodynamic calculations and parameter fitting.
-  
+        Multiprocessing object,
+        :class:`~despasito.utils.parallelization.MultiprocessingJob`
+    kwargs :
+        Other keywords of instructions for thermodynamic calculations and parameter
+        fitting.
+
     Returns
     -------
     output : dict
         Results from parameter optimization
 
-        - parameters_final (numpy.ndarray) -  Array of the same length as `fit_parameter_names` containing the parameters resulting from the chosen global optimization method.
+        - parameters_final (numpy.ndarray) -  Array of the same length as
+        `fit_parameter_names` containing the parameters resulting from the chosen
+        global optimization method.
         - objective_value (float) - Objective value resulting from `parameters_final`
-        
+
     """
 
     # Extract relevant quantities from kwargs
     dicts = {}
 
     # Extract inputs
-    if optimization_parameters == None:
+    if optimization_parameters is None:
         raise ValueError("Required input, optimization_parameters, is missing.")
 
     dicts["global_opts"] = global_opts
-    if minimizer_opts != None:
+    if minimizer_opts is not None:
         dicts["minimizer_opts"] = minimizer_opts
 
-    if exp_data == None:
+    if exp_data is None:
         raise ValueError("Required input, exp_data, is missing.")
 
     # Add multiprocessing object to exp_data objects and global_optss
-    if MultiprocessingObject != None:
+    if MultiprocessingObject is not None:
         for k2 in list(exp_data.keys()):
             exp_data[k2]["MultiprocessingObject"] = MultiprocessingObject
         dicts["global_opts"]["MultiprocessingObject"] = MultiprocessingObject
@@ -119,7 +147,8 @@ def fit(
         parameters_guess = optimization_parameters["parameters_guess"]
         if len(parameters_guess) != len(optimization_parameters["fit_parameter_names"]):
             raise ValueError(
-                "The number of initial parameters given isn't the same number of parameters to be fit."
+                "The number of initial parameters given isn't the same number of "
+                "parameters to be fit."
             )
     else:
         parameters_guess = ff.initial_guess(optimization_parameters, Eos)
@@ -148,9 +177,8 @@ def fit(
             else:
                 tmp = ", ".join(type_list)
             raise ImportError(
-                "The experimental data type, '{}', was not found\nThe following calculation types are supported: {}".format(
-                    fittype, tmp
-                )
+                "The experimental data type, '{}', was not found\nThe following "
+                "calculation types are supported: {}".format(fittype, tmp)
             )
 
         try:

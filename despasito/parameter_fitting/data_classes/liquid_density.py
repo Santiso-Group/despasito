@@ -1,18 +1,19 @@
 r"""
-Objects for storing and producing objective values for comparing experimental data to EOS predictions.    
+Objects for storing and producing objective values for comparing experimental data
+to EOS predictions.
 """
 
 import numpy as np
 import logging
 
-from despasito import fundamental_constants as constants
 from despasito.thermodynamics import thermo
 from despasito.parameter_fitting import fit_functions as ff
 from despasito.parameter_fitting.interface import ExpDataTemplate
-from despasito import fundamental_constants as constants
+import despasito.fundamental_constants as constants
 import despasito.utils.general_toolbox as gtb
 
 logger = logging.getLogger(__name__)
+
 
 ##################################################################
 #                                                                #
@@ -20,12 +21,13 @@ logger = logging.getLogger(__name__)
 #                                                                #
 ##################################################################
 class Data(ExpDataTemplate):
-
     r"""
-    Object for liquid density data. This data is evaluated with "liquid_properties". 
+    Object for liquid density data. This data is evaluated with "liquid_properties".
 
-    This object is initiated in :func:`~despasito.parameter_fitting.fit` with the keyword, ``exp_data[*]["data_class_type"]="liquid_density"``.
-    The data could be evaluated with :func:`~despasito.thermodynamics.calculation_types.liquid_properties`
+    This object is initiated in :func:`~despasito.parameter_fitting.fit` with the
+    keyword, ``exp_data[*]["data_class_type"]="liquid_density"``.
+    The data could be evaluated with
+    :func:`~despasito.thermodynamics.calculation_types.liquid_properties`
 
     Parameters
     ----------
@@ -33,16 +35,27 @@ class Data(ExpDataTemplate):
         Dictionary of exp data of type liquid density.
 
         * calculation_type (str) - Optional, default='liquid_properties'
-        * MultiprocessingObject (obj) - Optional, Initiated :class:`~despasito.utils.parallelization.MultiprocessingJob`
+        * MultiprocessingObject (obj) - Optional, Initiated
+        :class:`~despasito.utils.parallelization.MultiprocessingJob`
         * eos_obj (obj) - Equation of state object
         * T (list) - [K] List of temperature values for calculation
         * P (list) - [Pa] List of pressure values for calculation
-        * xi (list) - List of liquid mole fractions used in liquid_properties calculations
+        * xi (list) - List of liquid mole fractions used in liquid_properties
+        calculations
         * rhol (list) - [mol/:math:`m^3`] Evaluated liquid density values
-        * weights (dict) - A dictionary where each key is a system constraint (e.g. T or xi) which is also a header used in an optional exp. data file. The value associated with a header can be a list as long as the number of data points to multiply by the objective value associated with each point, or a float to multiply the objective value of this data set.
-        * objective_method (str) - The 'method' keyword in function despasito.parameter_fitting.fit_functions.obj_function_form.
-        * density_opts (dict) - Optional, default={"min_density_fraction":(1.0 / 60000.0), "density_increment":10.0, "max_volume_increment":1.0E-4}, Dictionary of options used in calculating pressure vs. mole fraction curves.
-        * kwargs for :func:`~despasito.parameter_fitting.fit_functions.obj_function_form`
+        * weights (dict) - A dictionary where each key is a system constraint
+        (e.g. T or xi) which is also a header used in an optional exp. data file.
+        The value associated with a header can be a list as long as the number of
+        data points to multiply by the objective value associated with each point,
+        or a float to multiply the objective value of this data set.
+        * objective_method (str) - The 'method' keyword in function
+        despasito.parameter_fitting.fit_functions.obj_function_form.
+        * density_opts (dict) - Optional,
+        default={"min_density_fraction":(1.0 / 60000.0), "density_increment":10.0,
+        "max_volume_increment":1.0E-4}, Dictionary of options used in calculating
+        pressure vs. mole fraction curves.
+        * kwargs for
+        :func:`~despasito.parameter_fitting.fit_functions.obj_function_form`
 
     Attributes
     ----------
@@ -51,19 +64,23 @@ class Data(ExpDataTemplate):
     Eos : obj
         Equation of state object
     weights : dict, Optional, default: {"some_property": 1.0 ...}
-        Dictionary with keys corresponding to those in thermodict, with weighting factor or vector for each system property used in fitting
+        Dictionary with keys corresponding to those in thermodict, with weighting
+        factor or vector for each system property used in fitting
     obj_opts : dict
-        Keywords to compute the objective function with :func:`~despasito.parameter_fitting.fit_functions.obj_function_form`.
+        Keywords to compute the objective function with
+        :func:`~despasito.parameter_fitting.fit_functions.obj_function_form`.
     npoints : int
         Number of sets of system conditions this object computes
     result_keys : list
-        Thermodynamic property names used in calculation of objective function. In in this case: ["rhol", "phil"]
+        Thermodynamic property names used in calculation of objective function. In in
+        this case: ["rhol", "phil"]
     thermodict : dict
         Dictionary of inputs needed for thermodynamic calculations
-        
+
         - calculation_type (str) default=liquid_properties
-        - density_opts (dict) default={"min_density_fraction":(1.0 / 300000.0), "density_increment":10.0, "max_volume_increment":1.0E-4}
-        
+        - density_opts (dict) default={"min_density_fraction":(1.0 / 300000.0),
+        "density_increment":10.0, "max_volume_increment":1.0E-4}
+
     """
 
     def __init__(self, data_dict):
@@ -82,7 +99,7 @@ class Data(ExpDataTemplate):
             tmp.update(self.thermodict["density_opts"])
         self.thermodict["density_opts"] = tmp
 
-        if self.thermodict["calculation_type"] == None:
+        if self.thermodict["calculation_type"] is None:
             self.thermodict["calculation_type"] = "liquid_properties"
 
         if "xi" in data_dict:
@@ -124,11 +141,13 @@ class Data(ExpDataTemplate):
 
         if "Tlist" not in self.thermodict and "rhol" not in self.thermodict:
             raise ImportError(
-                "Given liquid property data, values for T, xi, and rhol should have been provided."
+                "Given liquid property data, values for T, xi, and rhol should have"
+                " been provided."
             )
 
         logger.info(
-            "Data type 'liquid_properties' initiated with calculation_type, {}, and data types: {}.\nWeight data by: {}".format(
+            "Data type 'liquid_properties' initiated with calculation_type, {}, and "
+            "data types: {}.\nWeight data by: {}".format(
                 self.thermodict["calculation_type"],
                 ", ".join(self.result_keys),
                 self.weights,
@@ -136,14 +155,14 @@ class Data(ExpDataTemplate):
         )
 
     def _thermo_wrapper(self):
-
         """
         Generate thermodynamic predictions from Eos object
 
         Returns
         -------
         phase_list : float
-            A list of the predicted thermodynamic values estimated from thermo calculation. This list can be composed of lists or floats
+            A list of the predicted thermodynamic values estimated from thermo
+            calculation. This list can be composed of lists or floats
         """
 
         # Remove results
@@ -161,7 +180,6 @@ class Data(ExpDataTemplate):
         return output
 
     def objective(self):
-
         """
         Generate objective function value from this dataset
 

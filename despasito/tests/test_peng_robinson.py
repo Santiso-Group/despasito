@@ -42,7 +42,7 @@ def test_PR_coefficients(
     beads=beads,
     molecular_composition=molecular_composition,
     bead_library=bead_library,
-):  #   """Test ability to create EOS object without association sites"""
+):  # Test ability to create EOS object without association sites
     Eos_class = despasito.equations_of_state.initiate_eos(
         eos="cubic.peng_robinson",
         xi=xi,

@@ -80,7 +80,7 @@ jobs:
       - name: Flake8
         shell: bash -l {0}
         run: |
-          python -m flake8 despasito --count --max-complexity=10 --max-line-length=79 --show-source --statistics
+          python -m flake8 despasito --count --ignore=E741,W503 --max-line-length=92 --show-source --statistics
 
   paper:
     runs-on: ubuntu-latest

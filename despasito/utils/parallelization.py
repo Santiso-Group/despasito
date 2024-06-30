@@ -15,14 +15,14 @@ logger = logging.getLogger(__name__)
 
 
 class MultiprocessingJob:
-
     """
     This object initiates the pool for multiprocessing jobs.
 
     Parameters
     ----------
     ncores : int, Optional, default=-1
-        Number of processes used. If the default value of -1, the system cpu count is used.
+        Number of processes used. If the default value of -1, the system cpu count
+        is used.
 
     Attributes
     ----------
@@ -69,8 +69,8 @@ class MultiprocessingJob:
             logger.info("MP log files: {}".format(", ".join(self.logfiles)))
 
     def _extract_root_logging(self):
-        """ Swap root handlers defined in despasito.__main__ with process specific log handlers
-        """
+        """Swap root handlers defined in despasito.__main__ with process specific log
+        handlers"""
         for handler in logging.root.handlers:
             if "baseFilename" in handler.__dict__:
                 self._logformat = handler.formatter._fmt
@@ -87,9 +87,17 @@ class MultiprocessingJob:
         Parameters
         ----------
         level : int
-            The verbosity level of logging information can be set to any supported representation of the `logging level <https://docs.python.org/3/library/logging.html#logging-levels>`_. 
+            The verbosity level of logging information can be set to any supported
+            representation of the
+            `logging level <LOGGING>`_
+            .
         logformat : str
-            Formating of logging information can be set to any supported representation of the `formatting class <https://docs.python.org/3/library/logging.html#logging.Formatter>`_. 
+            Formating of logging information can be set to any supported representation
+            of the
+            `formatting class <FORMAT>`_.
+
+        .. _LOGGING: https://docs.python.org/3/library/logging.html#logging-levels/
+        .. _FORMAT: https://docs.python.org/3/library/logging.html#logging.Formatter/
         """
 
         logger = logging.getLogger()
@@ -160,22 +168,19 @@ class MultiprocessingJob:
         return np.transpose(output)
 
     def _consolidate_mp_logs(self):
-        """ Consolidate multiprocessing logs into main log
-        """
+        """Consolidate multiprocessing logs into main log"""
         for i, fn in enumerate(self.logfiles):
             with open(fn) as f:
                 logger.info("Log from thread {0}:\n{1}".format(i, f.read()))
             open(fn, "w").write("")
 
     def _remove_mp_logs(self):
-        """ Ensure all previous mp logs are removed
-        """
+        """Ensure all previous mp logs are removed"""
         for i, fn in enumerate(self.logfiles):
             os.remove(fn)
 
     def end_pool(self):
-        """ Close multiprocessing pool
-        """
+        """Close multiprocessing pool"""
         if self.flag_use_mp:
             self._pool.close()
             self._pool.join()
@@ -183,14 +188,20 @@ class MultiprocessingJob:
 
 
 def initialize_mp_handler(level, logformat):
-    """ Wraps the handlers in the given Logger with an MultiProcessingHandler.
+    """Wraps the handlers in the given Logger with an MultiProcessingHandler.
 
     Parameters
     ----------
     level : int
-        The verbosity level of logging information can be set to any supported representation of the `logging level <https://docs.python.org/3/library/logging.html#logging-levels>`_. 
+        The verbosity level of logging information can be set to any supported
+        representation of the
+        `logging level <LOGGING>`_
+        .
     logformat : str
-        Formating of logging information can be set to any supported representation of the `formatting class <https://docs.python.org/3/library/logging.html#logging.Formatter>`_. 
+        Formating of logging information can be set to any supported representation of
+        the
+        `formatting class <FORMAT>`_
+        .
     """
 
     logger = logging.getLogger()

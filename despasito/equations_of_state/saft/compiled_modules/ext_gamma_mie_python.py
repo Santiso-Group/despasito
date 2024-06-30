@@ -1,8 +1,8 @@
 r"""
     Routines for calculating the Helmholtz energy for the SAFT-gamma equation of state.
-    
-    Equations referenced in this code are from V. Papaioannou et al. J. Chem. Phys. 140 054107 2014
-    
+
+    Equations referenced in this code are from V. Papaioannou et al. J. Chem. Phys.
+    140 054107 2014
 """
 
 import numpy as np
@@ -25,14 +25,14 @@ ckl_coef = np.array(
 def prefactor(l_r, l_a):
     r"""
     Calculations C, the Mie potential prefactor, defined in eq. 2
-    
+
     Parameters
     ----------
     l_a : float
         Mie potential attractive exponent
     l_r : float
         Mie potential attractive exponent
-    
+
     Returns
     -------
     C : float
@@ -45,21 +45,24 @@ def prefactor(l_r, l_a):
 
 
 def calc_a1s(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
-    r""" 
+    r"""
     Return a1s,kl(rho*Cmol2seg,l_kl) in K as defined in eq. 25.
-    
-    Used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy.
+
+    Used in the calculation of :math:`A_1` the first order term of the perturbation
+    expansion corresponding to the mean-attractive energy.
 
     Parameters
     ----------
     rho : numpy.ndarray
         Number density of system [mol/m^3]
     Cmol2seg : float
-        Conversion factor from from molecular number density, :math:`\rho`, to segment (i.e. group) number density, :math:`\rho_S`. Shown in eq. 13
+        Conversion factor from from molecular number density, :math:`\rho`, to segment
+        (i.e. group) number density, :math:`\rho_S`. Shown in eq. 13
     l_kl : numpy.ndarray
         Matrix of Mie potential exponents for k,l groups
     zetax : numpy.ndarray
-        Matrix of hypothetical packing fraction based on hard sphere diameter for groups (k,l)
+        Matrix of hypothetical packing fraction based on hard sphere diameter for
+        groups (k,l)
     epsilonkl : numpy.ndarray
         Matrix of well depths for groups (k,l)
     dkl : numpy.ndarray
@@ -68,7 +71,9 @@ def calc_a1s(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
     Returns
     -------
     a1s : numpy.ndarray
-        Matrix used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy, size is the Nrho x Ngroups x Ngroups
+        Matrix used in the calculation of :math:`A_1` the first order term of the
+        perturbation expansion corresponding to the mean-attractive energy, size is the
+        Nrho x Ngroups x Ngroups
 
     """
 
@@ -101,7 +106,7 @@ def calc_a1s(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
         * 2.0
         * np.pi
         * Cmol2seg
-        * ((epsilonkl * (dkl ** 3 * constants.molecule_per_nm3 ** 2)) / (l_kl - 3.0))
+        * ((epsilonkl * (dkl**3 * constants.molecule_per_nm3**2)) / (l_kl - 3.0))
     )
 
     output = np.transpose(np.transpose(a1s) * rho)
@@ -112,9 +117,10 @@ def calc_a1s(rho, Cmol2seg, l_kl, zetax, epsilonkl, dkl):
 def calc_Bkl(rho, l_kl, Cmol2seg, dkl, epsilonkl, x0kl, zetax):
     r"""
     Return Bkl(rho*Cmol2seg,l_kl) in K as defined in eq. 20.
-    
-    Used in the calculation of the first order term of the perturbation expansion corresponding to the mean-attractive energy.
-    
+
+    Used in the calculation of the first order term of the perturbation expansion
+    corresponding to the mean-attractive energy.
+
     Parameters
     ----------
     rho : numpy.ndarray
@@ -122,21 +128,26 @@ def calc_Bkl(rho, l_kl, Cmol2seg, dkl, epsilonkl, x0kl, zetax):
     l_kl : numpy.ndarray
         :math:`\lambda_{k,l}` Matrix of Mie potential exponents for k,l groups
     Cmol2seg : float
-        Conversion factor from from molecular number density, :math:`\rho`, to segment (i.e. group) number density, :math:`\rho_S`. Shown in eq. 13
+        Conversion factor from from molecular number density, :math:`\rho`, to segment
+        (i.e. group) number density, :math:`\rho_S`. Shown in eq. 13
     dkl : numpy.ndarray
         Matrix of hard sphere diameters for groups (k,l)
     epsilonkl : numpy.ndarray
         Matrix of well depths for groups (k,l)
     x0kl : numpy.ndarray
-        Matrix of sigmakl/dkl, ratio of Mie radius for groups scaled by hard sphere interaction (k,l)
+        Matrix of sigmakl/dkl, ratio of Mie radius for groups scaled by hard sphere
+        interaction (k,l)
     zetax : numpy.ndarray
-        Matrix of hypothetical packing fraction based on hard sphere diameter for groups (k,l)
-    
+        Matrix of hypothetical packing fraction based on hard sphere diameter for
+        groups (k,l)
+
     Returns
     -------
     Bkl : numpy.ndarray
-        Matrix used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy, size is rho x l_kl.shape
-    
+        Matrix used in the calculation of :math:`A_1` the first order term of the
+        perturbation expansion corresponding to the mean-attractive energy, size is rho
+        x l_kl.shape
+
     """
 
     rhos = Cmol2seg * rho
@@ -151,7 +162,7 @@ def calc_Bkl(rho, l_kl, Cmol2seg, dkl, epsilonkl, x0kl, zetax):
     ) / ((l_kl - 3.0) * (l_kl - 4.0))
 
     tmp11 = rhos * (2.0 * np.pi)
-    tmp12 = (dkl ** 3 * constants.molecule_per_nm3 ** 2) * epsilonkl
+    tmp12 = (dkl**3 * constants.molecule_per_nm3**2) * epsilonkl
     tmp2 = (1.0 - (zetax / 2.0)) / ((1.0 - zetax) ** 3)
     tmp3 = (9.0 * zetax * (1.0 + zetax)) / (2.0 * ((1 - zetax) ** 3))
 
@@ -167,32 +178,39 @@ def calc_Bkl(rho, l_kl, Cmol2seg, dkl, epsilonkl, x0kl, zetax):
 def calc_a1ii(rho, Cmol2seg, dkl, l_akl, l_rkl, x0kl, epsilonkl, zetax):
     r"""
     Calculate effective first-order perturbation term :math:`\bar{a}_{1,ii}`.
-    
-    Used for the contribution of the monomeric interactions to the free energy per segment.
-    
+
+    Used for the contribution of the monomeric interactions to the free energy per
+    segment.
+
     Parameters
     ----------
     rho : numpy.ndarray
         Number density of system [mol/m^3]
     Cmol2seg : float
-        Conversion factor from from molecular number density, :math:`\rho`, to segment (i.e. group) number density, :math:`\rho_S`. Shown in eq. 13
+        Conversion factor from from molecular number density, :math:`\rho`, to segment
+        (i.e. group) number density, :math:`\rho_S`. Shown in eq. 13
     dkl : numpy.ndarray
         Matrix of hard sphere diameters for groups (k,l)
     l_rkl : numpy.ndarray
-        :math:`\lambda_{k,l}` Matrix of Mie potential repulsive exponents for k,l groups
+        :math:`\lambda_{k,l}` Matrix of Mie potential repulsive exponents for
+        k,l groups
     l_akl : numpy.ndarray
-        :math:`\lambda_{k,l}` Matrix of Mie potential attractive exponents for k,l groups 
+        :math:`\lambda_{k,l}` Matrix of Mie potential attractive exponents for
+        k,l groups
     x0kl : numpy.ndarray
-        Matrix of sigmakl/dkl, ratio of Mie radius for groups scaled by hard sphere interaction (k,l)
+        Matrix of sigmakl/dkl, ratio of Mie radius for groups scaled by hard sphere
+        interaction (k,l)
     epsilonkl : numpy.ndarray
         Matrix of well depths for groups (k,l)
     zetax : numpy.ndarray
-        Matrix of hypothetical packing fraction based on hard sphere diameter for groups (k,l)
-    
+        Matrix of hypothetical packing fraction based on hard sphere diameter for
+        groups (k,l)
+
     Returns
     -------
     a1ii : numpy.ndarray
-        Matrix used in the calculation of the radial distribution function of a hypothetical one-fluid Mie system.
+        Matrix used in the calculation of the radial distribution function of a
+        hypothetical one-fluid Mie system.
     """
     Cii = (l_rkl / (l_rkl - l_akl)) * (l_rkl / l_akl) ** (l_akl / (l_rkl - l_akl))
 
@@ -202,8 +220,8 @@ def calc_a1ii(rho, Cmol2seg, dkl, l_akl, l_rkl, x0kl, epsilonkl, zetax):
     a1s_a = calc_a1s(rho, Cmol2seg, l_akl, zetax, epsilonkl, dkl)
 
     output = Cii * (
-        ((x0kl ** l_akl) / constants.molecule_per_nm3 * (a1s_a + Bii_a))
-        - ((x0kl ** l_rkl) / constants.molecule_per_nm3 * (a1s_r + Bii_r))
+        ((x0kl**l_akl) / constants.molecule_per_nm3 * (a1s_a + Bii_a))
+        - ((x0kl**l_rkl) / constants.molecule_per_nm3 * (a1s_r + Bii_r))
     )
 
     return output
@@ -212,26 +230,31 @@ def calc_a1ii(rho, Cmol2seg, dkl, l_akl, l_rkl, x0kl, epsilonkl, zetax):
 def calc_a1s_eff(rho, Cmol2seg, l_ii_avg, zetax, epsilonii_avg, dii_avg):
     r"""
     Return a1s,(rho*Cmol2seg,l_ij) in K
-    
+
     Parameters
     ----------
     rho : numpy.ndarray
         Number density of system [mol/m^3]
     Cmol2seg : float
-        Conversion factor from from molecular number density, :math:`\rho`, to segment (i.e. group) number density, :math:`\rho_S`. Shown in eq. 13
+        Conversion factor from from molecular number density, :math:`\rho`, to s
+        egment (i.e. group) number density, :math:`\rho_S`. Shown in eq. 13
     l_ii_avg : numpy.ndarray
         Average bead (i.e. group or segment) exponent in component (i.e. molecule) i.
     zetax : numpy.ndarray
-        Matrix of hypothetical packing fraction based on hard sphere diameter for groups (k,l)
+        Matrix of hypothetical packing fraction based on hard sphere diameter for
+        groups (k,l)
     epsilonii_avg : numpy.ndarray
-        Average bead (i.e. group or segment) potential well depth in component (i.e. molecule) i.
+        Average bead (i.e. group or segment) potential well depth in component
+        (i.e. molecule) i.
     dii_avg : numpy.ndarray
-        Effective hard sphere diameter of the beads (i.e. groups or segments) in component (i.e. molecule) i.
-    
+        Effective hard sphere diameter of the beads (i.e. groups or segments) in
+        component (i.e. molecule) i.
+
     Returns
     -------
     a1s_eff : numpy.ndarray
-        Term used in the used in the calculation of the effective averaged molecular radial distribution function of a hypothetical one-fluid Mie system.
+        Term used in the used in the calculation of the effective averaged molecular
+        radial distribution function of a hypothetical one-fluid Mie system.
     """
 
     ncomp = len(dii_avg)
@@ -265,7 +288,7 @@ def calc_a1s_eff(rho, Cmol2seg, l_ii_avg, zetax, epsilonii_avg, dii_avg):
         * np.pi
         * Cmol2seg
         * (
-            (epsilonii_avg * (dii_avg ** 3 * constants.molecule_per_nm3 ** 2))
+            (epsilonii_avg * (dii_avg**3 * constants.molecule_per_nm3**2))
             / (l_ii_avg - 3.0)
         )
     )
@@ -278,7 +301,7 @@ def calc_a1s_eff(rho, Cmol2seg, l_ii_avg, zetax, epsilonii_avg, dii_avg):
 def calc_Bkl_eff(rho, l_ii_avg, Cmol2seg, dii_avg, epsilonii_avg, x0ii, zetax):
     r"""
     Return Bii_avg(rho*Cmol2seg,l_ii_avg) in K as defined in eq. 20.
-    
+
     Parameters
     ----------
     rho : numpy.ndarray
@@ -286,16 +309,20 @@ def calc_Bkl_eff(rho, l_ii_avg, Cmol2seg, dii_avg, epsilonii_avg, x0ii, zetax):
     l_ii_avg : numpy.ndarray
         Average bead (i.e. group or segment) exponent in component (i.e. molecule) i.
     Cmol2seg : float
-        Conversion factor from from molecular number density, :math:`\rho`, to segment (i.e. group) number density, :math:`\rho_S`. Shown in eq. 13
+        Conversion factor from from molecular number density, :math:`\rho`, to segment
+        (i.e. group) number density, :math:`\rho_S`. Shown in eq. 13
     dii_avg : numpy.ndarray
-        Effective hard sphere diameter of the beads (i.e. groups or segments) in component (i.e. molecule) i.
+        Effective hard sphere diameter of the beads (i.e. groups or segments) in
+        component (i.e. molecule) i.
     epsilonii_avg : numpy.ndarray
-        Average bead (i.e. group or segment) potential well depth in component (i.e. molecule) i.
+        Average bead (i.e. group or segment) potential well depth in component (i.e.
+        molecule) i.
     x0ii : numpy.ndarray
         Matrix of sigmaii_avg/dii_eff
     zetax : numpy.ndarray
-        Matrix of hypothetical packing fraction based on hard sphere diameter for groups (k,l)
-    
+        Matrix of hypothetical packing fraction based on hard sphere diameter for
+        groups (k,l)
+
     Returns
     -------
     Bii_avg : numpy.ndarray
@@ -316,7 +343,7 @@ def calc_Bkl_eff(rho, l_ii_avg, Cmol2seg, dii_avg, epsilonii_avg, x0ii, zetax):
     ) / ((l_ii_avg - 3.0) * (l_ii_avg - 4.0))
 
     tmp11 = rhos * (2.0 * np.pi)
-    tmp12 = (dii_avg ** 3 * constants.molecule_per_nm3 ** 2) * epsilonii_avg
+    tmp12 = (dii_avg**3 * constants.molecule_per_nm3**2) * epsilonii_avg
     tmp2 = (1.0 - (zetax / 2.0)) / ((1.0 - zetax) ** 3)
     tmp3 = (9.0 * zetax * (1.0 + zetax)) / (2.0 * ((1 - zetax) ** 3))
 
@@ -329,30 +356,37 @@ def calc_Bkl_eff(rho, l_ii_avg, Cmol2seg, dii_avg, epsilonii_avg, x0ii, zetax):
 
 
 def calc_da1sii_drhos(rho, Cmol2seg, l_ii_avg, zetax, epsilonii_avg, dii_avg):
-    r""" 
-    Return the derivative of a1s,ii_avg(rho*Cmol2seg,l_ii_avg) with represent to number density in Kelvin 
-    
-    Used in the calculation of the first order term of the perturbation expansion corresponding to the mean-attractive energy.
+    r"""
+    Return the derivative of a1s,ii_avg(rho*Cmol2seg,l_ii_avg) with represent to
+    number density in Kelvin
+
+    Used in the calculation of the first order term of the perturbation expansion
+    corresponding to the mean-attractive energy.
 
     Parameters
     ----------
     rho : numpy.ndarray
         Number density of system [mol/m^3]
     Cmol2seg : float
-        Conversion factor from from molecular number density, :math:`\rho`, to segment (i.e. group) number density, :math:`\rho_S`. Shown in eq. 13
+        Conversion factor from from molecular number density, :math:`\rho`, to segment
+        (i.e. group) number density, :math:`\rho_S`. Shown in eq. 13
     l_ii_avg : numpy.ndarray
         Average bead (i.e. group or segment) exponent in component (i.e. molecule) i.
     zetax : numpy.ndarray
-        Matrix of hypothetical packing fraction based on hard sphere diameter for groups (k,l)
+        Matrix of hypothetical packing fraction based on hard sphere diameter for
+        groups (k,l)
     epsilonii_avg : numpy.ndarray
-        Average bead (i.e. group or segment) potential well depth in component (i.e. molecule) i.
+        Average bead (i.e. group or segment) potential well depth in component (i.e.
+        molecule) i.
     dii_avg : numpy.ndarray
-        Effective hard sphere diameter of the beads (i.e. groups or segments) in component (i.e. molecule) i.
+        Effective hard sphere diameter of the beads (i.e. groups or segments) in
+        component (i.e. molecule) i.
 
     Returns
     -------
     calc_da1sii_drhos : numpy.ndarray
-        Matrix used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy
+        Matrix used in the calculation of :math:`A_1` the first order term of the
+        perturbation expansion corresponding to the mean-attractive energy
     """
     ncomp = len(dii_avg)
     zetax_pow = np.zeros((len(rho), 4), dtype=rho.dtype)
@@ -389,7 +423,7 @@ def calc_da1sii_drhos(rho, Cmol2seg, l_ii_avg, zetax, epsilonii_avg, dii_avg):
         -2.0
         * np.pi
         * (
-            (epsilonii_avg * (dii_avg ** 3 * constants.molecule_per_nm3 ** 2))
+            (epsilonii_avg * (dii_avg**3 * constants.molecule_per_nm3**2))
             / (l_ii_avg - 3.0)
         )
     )
@@ -402,27 +436,34 @@ def calc_da1sii_drhos(rho, Cmol2seg, l_ii_avg, zetax, epsilonii_avg, dii_avg):
 def calc_dBkl_drhos(l_ii_avg, dii_avg, epsilonii_avg, x0ii, zetax):
     r"""
     Return derivative of Bkl(rho*Cmol2seg,l_ii_avg) with respect to :math:`\rho_S`.
-    
-    Used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy.
-    
+
+    Used in the calculation of :math:`A_1` the first order term of the perturbation
+    expansion corresponding to the mean-attractive energy.
+
     Parameters
     ----------
     l_aii_avg : numpy.ndarray
-        Average bead (i.e. group or segment) attractive exponent in component (i.e. molecule) i.
+        Average bead (i.e. group or segment) attractive exponent in component (i.e.
+        molecule) i.
     dii_avg : numpy.ndarray
-        Effective hard sphere diameter of the beads (i.e. groups or segments) in component (i.e. molecule) i.
+        Effective hard sphere diameter of the beads (i.e. groups or segments) in
+        component (i.e. molecule) i.
     epsilonii_avg : numpy.ndarray
-        Average bead (i.e. group or segment) potential well depth in component (i.e. molecule) i.
+        Average bead (i.e. group or segment) potential well depth in component (i.e.
+        molecule) i.
     x0ii : numpy.ndarray
         Matrix of sigmaii_avg/dii_eff
     zetax : numpy.ndarray
-        Matrix of hypothetical packing fraction based on hard sphere diameter for groups (k,l)
-    
+        Matrix of hypothetical packing fraction based on hard sphere diameter for
+        groups (k,l)
+
     Returns
     -------
     dBkl_drhos : numpy.ndarray
-        Matrix used in the calculation of :math:`A_1` the first order term of the perturbation expansion corresponding to the mean-attractive energy, size is rho x l_ii_avg.shape
-    
+        Matrix used in the calculation of :math:`A_1` the first order term of the
+        perturbation expansion corresponding to the mean-attractive energy, size is
+        rho x l_ii_avg.shape
+
     """
     ncomp = len(dii_avg)
     nrho = len(zetax)
@@ -436,7 +477,7 @@ def calc_dBkl_drhos(l_ii_avg, dii_avg, epsilonii_avg, x0ii, zetax):
         + ((x0ii ** (3.0 - l_ii_avg)) * (l_ii_avg - 4.0))
     ) / ((l_ii_avg - 3.0) * (l_ii_avg - 4.0))
 
-    tmp = 2.0 * np.pi * dii_avg ** 3 * epsilonii_avg
+    tmp = 2.0 * np.pi * dii_avg**3 * epsilonii_avg
     tmp1 = np.zeros((nrho, ncomp))
     tmp2 = np.zeros((nrho, ncomp))
     for k in np.arange(ncomp):
@@ -446,13 +487,10 @@ def calc_dBkl_drhos(l_ii_avg, dii_avg, epsilonii_avg, x0ii, zetax):
         tmp2[:, k] = (
             (5.0 - 2.0 * zetax) * zetax / (2 * (1.0 - zetax) ** 4) * Iii_avg[k]
         ) - (
-            (
-                (9.0 * zetax * (zetax ** 2 + 4.0 * zetax + 1))
-                / (2.0 * ((1 - zetax) ** 4))
-            )
+            ((9.0 * zetax * (zetax**2 + 4.0 * zetax + 1)) / (2.0 * ((1 - zetax) ** 4)))
             * Jii_avg[k]
         )
-    dBkl_drhos = tmp * (tmp1 + tmp2) * constants.molecule_per_nm3 ** 2
+    dBkl_drhos = tmp * (tmp1 + tmp2) * constants.molecule_per_nm3**2
 
     return dBkl_drhos
 
@@ -460,29 +498,35 @@ def calc_dBkl_drhos(l_ii_avg, dii_avg, epsilonii_avg, x0ii, zetax):
 def calc_da1iidrhos(
     rho, Cmol2seg, dii_eff, l_aii_avg, l_rii_avg, x0ii, epsilonii_avg, zetax
 ):
-
     r"""
-    Compute derivative of the term, :math:`\bar{a}_{1,ii}` with respect to :math:`\rho_s`
-    
+    Compute derivative of the term,
+    :math:`\bar{a}_{1,ii}` with respect to :math:`\rho_s`
+
     Parameters
     ----------
     rho : numpy.ndarray
         Number density of system [mol/m^3]
     Cmol2seg : float
-        Conversion factor from from molecular number density, :math:`\rho`, to segment (i.e. group) number density, :math:`\rho_S`. Shown in eq. 13
+        Conversion factor from from molecular number density, :math:`\rho`, to segment
+        (i.e. group) number density, :math:`\rho_S`. Shown in eq. 13
     dii_eff : numpy.ndarray
-        Effective hard sphere diameter of the beads (i.e. groups or segments) in component (i.e. molecule) i.
+        Effective hard sphere diameter of the beads (i.e. groups or segments) in
+        component (i.e. molecule) i.
     l_aii_avg : numpy.ndarray
-        Average bead (i.e. group or segment) attractive exponent in component (i.e. molecule) i.
+        Average bead (i.e. group or segment) attractive exponent in component (i.e.
+        molecule) i.
     l_rii_avg : numpy.ndarray
-        Average bead (i.e. group or segment) attractive exponent in component (i.e. molecule) i.
+        Average bead (i.e. group or segment) attractive exponent in component (i.e.
+        molecule) i.
     x0ii : numpy.ndarray
         Matrix of sigmaii_avg/dii_eff
     epsilonii_avg : numpy.ndarray
-        Average bead (i.e. group or segment) potential well depth in component (i.e. molecule) i.
+        Average bead (i.e. group or segment) potential well depth in component (i.e.
+        molecule) i.
     zetax : numpy.ndarray
-        Matrix of hypothetical packing fraction based on hard sphere diameter for groups (k,l)
-    
+        Matrix of hypothetical packing fraction based on hard sphere diameter for
+        groups (k,l)
+
     Returns
     -------
     da1iidrhos : numpy.ndarray
@@ -502,8 +546,8 @@ def calc_da1iidrhos(
     dB_drhos_r = calc_dBkl_drhos(l_rii_avg, dii_eff, epsilonii_avg, x0ii, zetax)
 
     da1iidrhos = Cii * (
-        ((x0ii ** l_aii_avg) * (das1_drhos_a + dB_drhos_a))
-        - ((x0ii ** l_rii_avg) * (das1_drhos_r + dB_drhos_r))
+        ((x0ii**l_aii_avg) * (das1_drhos_a + dB_drhos_a))
+        - ((x0ii**l_rii_avg) * (das1_drhos_r + dB_drhos_r))
     )
 
     return da1iidrhos
@@ -512,43 +556,50 @@ def calc_da1iidrhos(
 def calc_da2ii_1pchi_drhos(
     rho, Cmol2seg, epsilonii_avg, dii_eff, x0ii, l_rii_avg, l_aii_avg, zetax
 ):
-
     r"""
-    Compute derivative of the term, :math:`\frac{\bar{a}_{2,ii}}{1+\bar{\chi}_{ii}}` with respect to :math:`\rho_s`.
-    
+    Compute derivative of the term, :math:`\frac{\bar{a}_{2,ii}}{1+\bar{\chi}_{ii}}`
+    with respect to :math:`\rho_s`.
+
     Parameters
     ----------
     rho : numpy.ndarray
         Number density of system [mol/m^3]
     Cmol2seg : float
-        Conversion factor from from molecular number density, :math:`\rho`, to segment (i.e. group) number density, :math:`\rho_S`. Shown in eq. 13
+        Conversion factor from from molecular number density, :math:`\rho`, to segment
+        (i.e. group) number density, :math:`\rho_S`. Shown in eq. 13
     epsilonii_avg : numpy.ndarray
-        Average bead (i.e. group or segment) potential well depth in component (i.e. molecule) i.
+        Average bead (i.e. group or segment) potential well depth in component (i.e.
+        molecule) i.
     dii_eff : numpy.ndarray
-        Effective hard sphere diameter of the beads (i.e. groups or segments) in component (i.e. molecule) i.
+        Effective hard sphere diameter of the beads (i.e. groups or segments) in
+        component (i.e. molecule) i.
     x0ii : numpy.ndarray
         Matrix of sigmaii_avg/dii_eff
     l_rii_avg : numpy.ndarray
-        Average bead (i.e. group or segment) attractive exponent in component (i.e. molecule) i.
+        Average bead (i.e. group or segment) attractive exponent in component (i.e.
+        molecule) i.
     l_aii_avg : numpy.ndarray
-        Average bead (i.e. group or segment) attractive exponent in component (i.e. molecule) i.
+        Average bead (i.e. group or segment) attractive exponent in component (i.e.
+        molecule) i.
     zetax : numpy.ndarray
-        Matrix of hypothetical packing fraction based on hard sphere diameter for groups (k,l)
-    
+        Matrix of hypothetical packing fraction based on hard sphere diameter for
+        groups (k,l)
+
     Returns
     -------
     da2ii_1pchi_drhos : numpy.ndarray
-        Term used in the calculation of the second-order term from the macroscopic compressibility
-    
+        Term used in the calculation of the second-order term from the macroscopic
+        compressibility
+
     """
 
     # Calculate terms and derivatives used in derivative chain rule
     KHS = ((1.0 - zetax) ** 4) / (
-        1.0 + (4.0 * zetax) + (4.0 * (zetax ** 2)) - (4.0 * (zetax ** 3)) + (zetax ** 4)
+        1.0 + (4.0 * zetax) + (4.0 * (zetax**2)) - (4.0 * (zetax**3)) + (zetax**4)
     )
     dKHS_drhos = (
-        (4.0 * (zetax ** 2 - 5.0 * zetax - 2.0) * (1.0 - zetax) ** 3)
-        / (zetax ** 4 - 4.0 * zetax ** 3 + 4.0 * zetax ** 2 + 4.0 * zetax + 1.0) ** 2
+        (4.0 * (zetax**2 - 5.0 * zetax - 2.0) * (1.0 - zetax) ** 3)
+        / (zetax**4 - 4.0 * zetax**3 + 4.0 * zetax**2 + 4.0 * zetax + 1.0) ** 2
         * (zetax / (rho * Cmol2seg))
     )
 
@@ -603,7 +654,7 @@ def calc_da2ii_1pchi_drhos(
         + x0ii ** (2.0 * l_rii_avg) * (a1sii_2l_rii_avg + Bii_2l_rii_avg)
     )
 
-    dA_B = np.transpose(np.transpose(0.5 * epsilonii_avg * Cii ** 2 * B) * dKHS_drhos)
+    dA_B = np.transpose(np.transpose(0.5 * epsilonii_avg * Cii**2 * B) * dKHS_drhos)
 
     dB = (
         x0ii ** (2.0 * l_aii_avg) * (da1sii_2l_aii_avg + dBii_2l_aii_avg)
@@ -613,7 +664,7 @@ def calc_da2ii_1pchi_drhos(
         + x0ii ** (2.0 * l_rii_avg) * (da1sii_2l_rii_avg + dBii_2l_rii_avg)
     )
 
-    A_dB = np.transpose(np.transpose(0.5 * epsilonii_avg * Cii ** 2 * dB) * KHS)
+    A_dB = np.transpose(np.transpose(0.5 * epsilonii_avg * Cii**2 * dB) * KHS)
 
     da2ii_1pchi_drhos = A_dB + dA_B
 
@@ -622,9 +673,9 @@ def calc_da2ii_1pchi_drhos(
 
 def calc_Iij(rho, T, xi, epsilonii_avg, sigmaii_avg, sigmakl, xskl):
     r"""
-        
+
     Reference fluid pair correlation function used in calculating association sites
-    
+
     Parameters
     ----------
     rho : numpy.ndarray
@@ -640,13 +691,15 @@ def calc_Iij(rho, T, xi, epsilonii_avg, sigmaii_avg, sigmakl, xskl):
     sigmakl : numpy.ndarray
         Matrix of Mie diameter for groups (k,l)
     xskl : numpy.ndarray
-        Matrix of mole fractions of bead (i.e. segment or group) k multiplied by that of bead l
-    
+        Matrix of mole fractions of bead (i.e. segment or group) k multiplied by that
+        of bead l
+
     Returns
     -------
     Iij : numpy.ndarray
-        A temperature-density polynomial correlation of the association integral for a Lennard-Jones monomer. This matrix is (len(rho) x Ncomp x Ncomp)
-    
+        A temperature-density polynomial correlation of the association integral for a
+        Lennard-Jones monomer. This matrix is (len(rho) x Ncomp x Ncomp)
+
     """
 
     ncomp = len(xi)
@@ -662,7 +715,7 @@ def calc_Iij(rho, T, xi, epsilonii_avg, sigmaii_avg, sigmakl, xskl):
             )
             epsilonij[j, i] = epsilonij[i, j]
 
-    sigmax3 = np.sum(xskl * (sigmakl ** 3 * constants.molecule_per_nm3))
+    sigmax3 = np.sum(xskl * (sigmakl**3 * constants.molecule_per_nm3))
 
     cij = np.array(
         [
@@ -815,7 +868,8 @@ def calc_Iij(rho, T, xi, epsilonii_avg, sigmaii_avg, sigmakl, xskl):
     Iij = np.zeros((np.size(rho), ncomp, ncomp))
     for p in range(11):
         for q in range(11 - p):
-            # Iij += np.einsum("i,jk->ijk", cij[p, q] * ((sigmax3 * rho)**p), ((T / epsilonij)**q))
+            # Iij += np.einsum("i,jk->ijk", cij[p, q] * ((sigmax3 * rho)**p),
+            # ((T / epsilonij)**q))
             if p == 0:
                 Iij += np.einsum(
                     "i,jk->ijk", cij[p, q] * np.ones(len(rho)), ((T / epsilonij) ** q)
@@ -825,61 +879,61 @@ def calc_Iij(rho, T, xi, epsilonii_avg, sigmaii_avg, sigmakl, xskl):
                     "i,jk->ijk", cij[p, q] * ((sigmax3 * rho)), ((T / epsilonij) ** q)
                 )
             elif p == 2:
-                rho2 = rho ** 2
+                rho2 = rho**2
                 Iij += np.einsum(
                     "i,jk->ijk",
-                    cij[p, q] * ((sigmax3 ** p * rho2)),
+                    cij[p, q] * ((sigmax3**p * rho2)),
                     ((T / epsilonij) ** q),
                 )
             elif p == 3:
                 rho3 = rho2 * rho
                 Iij += np.einsum(
                     "i,jk->ijk",
-                    cij[p, q] * ((sigmax3 ** p * rho3)),
+                    cij[p, q] * ((sigmax3**p * rho3)),
                     ((T / epsilonij) ** q),
                 )
             elif p == 4:
-                rho4 = rho2 ** 2
+                rho4 = rho2**2
                 Iij += np.einsum(
                     "i,jk->ijk",
-                    cij[p, q] * ((sigmax3 ** p * rho4)),
+                    cij[p, q] * ((sigmax3**p * rho4)),
                     ((T / epsilonij) ** q),
                 )
             elif p == 5:
                 rho5 = rho2 * rho3
                 Iij += np.einsum(
                     "i,jk->ijk",
-                    cij[p, q] * ((sigmax3 ** p * rho5)),
+                    cij[p, q] * ((sigmax3**p * rho5)),
                     ((T / epsilonij) ** q),
                 )
             elif p == 6:
                 Iij += np.einsum(
                     "i,jk->ijk",
-                    cij[p, q] * ((sigmax3 ** p * rho * rho5)),
+                    cij[p, q] * ((sigmax3**p * rho * rho5)),
                     ((T / epsilonij) ** q),
                 )
             elif p == 7:
                 Iij += np.einsum(
                     "i,jk->ijk",
-                    cij[p, q] * ((sigmax3 ** p * rho2 * rho5)),
+                    cij[p, q] * ((sigmax3**p * rho2 * rho5)),
                     ((T / epsilonij) ** q),
                 )
             elif p == 8:
                 Iij += np.einsum(
                     "i,jk->ijk",
-                    cij[p, q] * ((sigmax3 ** p * rho3 * rho5)),
+                    cij[p, q] * ((sigmax3**p * rho3 * rho5)),
                     ((T / epsilonij) ** q),
                 )
             elif p == 9:
                 Iij += np.einsum(
                     "i,jk->ijk",
-                    cij[p, q] * ((sigmax3 ** p * rho4 * rho5)),
+                    cij[p, q] * ((sigmax3**p * rho4 * rho5)),
                     ((T / epsilonij) ** q),
                 )
             elif p == 10:
                 Iij += np.einsum(
                     "i,jk->ijk",
-                    cij[p, q] * ((sigmax3 ** p * rho5 * rho5)),
+                    cij[p, q] * ((sigmax3**p * rho5 * rho5)),
                     ((T / epsilonij) ** q),
                 )
 

@@ -1,5 +1,6 @@
 r"""
-Objects for storing and producing objective values for comparing experimental data to EOS predictions.    
+Objects for storing and producing objective values for comparing experimental data to
+EOS predictions.
 """
 
 import numpy as np
@@ -13,34 +14,47 @@ from despasito import fundamental_constants as constants
 
 logger = logging.getLogger(__name__)
 
+
 ##################################################################
 #                                                                #
 #                              TLVE                              #
 #                                                                #
 ##################################################################
 class Data(ExpDataTemplate):
-
     r"""
-    Object for Temperature dependent VLE data. 
+    Object for Temperature dependent VLE data.
 
-    This object is initiated in :func:`~despasito.parameter_fitting.fit` with the keyword, ``exp_data[*]["data_class_type"]="TLVE"``.
+    This object is initiated in :func:`~despasito.parameter_fitting.fit` with the
+    keyword, ``exp_data[*]["data_class_type"]="TLVE"``.
 
-    This data could be evaluated with :func:`~despasito.thermodynamics.calculation_types.bubble_pressure` or :func:`~despasito.thermodynamics.calculation_types.dew_pressure`. Most entries in the exp. dictionary are converted to attributes. 
+    This data could be evaluated with
+    :func:`~despasito.thermodynamics.calculation_types.bubble_pressure` or
+    :func:`~despasito.thermodynamics.calculation_types.dew_pressure`. Most entries in
+    the exp. dictionary are converted to attributes.
 
     Parameters
     ----------
     data_dict : dict
         Dictionary of exp data of TLVE temperature dependent liquid vapor equilibria
 
-        * calculation_type (str) - Optional, default='bubble_pressure', However, 'dew_pressure' is also acceptable
-        * MultiprocessingObject (obj) - Optional, Initiated :class:`~despasito.utils.parallelization.MultiprocessingJob`
+        * calculation_type (str) - Optional, default='bubble_pressure', However,
+        'dew_pressure' is also acceptable
+        * MultiprocessingObject (obj) - Optional, Initiated
+        :class:`~despasito.utils.parallelization.MultiprocessingJob`
         * eos_obj (obj) - Equation of state object
         * T (list) - List of temperature values for calculation
         * P (list) - [Pa] List of pressure values for evaluation
-        * xi(yi) (list) - List of liquid (or vapor) mole fractions used in bubble_pressure (or dew_pressure) calculation.
-        * weights (dict) - A dictionary where each key is a system constraint (e.g. T or xi) which is also a header used in an optional exp. data file. The value associated with a header can be a list as long as the number of data points to multiply by the objective value associated with each point, or a float to multiply the objective value of this data set.
-        * density_opts (dict) - Optional, default={}, Dictionary of options used in calculating pressure vs. mole fraction curves.
-        * kwargs for :func:`~despasito.parameter_fitting.fit_functions.obj_function_form`
+        * xi(yi) (list) - List of liquid (or vapor) mole fractions used in
+        bubble_pressure (or dew_pressure) calculation.
+        * weights (dict) - A dictionary where each key is a system constraint
+        (e.g. T or xi) which is also a header used in an optional exp. data file.
+        The value associated with a header can be a list as long as the number of
+        data points to multiply by the objective value associated with each point,
+        or a float to multiply the objective value of this data set.
+        * density_opts (dict) - Optional, default={}, Dictionary of options used in
+        calculating pressure vs. mole fraction curves.
+        * kwargs for
+        :func:`~despasito.parameter_fitting.fit_functions.obj_function_form`
 
     Attributes
     ----------
@@ -49,20 +63,24 @@ class Data(ExpDataTemplate):
     Eos : obj
         Equation of state object
     obj_opts : dict
-        Keywords to compute the objective function with :func:`~despasito.parameter_fitting.fit_functions.obj_function_form`.
+        Keywords to compute the objective function with
+        :func:`~despasito.parameter_fitting.fit_functions.obj_function_form`.
     npoints : int
         Number of sets of system conditions this object computes
     result_keys : list
-        Thermodynamic property names used in calculation of objective function. In in this case: ["Plist", 'xilist'] or ["Plist", 'yilist']
+        Thermodynamic property names used in calculation of objective function. In in
+        this case: ["Plist", 'xilist'] or ["Plist", 'yilist']
     thermodict : dict
         Dictionary of inputs needed for thermodynamic calculations
-    
+
         - calculation_type (str) default=bubble_pressure or dew_pressure
-        - density_opts (dict) default={"min_density_fraction":(1.0 / 300000.0), "density_increment":10.0, "max_volume_increment":1.0E-4}
+        - density_opts (dict) default={"min_density_fraction":(1.0 / 300000.0),
+        "density_increment":10.0, "max_volume_increment":1.0E-4}
 
     weights : dict, Optional, default: {"some_property": 1.0 ...}
-        Dictionary with keys corresponding to those in thermodict, with weighting factor or vector for each system property used in fitting
-  
+        Dictionary with keys corresponding to those in thermodict, with weighting
+        factor or vector for each system property used in fitting
+
     """
 
     def __init__(self, data_dict):
@@ -127,19 +145,22 @@ class Data(ExpDataTemplate):
         thermo_keys = ["xilist", "yilist", "Plist"]
         if not any([key in self.thermodict for key in thermo_keys]):
             raise ImportError(
-                "Given TLVE data, mole fractions and/or pressure should have been provided."
+                "Given TLVE data, mole fractions and/or pressure should have been "
+                "provided."
             )
 
-        if self.thermodict["calculation_type"] == None:
+        if self.thermodict["calculation_type"] is None:
             if self.thermodict["xilist"]:
                 self.thermodict["calculation_type"] = "bubble_pressure"
                 logger.warning(
-                    "No calculation type has been provided. Assume a calculation type of bubble_pressure"
+                    "No calculation type has been provided. Assume a calculation type "
+                    "of bubble_pressure"
                 )
             elif self.thermodict["yilist"]:
                 self.thermodict["calculation_type"] = "dew_pressure"
                 logger.warning(
-                    "No calculation type has been provided. Assume a calculation type of dew_pressure"
+                    "No calculation type has been provided. Assume a calculation type"
+                    " of dew_pressure"
                 )
             else:
                 raise ValueError("Unknown calculation instructions")
@@ -152,7 +173,8 @@ class Data(ExpDataTemplate):
             del self.weights["yilist"]
 
         logger.info(
-            "Data type 'TLVE' initiated with calculation_type, {}, and data types: {}.\nWeight data by: {}".format(
+            "Data type 'TLVE' initiated with calculation_type, {}, and data "
+            "types: {}.\nWeight data by: {}".format(
                 self.thermodict["calculation_type"],
                 ", ".join(self.result_keys),
                 self.weights,
@@ -160,14 +182,14 @@ class Data(ExpDataTemplate):
         )
 
     def _thermo_wrapper(self):
-
         """
         Generate thermodynamic predictions from Eos object
 
         Returns
         -------
         phase_list : float
-            A list of the predicted thermodynamic values estimated from thermo calculation. This list can be composed of lists or floats
+            A list of the predicted thermodynamic values estimated from thermo
+            calculation. This list can be composed of lists or floats
         """
 
         # Remove results
@@ -194,7 +216,6 @@ class Data(ExpDataTemplate):
         return output
 
     def objective(self):
-
         """
         Generate objective function value from this dataset
 

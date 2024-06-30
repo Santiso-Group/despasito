@@ -15,7 +15,10 @@ def solve_root(func, args=(), method="bisect", x0=None, bounds=None, options={})
     Parameters
     ----------
     func : function
-        Function used in job. Can be any of the following scipy methods: "brent", "least_squares", "TNC", "L-BFGS-B", "SLSQP", 'hybr', 'lm', 'linearmixing', 'diagbroyden', 'excitingmixing', 'krylov', 'df-sane', 'anderson', 'hybr_broyden1', 'hybr_broyden2', 'broyden1', 'broyden2', 'bisect'.
+        Function used in job. Can be any of the following scipy methods: "brent",
+        "least_squares", "TNC", "L-BFGS-B", "SLSQP", 'hybr', 'lm', 'linearmixing',
+        'diagbroyden', 'excitingmixing', 'krylov', 'df-sane', 'anderson',
+        'hybr_broyden1', 'hybr_broyden2', 'broyden1', 'broyden2', 'bisect'.
     args : tuple, Optional, default=()
         Each entry of this list contains the input arguments for each job
     method : str, Optional, default="bisect"
@@ -23,7 +26,7 @@ def solve_root(func, args=(), method="bisect", x0=None, bounds=None, options={})
     x0 : float, Optional, default=None
         Initial guess in parameter to be optimized
     bounds : tuple, Optional, default=None
-         Parameter boundaries
+        Parameter boundaries
     options : dict, Optional, default={}
         These options are used in the scipy method
 
@@ -75,9 +78,8 @@ def solve_root(func, args=(), method="bisect", x0=None, bounds=None, options={})
     ]:
         if np.any(bounds is None):
             raise ValueError(
-                "Optimization method, {}, requires x0. Because bounds were not provided, so problem cannot be solved.".format(
-                    method
-                )
+                "Optimization method, {}, requires x0. Because bounds were"
+                " not provided, so problem cannot be solved.".format(method)
             )
         else:
             logger.error(
@@ -105,9 +107,8 @@ def solve_root(func, args=(), method="bisect", x0=None, bounds=None, options={})
     if np.any(bounds is None) and method in ["brentq", "bisect"]:
         if x0 is None:
             raise ValueError(
-                "Optimization method, {}, requires bounds. Because x0 was not provided, so problem cannot be solved.".format(
-                    method
-                )
+                "Optimization method, {}, requires bounds. ".format(method)
+                + "Because x0 was not provided, so problem cannot be solved."
             )
         else:
             logger.error(
@@ -120,7 +121,7 @@ def solve_root(func, args=(), method="bisect", x0=None, bounds=None, options={})
             if len(bnd) != 2:
                 raise ValueError("bounds are not of length two")
 
-    #################### Root Finding without Boundaries ###################
+    # ################### Root Finding without Boundaries ###################
     if method in ["broyden1", "broyden2"]:
         outer_dict = {
             "fatol": 1e-5,
@@ -164,7 +165,7 @@ def solve_root(func, args=(), method="bisect", x0=None, bounds=None, options={})
         )
         sol = spo.root(func, x0, args=args, method=method, options=outer_dict)
 
-    #################### Minimization Methods with Boundaries ###################
+    # ################### Minimization Methods with Boundaries ###################
     elif method in ["TNC", "L-BFGS-B"]:
         outer_dict = {
             "gtol": 1e-2 * np.sqrt(np.finfo("float").eps),
@@ -209,7 +210,7 @@ def solve_root(func, args=(), method="bisect", x0=None, bounds=None, options={})
         else:
             sol = spo.minimize(func, x0, args=args, method=method, options=outer_dict)
 
-    #################### Root Finding with Boundaries ###################
+    # ################### Root Finding with Boundaries ###################
     elif method == "brentq":
         outer_dict = {"rtol": 1e-7}
         for key, value in options.items():
@@ -266,25 +267,33 @@ def solve_root(func, args=(), method="bisect", x0=None, bounds=None, options={})
 
 def central_difference(x, func, step_size=1e-5, relative=False, args=()):
     """
-    Take the derivative of a dependent variable calculated with a given function using the central difference method.
-    
+    Take the derivative of a dependent variable calculated with a given function using
+    the central difference method.
+
     Parameters
     ----------
     x : numpy.ndarray
-        Independent variable to take derivative with respect too, using the central difference method. Must be first input of the function.
+        Independent variable to take derivative with respect too, using the central
+        difference method. Must be first input of the function.
     func : function
-        Function used in job to calculate dependent factor. This function should have a single output.
+        Function used in job to calculate dependent factor. This function should have
+        a single output.
     step_size : float, Optional, default=1E-5
-        Either the step size used in the central difference method, or if ``relative=True``, this variable is a scaling factor so that the step size for each value of x is x * step_size.
+        Either the step size used in the central difference method, or if
+        ``relative=True``, this variable is a scaling factor so that the step size for
+        each value of x is x * step_size.
     args : tuple, Optional, default=()
         Each entry of this list contains the input arguments for each job
     relative : bool, Optional, default=False
-        If False, the step_size is directly used to calculate the derivative. If true, step_size becomes a scaling factor, where the step size for each value of x becomes step_size*x.
+        If False, the step_size is directly used to calculate the derivative. If true,
+        step_size becomes a scaling factor, where the step size for each value of x
+        becomes step_size*x.
 
     Returns
     -------
     dydx : numpy.ndarray
-        Array of derivative of y with respect to x, given an array of independent variables.
+        Array of derivative of y with respect to x, given an array of independent
+        variables.
     """
 
     if not isiterable(x):
@@ -303,7 +312,7 @@ def central_difference(x, func, step_size=1e-5, relative=False, args=()):
         step = step_size
 
     y = func(np.append(x + step, x - step), *args)
-    lx = int(len(y)/2)
+    lx = int(len(y) / 2)
     dydx = (y[:lx] - y[lx:]) / (2.0 * step)
 
     return dydx
@@ -313,7 +322,8 @@ def isiterable(array):
     """
     Check if variable is an iterable type with a length (e.g. np.array or list).
 
-    Note that this could be tested with ``isinstance(array, Iterable)``, however ``array=np.array(1.0)`` would pass that test and then fail in ``len(array)``.
+    Note that this could be tested with ``isinstance(array, Iterable)``, however
+    ``array=np.array(1.0)`` would pass that test and then fail in ``len(array)``.
 
     Parameters
     ----------
@@ -337,16 +347,19 @@ def isiterable(array):
 
 
 def check_length_dict(dictionary, keys, lx=None):
-
     """
-    This function compared the entries, keys, in the provided dictionary to ensure they're the same length.
+    This function compared the entries, keys, in the provided dictionary to ensure
+    they're the same length.
 
-    All entries in the list ``keys``, will be made into numpy arrays (if present). If a float or array of length one is provided, it will be expanded to the length of other arrays.
+    All entries in the list ``keys``, will be made into numpy arrays (if present).
+    If a float or array of length one is provided, it will be expanded to the length
+    of other arrays.
 
     Parameters
     ----------
     dictionary : dict
-        Dictionary containing all or some of the keywords, ``keys``, of what should be arrays of identical size.
+        Dictionary containing all or some of the keywords, ``keys``, of what should
+        be arrays of identical size.
     keys : list
         Possible keywords representing array entries
     lx : int, Optional, default=None
@@ -359,7 +372,7 @@ def check_length_dict(dictionary, keys, lx=None):
 
     """
 
-    if lx == None:
+    if lx is None:
         lx_array = []
         for key in keys:
             if key in dictionary:
@@ -395,9 +408,9 @@ def check_length_dict(dictionary, keys, lx=None):
 
 
 def set_defaults(dictionary, keys, values, lx=None):
-
     """
-    This function checks a dictionary for the given keys, and if it's not there, the appropriate value is added to the dictionary.
+    This function checks a dictionary for the given keys, and if it's not there, the
+    appropriate value is added to the dictionary.
 
     Parameters
     ----------
@@ -408,7 +421,8 @@ def set_defaults(dictionary, keys, values, lx=None):
     values : list
         Default values for the keys that aren't in dictionary
     lx : int, Optional, default=None
-        If not None, and values[i] is a float, the key will be set to an array of length, ``lx``, populated by ``values[i]`` 
+        If not None, and values[i] is a float, the key will be set to an array of
+        length, ``lx``, populated by ``values[i]``
 
     Returns
     -------
@@ -442,7 +456,7 @@ def set_defaults(dictionary, keys, values, lx=None):
     for i, key in enumerate(keys):
         if key not in dictionary:
             tmp = values[i]
-            if not isiterable(tmp) and lx != None:
+            if not isiterable(tmp) and lx is not None:
                 new_dictionary[key] = np.ones(lx) * tmp
             else:
                 new_dictionary[key] = tmp

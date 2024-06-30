@@ -1,6 +1,7 @@
 """
 
-The function names of this module represents global optimization methods that can be specified as ``global_opts["method"]`` in :func:`~despasito.parameter_fitting.fit`.
+The function names of this module represents global optimization methods that can be
+specified as ``global_opts["method"]`` in :func:`~despasito.parameter_fitting.fit`.
 
 """
 
@@ -24,18 +25,24 @@ def single_objective(
 
     Parameters
     ----------
-    parameters_guess : numpy.ndarray 
+    parameters_guess : numpy.ndarray
         An array of initial guesses for parameters.
     bounds : list[tuple]
-        List of length equal to fit_parameter_names with lists of pairs for minimum and maximum bounds of parameter being fit. Defaults from Eos object are broad, so we recommend specification.
+        List of length equal to fit_parameter_names with lists of pairs for minimum
+        and maximum bounds of parameter being fit. Defaults from Eos object are broad,
+        so we recommend specification.
     fit_bead : str
         Name of bead whose parameters are being fit.
     fit_parameter_names : list[str]
-        This list contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
+        This list contains the name of the parameter being fit (e.g. epsilon). See
+        EOS documentation for supported parameter names. Cross interaction parameter
+        names should be composed of parameter name and the other bead type, separated
+        by an underscore (e.g. epsilon_CO2).
     exp_dict : dict
         Dictionary of experimental data objects.
     global_opts : dict, Optional, default={}
-        This dictionary is included for continuity with other global optimization methods, although this method doesn't have options.
+        This dictionary is included for continuity with other global optimization
+        methods, although this method doesn't have options.
 
     Returns
     -------
@@ -74,30 +81,41 @@ def differential_evolution(
     constraints=None,
 ):
     r"""
-    Fit defined parameters for equation of state object using scipy.optimize.differential_evolution with given experimental data. 
+    Fit defined parameters for equation of state object using
+    scipy.optimize.differential_evolution with given experimental data.
 
     Parameters
     ----------
-    parameters_guess : numpy.ndarray 
+    parameters_guess : numpy.ndarray
         An array of initial guesses for parameters. Not used in this method.
     bounds : list[tuple]
-        List of length equal to fit_parameter_names with lists of pairs for minimum and maximum bounds of parameter being fit. Defaults from Eos object are broad, so we recommend specification.
+        List of length equal to fit_parameter_names with lists of pairs for minimum
+        and maximum bounds of parameter being fit. Defaults from Eos object are broad,
+        so we recommend specification.
     fit_bead : str
         Name of bead whose parameters are being fit.
     fit_parameter_names : list[str]
-        This list contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
+        This list contains the name of the parameter being fit (e.g. epsilon). See EOS
+        documentation for supported parameter names. Cross interaction parameter names
+        should be composed of parameter name and the other bead type, separated by an
+        underscore (e.g. epsilon_CO2).
     exp_dict : dict
         Dictionary of experimental data objects.
     global_opts : dict, Optional
 
         - init (str) - Optional, default="random", type of initiation for population
-        - write_intermediate_file (str) - Optional, default=False, If True, an intermediate file will be written from the method callback
-        - filename (str) - Optional, default=None, filename for callback output, if provided, ``write_intermediate_file`` will be set to True
-        - obj_cut (float) - Optional, default=None, Cut-off objective value to write the parameters, if provided, ``write_intermediate_file`` will be set to True
-        - etc. Other keywords for scipy.optimize.differential_evolution use the function defaults
+        - write_intermediate_file (str) - Optional, default=False, If True, an
+        intermediate file will be written from the method callback
+        - filename (str) - Optional, default=None, filename for callback output, if
+        provided, ``write_intermediate_file`` will be set to True
+        - obj_cut (float) - Optional, default=None, Cut-off objective value to write
+        the parameters, if provided, ``write_intermediate_file`` will be set to True
+        - etc. Other keywords for scipy.optimize.differential_evolution use the
+        function defaults
 
     constraints : dict, Optional, default=None
-        This dictionary of constraint types and their arguments will be converted into a tuple of constraint classes that is compatible
+        This dictionary of constraint types and their arguments will be converted into
+        a tuple of constraint classes that is compatible
 
     Returns
     -------
@@ -175,18 +193,24 @@ def shgo(
     constraints=None,
 ):
     r"""
-    Fit defined parameters for equation of state object using scipy.optimize.shgo with given experimental data. 
+    Fit defined parameters for equation of state object using scipy.optimize.shgo with
+    given experimental data.
 
     Parameters
     ----------
-    parameters_guess : numpy.ndarray 
+    parameters_guess : numpy.ndarray
         An array of initial guesses for parameters.
     bounds : list[tuple]
-        List of length equal to fit_parameter_names with lists of pairs for minimum and maximum bounds of parameter being fit. Defaults from Eos object are broad, so we recommend specification.
+        List of length equal to fit_parameter_names with lists of pairs for minimum
+        and maximum bounds of parameter being fit. Defaults from Eos object are broad,
+        so we recommend specification.
     fit_bead : str
         Name of bead whose parameters are being fit.
     fit_parameter_names : list[str]
-        This list contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
+        This list contains the name of the parameter being fit (e.g. epsilon). See EOS
+        documentation for supported parameter names. Cross interaction parameter names
+        should be composed of parameter name and the other bead type, separated by an
+        underscore (e.g. epsilon_CO2).
     exp_dict : dict
         Dictionary of experimental data objects.
     global_opts : dict, Optional, default={}
@@ -197,11 +221,14 @@ def shgo(
     minimizer_opts : dict, Optional, default={}
         Dictionary used to define minimization type and the associated options.
 
-        - method (str) - Optional, default=nelder-mead, Method available to scipy.optimize.minimize
-        - options (dict) - Optional, default={'maxiter': 50}, This dictionary contains the kwargs available to the chosen method
+        - method (str) - Optional, default=nelder-mead, Method available to
+        scipy.optimize.minimize
+        - options (dict) - Optional, default={'maxiter': 50}, This dictionary contains
+        the kwargs available to the chosen method
 
     constraints : dict, Optional, default=None
-        This dictionary of constraint types and their arguments will be converted into a tuple of dictionaries that is compatible
+        This dictionary of constraint types and their arguments will be converted into
+        a tuple of dictionaries that is compatible
 
     Returns
     -------
@@ -268,35 +295,50 @@ def grid_minimization(
     constraints=None,
 ):
     r"""
-    Fit defined parameters for equation of state object using a custom adaptation of scipy.optimize.brute with given experimental data. 
+    Fit defined parameters for equation of state object using a custom adaptation of
+    scipy.optimize.brute with given experimental data.
 
     Parameters
     ----------
-    parameters_guess : numpy.ndarray 
+    parameters_guess : numpy.ndarray
         An array of initial guesses for parameters.
     bounds : list[tuple]
-        List of length equal to fit_parameter_names with lists of pairs for minimum and maximum bounds of parameter being fit. Defaults from Eos object are broad, so we recommend specification.
+        List of length equal to fit_parameter_names with lists of pairs for minimum
+        and maximum bounds of parameter being fit. Defaults from Eos object are broad,
+        so we recommend specification.
     fit_bead : str
         Name of bead whose parameters are being fit.
     fit_parameter_names : list[str]
-        This list contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
+        This list contains the name of the parameter being fit (e.g. epsilon). See EOS
+        documentation for supported parameter names. Cross interaction parameter names
+        should be composed of parameter name and the other bead type, separated by an
+        underscore (e.g. epsilon_CO2).
     exp_dict : dict
         Dictionary of experimental data objects.
     global_opts : dict, Optional, default={}
 
         - Ns (int) - Optional, default=5, Number of grid points along the axes
-        - finish (callable) - Optional, default=scipy.optimize.minimize, A minimization function
-        - initial_guesses (list) - Optional, Replaces grid of values generated with bounds and Ns
-        - split_grid_minimization (int) - Optional, default=0, Choose index of first parameter to fit, while the grid is formed from those before. For example, if 4 parameters are defined and ``split_grid_minimization==2``, then a grid is formed for the first two parameters ``parameters_guess[:2]``, and the remaining parameters, ``parameters_guess[2:]`` are minimized.
+        - finish (callable) - Optional, default=scipy.optimize.minimize, A minimization
+        function
+        - initial_guesses (list) - Optional, Replaces grid of values generated with
+        bounds and Ns
+        - split_grid_minimization (int) - Optional, default=0, Choose index of first
+        parameter to fit, while the grid is formed from those before. For example, if
+        4 parameters are defined and ``split_grid_minimization==2``, then a grid is
+        formed for the first two parameters ``parameters_guess[:2]``, and the remaining
+        parameters, ``parameters_guess[2:]`` are minimized.
 
     minimizer_opts : dict, Optional, default={}
         Dictionary used to define minimization type and the associated options.
 
-        - method (str) - Optional, default="least_squares", Method available to our :func:`~despasito.utils.general_toolbox.solve_root` function
-        - options (dict) - Optional, default={}, This dictionary contains the kwargs available to the chosen method
+        - method (str) - Optional, default="least_squares", Method available to our
+        :func:`~despasito.utils.general_toolbox.solve_root` function
+        - options (dict) - Optional, default={}, This dictionary contains the kwargs
+        available to the chosen method
 
     constraints : dict, Optional, default=None
-        This dictionary of constraint types and their arguments will be converted into a tuple of constraint classes that is compatible
+        This dictionary of constraint types and their arguments will be converted into
+        a tuple of constraint classes that is compatible
 
     Returns
     -------
@@ -353,10 +395,14 @@ def grid_minimization(
             bounds = bounds[global_opts["split_grid_minimization"]:]
             for x0 in x0_array:
                 tmp1 = x0[global_opts["split_grid_minimization"]:]
-                tmp2 = x0[:global_opts["split_grid_minimization"]]
-                inputs.append((tmp1, (*args, tmp2), bounds, constraints, minimizer_opts))
+                tmp2 = x0[: global_opts["split_grid_minimization"]]
+                inputs.append(
+                    (tmp1, (*args, tmp2), bounds, constraints, minimizer_opts)
+                )
         else:
-            inputs = [(x0, args, bounds, constraints, minimizer_opts) for x0 in x0_array]
+            inputs = [
+                (x0, args, bounds, constraints, minimizer_opts) for x0 in x0_array
+            ]
 
     else:
         # Initialization based on implementation in scipy.optimize.brute
@@ -371,8 +417,8 @@ def grid_minimization(
         else:
             if not isinstance(global_opts["split_grid_minimization"], int):
                 raise ValueError("Option, split_grid_minimization, must be an integer")
-            N = len(bounds[:global_opts["split_grid_minimization"]])
-            lrange = list(bounds[:global_opts["split_grid_minimization"]])
+            N = len(bounds[: global_opts["split_grid_minimization"]])
+            lrange = list(bounds[: global_opts["split_grid_minimization"]])
             for k in range(N):
                 if lrange[k] is not None:
                     if len(lrange[k]) < 3:
@@ -389,10 +435,17 @@ def grid_minimization(
             x0_array = np.reshape(x0_array, (inpt_shape[0], np.prod(inpt_shape[1:]))).T
 
         if global_opts["split_grid_minimization"] != 0:
-            min_parameters = list(parameters_guess[global_opts["split_grid_minimization"]:])
-            inputs = [(min_parameters, (*args, x0), bounds, constraints, minimizer_opts) for x0 in x0_array]
+            min_parameters = list(
+                parameters_guess[global_opts["split_grid_minimization"]:]
+            )
+            inputs = [
+                (min_parameters, (*args, x0), bounds, constraints, minimizer_opts)
+                for x0 in x0_array
+            ]
         else:
-            inputs = [(x0, args, bounds, constraints, minimizer_opts) for x0 in x0_array]
+            inputs = [
+                (x0, args, bounds, constraints, minimizer_opts) for x0 in x0_array
+            ]
 
     lx = len(x0_array)
 
@@ -409,14 +462,17 @@ def grid_minimization(
     # Choose final output
     if global_opts["split_grid_minimization"] != 0:
         if "initial_guesses" not in global_opts:
-            x0_new = np.zeros((lx,len(parameters_guess)))
-        results_new = np.zeros((lx,len(parameters_guess)))
+            x0_new = np.zeros((lx, len(parameters_guess)))
+        results_new = np.zeros((lx, len(parameters_guess)))
         for i in range(len(x0_array)):
             if "initial_guesses" not in global_opts:
-                x0_new[i] = np.array(list(x0_array[i])+list(min_parameters))
-                results_new[i] = np.array(list(x0_array[i])+list(results[i]))
+                x0_new[i] = np.array(list(x0_array[i]) + list(min_parameters))
+                results_new[i] = np.array(list(x0_array[i]) + list(results[i]))
             else:
-                results_new[i] = np.array(list(x0_array[i][:global_opts["split_grid_minimization"]])+list(results[i]))
+                results_new[i] = np.array(
+                    list(x0_array[i][: global_opts["split_grid_minimization"]])
+                    + list(results[i])
+                )
         results = results_new
         if "initial_guesses" not in global_opts:
             x0_array = x0_new
@@ -434,7 +490,11 @@ def grid_minimization(
         fun=result[0],
         success=True,
         nit=lx,
-        message="Termination successful with {} grid points and the minimum value minimized. Note that parameters may be outside of the given bounds because of the minimizing function.".format(lx),
+        message=(
+            "Termination successful with {} grid points and".format(lx)
+            + " the minimum value minimized. Note that parameters may be outside of"
+            " the given bounds because of the minimizing function."
+        ),
     )
 
     return result
@@ -444,24 +504,31 @@ def brute(
     parameters_guess, bounds, fit_bead, fit_parameter_names, exp_dict, global_opts={}
 ):
     r"""
-    Fit defined parameters for equation of state object using scipy.optimize.brute with given experimental data. 
+    Fit defined parameters for equation of state object using scipy.optimize.brute with
+    given experimental data.
 
     Parameters
     ----------
-    parameters_guess : numpy.ndarray 
+    parameters_guess : numpy.ndarray
         An array of initial guesses for parameters.
     bounds : list[tuple]
-        List of length equal to fit_parameter_names with lists of pairs for minimum and maximum bounds of parameter being fit. Defaults from Eos object are broad, so we recommend specification.
+        List of length equal to fit_parameter_names with lists of pairs for minimum and
+        maximum bounds of parameter being fit. Defaults from Eos object are broad, so we
+        recommend specification.
     fit_bead : str
         Name of bead whose parameters are being fit.
     fit_parameter_names : list[str]
-        This list contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
+        This list contains the name of the parameter being fit (e.g. epsilon). See EOS
+        documentation for supported parameter names. Cross interaction parameter names
+        should be composed of parameter name and the other bead type, separated by an
+        underscore (e.g. epsilon_CO2).
     exp_dict : dict
         Dictionary of experimental data objects.
     global_opts : dict, Optional, default={}
 
         - Ns (int) - Optional, default=5, Number of grid points along the axes
-        - finish (callable) - Optional, default=scipy.optimize.minimize, An optimization function
+        - finish (callable) - Optional, default=scipy.optimize.minimize, An optimization
+        function
         - etc. Other keywords for scipy.optimize.brute use the function defaults
 
     Returns
@@ -500,8 +567,10 @@ def brute(
         fun=fval,
         success=True,
         nit=len(x0) * global_opts["Ns"],
-        message="Termination successful with {} grid points and the minimum value minimized. Note that parameters may be outside of the given bounds because of the minimizing function.".format(
-            len(x0) * global_opts["Ns"]
+        message=(
+            "Termination successful with {} grid points and the minimum value "
+            "minimized. Note that parameters may be outside of the given bounds "
+            "because of the minimizing function.".format(len(x0) * global_opts["Ns"])
         ),
     )
 
@@ -518,43 +587,58 @@ def basinhopping(
     minimizer_opts={},
 ):
     r"""
-    Fit defined parameters for equation of state object using scipy.optimize.basinhopping with given experimental data. 
+    Fit defined parameters for equation of state object using
+    scipy.optimize.basinhopping with given experimental data.
 
     Parameters
     ----------
-    parameters_guess : numpy.ndarray 
+    parameters_guess : numpy.ndarray
         An array of initial guesses for parameters.
     bounds : list[tuple]
-        List of length equal to fit_parameter_names with lists of pairs for minimum and maximum bounds of parameter being fit. Defaults from Eos object are broad, so we recommend specification.
+        List of length equal to fit_parameter_names with lists of pairs for minimum and
+        maximum bounds of parameter being fit. Defaults from Eos object are broad, so
+        we recommend specification.
     fit_bead : str
         Name of bead whose parameters are being fit.
     fit_parameter_names : list[str]
-        This list contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
+        This list contains the name of the parameter being fit (e.g. epsilon). See EOS
+        documentation for supported parameter names. Cross interaction parameter names
+        should be composed of parameter name and the other bead type, separated by an
+        underscore (e.g. epsilon_CO2).
     exp_dict : dict
         Dictionary of experimental data objects.
     global_opts : dict, Optional, default={}
 
-        - niter (int) - Optional, default=10, The number of basin-hopping iterations 
-        - T (float) - Optional, default=0.5, The "temperature" parameter for the accept or reject criterion. For best results T should be comparable to the separation (in function value) between local minima.
-        - niter_success (int) Optional, default=3, Stop the run if the global minimum candidate remains the same for this number of iterations.
-        - stepsize (float) - Optional, default=0.1, Maximum step size for use in the random displacement.
+        - niter (int) - Optional, default=10, The number of basin-hopping iterations
+        - T (float) - Optional, default=0.5, The "temperature" parameter for the accept
+        or reject criterion. For best results T should be comparable to the separation
+        (in function value) between local minima.
+        - niter_success (int) Optional, default=3, Stop the run if the global minimum
+        candidate remains the same for this number of iterations.
+        - stepsize (float) - Optional, default=0.1, Maximum step size for use in the
+        random displacement.
         - take_step (callable) - Set with custom BasinStep class
-        - write_intermediate_file (str) - Optional, default=False, If True, an intermediate file will be written from the method callback
-        - filename (str) - Optional, default=None, filename for callback output, if provided, `write_intermediate_file` will be set to True
-        - obj_cut (float) - Optional, default=None, Cut-off objective value to write the parameters, if provided, `write_intermediate_file` will be set to True
-        - etc. Other keywords for scipy.optimize.basinhopping use the function defaults
+        - write_intermediate_file (str) - Optional, default=False, If True, an
+        intermediate file will be written from the method callback
+        - filename (str) - Optional, default=None, filename for callback output, if
+        provided, `write_intermediate_file` will be set to True
+        - obj_cut (float) - Optional, default=None, Cut-off objective value to write
+        the parameters, if provided, `write_intermediate_file` will be set to True
+        - etc. Other keywords for scipy.optimize.basinhopping use the function
+        defaults
 
     minimizer_opts : dict, Optional, default={}
         Dictionary used to define minimization type and the associated options.
 
         - method (str) - Method available to scipy.optimize.minimize
-        - options (dict) - This dictionary contains the kwargs available to the chosen method
+        - options (dict) - This dictionary contains the kwargs available to the chosen
+        method
 
     Returns
     -------
     Objective : obj
         scipy OptimizedResult object
-        
+
     """
 
     global_opts = global_opts.copy()
@@ -631,21 +715,22 @@ def basinhopping(
     return result
 
 
-# ___________ Supporting Classes and Functions ___________________________________________
+# ___________ Supporting Classes and Functions _________________
 def _grid_minimization_wrapper(args):
-    """ Wrapper for minimization method in grid_minimization
-    """
+    """Wrapper for minimization method in grid_minimization"""
 
     x0, obj_args, bounds, constraints, opts = args
 
     if constraints is not None:
-        logger.warning("Constraints defined, but grid_minimization does not support their use.")
+        logger.warning(
+            "Constraints defined, but grid_minimization does not support their use."
+        )
 
     opts = opts.copy()
     if "method" in opts:
         method = opts["method"]
         del opts["method"]
-        
+
     try:
         result = gtb.solve_root(
             ff.compute_obj,
@@ -672,18 +757,17 @@ def _grid_minimization_wrapper(args):
 
 
 class _BasinStep(object):
-    r""" Custom basin step used by scipy.optimize.basinhopping function.
-    """
+    r"""Custom basin step used by scipy.optimize.basinhopping function."""
 
     def __init__(self, stepmag, stepsize=0.05):
         r"""
-            
+
         Parameters
         ----------
         stepmag : list
             List of step magnitudes
         stepsize : float, Optional, default=0.05
-            Step size 
+            Step size
 
         Attributes
         ----------
@@ -691,16 +775,15 @@ class _BasinStep(object):
             List of step magnitudes
         stepsize : float, Optional, default=0.05
             Step size
-            
+
         """
 
         self._stepsize = stepsize
         self._stepmag = stepmag
 
     def __call__(self, x):
-
         r"""
-            
+
         Parameters
         ----------
         x : numpy.ndarray
@@ -710,7 +793,7 @@ class _BasinStep(object):
         -------
         basinstep : numpy.ndarray
             Suggested basin step used in scipy.optimize.basinhopping algorithm
-            
+
         """
 
         # Save initial guess in array
@@ -723,7 +806,6 @@ class _BasinStep(object):
             breakloop = True
             # Iterate through array of step magnitudes
             for i, mag in enumerate(self._stepmag):
-                # Add or subtract a random number within distribution of +- mag*stepsize
                 x[i] += np.random.uniform(-mag * self._stepsize, mag * self._stepsize)
                 # If a value of x is negative, don't  break the cycle
                 if x[i] < 0.0:
@@ -735,24 +817,23 @@ class _BasinStep(object):
 
 
 class _BasinBounds(object):
-    r""" Object used by scipy.optimize.basinhopping to set bounds of parameters.
-    """
+    r"""Object used by scipy.optimize.basinhopping to set bounds of parameters."""
 
     def __init__(self, bounds):
         r"""
-            
+
         Parameters
         ----------
         bounds : numpy.ndarray
             Bounds on parameters
-    
+
         Attributes
         ----------
         xmin : numpy.ndarray
             Array of minimum values for each parameter
         xman : numpy.ndarray
             Array of maximum values for each parameter
-            
+
         """
         bounds = np.transpose(np.array(bounds))
         self.xmin = bounds[0]
@@ -760,20 +841,22 @@ class _BasinBounds(object):
 
     def __call__(self, **kwargs):
         r"""
-            
+
         Parameters
         ----------
         kwargs
-            Keyword arguments used in BasinBounds object for scipy.optimize.basinhopping
-            
+            Keyword arguments used in BasinBounds object for
+            scipy.optimize.basinhopping
+
             - x_new (numpy.ndarray) - Guess in parameters values
             - f_new (numpy.ndarray) - Objective value for given parameters
 
         Returns
         -------
         value : bool
-            A true or false value that says whether the guess in parameter value is within bounds
-            
+            A true or false value that says whether the guess in parameter value is
+            within bounds
+
         """
         x = kwargs["x_new"]
         tmax = bool(np.all(x <= self.xmax))
@@ -799,12 +882,11 @@ class _BasinBounds(object):
 
 
 class _WriteParameterResults(object):
-    r""" Object used by scipy.optimize.basinhopping to set bounds of parameters.
-    """
+    r"""Object used by scipy.optimize.basinhopping to set bounds of parameters."""
 
     def __init__(self, beadnames, obj_cut=None, filename=None):
         r"""
-            
+
         Attributes
         ----------
         beadnames : list[str]
@@ -817,7 +899,7 @@ class _WriteParameterResults(object):
         Returns
         -------
         Initiate file with parameters
-            
+
         """
 
         if obj_cut is None:
@@ -846,27 +928,35 @@ class _WriteParameterResults(object):
 
     def __call__(self, *args, **kwargs):
         r"""
-        The provided args and kwargs change depending on the global optimization method. This class is equipped to distinguish the callback function for differential_evolution (length equal to ) and basinhopping.
-            
+        The provided args and kwargs change depending on the global optimization
+        method. This class is equipped to distinguish the callback function for
+        differential_evolution (length equal to ) and basinhopping.
+
         Parameters
         ----------
         args
             The provided args change depending on the global optimization method.
-        
-            - x_new (numpy.ndarray) - Current parameter values being evaluated, used in both algorithms
-            - f_new (float) - Current object function value for x_new, used in basinhopping
-            - accept (bool) - Whether or not that minimum was accepted, used in basinhopping
+
+            - x_new (numpy.ndarray) - Current parameter values being evaluated, used
+            in both algorithms
+            - f_new (float) - Current object function value for x_new, used in
+            basinhopping
+            - accept (bool) - Whether or not that minimum was accepted, used in
+            basinhopping
 
         kwargs
             The provided kwargs change depending on the global optimization method.
 
-            - convergence (float) - Used in differential evolution, the fractional value of the population convergence. When greater than one the function halts.
-            
+            - convergence (float) - Used in differential evolution, the fractional
+            value of the population convergence. When greater than one the function
+            halts.
+
         Returns
         -------
         value : bool
-            A true or false value that says whether the guess in parameter value is within bounds
-            
+            A true or false value that says whether the guess in parameter value is
+            within bounds
+
         """
 
         if "convergence" in kwargs:  # Used in differential_evolution
@@ -896,7 +986,8 @@ class _WriteParameterResults(object):
                     f.write(("{}, " * len(tmp)).format(*tmp) + "\n")
         else:
             raise ValueError(
-                "Unknown inputs. This function is equipped to handle differential_evolution and basinhopping algorithms."
+                "Unknown inputs. This function is equipped to handle "
+                "differential_evolution and basinhopping algorithms."
             )
 
         self.ninit += 1
@@ -905,7 +996,8 @@ class _WriteParameterResults(object):
 
 
 def _del_Data_MultiprocessingObject(dictionary):
-    r""" A dictionary of fitting objects will remove MultiprocessingObject attributes so that the multiprocessing pool can be used by the fitting algorithm.
+    r"""A dictionary of fitting objects will remove MultiprocessingObject attributes
+    so that the multiprocessing pool can be used by the fitting algorithm.
 
     Parameters
     ----------

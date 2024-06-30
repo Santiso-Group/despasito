@@ -16,6 +16,7 @@ import despasito.input_output.read_input as ri
 import pytest
 import numpy as np
 
+
 # Not Used because we shouldn't reference an external file
 @pytest.mark.parametrize("data", [([[["CH4_2", 1]], [["eCH3", 2]]])])
 def test_process_bead_data(data):
@@ -33,11 +34,3 @@ def test_process_bead_data(data):
         )
 
     assert not errors, "errors occured:\n{}".format("\n".join(errors))
-
-
-# Not Used because we shouldn't reference an external file
-# @pytest.mark.parametrize('key, answer', [("density_increment",2.0),("min_density_fraction",2.5e-06)])
-# def test_file2paramdict(key,answer):
-#    """Test conversion of txt file to dictionary"""
-#    rho_dict = ri.file2paramdict("example/dens_params.txt")
-#    assert rho_dict[key] == pytest.approx(answer,abs=1e-7)

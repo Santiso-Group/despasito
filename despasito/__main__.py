@@ -10,7 +10,7 @@ import logging.handlers
 parser = get_parser()
 args = parser.parse_args()
 
-## Extract arguments
+# Extract arguments
 if args.verbose == 0:
     args.verbose = 20
 elif args.verbose < 4:

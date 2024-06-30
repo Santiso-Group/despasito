@@ -15,6 +15,7 @@ def test_despasito_log_file():
     """Test enabling of logging"""
 
     fname = "despasito_{}.log".format(random.randint(1, 10))
+    print(fname)
     despasito.initiate_logger(log_file=fname, verbose=10)
     logger.info("test")
 

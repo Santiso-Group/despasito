@@ -2,11 +2,11 @@
 
 """
     EOS object for Peng-Robinson
-    
 """
 
 import numpy as np
-#import logging
+
+# import logging
 
 from despasito.equations_of_state import constants
 from despasito.equations_of_state.interface import EosTemplate
@@ -17,38 +17,43 @@ import despasito.utils.general_toolbox as gtb
 
 class EosType(EosTemplate):
     r"""
-    EOS object for the Peng-Robinson EOS. 
+    EOS object for the Peng-Robinson EOS.
 
     All input and calculated parameters are defined as hidden attributes.
-    
+
     Parameters
     ----------
     beads : list[str]
         List of unique component names
     bead_library : dict
-        A dictionary where bead names are the keys to access EOS self interaction parameters:
+        A dictionary where bead names are the keys to access EOS self interaction
+        parameters:
 
         - Tc: :math:`T_{C}`, Critical temperature [K]
         - Pc: :math:`P_{C}`, Critical pressure [Pa]
-        - omega: :math:`\omega`, Acentric factor 
+        - omega: :math:`\omega`, Acentric factor
 
     cross_library : dict, Optional, default={}
-        Optional library of bead cross interaction parameters. As many or as few of the desired parameters may be defined for whichever group combinations are desired.
+        Optional library of bead cross interaction parameters. As many or as few of the
+        desired parameters may be defined for whichever group combinations are desired.
 
         - kij: :math:`k_{ij}`, binary interaction parameter
-        
+
     Attributes
     ----------
     beads : list[str]
         List of component names
     bead_library : dict
-        A dictionary where bead names are the keys to access EOS self interaction parameters. See description under *Parameters*
+        A dictionary where bead names are the keys to access EOS self interaction
+        parameters. See description under *Parameters*
     cross_library : dict
         Library of bead cross interaction parameters. See description under *Parameters*
     parameter_types : list[str]
-        List of parameter names used Peng-Robinson EOS: ["ai", "bi", "kij", "Tc", "Pc", "omega"]. Used in parameter fitting. 
+        List of parameter names used Peng-Robinson EOS: ["ai", "bi", "kij", "Tc", "Pc",
+        "omega"]. Used in parameter fitting.
     parameter_bound_extreme : dict
-        With each parameter names as an entry representing a list with the minimum and maximum feasible parameter value. For the Peng-Robinson EOS:
+        With each parameter names as an entry representing a list with the minimum and
+        maximum feasible parameter value. For the Peng-Robinson EOS:
 
         - ai: [0., 50.]
         - bi: [0., 1e-3]
@@ -60,8 +65,10 @@ class EosType(EosTemplate):
     number_of_components : int
         Number of components in mixture represented by given EOS object.
     T : float, default=numpy.nan
-        Temperature value is initially defined as NaN for a placeholder until temperature dependent attributes are initialized by using a method of this class.
-    
+        Temperature value is initially defined as NaN for a placeholder until
+        temperature dependent attributes are initialized by using a method of this
+        class.
+
     """
 
     def __init__(self, **kwargs):
@@ -129,7 +136,7 @@ class EosType(EosTemplate):
     def _calc_temp_dependent_parameters(self, T):
         """
         Compute ai and alpha given temperature
-       
+
         Parameters
         ----------
         T : float
@@ -156,10 +163,9 @@ class EosType(EosTemplate):
                 self.eos_dict["alpha"][i] = 1.0
 
     def _calc_mixed_parameters(self, xi, T):
-
         """
         Compute mixing aij and bij given composition
-       
+
         Parameters
         ----------
         xi : list[float]
@@ -201,7 +207,7 @@ class EosType(EosTemplate):
     def pressure(self, rho, T, xi):
         """
         Compute pressure given system information
-       
+
         Parameters
         ----------
         rho : numpy.ndarray
@@ -210,11 +216,12 @@ class EosType(EosTemplate):
             Temperature of the system [K]
         xi : list[float]
             Mole fraction of each component
-       
+
         Returns
         -------
         P : numpy.ndarray
-            Array of pressure values [Pa] associated with each density and so equal in length
+            Array of pressure values [Pa] associated with each density and so equal
+            in length
         """
 
         if T != self.T:
@@ -230,7 +237,7 @@ class EosType(EosTemplate):
 
         P = constants.R * self.T * rho / (
             1 - self.eos_dict["bij"] * rho
-        ) - rho ** 2 * self.eos_dict["aij"] / (
+        ) - rho**2 * self.eos_dict["aij"] / (
             (1 + self.eos_dict["bij"] * rho)
             + rho * self.eos_dict["bij"] * (1 - self.eos_dict["bij"] * rho)
         )
@@ -240,7 +247,7 @@ class EosType(EosTemplate):
     def fugacity_coefficient(self, P, rho, xi, T):
         r"""
         Compute fugacity coefficient
-      
+
         Parameters
         ----------
         P : float
@@ -251,7 +258,7 @@ class EosType(EosTemplate):
             Temperature of the system [K]
         xi : list[float]
             Mole fraction of each component
-    
+
         Returns
         -------
         fugacity_coefficient : numpy.ndarray
@@ -283,10 +290,10 @@ class EosType(EosTemplate):
         tmp_RT = constants.R * T
 
         Z = P / (tmp_RT * rho)
-        Ai = self.eos_dict["ai"] * self.eos_dict["alpha"] * P / tmp_RT ** 2
+        Ai = self.eos_dict["ai"] * self.eos_dict["alpha"] * P / tmp_RT**2
         Bi = self.eos_dict["bi"] * P / tmp_RT
         B = self.eos_dict["bij"] * P / tmp_RT
-        A = self.eos_dict["aij"] * P / tmp_RT ** 2
+        A = self.eos_dict["aij"] * P / tmp_RT**2
 
         sqrt2 = np.sqrt(2.0)
         tmp1 = (
@@ -308,10 +315,9 @@ class EosType(EosTemplate):
         return phi
 
     def density_max(self, xi, T, maxpack=0.9):
-
         """
         Estimate the maximum density based on the hard sphere packing fraction.
-        
+
         Parameters
         ----------
         xi : list[float]
@@ -320,7 +326,7 @@ class EosType(EosTemplate):
             Temperature of the system [K]
         maxpack : float, Optional, default=0.9
             Maximum packing fraction
-        
+
         Returns
         -------
         max_density : float
@@ -341,14 +347,18 @@ class EosType(EosTemplate):
         r"""
         Update a single parameter value during parameter fitting process.
 
-        To refresh those parameters that are dependent on to bead_library or cross_library, use method "parameter refresh".
-        
+        To refresh those parameters that are dependent on to bead_library or
+        cross_library, use method "parameter refresh".
+
         Parameters
         ----------
         param_name : str
-            Parameter to be fit. See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. kij_CO2).
+            Parameter to be fit. See EOS documentation for supported parameter names.
+            Cross interaction parameter names should be composed of parameter name
+            and the other bead type, separated by an underscore (e.g. kij_CO2).
         bead_names : list
-            Bead names to be changed. For a self interaction parameter, the length will be 1, for a cross interaction parameter, the length will be two.
+            Bead names to be changed. For a self interaction parameter, the length will
+            be 1, for a cross interaction parameter, the length will be two.
         param_value : float
             Value of parameter
         """
@@ -365,10 +375,12 @@ class EosType(EosTemplate):
         super().update_parameter(param_name, bead_names, param_value)
 
     def parameter_refresh(self):
-        r""" 
+        r"""
         To refresh dependent parameters
-        
-        Those parameters that are dependent on bead_library and cross_library attributes **must** be updated by running this function after all parameters from update_parameters method have been changed.
+
+        Those parameters that are dependent on bead_library and cross_library
+        attributes **must** be updated by running this function after all parameters
+        from update_parameters method have been changed.
         """
 
         for i, bead in enumerate(self.beads):
@@ -418,7 +430,7 @@ class EosType(EosTemplate):
                         self.eos_dict[key][j][i] = tmp
                         self.eos_dict[key][i][j] = tmp
 
-        if self.T != None:
+        if self.T is not None:
             self._calc_temp_dependent_parameters(self.T)
 
     def __str__(self):

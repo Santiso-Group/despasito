@@ -10,7 +10,6 @@ import numpy as np
 
 
 def write_EOSparameters(library, filename):
-
     """
     Sort and export dictionary of input parameters into file in JSON format.
 
@@ -36,7 +35,11 @@ def writeout_thermo_dict(output_dict, calctype, output_file="thermo_output.txt")
     """
     Write out result of thermodynamic calculation.
 
-    This file is automatically saved for a thermodynamic calculation (not parameter fitting) using the default ``output_file`` name. Import dictionary of both input and output data to produce a file. A line in the top clarifies the calculation type done. Each system input and output properties (e.g. T, P, etc.) are expressed as a columns.
+    This file is automatically saved for a thermodynamic calculation (not parameter
+    fitting) using the default ``output_file`` name. Import dictionary of both input
+    and output data to produce a file. A line in the top clarifies the calculation
+    type done. Each system input and output properties (e.g. T, P, etc.) are expressed
+    as a columns.
 
     Parameters
     ----------
@@ -60,9 +63,8 @@ def writeout_thermo_dict(output_dict, calctype, output_file="thermo_output.txt")
     }
 
     # Make comment line
-    comment = "# This data was generated in DESPASITO using the thermodynamic calculation: {}".format(
-        calctype
-    )
+    comment = "# This data was generated in DESPASITO using the thermodynamic "
+    "calculation: {}".format(calctype)
 
     # Make results matrix
     keys = []
@@ -116,9 +118,8 @@ def writeout_fit_dict(output_dict, output_file="fit_output.txt"):
     """
 
     header = (
-        "DESPASITO was used to fit parameters for the bead {} Obj. Value: {}\n".format(
-            output_dict["fit_bead"], output_dict["objective_value"]
-        )
+        "DESPASITO was used to fit parameters for the bead {} Obj. Value:"
+        " {}\n".format(output_dict["fit_bead"], output_dict["objective_value"])
         + "Parameter, Value\n"
     )
     with open(output_file, "w") as f:

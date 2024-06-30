@@ -1,5 +1,6 @@
 r"""
-Objects for storing and producing objective values for comparing experimental data to EOS predictions.    
+Objects for storing and producing objective values for comparing experimental data to
+EOS predictions.
 """
 
 import numpy as np
@@ -13,18 +14,20 @@ import despasito.utils.general_toolbox as gtb
 
 logger = logging.getLogger(__name__)
 
+
 ##################################################################
 #                                                                #
 #                              TLVE                              #
 #                                                                #
 ##################################################################
 class Data(ExpDataTemplate):
-
     r"""
     Object for flash calculation. This data could be evaluated with flash.
 
-    This object is initiated in :func:`~despasito.parameter_fitting.fit` with the keyword, ``exp_data[*]["data_class_type"]="flash"``.
-    The data could be evaluated with :func:`~despasito.thermodynamics.calculation_types.flash`
+    This object is initiated in :func:`~despasito.parameter_fitting.fit` with the
+    keyword, ``exp_data[*]["data_class_type"]="flash"``.
+    The data could be evaluated with
+    :func:`~despasito.thermodynamics.calculation_types.flash`
 
     Parameters
     ----------
@@ -32,15 +35,24 @@ class Data(ExpDataTemplate):
         Dictionary of exp data of type flash.
 
         * calculation_type (str) - Optional, default='flash'
-        * MultiprocessingObject (obj) - Optional, Initiated :class:`~despasito.utils.parallelization.MultiprocessingJob`
+        * MultiprocessingObject (obj) - Optional, Initiated
+        :class:`~despasito.utils.parallelization.MultiprocessingJob`
         * eos_obj (obj) - Equation of state object
         * T (list) - [K] List of temperature values for calculation
         * P (list) - [Pa] List of pressure values for calculation
         * xi (list) - List of liquid compositions, evaluated in this calculation
         * yi (list) - List of vapor compositions, evalulated in this calculation
-        * weights (dict) - A dictionary where each key is a system constraint (e.g. T or xi) which is also a header used in an optional exp. data file. The value associated with a header can be a list as long as the number of data points to multiply by the objective value associated with each point, or a float to multiply the objective value of this data set.
-        * density_opts (dict) - Optional, default={"min_density_fraction":(1.0 / 300000.0), "density_increment":10.0, "max_volume_increment":1.0E-4}, Dictionary of options used in calculating pressure vs. mole fraction curves.
-        * kwargs for :func:`~despasito.parameter_fitting.fit_functions.obj_function_form`
+        * weights (dict) - A dictionary where each key is a system constraint
+        (e.g. T or xi) which is also a header used in an optional exp. data file. The
+        value associated with a header can be a list as long as the number of data
+        points to multiply by the objective value associated with each point, or a
+        float to multiply the objective value of this data set.
+        * density_opts (dict) - Optional,
+        default={"min_density_fraction":(1.0 / 300000.0), "density_increment":10.0,
+        "max_volume_increment":1.0E-4}, Dictionary of options used in calculating
+        pressure vs. mole fraction curves.
+        * kwargs for
+        :func:`~despasito.parameter_fitting.fit_functions.obj_function_form`
 
     Attributes
     ----------
@@ -49,19 +61,23 @@ class Data(ExpDataTemplate):
     Eos : obj
         Equation of state object
     weights : dict, Optional, default: {"some_property": 1.0 ...}
-        Dictionary with keys corresponding to those in thermodict, with weighting factor or vector for each system property used in fitting.
+        Dictionary with keys corresponding to those in thermodict, with weighting
+        factor or vector for each system property used in fitting.
     obj_opts : dict
-        Keywords to compute the objective function with :func:`~despasito.parameter_fitting.fit_functions.obj_function_form`.
+        Keywords to compute the objective function with
+        :func:`~despasito.parameter_fitting.fit_functions.obj_function_form`.
     npoints : int
         Number of sets of system conditions this object computes
     result_keys : list
-        Thermodynamic property names used in calculation of objective function. In in this case: ["xilist", 'yilist']
+        Thermodynamic property names used in calculation of objective function. In in
+        this case: ["xilist", 'yilist']
     thermodict : dict
         Dictionary of inputs needed for thermodynamic calculations
-        
+
         - calculation_type (str) default=flash
-        - density_opts (dict) default={"min_density_fraction":(1.0 / 300000.0), "density_increment":10.0, "max_volume_increment":1.0E-4}
-    
+        - density_opts (dict) default={"min_density_fraction":(1.0 / 300000.0),
+        "density_increment":10.0, "max_volume_increment":1.0E-4}
+
     """
 
     def __init__(self, data_dict):
@@ -71,7 +87,7 @@ class Data(ExpDataTemplate):
         super().__init__(data_dict)
 
         self.name = "flash"
-        if self.thermodict["calculation_type"] == None:
+        if self.thermodict["calculation_type"] is None:
             logger.warning("No calculation type has been provided.")
             self.thermodict["calculation_type"] = "flash"
 
@@ -133,7 +149,8 @@ class Data(ExpDataTemplate):
             )
 
         logger.info(
-            "Data type 'flash' initiated with calculation_type, {}, and data types: {}.\nWeight data by: {}".format(
+            "Data type 'flash' initiated with calculation_type, {}, and data "
+            "types: {}.\nWeight data by: {}".format(
                 self.thermodict["calculation_type"],
                 ", ".join(self.result_keys),
                 self.weights,
@@ -141,14 +158,14 @@ class Data(ExpDataTemplate):
         )
 
     def _thermo_wrapper(self):
-
         """
         Generate thermodynamic predictions from Eos object
 
         Returns
         -------
         phase_list : float
-            A list of the predicted thermodynamic values estimated from thermo calculation. This list can be composed of lists or floats
+            A list of the predicted thermodynamic values estimated from thermo
+            calculation. This list can be composed of lists or floats
         """
 
         # Remove results
@@ -167,7 +184,6 @@ class Data(ExpDataTemplate):
         return output
 
     def objective(self):
-
         """
         Generate objective function value from this dataset
 

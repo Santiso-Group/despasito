@@ -1,5 +1,6 @@
 r"""
-Objects for storing and producing objective values for comparing experimental data to EOS predictions.    
+Objects for storing and producing objective values for comparing experimental data to
+EOS predictions.
 """
 
 import numpy as np
@@ -14,18 +15,20 @@ import despasito.utils.general_toolbox as gtb
 
 logger = logging.getLogger(__name__)
 
+
 ##################################################################
 #                                                                #
 #                       Saturation Props                         #
 #                                                                #
 ##################################################################
 class Data(ExpDataTemplate):
-
     r"""
-    Object for Hildebrand solubility parameters. Evaluated with "solubility_parameter". 
+    Object for Hildebrand solubility parameters. Evaluated with "solubility_parameter".
 
-    This object is initiated in :func:`~despasito.parameter_fitting.fit` with the keyword, ``exp_data[*]["data_class_type"]="solubility_parameter"``.
-    The data could be evaluated with :func:`~despasito.thermodynamics.calculation_types.solubility_parameter`
+    This object is initiated in :func:`~despasito.parameter_fitting.fit` with the
+    keyword, ``exp_data[*]["data_class_type"]="solubility_parameter"``.
+    The data could be evaluated with
+    :func:`~despasito.thermodynamics.calculation_types.solubility_parameter`
 
     Parameters
     ----------
@@ -33,16 +36,25 @@ class Data(ExpDataTemplate):
         Dictionary of exp data of saturation properties.
 
         * calculation_type (str) - Optional, default='solubility_parameter'
-        * MultiprocessingObject (obj) - Optional, Initiated :class:`~despasito.utils.parallelization.MultiprocessingJob` 
+        * MultiprocessingObject (obj) - Optional, Initiated
+        :class:`~despasito.utils.parallelization.MultiprocessingJob`
         * eos_obj (obj) - Equation of state object
         * T (list) - List of temperature values for calculation
         * P (list) - List of pressure values used in calculations
         * xi (list) - List of liquid mole fractions used in calculations.
-        * delta (list) - Hidebrand solubility parameter values of given system conditions to evaluate against
+        * delta (list) - Hidebrand solubility parameter values of given system
+        conditions to evaluate against
         * rhol (list) - [mol/:math:`m^3`] Evaluated liquid density
-        * weights (dict) - A dictionary where each key is a system constraint (e.g. T or xi) which is also a header used in an optional exp. data file. The value associated with a header can be a list as long as the number of data points to multiply by the objective value associated with each point, or a float to multiply the objective value of this data set.
-        * density_opts (dict) - Optional, default={"min_density_fraction":(1.0 / 60000.0), "density_increment":10.0, "max_volume_increment":1.0E-4}, Dictionary of options used in calculating pressure vs. mole fraction curves.
-        * kwargs for :func:`~despasito.parameter_fitting.fit_functions.obj_function_form`
+        * weights (dict) - A dictionary where each key is a system constraint
+        (e.g. T or xi) which is also a header used in an optional exp. data file. The
+        value associated with a header can be a list as long as the number of data
+        points to multiply by the objective value associated with each point, or a
+        float to multiply the objective value of this data set.
+        * density_opts (dict) - Optional, default={"min_density_fraction":
+        (1.0 / 60000.0), "density_increment":10.0, "max_volume_increment":1.0E-4},
+        Dictionary of options used in calculating pressure vs. mole fraction curves.
+        * kwargs for
+        :func:`~despasito.parameter_fitting.fit_functions.obj_function_form`
 
     Attributes
     ----------
@@ -51,18 +63,22 @@ class Data(ExpDataTemplate):
     Eos : obj
         Equation of state object
     weights : dict, Optional, default: {"some_property": 1.0 ...}
-        Dictionary with keys corresponding to those in thermodict, with weighting factor or vector for each system property used in fitting
+        Dictionary with keys corresponding to those in thermodict, with weighting
+        factor or vector for each system property used in fitting
     obj_opts : dict
-        Keywords to compute the objective function with :func:`~despasito.parameter_fitting.fit_functions.obj_function_form`.
+        Keywords to compute the objective function with
+        :func:`~despasito.parameter_fitting.fit_functions.obj_function_form`.
     npoints : int
         Number of sets of system conditions this object computes
     result_keys : list
-        Thermodynamic property names used in calculation of objective function. In in this case: ["rhol", "delta"]
+        Thermodynamic property names used in calculation of objective function. In in
+        this case: ["rhol", "delta"]
     thermodict : dict
         Dictionary of inputs needed for thermodynamic calculations
-        
+
         - calculation_type (str) default=solubility_parameter
-        - density_opts (dict) default={"min_density_fraction":(1.0 / 300000.0), "density_increment":10.0, "max_volume_increment":1.0E-4}
+        - density_opts (dict) default={"min_density_fraction":(1.0 / 300000.0),
+        "density_increment":10.0, "max_volume_increment":1.0E-4}
     """
 
     def __init__(self, data_dict):
@@ -72,7 +88,7 @@ class Data(ExpDataTemplate):
         super().__init__(data_dict)
 
         self.name = "solubility_parameter"
-        if self.thermodict["calculation_type"] == None:
+        if self.thermodict["calculation_type"] is None:
             self.thermodict["calculation_type"] = "solubility_parameter"
 
         if "density_opts" not in self.thermodict:
@@ -123,11 +139,13 @@ class Data(ExpDataTemplate):
 
         if "Tlist" not in self.thermodict and "delta" not in self.thermodict:
             raise ImportError(
-                "Given solubility data, value(s) for T and delta should have been provided."
+                "Given solubility data, value(s) for T and delta should have been "
+                "provided."
             )
 
         logger.info(
-            "Data type 'solubility parameter' initiated with calculation_type, {}, and data types: {}.\nWeight data by: {}".format(
+            "Data type 'solubility parameter' initiated with calculation_type, {}, and"
+            " data types: {}.\nWeight data by: {}".format(
                 self.thermodict["calculation_type"],
                 ", ".join(self.result_keys),
                 self.weights,
@@ -135,14 +153,14 @@ class Data(ExpDataTemplate):
         )
 
     def _thermo_wrapper(self):
-
         """
         Generate thermodynamic predictions from Eos object
 
         Returns
         -------
         phase_list : float
-            A list of the predicted thermodynamic values estimated from thermo calculation. This list can be composed of lists or floats
+            A list of the predicted thermodynamic values estimated from thermo
+            calculation. This list can be composed of lists or floats
         """
 
         # Remove results
@@ -162,7 +180,6 @@ class Data(ExpDataTemplate):
         return output
 
     def objective(self):
-
         """
         Generate objective function value from this dataset
 
@@ -174,7 +191,7 @@ class Data(ExpDataTemplate):
 
         phase_list = self._thermo_wrapper()
 
-        ## Reformat array of results
+        # Reformat array of results
         phase_list, len_list = ff.reformat_output(phase_list)
         phase_list = np.transpose(np.array(phase_list))
 

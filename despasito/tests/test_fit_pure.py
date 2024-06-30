@@ -10,7 +10,7 @@ import pytest
 import sys
 import numpy as np
 
-## EOS Object
+# EOS Object
 beads = ["CH3OH"]
 molecular_composition = np.array([[1.0]])
 bead_library = {
@@ -63,7 +63,7 @@ Eos_mix = despasito.equations_of_state.initiate_eos(
 )
 
 
-## Exp Data dict
+# Exp Data dict
 exp_data_sat = {
     "Wiley": {
         "data_class_type": "saturation_properties",
@@ -107,7 +107,7 @@ exp_data_density = {
     }
 }
 
-## Optimization options
+# Optimization options
 optimization_parameters = {
     "fit_bead": "CH3OH",
     "fit_parameter_names": ["epsilon"],

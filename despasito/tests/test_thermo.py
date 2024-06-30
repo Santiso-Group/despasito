@@ -3,7 +3,6 @@ Unit and regression test for the despasito package.
 """
 
 # Import package, test suite, and other packages as needed
-import despasito.thermodynamics.calc as calc
 import despasito.thermodynamics as thermo
 import despasito.equations_of_state
 import pytest

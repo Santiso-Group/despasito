@@ -41,7 +41,6 @@ A3 = Eos.saft_source.Athird_order(rho, T, xi)
 Am1 = AHS + A1 + A2 + A3
 Am2 = Eos.Amonomer(rho, T, xi)
 print(
-    "The Monomer Contribution for Helmholtz Energy: {},\n    equals the sum of its components: {}".format(
-        Am2, Am1
-    )
+    "The Monomer Contribution for Helmholtz Energy: {},\n".format(Am2)
+    + "    equals the sum of its components: {}".format(Am1)
 )

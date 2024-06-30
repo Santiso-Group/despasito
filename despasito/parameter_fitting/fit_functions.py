@@ -23,16 +23,24 @@ def initial_guess(optimization_parameters, Eos):
         Parameters used in global optimization algorithm.
 
         - fit_bead (str) - Name of bead whose parameters are being fit.
-        - fit_parameter_names (list[str]) - This list contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
+        - fit_parameter_names (list[str]) - This list contains the name of the
+        parameter being fit (e.g. epsilon). See EOS documentation for supported
+        parameter names. Cross interaction parameter names should be composed of
+        parameter name and the other bead type, separated by an underscore (e.g.
+        epsilon_CO2).
 
     Eos : obj
-        Equation of state object that writes pressure, max density, fugacity coefficient, updates parameters, and evaluates objective functions. For parameter fitting algorithm See equation of state documentation for more details.
+        Equation of state object that writes pressure, max density, fugacity
+        coefficient, updates parameters, and evaluates objective functions. For
+        parameter fitting algorithm See equation of state documentation for more
+        details.
 
     Returns
     -------
-    parameters_guess : numpy.ndarray, 
-        An array of initial guesses for parameters to be optimized throughout the process.
-        
+    parameters_guess : numpy.ndarray,
+        An array of initial guesses for parameters to be optimized throughout the
+        process.
+
     """
 
     # Update bead_library with test parameters
@@ -51,9 +59,9 @@ def initial_guess(optimization_parameters, Eos):
             )
         else:
             raise ValueError(
-                "Parameters for only one bead are allowed to be fit. Multiple underscores in a parameter name suggest more than one bead type in your fit parameter name, {}".format(
-                    param
-                )
+                "Parameters for only one bead are allowed to be fit. Multiple "
+                + "underscores in a parameter name suggest more than one bead type "
+                + "in your fit parameter name, {}".format(param)
             )
 
     return parameters_guess
@@ -61,25 +69,37 @@ def initial_guess(optimization_parameters, Eos):
 
 def check_parameter_bounds(optimization_parameters, Eos, bounds):
     r"""
-    Check that provided parameter bounds are within reasonable limits defined in Eos object.
-    
+    Check that provided parameter bounds are within reasonable limits defined in Eos
+    object.
+
     Parameters
     ----------
     optimization_parameters : dict
         Parameters used in global optimization algorithm
-    
-        - fit_parameter_names (list[str]) - This list contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead name separated by an underscore (e.g. epsilon_CO2).
-    
+
+        - fit_parameter_names (list[str]) - This list contains the name of the
+        parameter being fit (e.g. epsilon). See EOS documentation for supported
+        parameter names. Cross interaction parameter names should be composed of
+        parameter name and the other bead name separated by an underscore (e.g.
+        epsilon_CO2).
+
     Eos : obj
-        Equation of state object that writes pressure, max density, fugacity coefficient, updates parameters, and evaluates parameter fitting objective function. See equation of state documentation for more details.
+        Equation of state object that writes pressure, max density, fugacity
+        coefficient, updates parameters, and evaluates parameter fitting objective
+        function. See equation of state documentation for more details.
     bounds : numpy.ndarray
-        List of length equal to fit_parameter_names with lists of pairs for minimum and maximum bounds of parameter being fit. Defaults defined in Eos object are broad, so we recommend specification.
-    
+        List of length equal to fit_parameter_names with lists of pairs for minimum
+        and maximum bounds of parameter being fit. Defaults defined in Eos object are
+        broad, so we recommend specification.
+
     Returns
     -------
     new_bounds : list[tuple]
-        Checked with Eos object method, this list has a length equal to fit_parameter_names with lists of pairs for minimum and maximum bounds of parameter being fit. Bounds are adjusted to remain within limits set by Eos object.
-    
+        Checked with Eos object method, this list has a length equal to
+        fit_parameter_names with lists of pairs for minimum and maximum bounds of
+        parameter being fit. Bounds are adjusted to remain within limits set by Eos
+        object.
+
     """
 
     new_bounds = [
@@ -99,35 +119,53 @@ def consolidate_bounds(optimization_parameters):
     r"""
     Parse parameter bounds in the ``optimization_parameters`` dictionary.
 
-    The resulting bounds form a 2D numpy array with a length equal to the number of parameters being fit.
-    
+    The resulting bounds form a 2D numpy array with a length equal to the number of
+    parameters being fit.
+
     Parameters
     ----------
     optimization_parameters : dict
         Parameters used in basin fitting algorithm
-    
-        - fit_bead (str) - Name of bead whose parameters are being fit, should be in bead list of bead_configuration
-        - fit_parameter_names (list[str]) - This list contains the name of the parameter being fit (e.g. epsilon). See Eos object documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
-        - \*_bounds (list[float]), Optional - This list contains the minimum and maximum of the parameter from a parameter listed in fit_parameter_names, represented in place of the asterisk. See , :ref:`startfitting-label`, for more information.
-    
+
+        - fit_bead (str) - Name of bead whose parameters are being fit, should be in
+        bead list of bead_configuration
+        - fit_parameter_names (list[str]) - This list contains the name of the
+        parameter being fit (e.g. epsilon). See Eos object documentation for supported
+        parameter names. Cross interaction parameter names should be composed of
+        parameter name and the other bead type, separated by an underscore (e.g.
+        epsilon_CO2).
+        - \*_bounds (list[float]), Optional - This list contains the minimum and
+        maximum of the parameter from a parameter listed in fit_parameter_names,
+        represented in place of the asterisk. See , :ref:`startfitting-label`, for
+        more information.
+
     Returns
     -------
     new_optimization_parameters : dict
         Parameters used in basin fitting algorithm
-    
+
         - fit_bead (str) - Name of bead whose parameters are being fit.
-        - fit_parameter_names (list[str]) - This list contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
-        - bounds (numpy.ndarray) - List of lists of length two, of length equal to ``fit_parameter_names``. If no bounds were given then the default parameter boundaries are [0,1e+4], else bounds given as \*_bounds in input dictionary are used.
+        - fit_parameter_names (list[str]) - This list contains the name of the
+        parameter being fit (e.g. epsilon). See EOS documentation for supported
+        parameter names. Cross interaction parameter names should be composed of
+        parameter name and the other bead type, separated by an underscore (e.g.
+        epsilon_CO2).
+        - bounds (numpy.ndarray) - List of lists of length two, of length equal to
+        ``fit_parameter_names``. If no bounds were given then the default parameter
+        boundaries are [0,1e+4], else bounds given as \*_bounds in input dictionary
+        are used.
 
     """
 
     if "fit_bead" not in optimization_parameters:
         raise ValueError(
-            "optimization_parameters dictionary should include keyword, fit_bead, defining the name of the bead whose parameters are to be fit."
+            "optimization_parameters dictionary should include keyword, fit_bead, "
+            "defining the name of the bead whose parameters are to be fit."
         )
     if "fit_parameter_names" not in optimization_parameters:
         raise ValueError(
-            "optimization_parameters dictionary should include keyword, fit_parameter_names, defining the parameters to be fit."
+            "optimization_parameters dictionary should include keyword, "
+            "fit_parameter_names, defining the parameters to be fit."
         )
 
     new_optimization_parameters = {}
@@ -145,9 +183,8 @@ def consolidate_bounds(optimization_parameters):
                 new_optimization_parameters["bounds"][ind] = value2
             else:
                 logger.error(
-                    "Bounds for parameter type '{}' were given, but this parameter is not defined to be fit.".format(
-                        tmp
-                    )
+                    "Bounds for parameter type '{}' were given, but this parameter is"
+                    " not defined to be fit.".format(tmp)
                 )
         else:
             new_optimization_parameters[key2] = value2
@@ -158,8 +195,9 @@ def consolidate_bounds(optimization_parameters):
 
 def reformat_output(cluster):
     r"""
-    Takes a list of lists that contain thermo output of lists and floats and reformats it into a 2D numpy array.
- 
+    Takes a list of lists that contain thermo output of lists and floats and reformats"
+    " it into a 2D numpy array.
+
     Parameters
     ----------
     cluster : list[list[list/floats]]
@@ -171,7 +209,7 @@ def reformat_output(cluster):
         A 2D matrix
     len_cluster : list
         a list of lengths for each of the columns (whether 1 for float, or len(list))
-        
+
     """
 
     # if input is a list or array
@@ -200,9 +238,7 @@ def reformat_output(cluster):
                 matrix = np.zeros([len(val[0]), len(val)])
             except Exception:
                 matrix = np.zeros([1, len(val)])
-            for j, tmp in enumerate(
-                val
-            ):  # yes, this is a simple transpose, but for some reason a numpy array of np arrays wouldn't transpose
+            for j, tmp in enumerate(val):
                 matrix[:, j] = tmp
             l = len_cluster[i]
             if l == 1:
@@ -223,41 +259,57 @@ def reformat_output(cluster):
 
 def global_minimization(global_method, *args, **kwargs):
     r"""
-    Fit defined parameters for equation of state object with given experimental data. 
+    Fit defined parameters for equation of state object with given experimental data.
 
-    Each set of experimental data is converted to an object with the build in ability to evaluate its part of objective function. 
+    Each set of experimental data is converted to an object with the build in ability
+    to evaluate its part of objective function.
     To add another type of supported experimental data, see :ref:`contribute-fitting`.
 
     Parameters
     ----------
     global_method : str
-        Global optimization method used to fit parameters. See supported :mod:`~despasito.parameter_fitting.global_methods`.
-    parameters_guess : numpy.ndarray, 
-        An array of initial guesses for parameters, these will be optimized throughout the process.
+        Global optimization method used to fit parameters. See supported
+        :mod:`~despasito.parameter_fitting.global_methods`.
+    parameters_guess : numpy.ndarray,
+        An array of initial guesses for parameters, these will be optimized throughout
+        the process.
     bounds : list[tuple]
-        List of length equal to fit_parameter_names with lists of pairs for minimum and maximum bounds of parameter being fit. Defaults are broad, recommend specification.
+        List of length equal to fit_parameter_names with lists of pairs for minimum
+        and maximum bounds of parameter being fit. Defaults are broad, recommend
+        specification.
     fit_bead : str
-        Name of bead whose parameters are being fit, should be in bead list of bead_configuration
+        Name of bead whose parameters are being fit, should be in bead list of
+        bead_configuration
     fit_parameter_names : list[str]
-        This list contains the name of the parameter being fit (e.g. epsilon). See Eos object documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
+        This list contains the name of the parameter being fit (e.g. epsilon). See Eos
+        object documentation for supported parameter names. Cross interaction
+        parameter names should be composed of parameter name and the other bead type,
+        separated by an underscore (e.g. epsilon_CO2).
     exp_dict : dict
         Dictionary of experimental data objects.
     global_opts : dict, Optional
-        Keyword arguments of global optimization algorithm. See specific options in :mod:`~despasito.parameter_fitting.global_methods`. Note that unless in the keyword, ``workers`` is provided, the thermodynamic calculations will we split among the cores. Check the global optimization method to ensure it uses the ``workers`` keyword. 
+        Keyword arguments of global optimization algorithm. See specific options in
+        :mod:`~despasito.parameter_fitting.global_methods`. Note that unless in the
+        keyword, ``workers`` is provided, the thermodynamic calculations will we split
+        among the cores. Check the global optimization method to ensure it uses the
+        ``workers`` keyword.
     minimizer_opts : dict, Optional
         Dictionary used to define minimization type and the associated options.
 
         - method (str) - Method available to scipy.optimize.minimize
-        - options (dict) - This dictionary contains the kwargs available to the chosen method
+        - options (dict) - This dictionary contains the kwargs available to the chosen
+        method
 
     constraints : dict, Optional
-        This dictionary of constraint types and their arguments will be converted into the appropriate form for the chosen optimization method.
+        This dictionary of constraint types and their arguments will be converted into
+        the appropriate form for the chosen optimization method.
 
     Returns
     -------
     Objective : float
-        Sum of objective values according to appropriate weights. Output file saved in current working directory.
-        
+        Sum of objective values according to appropriate weights. Output file saved in
+        current working directory.
+
     """
 
     logger.info("Using global optimization method: {}".format(global_method))
@@ -270,8 +322,10 @@ def global_minimization(global_method, *args, **kwargs):
         func = getattr(global_methods_mod, global_method)
     except Exception:
         raise ImportError(
-            "The global minimization type, '{}', was not found\nThe following calculation types are supported: {}".format(
-                global_method, ", ".join(calc_list)
+            "The global minimization type, '{}',".format(global_method)
+            + " was not found\nThe following "
+            + "calculation types are supported: {}".format(
+                ", ".join(calc_list)
             )
         )
 
@@ -282,28 +336,35 @@ def global_minimization(global_method, *args, **kwargs):
 
 def initialize_constraints(constraints, constraint_type):
     r"""
-    A tuple of either constraint classes or dictionaries as required by :mod:`~despasito.parameter_fitting.global_methods`.
+    A tuple of either constraint classes or dictionaries as required by
+    :mod:`~despasito.parameter_fitting.global_methods`.
 
     Parameters
     ----------
     constraints : dict
-        This dictionary of constraint types and their arguments will be converted into the appropriate form for the chosen optimization method. Although the key can be anything, it must represent a dictionary containing:
+        This dictionary of constraint types and their arguments will be converted into
+        the appropriate form for the chosen optimization method. Although the key can
+        be anything, it must represent a dictionary containing:
 
-        * function (str) - must be found in the dictionary and represent a valid function name from :mod:`~despasito.parameter_fitting.constraint_types`
+        * function (str) - must be found in the dictionary and represent a valid
+        function name from :mod:`~despasito.parameter_fitting.constraint_types`
         * type - entries depends on ``constraint_type``
         * args - Inputs into the functions (keys)
 
     constraint_type : str
-        Either 'dict' or 'class'. Changes the constraint to the specified form. 
- 
-        * 'dict': Allowed types, "eq" or "ineq", eq means must be zero, ineq means it must be non-negative 
-        * 'class': Allowed types, "nonlinear" or "linear", a keyword argument may also be added for the constraint class 
+        Either 'dict' or 'class'. Changes the constraint to the specified form.
+
+        * 'dict': Allowed types, "eq" or "ineq", eq means must be zero, ineq means it
+        must be non-negative
+        * 'class': Allowed types, "nonlinear" or "linear", a keyword argument may also
+        be added for the constraint class
 
     Returns
     -------
     new_constraints : tuple
-        A tuple of either constraint classes or dictionaries as required by global optimization methods
-        
+        A tuple of either constraint classes or dictionaries as required by global
+        optimization methods
+
     """
 
     calc_list = [
@@ -322,9 +383,9 @@ def initialize_constraints(constraints, constraint_type):
             func = getattr(constraints_mod, kwargs["function"])
         except Exception:
             raise ImportError(
-                "The constraint type, '{}', was not found\nThe following types are supported: {}".format(
-                    kwargs["function"], ", ".join(calc_list)
-                )
+                "The constraint type, '{}', was not".format(kwargs["function"])
+                + " found\nThe following types are "
+                + "supported: {}".format(", ".join(calc_list))
             )
 
         if "args" not in kwargs:
@@ -337,27 +398,33 @@ def initialize_constraints(constraints, constraint_type):
         if constraint_type == "class":
             if "type" not in kwargs or kwargs["type"] in ["linear", "nonlinear"]:
                 raise ValueError(
-                    "Constraint, {}, does not have type. Type can be 'linear' or 'nonlinear'.".format(
-                        kwargs["function"]
-                    )
+                    "Constraint, {}, does not have type. ".format(kwargs["function"])
+                    + "Type can be 'linear' or 'nonlinear'."
                 )
             if kwargs["type"] == "linear":
                 if "kwargs" not in kwargs:
-                    output = LinearConstraint(func, kwargs["args"][0], kwargs["args"][1])
+                    output = LinearConstraint(
+                        func, kwargs["args"][0], kwargs["args"][1]
+                    )
                 else:
-                    output = LinearConstraint(func, kwargs["args"][0], kwargs["args"][1], **kwargs)
+                    output = LinearConstraint(
+                        func, kwargs["args"][0], kwargs["args"][1], **kwargs
+                    )
             elif kwargs["type"] == "nonlinear":
                 if "kwargs" not in kwargs:
-                    output = NonlinearConstraint(func, kwargs["args"][0], kwargs["args"][1])
+                    output = NonlinearConstraint(
+                        func, kwargs["args"][0], kwargs["args"][1]
+                    )
                 else:
-                    output = NonlinearConstraint(func, kwargs["args"][0], kwargs["args"][1], **kwargs)
+                    output = NonlinearConstraint(
+                        func, kwargs["args"][0], kwargs["args"][1], **kwargs
+                    )
 
         elif constraint_type == "dict":
             if "type" not in kwargs or kwargs["type"] in ["eq", "ineq"]:
                 raise ValueError(
-                    "Constraint, {}, does not have type. Type can be 'eq' or 'ineq'.".format(
-                        kwargs["function"]
-                    )
+                    "Constraint, {}, does not".format(kwargs["function"])
+                    + " have type. Type can be 'eq' or 'ineq'."
                 )
             output = {"type": kwargs["type"], "function": func, "args": kwargs["args"]}
         else:
@@ -368,33 +435,45 @@ def initialize_constraints(constraints, constraint_type):
     return tuple(new_constraints)
 
 
-def compute_obj(beadparams, fit_bead, fit_parameter_names, exp_dict, bounds, frozen_parameters=None):
+def compute_obj(
+    beadparams, fit_bead, fit_parameter_names, exp_dict, bounds, frozen_parameters=None
+):
     r"""
-    Fit defined parameters for equation of state object with given experimental data. 
+    Fit defined parameters for equation of state object with given experimental data.
 
-    Each set of experimental data is converted to an object with the built-in ability to evaluate its part of objective function. 
+    Each set of experimental data is converted to an object with the built-in ability
+    to evaluate its part of objective function.
     To add another type of supported experimental data, see :ref:`contribute-fitting`.
 
     Parameters
     ----------
-    parameters_guess : numpy.ndarray, 
-        An array of initial guesses for parameters, these will be optimized throughout the process.
+    parameters_guess : numpy.ndarray,
+        An array of initial guesses for parameters, these will be optimized throughout
+        the process.
     fit_bead : str
         Name of bead whose parameters are being fit.
     fit_parameter_names : list[str]
-        This list contains the name of the parameter being fit (e.g. epsilon). See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
+        This list contains the name of the parameter being fit (e.g. epsilon). See EOS
+        documentation for supported parameter names. Cross interaction parameter names
+        should be composed of parameter name and the other bead type, separated by an
+        underscore (e.g. epsilon_CO2).
     exp_dict : dict
         Dictionary of experimental data objects.
     bounds : list[tuple]
-        List of length equal to fit_parameter_names with lists of pairs containing minimum and maximum bounds of parameters being fit. Defaults from Eos object are broad, so we recommend specification.
+        List of length equal to fit_parameter_names with lists of pairs containing
+        minimum and maximum bounds of parameters being fit. Defaults from Eos object
+        are broad, so we recommend specification.
     frozen_parameters : numpy.ndarray, Optional, default=None
-        List of first parameters in the fit_parameter_names list that are frozen during minimization. This feature is currently used in the :func:`~despasito.parameter_fitting.global_methods.grid_minimization` method, enabled with the ``split_grid_minimization`` feature.
+        List of first parameters in the fit_parameter_names list that are frozen during
+        minimization. This feature is currently used in the
+        :func:`~despasito.parameter_fitting.global_methods.grid_minimization` method,
+        enabled with the ``split_grid_minimization`` feature.
 
     Returns
     -------
     Objective : float
         Sum of objective values according to appropriate weights.
-        
+
     """
 
     # Update bead_library with test parameters
@@ -404,7 +483,8 @@ def compute_obj(beadparams, fit_bead, fit_parameter_names, exp_dict, bounds, fro
             beadparams = np.array(list(frozen_parameters) + list(beadparams))
         else:
             raise ValueError(
-                "The length of initial guess vector should be the same number of parameters to be fit."
+                "The length of initial guess vector should be the same number of "
+                + "parameters to be fit."
             )
 
     logger.info(
@@ -455,10 +535,12 @@ def compute_obj(beadparams, fit_bead, fit_parameter_names, exp_dict, bounds, fro
 
     # Write out parameters and objective functions for each dataset
     logger.info(
-        "\nParameters: {}Total Obj.\nValues: {}{}\nExp. Data: {}\nObj. Values: {}".format(
-            ("{}, "*len(fit_parameter_names)).format(*fit_parameter_names),
-            ("{}, "*len(beadparams)).format(*beadparams),
+        "\nParameters: {}Total Obj.\nValues: {}{}\n".format(
+            ("{}, " * len(fit_parameter_names)).format(*fit_parameter_names),
+            ("{}, " * len(beadparams)).format(*beadparams),
             obj_total,
+        )
+        + "Exp. Data: {}\nObj. Values: {}".format(
             list(exp_dict.keys()),
             obj_function,
         )
@@ -475,10 +557,11 @@ def obj_function_form(
     nan_number=1000,
     nan_ratio=0.1,
 ):
-    """
-    Sets objective functional form 
+    r"""
+    Sets objective functional form
 
-    Note that if the result is np.nan, that point is removed from the list for the purposes of averaging.
+    Note that if the result is np.nan, that point is removed from the list for the
+    purposes of averaging.
 
     Parameters
     ----------
@@ -487,20 +570,31 @@ def obj_function_form(
     data0 : numpy.ndarray
         Reference data for comparison
     weights : (numpy.ndarray or float), Optional, default=1.0
-        Can be a float or array of data of the same length as ``data_test``. Allows the user to tune the importance of various data points.
+        Can be a float or array of data of the same length as ``data_test``. Allows
+        the user to tune the importance of various data points.
     method : str, Optional, default="mean-squared-relative-error"
         Keyword used to choose the functional form. Can be:
 
-        - average-squared-deviation: :math:`\sum{(\\frac{data\_test-data0}{data0})^2}/N`
+        - average-squared-deviation:
+        :math:`\sum{(\\frac{data\_test-data0}{data0})^2}/N`
         - sum-squared-deviation: :math:`\sum{(\\frac{data\_test-data0}{data0})^2}`
-        - sum-squared-deviation-boltz: :math:`\sum{(\\frac{data\_test-data0}{data0})^2 exp(\\frac{data\_test\_min-data\_test}{|data\_test\_min|})}` [DOI: 10.1063/1.2181979]
-        - sum-deviation-boltz: :math:`\sum{\\frac{data\_test-data0}{data0} exp(\\frac{data\_test\_min-data\_test}{|data\_test\_min|})}` [DOI: 10.1063/1.2181979]
-        - percent-absolute-average-deviation: :math:`\sum{(\\frac{data\_test-data0}{data0})^2}/N \\times 100`
+        - sum-squared-deviation-boltz: :math:`\sum{(\\frac{data\_test-data0}{data0})^2`
+        :math:`exp(\\frac{data\_test\_min-data\_test}{|data\_test\_min|})}`
+        [DOI: 10.1063/1.2181979]
+        - sum-deviation-boltz: :math:`\sum{\\frac{data\_test-data0}{data0}`
+        :math:`exp(\\frac{data\_test\_min-data\_test}{|data\_test\_min|})}`
+        [DOI: 10.1063/1.2181979]
+        - percent-absolute-average-deviation:
+        :math:`\sum{(\\frac{data\_test-data0}{data0})^2}/N \\times 100`
 
     nan_ratio : float, Optional, default=0.1
-        If more than "nan_ratio*100" percent of the calculated data failed to produce NaN, increase the objective value by the number of entries where data_test is NaN times ``nan_number``.
+        If more than "nan_ratio*100" percent of the calculated data failed to produce
+        NaN, increase the objective value by the number of entries where data_test is
+        NaN times ``nan_number``.
     nan_number : float, Optional, default=1000
-        If a thermodynamic calculation produces NaN, add this quantity to the objective value. (See nan_ratio)
+        If a thermodynamic calculation produces NaN, add this quantity to the
+        objective
+        value. (See nan_ratio)
 
     Returns
     -------
@@ -510,16 +604,14 @@ def obj_function_form(
 
     if np.size(data0) != np.size(data_test):
         raise ValueError(
-            "Input data of length, {}, must be the same length as reference data of length {}".format(
-                len(data_test), len(data0)
-            )
+            "Input data of length, {}, must be the same length".format(len(data_test))
+            + " as reference data of length {}".format(len(data0))
         )
 
     if np.size(weights) > 1 and np.size(weights) != np.size(data_test):
         raise ValueError(
-            "Weight for data is provided as an array of length, {}, but must be length, {}.".format(
-                len(weights), len(data_test)
-            )
+            "Weight for data is provided as an array of length, "
+            + "{}, but must be length, {}.".format(len(weights), len(data_test))
         )
 
     data_tmp = np.array(
@@ -541,15 +633,15 @@ def obj_function_form(
         weight_tmp = weights
 
     if method == "average-squared-deviation":
-        obj_value = np.mean(data_tmp ** 2 * weight_tmp)
+        obj_value = np.mean(data_tmp**2 * weight_tmp)
 
     elif method == "sum-squared-deviation":
-        obj_value = np.sum(data_tmp ** 2 * weight_tmp)
+        obj_value = np.sum(data_tmp**2 * weight_tmp)
 
     elif method == "sum-squared-deviation-boltz":
         data_min = np.min(data_tmp)
         obj_value = np.sum(
-            data_tmp ** 2 * weight_tmp * np.exp((data_min - data_tmp) / np.abs(data_min))
+            data_tmp**2 * weight_tmp * np.exp((data_min - data_tmp) / np.abs(data_min))
         )
 
     elif method == "sum-deviation-boltz":
@@ -569,15 +661,13 @@ def obj_function_form(
         if tmp > nan_ratio:
             obj_value += (len(data_test) - len(data_tmp)) * nan_number
             logger.debug(
-                "Values of NaN were removed from objective value calculation, nan_ratio {} > {}, augment obj. value".format(
-                    tmp, nan_ratio
-                )
+                "Values of NaN were removed from objective value calculation, "
+                + "nan_ratio {} > {}, augment obj. value".format(tmp, nan_ratio)
             )
         else:
             logger.debug(
-                "Values of NaN were removed from objective value calculation, nan_ratio {} < {}".format(
-                    tmp, nan_ratio
-                )
+                "Values of NaN were removed from objective value calculation, "
+                + "nan_ratio {} < {}".format(tmp, nan_ratio)
             )
 
     return obj_value

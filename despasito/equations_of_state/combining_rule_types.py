@@ -1,4 +1,5 @@
-""" Combining rules options called from :func:`~despasito.equations_of_state.eos_toolbox.combining_rules` in the EOS class.
+""" Combining rules options called from
+:func:`~despasito.equations_of_state.eos_toolbox.combining_rules` in the EOS class.
 """
 
 import numpy as np
@@ -12,7 +13,7 @@ logger = logging.getLogger(__name__)
 def mean(beadA, beadB, parameter):
     r"""
     Calculates cross interaction parameter with a mean: c = (a+b)/2
-    
+
     Parameters
     ----------
     beadA : dict
@@ -21,7 +22,7 @@ def mean(beadA, beadB, parameter):
         Dictionary of parameters used to describe a bead
     parameter : str
         Name of parameter for which a mixed value is needed
-        
+
     Returns
     -------
     parameter12 : float
@@ -35,7 +36,7 @@ def mean(beadA, beadB, parameter):
 def geometric_mean(beadA, beadB, parameter):
     r"""
     Calculates cross interaction parameter with a geometric mean: c = np.sqrt(a*b)
-    
+
     Parameters
     ----------
     beadA : dict
@@ -44,7 +45,7 @@ def geometric_mean(beadA, beadB, parameter):
         Dictionary of parameters used to describe a bead
     parameter : str
         Name of parameter for which a mixed value is needed
-        
+
     Returns
     -------
     parameter12 : float
@@ -57,8 +58,9 @@ def geometric_mean(beadA, beadB, parameter):
 
 def volumetric_geometric_mean(beadA, beadB, parameter, weighting_parameters=[]):
     r"""
-    Calculates cross interaction parameter with a volumetric geometric mean: c = np.sqrt(a[0]*b[0]) * np.sqrt(a[1]**3 * b[1]**3) / ((a[1] + b[1])/2)**3
-    
+    Calculates cross interaction parameter with a volumetric geometric mean:
+        c = np.sqrt(a[0]*b[0]) * np.sqrt(a[1]**3 * b[1]**3) / ((a[1] + b[1])/2)**3
+
     Parameters
     ----------
     beadA : dict
@@ -68,7 +70,8 @@ def volumetric_geometric_mean(beadA, beadB, parameter, weighting_parameters=[]):
     parameter : str
         Name of parameter for which a mixed value is needed
     weighting_parameters : list[str], Optional, default=[]
-        Given parameter name is a0 and b0, while weighting_parameters should be of length 1 to represent the name for a1 and b1.
+        Given parameter name is a0 and b0, while weighting_parameters should be of
+        length 1 to represent the name for a1 and b1.
 
     Returns
     -------
@@ -89,8 +92,9 @@ def volumetric_geometric_mean(beadA, beadB, parameter, weighting_parameters=[]):
 
 def weighted_mean(beadA, beadB, parameter, weighting_parameters=[]):
     r"""
-    Calculates cross interaction parameter with a weighted mean: (a[0]*a[1] + b[0]*b[1]) / (a[1] + b[1])
-    
+    Calculates cross interaction parameter with a weighted mean:
+        (a[0]*a[1] + b[0]*b[1]) / (a[1] + b[1])
+
     Parameters
     ----------
     beadA : dict
@@ -100,7 +104,8 @@ def weighted_mean(beadA, beadB, parameter, weighting_parameters=[]):
     parameter : str
         Name of parameter for which a mixed value is needed
     weighting_parameters : list[str], Optional, default=[]
-        Given parameter name is a0 and b0, while weighting_parameters should be of length 1 to represent the name for a1 and b1.
+        Given parameter name is a0 and b0, while weighting_parameters should be of
+        length 1 to represent the name for a1 and b1.
 
     Returns
     -------
@@ -119,8 +124,9 @@ def weighted_mean(beadA, beadB, parameter, weighting_parameters=[]):
 
 def mie_exponent(beadA, beadB, parameter):
     r"""
-    Calculates cross interaction parameter like a mie_exponent: 3 + np.sqrt((a-3)*(b-3))
-    
+    Calculates cross interaction parameter like a mie_exponent:
+        3 + np.sqrt((a-3)*(b-3))
+
     Parameters
     ----------
     beadA : dict
@@ -142,8 +148,9 @@ def mie_exponent(beadA, beadB, parameter):
 
 def square_well_berthelot(beadA, beadB, parameter, weighting_parameters=[]):
     r"""
-    Calculates cross interaction parameter with a Square_well Berthelot geometric mean: c = np.sqrt(a[0]*b[0]) * np.sqrt(a[1]**3 * b[1]**3) / ((a[1] + b[1])/2)**3
-    
+    Calculates cross interaction parameter with a Square_well Berthelot geometric mean:
+        c = np.sqrt(a[0]*b[0]) * np.sqrt(a[1]**3 * b[1]**3) / ((a[1] + b[1])/2)**3
+
     Parameters
     ----------
     beadA : dict
@@ -153,7 +160,8 @@ def square_well_berthelot(beadA, beadB, parameter, weighting_parameters=[]):
     parameter : str
         Name of parameter for which a mixed value is needed
     weighting_parameters : list[str], Optional, default=[]
-        Given parameter name is a0 and b0, while weighting_parameters should be of length 1 to represent the name for a1 and b1.
+        Given parameter name is a0 and b0, while weighting_parameters should be of
+        length 1 to represent the name for a1 and b1.
 
     Returns
     -------
@@ -173,7 +181,7 @@ def square_well_berthelot(beadA, beadB, parameter, weighting_parameters=[]):
 
     param3_12 = weighted_mean(beadA, beadB, param3, weighting_parameters=[param2])
     tmp3 = np.sqrt((beadA[param3] ** 3 - 1) * (beadB[param3] ** 3 - 1)) / (
-        param3_12 ** 3 - 1
+        param3_12**3 - 1
     )
 
     return tmp1 * tmp2 * tmp3
@@ -183,8 +191,9 @@ def multipole(
     beadA, beadB, parameter, temperature=None, mode="curve fit", scaled=False
 ):
     r"""
-    Calculates cross interaction parameter with the multipole combining rules from the plug-in `MAPSCI <https://github.com/jaclark5/mapsci>`_.
-    
+    Calculates cross interaction parameter with the multipole combining rules from
+    the plug-in `MAPSCI <https://github.com/jaclark5/mapsci>`_.
+
     Parameters
     ----------
     beadA : dict
@@ -194,11 +203,15 @@ def multipole(
     parameter : str
         Name of parameter for which a mixed value is needed
     weighting_parameters : list[str], Optional, default=[]
-        Given parameter name is a0 and b0, while weighting_parameters should be of length 1 to represent the name for a1 and b1.
+        Given parameter name is a0 and b0, while weighting_parameters should be of
+        length 1 to represent the name for a1 and b1.
     mode : str, Optional, default='curve fit'
-        Dictates the mode by which the parameters are fit. By default the Mie parameters are fit to the multipole with the keyword "curve fit". Alternatively, the keyword "analytical" indicates that the energy parameter is explicitly calculated from the definite integral.
+        Dictates the mode by which the parameters are fit. By default the Mie
+        parameters are fit to the multipole with the keyword "curve fit".
+        Alternatively, the keyword "analytical" indicates that the energy parameter is
+        explicitly calculated from the definite integral.
     scaled : bool, Optional, default=False
-        Dictates whether the shape factor is used to scale the Mie potential 
+        Dictates whether the shape factor is used to scale the Mie potential
 
     Returns
     -------
@@ -211,7 +224,8 @@ def multipole(
         import mapsci as mr
     except Exception:
         raise ImportError(
-            "Multipole combining rules require 'mapsci' package, which is currently unavailable. Install it from: https://github.com/jaclark5/mapsci"
+            "Multipole combining rules require 'mapsci' package, which is currently"
+            " unavailable. Install it from: https://github.com/jaclark5/mapsci"
         )
 
     if scaled in [True, "True", "true", "yes", "Yes"]:
@@ -219,7 +233,7 @@ def multipole(
     else:
         shape_factor_scale = False
 
-    if not isinstance(temperature, str) and temperature != None:
+    if not isinstance(temperature, str) and temperature is None:
         tmp = {"beadA": beadA.copy(), "beadB": beadB.copy()}
         for key, value in tmp.items():
             tmp[key]["sigma"] = value["sigma"] * 10  # convert from nm to angstroms

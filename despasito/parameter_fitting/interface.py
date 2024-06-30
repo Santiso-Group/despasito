@@ -19,12 +19,18 @@ class ExpDataTemplate(ABC):
         Dictionary of exp data
 
         * calculation_type (str) - Optional, default=*to be set*
-        * MultiprocessingObject (obj) - Optional, Initiated :class:`~despasito.utils.parallelization.MultiprocessingJob` 
+        * MultiprocessingObject (obj) - Optional, Initiated
+        :class:`~despasito.utils.parallelization.MultiprocessingJob`
         * eos_obj (obj) - Equation of state object
-        * weights (dict) - A dictionary where each key is the header used in the exp. data file. The value associated with a header can be a list as long as the number of data points to multiply by the objective value associated with each point, or a float to multiply the objective value of this data set.
-        * density_opts (dict) - Optional, default={}, Dictionary of options used in calculating pressure vs. mole fraction curves.
+        * weights (dict) - A dictionary where each key is the header used in the exp.
+        data file. The value associated with a header can be a list as long as the
+        number of data points to multiply by the objective value associated with each
+        point, or a float to multiply the objective value of this data set.
+        * density_opts (dict) - Optional, default={}, Dictionary of options used in
+        calculating pressure vs. mole fraction curves.
         * Allowed property keys and associated values
-        * kwargs for :func:`~despasito.parameter_fitting.fit_functions.obj_function_form`
+        * kwargs for
+        :func:`~despasito.parameter_fitting.fit_functions.obj_function_form`
 
     Attributes
     ----------
@@ -33,17 +39,19 @@ class ExpDataTemplate(ABC):
     Eos : obj
         Equation of state object
     weights : dict, Optional, default: {"some_property": 1.0 ...}
-        Dictionary corresponding to thermo_dict, with weighting factor or vector for each system property used in fitting
+        Dictionary corresponding to thermo_dict, with weighting factor or vector for
+        each system property used in fitting
     obj_opts : dict
-        Keywords to compute the objective function with :func:`~despasito.parameter_fitting.fit_functions.obj_function_form`.
+        Keywords to compute the objective function with
+        :func:`~despasito.parameter_fitting.fit_functions.obj_function_form`.
     npoints : int
         Number of sets of system conditions this object computes
     thermodict : dict
         Dictionary of inputs needed for thermodynamic calculations
-    
+
         - calculation_type (str) default=*to be set*
         - density_opts (dict) default={}
-  
+
     """
 
     def __init__(self, data_dict):
@@ -88,17 +96,20 @@ class ExpDataTemplate(ABC):
         r"""
         Update a single parameter value during parameter fitting process.
 
-        To refresh those parameters that are dependent on to bead_library or cross_library, use method "parameter refresh".
-        
+        To refresh those parameters that are dependent on to bead_library or
+        cross_library, use method "parameter refresh".
+
         Parameters
         ----------
         fit_bead : str
             Name of bead being fit
         param_names : list
-            Parameters to be fit. See EOS documentation for supported parameter names. Cross interaction parameter names should be composed of parameter name and the other bead type, separated by an underscore (e.g. epsilon_CO2).
+            Parameters to be fit. See EOS documentation for supported parameter names.
+            Cross interaction parameter names should be composed of parameter name and
+            the other bead type, separated by an underscore (e.g. epsilon_CO2).
         param_values : list
             Value of parameter
-            
+
         """
 
         for i, param in enumerate(param_names):
@@ -120,9 +131,9 @@ class ExpDataTemplate(ABC):
                 )
             else:
                 raise ValueError(
-                    "Parameters for only one bead are allowed to be fit. Multiple underscores in a parameter name suggest more than one bead type in your fit parameter name, {}".format(
-                        param
-                    )
+                    "Parameters for only one bead are allowed to be fit. Multiple "
+                    "underscores in a parameter name suggest more than one bead type "
+                    "in your fit parameter name, {}".format(param)
                 )
 
         if hasattr(self.Eos, "parameter_refresh"):
@@ -130,13 +141,16 @@ class ExpDataTemplate(ABC):
 
     @abstractmethod
     def objective(self):
-        """ Float representing objective function of from comparing predictions to experimental data.
-        """
+        """Float representing objective function of from comparing predictions to
+        experimental data."""
         pass
 
     def __str__(self):
 
-        string = "Data Set Object\nName: {}\nCalculation_type: {}\nNumber of Points: {}".format(
-            self.name, self.thermodict["calculation_type"], self.npoints
+        string = (
+            "Data Set Object\nName: {}\nCalculation_type: {}\nNumber of "
+            "Points: {}".format(
+                self.name, self.thermodict["calculation_type"], self.npoints
+            )
         )
         return string

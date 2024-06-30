@@ -1,7 +1,6 @@
 """
-Contains constants used in the other files.    
+Contains constants used in the other files.
 """
-
 
 # physical constants
 

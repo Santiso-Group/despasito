@@ -8,6 +8,7 @@ Create an EOS class from options taken from factory design pattern.
 from importlib import import_module
 import logging
 
+
 class method_stat:
 
     def __init__(self, numba=True, cython=False, python=False):
@@ -21,9 +22,12 @@ class method_stat:
 
     def __str__(self):
 
-        string = "Compilation: numba {}, cython {}, python {}".format(self.numba, self.cython, self.python)
+        string = "Compilation: numba {}, cython {}, python {}".format(
+            self.numba, self.cython, self.python
+        )
 
         return string
+
 
 logger = logging.getLogger(__name__)
 
@@ -34,21 +38,26 @@ def initiate_eos(
     """
     Interface between the user and our library of equations of state (EOS).
 
-    Input the name of a desired EOS and available classes are automatically searched to allow easy implementation of new EOS.
+    Input the name of a desired EOS and available classes are automatically searched
+    to allow easy implementation of new EOS.
 
     Parameters
     ----------
     eos : str, Optional, default="saft.gamma_mie"
-        Name of EOS, see :ref:`EOS-types` in the documentation for additional options. Input should be in the form EOSfamily.EOSname (e.g. saft.gamme_mie).
+        Name of EOS, see :ref:`EOS-types` in the documentation for additional options.
+        Input should be in the form EOSfamily.EOSname (e.g. saft.gamme_mie).
     numba : bool, Optional, default=False
         If True and available for chosen EOS, numba Just-In-Time compilation is used.
     cython : bool, Optional, default=False
         If True and available for chosen EOS, cython pre-compiled modules are used.
     python : bool, Optional, default=False
-        If True and available for chosen EOS, pure python is used for everything, note that if association sites are present in the SAFT EOS, this is detrimentally slow
+        If True and available for chosen EOS, pure python is used for everything, note
+        that if association sites are present in the SAFT EOS, this is detrimentally
+        slow
     kwargs
-        Other keyword argument inputs for the desired EOS. See specific EOS documentation for required inputs.
-                
+        Other keyword argument inputs for the desired EOS. See specific EOS
+        documentation for required inputs.
+
     Returns
     -------
     instance : obj
@@ -59,7 +68,8 @@ def initiate_eos(
 
     factory_families = [
         "saft"
-    ]  # Eos families in this list have a general object with a factory to import relevant modules
+    ]  # Eos families in this list have a general object with a factory to import
+    # relevant modules
 
     logger.info("Using EOS: {}".format(eos))
 
@@ -85,7 +95,8 @@ def initiate_eos(
         eos_class = getattr(eos_module, class_name)
     except AttributeError:
         raise ImportError(
-            "Based on your input, '{}', we expect the class, {}, in a module, {}, found in the package, {}, which indicates the EOS family.".format(
+            "Based on your input, '{}', we expect the class, {}, in a module, {},"
+            " found in the package, {}, which indicates the EOS family.".format(
                 eos, class_name, eos_type, eos_fam
             )
         )

@@ -1,5 +1,6 @@
 r"""
-Objects for storing and producing objective values for comparing experimental data to EOS predictions.    
+Objects for storing and producing objective values for comparing experimental data to
+EOS predictions.
 """
 
 import numpy as np
@@ -9,10 +10,10 @@ from despasito import fundamental_constants as constants
 from despasito.thermodynamics import thermo
 from despasito.parameter_fitting import fit_functions as ff
 from despasito.parameter_fitting.interface import ExpDataTemplate
-from despasito import fundamental_constants as constants
 import despasito.utils.general_toolbox as gtb
 
 logger = logging.getLogger(__name__)
+
 
 ##################################################################
 #                                                                #
@@ -20,12 +21,13 @@ logger = logging.getLogger(__name__)
 #                                                                #
 ##################################################################
 class Data(ExpDataTemplate):
-
     r"""
-    Object for saturation data. This data is evaluated with "saturation_properties". 
+    Object for saturation data. This data is evaluated with "saturation_properties".
 
-    This object is initiated in :func:`~despasito.parameter_fitting.fit` with the keyword, ``exp_data[*]["data_class_type"]="saturation_properties"``.
-    The data could be evaluated with :func:`~despasito.thermodynamics.calculation_types.saturation_properties`
+    This object is initiated in :func:`~despasito.parameter_fitting.fit` with the
+    keyword, ``exp_data[*]["data_class_type"]="saturation_properties"``.
+    The data could be evaluated with
+    :func:`~despasito.thermodynamics.calculation_types.saturation_properties`
 
     Parameters
     ----------
@@ -33,16 +35,28 @@ class Data(ExpDataTemplate):
         Dictionary of exp data of saturation properties.
 
         * calculation_type (str) - Optional, default='saturation_properties'
-        * MultiprocessingObject (obj) - Optional, Initiated :class:`~despasito.utils.parallelization.MultiprocessingJob`
+        * MultiprocessingObject (obj) - Optional, Initiated
+        :class:`~despasito.utils.parallelization.MultiprocessingJob`
         * eos_obj (obj) - Equation of state object
         * T (list) - [K] List of temperature values for calculation
-        * xi (list) - (or yi) List of liquid mole fractions used in saturation properties calculations, should be one for the molecule of focus and zero for the remainder.
+        * xi (list) - (or yi) List of liquid mole fractions used in saturation
+        properties calculations, should be one for the molecule of focus and zero for
+        the remainder.
         * Psat (list) - [Pa] List of saturation pressure values to evaluate against
-        * rhov (list) - [mol/:math:`m^3`] List of vapor density values to evaluate against
-        * rhol (list) - [mol/:math:`m^3`] List of liquid density values to evaluate against
-        * weights (dict) - A dictionary where each key is a system constraint (e.g. T or xi) which is also a header used in an optional exp. data file. The value associated with a header can be a list as long as the number of data points to multiply by the objective value associated with each point, or a float to multiply the objective value of this data set.
-        * density_opts (dict) - Optional, default={"min_density_fraction":(1.0 / 60000.0), "density_increment":10.0, "max_volume_increment":1.0E-4}, Dictionary of options used in calculating pressure vs. mole fraction curves.
-        * kwargs for :func:`~despasito.parameter_fitting.fit_functions.obj_function_form`
+        * rhov (list) - [mol/:math:`m^3`] List of vapor density values to evaluate
+        against
+        * rhol (list) - [mol/:math:`m^3`] List of liquid density values to evaluate
+        against
+        * weights (dict) - A dictionary where each key is a system constraint
+        (e.g. T or xi) which is also a header used in an optional exp. data file. The
+        value associated with a header can be a list as long as the number of data
+        points to multiply by the objective value associated with each point, or a
+        float to multiply the objective value of this data set.
+        * density_opts (dict) - Optional, default={"min_density_fraction":
+        (1.0 / 60000.0), "density_increment":10.0, "max_volume_increment":1.0E-4},
+        Dictionary of options used in calculating pressure vs. mole fraction curves.
+        * kwargs for
+        :func:`~despasito.parameter_fitting.fit_functions.obj_function_form`
 
     Attributes
     ----------
@@ -51,20 +65,24 @@ class Data(ExpDataTemplate):
     Eos : obj
         Equation of state object
     obj_opts : dict
-        Keywords to compute the objective function with :func:`~despasito.parameter_fitting.fit_functions.obj_function_form`.
+        Keywords to compute the objective function with
+        :func:`~despasito.parameter_fitting.fit_functions.obj_function_form`.
     npoints : int
         Number of sets of system conditions this object computes
     result_keys : list
-        Thermodynamic property names used in calculation of objective function. In in this case: ["rhol", "rhov", "Psat"]
+        Thermodynamic property names used in calculation of objective function. In in
+        this case: ["rhol", "rhov", "Psat"]
     thermodict : dict
         Dictionary of inputs needed for thermodynamic calculations
-        
+
         - calculation_type (str) default=saturation_properties
-        - density_opts (dict) default={"min_density_fraction":(1.0 / 80000.0), "density_increment":10.0, "max_volume_increment":1.0E-4}
+        - density_opts (dict) default={"min_density_fraction":(1.0 / 80000.0),
+        "density_increment":10.0, "max_volume_increment":1.0E-4}
 
     weights : dict, Optional, default: {"some_property": 1.0 ...}
-        Dictionary corresponding to thermodict, with weighting factor or vector for each system property used in fitting
-        
+        Dictionary corresponding to thermodict, with weighting factor or vector for
+        each system property used in fitting
+
     """
 
     def __init__(self, data_dict):
@@ -75,7 +93,7 @@ class Data(ExpDataTemplate):
 
         # If required items weren't defined, set defaults
         self.name = "saturation_properties"
-        if self.thermodict["calculation_type"] == None:
+        if self.thermodict["calculation_type"] is None:
             self.thermodict["calculation_type"] = "saturation_properties"
 
         tmp = {
@@ -106,9 +124,8 @@ class Data(ExpDataTemplate):
                     self.thermodict["Psat"]
                 ):
                     raise ValueError(
-                        "Array of weights for '{}' values not equal to number of experimental values given.".format(
-                            "P"
-                        )
+                        "Array of weights for '{}' values not equal to number of "
+                        "experimental values given.".format("P")
                     )
                 else:
                     self.weights["Psat"] = self.weights.pop("P")
@@ -127,7 +144,8 @@ class Data(ExpDataTemplate):
 
         if "xilist" not in self.thermodict and self.Eos.number_of_components > 1:
             raise ValueError(
-                "Ambiguous instructions. Include xi to define intended component to obtain saturation properties"
+                "Ambiguous instructions. Include xi to define intended component to "
+                "obtain saturation properties"
             )
         thermo_defaults = [
             np.array([[1.0] for x in range(self.npoints)]),
@@ -152,11 +170,13 @@ class Data(ExpDataTemplate):
         tmp = ["Psat", "rhol", "rhov"]
         if not any([x in self.thermodict for x in tmp]):
             raise ImportError(
-                "Given saturation data, values for Psat, rhol, and/or rhov should have been provided."
+                "Given saturation data, values for Psat, rhol, and/or rhov should have "
+                "been provided."
             )
 
         logger.info(
-            "Data type 'saturation_properties' initiated with calculation_type, {}, and data types: {}.\nWeight data by: {}".format(
+            "Data type 'saturation_properties' initiated with calculation_type, {}, and"
+            " data types: {}.\nWeight data by: {}".format(
                 self.thermodict["calculation_type"],
                 ", ".join(self.result_keys),
                 self.weights,
@@ -164,14 +184,14 @@ class Data(ExpDataTemplate):
         )
 
     def _thermo_wrapper(self):
-
         """
         Generate thermodynamic predictions from Eos object
 
         Returns
         -------
         phase_list : float
-            A list of the predicted thermodynamic values estimated from thermo calculation. This list can be composed of lists or floats
+            A list of the predicted thermodynamic values estimated from thermo
+            calculation. This list can be composed of lists or floats
         """
 
         # Remove results
@@ -191,7 +211,6 @@ class Data(ExpDataTemplate):
         return output
 
     def objective(self):
-
         """
         Generate objective function value from this dataset
 
@@ -203,7 +222,7 @@ class Data(ExpDataTemplate):
 
         phase_list = self._thermo_wrapper()
 
-        ## Reformat array of results
+        # Reformat array of results
         phase_list, len_list = ff.reformat_output(phase_list)
         phase_list = np.transpose(np.array(phase_list))
 
@@ -241,5 +260,5 @@ class Data(ExpDataTemplate):
             obj_total = np.inf
         else:
             obj_total = np.nansum(obj_value)
-            
+
         return obj_total

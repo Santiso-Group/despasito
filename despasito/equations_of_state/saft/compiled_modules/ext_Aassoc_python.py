@@ -21,25 +21,31 @@ def calc_Xika(
     tol=1e-12,
     damp=0.1,
 ):
-    r""" 
-    Calculate the fraction of molecules of component i that are not bonded at a site of type a on group k.
+    r"""
+    Calculate the fraction of molecules of component i that are not bonded at a site
+    of type a on group k.
 
     Parameters
     ----------
     indices : list[list]
-        A list of sets of (component, bead, site) to identify the values of the Xika matrix that are being fit
+        A list of sets of (component, bead, site) to identify the values of the Xika
+        matrix that are being fit
     rho : numpy.ndarray
         Number density of system [mol/m^3]
     xi : numpy.ndarray
         Mole fraction of each component, sum(xi) should equal 1.0
     molecular_composition : numpy.array
-        :math:`\nu_{i,k}/k_B`, Array of number of components by number of bead types. Defines the number of each type of group in each component. 
+        :math:`\nu_{i,k}/k_B`, Array of number of components by number of bead types.
+        Defines the number of each type of group in each component.
     nk : numpy.ndarray
         For each bead the number of each type of site
     Fklab : numpy.ndarray
-        The association strength between a site of type a on a group of type k of component i and a site of type b on a group of type l of component j., known as the Mayer f-function.
+        The association strength between a site of type a on a group of type k of
+        component i and a site of type b on a group of type l of component j., known
+        as the Mayer f-function.
     gr_assoc : numpy.ndarray
-        Reference fluid pair correlation function used in calculating association sites, (len(rho) x Ncomp x Ncomp)
+        Reference fluid pair correlation function used in calculating association
+        sites, (len(rho) x Ncomp x Ncomp)
     maxiter : int, Optional, default=500
         Maximum number of iteration for minimization
     tol : float, Optional, default=1e-12
@@ -50,9 +56,11 @@ def calc_Xika(
     Returns
     -------
     Xika : numpy.ndarray
-        The fraction of molecules of component i that are not bonded at a site of type a on group k. Matrix (len(rho) x Ncomp x Nbeads x len(sitenames))
+        The fraction of molecules of component i that are not bonded at a site of type
+        a on group k. Matrix (len(rho) x Ncomp x Nbeads x len(sitenames))
     err_array : numpy.ndarray
-        Of the same length of rho, is a list in the error of the total error Xika for each point.
+        Of the same length of rho, is a list in the error of the total error Xika for
+        each point.
     """
 
     # ncomp, nbeads = np.shape(molecular_composition)
@@ -84,7 +92,7 @@ def calc_Xika(
                             * Kklab[i, j, k, l, a, b]
                             * gr_assoc[r, i, j]
                         )
-                    
+
                     Xika_elements_new[ind] += (
                         constants.molecule_per_nm3
                         * rho[r]

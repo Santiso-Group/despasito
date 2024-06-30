@@ -1,7 +1,9 @@
 """
 Thermodynamics
 
-This package will take in an equation of state object, and any user defined variables for calculation. The calculation type will then be compared to those available in the thermo.py file and be executed.
+This package will take in an equation of state object, and any user defined variables
+for calculation. The calculation type will then be compared to those available in the
+thermo.py file and be executed.
 
 """
 
@@ -16,16 +18,20 @@ from . import calculation_types
 
 def thermo(Eos, calculation_type=None, **kwargs):
     """
-    Use factory design pattern to search for matching calculation_type with those supported in this module.
-    
-    To add a new calculation type, add a new wrapper function to ``calculation_types.py``.
+    Use factory design pattern to search for matching calculation_type with those
+    supported in this module.
+
+    To add a new calculation type, add a new wrapper function to
+    ``calculation_types.py``.
 
     Parameters
     ----------
     Eos : obj
-        Equation of state object with the following methods: ``pressure``, ``density_max``, and ``fugacity_coefficient``.
+        Equation of state object with the following methods: ``pressure``,
+        ``density_max``, and ``fugacity_coefficient``.
     calculation_type : str
-        Calculation type supported in :mod:`~despasito.thermodynamics.calculation_types`
+        Calculation type supported in
+        :mod:`~despasito.thermodynamics.calculation_types`
     kwargs
         Other keywords passed to the function, depends on calculation type
 
@@ -35,7 +41,7 @@ def thermo(Eos, calculation_type=None, **kwargs):
         Output of dictionary containing given and calculated values
     """
 
-    if calculation_type == None:
+    if calculation_type is None:
         raise ValueError("No calculation type specified")
 
     # Extract available calculation types
@@ -47,9 +53,8 @@ def thermo(Eos, calculation_type=None, **kwargs):
 
     except Exception:
         raise ImportError(
-            "The calculation type, '{}', was not found\nThe following calculation types are supported: {}".format(
-                calculation_type, ", ".join(calc_list)
-            )
+            "The calculation type, '{}', was not found\nThe following calculation "
+            "types are supported: {}".format(calculation_type, ", ".join(calc_list))
         )
 
     try:

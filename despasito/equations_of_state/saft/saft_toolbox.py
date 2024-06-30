@@ -1,6 +1,7 @@
 """
 General functions that are applicable to multiple SAFT variants
 """
+
 import numpy as np
 import logging
 
@@ -12,9 +13,9 @@ logger = logging.getLogger(__name__)
 def calc_hard_sphere_matricies(T, sigmakl, bead_library, beads, Cprefactor_funcion):
     r"""
     Computes matrix of hard sphere interaction parameters dkk, dkl, and x0kl.
-    
+
     This does not include function specific or association terms.
-    
+
     Parameters
     ----------
     T : float
@@ -22,19 +23,23 @@ def calc_hard_sphere_matricies(T, sigmakl, bead_library, beads, Cprefactor_funci
     sigmakl : numpy.ndarray
         Matrix of Mie diameter for groups (k,l)
     bead_library : dict
-        A dictionary where bead names are the keys to access EOS self interaction parameters:
-        
-        - epsilon: :math:`\epsilon_{k,k}/k_B`, Energy well depth scaled by Boltzmann constant
+        A dictionary where bead names are the keys to access EOS self interaction
+        parameters:
+
+        - epsilon: :math:`\epsilon_{k,k}/k_B`, Energy well depth scaled by Boltzmann
+        constant
         - sigma: :math:`\sigma_{k,k}`, Size parameter [m]
         - mass: Bead mass [kg/mol]
-        - lambdar: :math:`\lambda^{r}_{k,k}`, Exponent of repulsive term between groups of type k
-        - lambdaa: :math:`\lambda^{a}_{k,k}`, Exponent of attractive term between groups of type k
-    
+        - lambdar: :math:`\lambda^{r}_{k,k}`, Exponent of repulsive term between groups
+        of type k
+        - lambdaa: :math:`\lambda^{a}_{k,k}`, Exponent of attractive term between
+        groups of type k
+
     beads : list[str]
         List of unique bead names used among components
     Cprefactor_funcion : function
         Function used to calculate prefactor for potential
-        
+
     Returns
     -------
     dkl : numpy.ndarray
@@ -70,9 +75,9 @@ def calc_hard_sphere_matricies(T, sigmakl, bead_library, beads, Cprefactor_funci
 def _dkk_int(r, Ce_kT, sigma, lambdar, lambdaa):
     r"""
     Return integrand used to calculate the hard sphere diameter.
-    
+
     :math:`d_{k,k}` of a group k. See eq. 10.
-    
+
     Parameters
     ----------
     r : numpy.ndarray
@@ -85,7 +90,7 @@ def _dkk_int(r, Ce_kT, sigma, lambdar, lambdaa):
         :math:`\lambda^{r}_{k,k}`, Exponent of repulsive term between groups of type k
     lambdaa : float
         :math:`\lambda^{r}_{k,k}`, Exponent of repulsive term between groups of type k
-    
+
     Returns
     -------
     dkk_int_tmp : numpy.ndarray
@@ -101,8 +106,9 @@ def _dkk_int(r, Ce_kT, sigma, lambdar, lambdaa):
 
 def calc_dkk(epsilon, sigma, T, Cprefactor, lambdar, lambdaa=6.0):
     r"""
-    Calculates hard sphere diameter of a group k, :math:`d_{k,k}`. Defined in eq. 10. using a 40 point Gauss Legendre
-    
+    Calculates hard sphere diameter of a group k, :math:`d_{k,k}`. Defined in eq. 10.
+    using a 40 point Gauss Legendre
+
     Parameters
     ----------
     epsilon : float
@@ -117,7 +123,7 @@ def calc_dkk(epsilon, sigma, T, Cprefactor, lambdar, lambdaa=6.0):
         :math:`\lambda^{r}_{k,k}`, Exponent of repulsive term between groups of type k
     lambdaa : float, Optional, default=6.0
         :math:`\lambda^{r}_{k,k}`, Exponent of repulsive term between groups of type k
-    
+
     Returns
     -------
     dkk : float
@@ -226,30 +232,35 @@ def calc_composition_dependent_variables(
     xi, molecular_composition, bead_library, beads
 ):
     r"""
-    Calculate the factor for converting molar density to bead density and molecular mole fractions to bead fractions.
-    
+    Calculate the factor for converting molar density to bead density and molecular
+    mole fractions to bead fractions.
+
     Parameters
     ----------
     xi : numpy.ndarray
         Mole fraction of each component, sum(xi) should equal 1.0
     molecular_composition : numpy.array
-        :math:`\nu_{i,k}/k_B`, Array of number of components by number of bead types. Defines the number of each type of group in each component.
+        :math:`\nu_{i,k}/k_B`, Array of number of components by number of bead types.
+        Defines the number of each type of group in each component.
         Defined for eq. 11. Note that indices are flipped from definition in reference.
     bead_library : dict
-        A dictionary where bead names are the keys to access EOS self interaction parameters:
-    
+        A dictionary where bead names are the keys to access EOS self interaction
+        parameters:
+
         - Vks: :math:`V_{k,s}`, Number of groups, k, in component
         - Sk: Optional, :math:`S_{k}`, Shape parameter of group k
-    
+
     beads : list[str]
         List of unique bead names used among components
-    
+
     Returns
     -------
     Cmol2seg : float
-        Conversion factor from from molecular number density, :math:`\rho`, to segment (i.e. group) number density, :math:`\rho_S`. Shown in eq. 13
+        Conversion factor from from molecular number density, :math:`\rho`, to segment
+        (i.e. group) number density, :math:`\rho_S`. Shown in eq. 13
     xskl : numpy.ndarray
-        Matrix of mole fractions of bead (i.e. segment or group) k multiplied by that of bead l
+        Matrix of mole fractions of bead (i.e. segment or group) k multiplied by that
+        of bead l
     """
 
     # compute Conversion factor
@@ -287,18 +298,20 @@ def calc_composition_dependent_variables(
 def calc_zetaxstar(rho, Cmol2seg, xskl, sigmakl):
     r"""
     Calculate matrix of hypothetical packing fraction based on sigma for groups (k,l)
-    
+
     Parameters
     ----------
     rho : numpy.ndarray
         Number density of system [:math:`mol/m^3`]
     Cmol2seg : float
-        Conversion factor from from molecular number density, :math:`\rho`, to segment (i.e. group) number density, :math:`\rho_S`. Shown in eq. 13
+        Conversion factor from from molecular number density, :math:`\rho`, to segment
+        (i.e. group) number density, :math:`\rho_S`. Shown in eq. 13
     xskl : numpy.ndarray
-        Matrix of mole fractions of bead (i.e. segment or group) k multiplied by bead l
+        Matrix of mole fractions of bead (i.e. segment or group) k multiplied by
+        bead l
     sigmakl : numpy.ndarray
         Matrix of Mie diameter for groups (k,l)
-    
+
     Returns
     -------
     zetaxstar : numpy.ndarray
@@ -309,7 +322,7 @@ def calc_zetaxstar(rho, Cmol2seg, xskl, sigmakl):
     zetaxstar = (
         rho
         * Cmol2seg
-        * ((np.pi / 6.0) * np.sum(xskl * (sigmakl ** 3 * constants.molecule_per_nm3)))
+        * ((np.pi / 6.0) * np.sum(xskl * (sigmakl**3 * constants.molecule_per_nm3)))
     )
 
     return zetaxstar
@@ -317,28 +330,31 @@ def calc_zetaxstar(rho, Cmol2seg, xskl, sigmakl):
 
 def calc_zetax(rho, Cmol2seg, xskl, dkl):
     r"""
-    Calculate matrix of hypothetical packing fraction based on hard sphere diameter for groups (k,l)
-    
+    Calculate matrix of hypothetical packing fraction based on hard sphere diameter for
+    groups (k,l)
+
     Parameters
     ----------
     rho : numpy.ndarray
         Number density of system [:math:`mol/m^3`]
     Cmol2seg : float
-        Conversion factor from from molecular number density, :math:`\rho`, to segment (i.e. group) number density, :math:`\rho_S`. Shown in eq. 13
+        Conversion factor from from molecular number density, :math:`\rho`, to segment
+        (i.e. group) number density, :math:`\rho_S`. Shown in eq. 13
     xskl : numpy.ndarray
         Matrix of mole fractions of bead (i.e. segment or group) k multiplied by bead l
     dkl : numpy.ndarray
         Matrix of hardsphere diameters for groups (k,l)
-    
+
     Returns
     -------
     zetax : numpy.ndarray
-        Matrix of hypothetical packing fraction based on hard sphere diameter for groups (k,l)
+        Matrix of hypothetical packing fraction based on hard sphere diameter for
+        groups (k,l)
     """
     zetax = (
         rho
         * Cmol2seg
-        * ((np.pi / 6.0) * np.sum(xskl * (dkl ** 3 * constants.molecule_per_nm3)))
+        * ((np.pi / 6.0) * np.sum(xskl * (dkl**3 * constants.molecule_per_nm3)))
     )
 
     return zetax
@@ -346,20 +362,23 @@ def calc_zetax(rho, Cmol2seg, xskl, dkl):
 
 def calc_KHS(zetax):
     r"""
-    Calculate (length of density array) isothermal compressibility of system with packing fraction zetax
-    
+    Calculate (length of density array) isothermal compressibility of system with
+    packing fraction zetax
+
     Parameters
     ----------
     zetax : numpy.ndarray
-        Matrix of hypothetical packing fraction based on hard sphere diameter for groups (k,l)
-    
+        Matrix of hypothetical packing fraction based on hard sphere diameter for
+        groups (k,l)
+
     Returns
     -------
     KHS : numpy.ndarray
-        (length of densities) isothermal compressibility of system with packing fraction zetax
+        (length of densities) isothermal compressibility of system with packing
+        fraction zetax
     """
     KHS = ((1.0 - zetax) ** 4) / (
-        1.0 + (4.0 * zetax) + (4.0 * (zetax ** 2)) - (4.0 * (zetax ** 3)) + (zetax ** 4)
+        1.0 + (4.0 * zetax) + (4.0 * (zetax**2)) - (4.0 * (zetax**3)) + (zetax**4)
     )
 
     return KHS
