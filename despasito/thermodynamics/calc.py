@@ -31,6 +31,7 @@ def pressure_vs_volume_arrays(
     extended_npts=20,
     max_density=None,
     density_max_opts={},
+    max_array_length=int(1e+6),
     **kwargs
 ):
     r"""
@@ -69,6 +70,8 @@ def pressure_vs_volume_arrays(
     max_density : float, Optional, default=None
         [mol/:math:`m^3`] Maximum molar density defined, if default of None is used
         then the Eos object method, density_max is used.
+    max_array_length : int, Optional, default=5e+5
+         Maximum array length of the density array before an error is given.
     density_max_opts : dict, Optional, default={}
         Keyword arguments for density_max method for EOS object
 
@@ -131,6 +134,14 @@ def pressure_vs_volume_arrays(
         )
         rholist = np.append(rholist_2, rholist[(vspaceswitch + 2):])
 
+    if len(rholist) > max_array_length:
+        raise ValueError(
+            "The length of the density array is large, {}.".format(len(rholist))
+            + " Check the order of magnitude of your parameters, as they affect "
+            + " max density = {}. Also consider increasing the ".format(max_density)
+            + "keyword, max_volume_increment. If this is an acceptable length, "
+            + "increase, max_array_length, in density_opts"
+        )
     # compute Pressures (Plist) for rholist
     Plist = Eos.pressure(rholist, T, xi)
 
