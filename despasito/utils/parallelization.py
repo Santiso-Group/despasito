@@ -100,7 +100,7 @@ class MultiprocessingJob:
         .. _FORMAT: https://docs.python.org/3/library/logging.html#logging.Formatter/
         """
 
-        logger = logging.getLogger()
+        logger = logging.getLogger("despasito")
 
         pid = os.getpid()
         filename = "mp-handler-{0}.log".format(pid)
@@ -204,7 +204,7 @@ def initialize_mp_handler(level, logformat):
         .
     """
 
-    logger = logging.getLogger()
+    logger = logging.getLogger("despasito")
 
     pid = os.getpid()
     filename = "mp-handler-{0}.log".format(pid)

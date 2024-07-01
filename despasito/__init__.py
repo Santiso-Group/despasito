@@ -16,7 +16,7 @@ __version__ = versions["version"]
 __git_revision__ = versions["full-revisionid"]
 del get_versions, versions
 
-logger = logging.getLogger()
+logger = logging.getLogger("despasito")
 logger.setLevel(30)
 
 

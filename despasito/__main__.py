@@ -19,7 +19,7 @@ else:
     args.verbose = 10
 
 # Logging
-logger = logging.getLogger()
+logger = logging.getLogger("despasito")
 logger.setLevel(args.verbose)
 
 # Set up rotating log files
