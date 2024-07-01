@@ -13,9 +13,12 @@ class method_stat:
 
     def __init__(self, numba=True, cython=False, python=False):
 
-        self.numba = numba
         self.cython = cython
         self.python = python
+        if self.cython or self.python:
+            self.numba = False
+        else:
+            self.numba = numba
 
         if not any([numba, cython, python]):
             raise ValueError("Calculation type has not been specified.")

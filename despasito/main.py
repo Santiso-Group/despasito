@@ -87,7 +87,7 @@ def get_parser():
     )
     parser.add_argument(
         "--numba",
-        action="store_true",
+        action="store_false",
         help="Turn on Numba's JIT compilation for accelerated computation",
     )
     parser.add_argument(
