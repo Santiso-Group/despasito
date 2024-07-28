@@ -6,8 +6,8 @@
 Welcome to DESPASITO's documentation!
 =========================================================
 
-.. image:: https://zenodo.org/badge/202225860.svg
-   :target: https://zenodo.org/badge/latestdoi/202225860
+.. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.13119190.svg
+  :target: https://doi.org/10.5281/zenodo.13119190
 
 DESPASITO: Determining Equilibrium State and Parametrization Application for SAFT, Intended for Thermodynamic Output
 
