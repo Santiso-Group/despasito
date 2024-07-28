@@ -15,8 +15,8 @@ Please work your way through this checklist:
     - Error with a supporting python package, try to resolve on your own and check that your version of python is within limits. If the compatibility between a supporting package and a version of python we claim is/isn't supported by DESPASITO is a problem, create an issue.
 #. **Are all of your parameters in the correct units?** Some errors result from parameters that are technically "in the realm of possibility" but aren't actually feasible. For example, the allowed range of values for the size parameter in saft might have a lower bound of zero, but a value of the order of 1e-5 does not provide meaningful results. (If the units are not provided in the documentation please create an issue.)
 #. **Are you receiving a meaningful error message?** Some errors may occur from "outrageous" parameters that cannot achieve the calculation you think they can.
-#. **Check previous and open** `issues <https://github.com/jaclark5/despasito/issues>`_
-#. **Check previous and open** `discussions <https://github.com/jaclark5/despasito/discussions>`_
+#. **Check previous and open** `issues <https://github.com/Santiso-Group/despasito/issues>`_
+#. **Check previous and open** `discussions <https://github.com/Santiso-Group/despasito/discussions>`_
 
 What Does Creating a New 'Issue' or 'Discussion' Entail?
 ---------------------------------------------------------
@@ -25,8 +25,8 @@ Whether you're interested in assistance with a new feature, a mysterious error i
 
 In either case, add one of the following prefixes to a descriptive title: *EOS, Thermo, Fitting, General, Docs, Tests*, or *Import*.
 
- * For *Bugs* make an `issue <https://github.com/jaclark5/despasito/issues>`_.
- * For *Ideas* and *Questions* start a `discussion <https://github.com/jaclark5/despasito/discussions>`_.
+ * For *Bugs* make an `issue <https://github.com/Santiso-Group/despasito/issues>`_.
+ * For *Ideas* and *Questions* start a `discussion <https://github.com/Santiso-Group/despasito/discussions>`_.
 
 **Thanks for helping us improve DESPASITO!**
 

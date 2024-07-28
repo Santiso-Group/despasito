@@ -3,8 +3,8 @@ DESPASITO
 [//]: # (Badges)
 [![DOI](https://zenodo.org/badge/202225860.svg)](https://zenodo.org/badge/latestdoi/202225860)
 [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
-[![GitHub Actions Build Status](https://github.com/jaclark5/despasito/workflows/CI/badge.svg)](https://github.com/jaclark5/despasito/actions?query=workflow%3ACI)
-[![codecov](https://codecov.io/gh/jaclark5/DESPASITO/branch/master/graph/badge.svg)](https://codecov.io/gh/jaclark5/DESPASITO/branch/master)
+[![GitHub Actions Build Status](https://github.com/Santiso-Group/despasito/workflows/CI/badge.svg)](https://github.com/Santiso-Group/despasito/actions?query=workflow%3ACI)
+[![codecov](https://codecov.io/gh/Santiso-Group/DESPASITO/branch/master/graph/badge.svg)](https://codecov.io/gh/Santiso-Group/DESPASITO/branch/master)
 [![Documentation Status](https://readthedocs.org/projects/despasito/badge/?version=latest)](https://despasito.readthedocs.io/en/latest/?badge=latest)
 
 DESPASITO: Determining Equilibrium State and Parametrization Application for SAFT, Intended for Thermodynamic Output
@@ -42,7 +42,7 @@ Options
 **Option 2:** Install locally with pip.
 
  * Step 1: Install the prerequisites listed above.
- * Step 2: Download the master branch from our github page as a zip file, or clone it with git via ``git clone https://github.com/jaclark5/despasito`` to your working directory.
+ * Step 2: Download the master branch from our github page as a zip file, or clone it with git via ``git clone https://github.com/Santiso-Group/despasito`` to your working directory.
  * Step 3: Install with ``pip install despasito/.``, or change directories and run ``pip install -e .``.
 
 **NOTE** If [pip](https://pip.pypa.io/en/stable/) is unavailable, follow the instructions outlined [here](https://pip.pypa.io/en/stable/installing/) for installation.
@@ -50,7 +50,7 @@ Options
 **Option 3:** Install locally with python.
 
  * Step 1: Install the prerequisites listed above.
- * Step 2: Download the master branch from our github page as a zip file, or clone it with git via ``git clone https://github.com/jaclark5/despasito`` to your working directory.
+ * Step 2: Download the master branch from our github page as a zip file, or clone it with git via ``git clone https://github.com/Santiso-Group/despasito`` to your working directory.
  * Step 3: After changing directories, install with ``python setup.py install --user`` .
 
 Command Line Use
