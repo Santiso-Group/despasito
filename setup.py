@@ -7,7 +7,6 @@ import os
 from setuptools import find_packages, Extension, setup
 import versioneer
 import glob
-import numpy as np
 
 short_description = __doc__.split("\n")
 fpath = os.path.join("despasito", "equations_of_state", "saft", "compiled_modules")
@@ -15,10 +14,12 @@ extensions = []
 
 try:
     from Cython.Build import cythonize
+    import numpy as np
     flag_cython = True
-except Exception:
+except ImportError as e:
     print(
-        'Cython not available on your system. Dependencies will be run with numba.'
+        'Cython/numpy not available on your system. Dependencies will be run with numba.' \
+        'Original error: ' + str(e)
     )
     flag_cython = False
 
