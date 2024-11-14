@@ -31,7 +31,7 @@ Installation
 **NOTE:** DESPASITO is not yet available in conda-forge, but it is available with pip.
 
 **Prerequisites**:
-  * **Python**: Available for python 3.10 to 3.13
+  * **Python**: Available for python 3.10 to 3.12
   * [NumPy](https://numpy.org): needed for running setup (distutils). Follow instructions outlined [here](https://docs.scipy.org/doc/numpy/user/install.html) for installation.
 
 Options
