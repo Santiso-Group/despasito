@@ -91,6 +91,6 @@ def initiate_logger(console=None, log_file=None, verbose=30):
         logger.addHandler(log_file_handler)
     elif log_file:
         logger.warning("RotatingFileHandler already exists")
-    elif not handler_logfile:
+    elif not handler_logfile and handler_logfile is not None:
         handler_logfile.close()
         logger.removeHandler(handler_logfile)

@@ -95,7 +95,7 @@ Imported Library
 
 Calculations may also be completed by importing DESPASITO as a library, where additional equation of state quantities are accessible. Here is an example from the package ``examples`` directory.
 
-`hexane_heptane_test.txt`::
+`hexane_heptane_test.py`::
 
     import numpy as np
     
@@ -116,7 +116,7 @@ Calculations may also be completed by importing DESPASITO as a library, where ad
     
     output = thermo.thermo(
         Eos, 
-        calculation_type="vapor_properties", 
+        calculation_type="liquid_properties",
         Tlist=[320.0], 
         Plist=[1e+5], 
         xilist=np.array([[0.4, 0.6]]),
