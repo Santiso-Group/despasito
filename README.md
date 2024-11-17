@@ -32,7 +32,7 @@ Installation
 
 **Prerequisites**:
   * **Python**: Available for python 3.6 to 3.8 (limited by current compatibility issues with Numba)
-  * [NumPy](https://numpy.org): needed for running setup (distutils). Follow instructions outlined [here](https://docs.scipy.org/doc/numpy/user/install.html) for installation.
+  * [NumPy](https://numpy.org): If using cython, numpy is needed for running setup (distutils). Follow instructions outlined [here](https://docs.scipy.org/doc/numpy/user/install.html) for installation.
 
 Options
 =======
