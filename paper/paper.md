@@ -90,7 +90,7 @@ DESPASITO is equipped to predict cross-interaction parameters (between segments 
 
 # 4. Quality Control
 
-Initial EOS development and module verification has been achieved through replicating the thermodynamic and parameter fitting results for existing publications. Unit testing is available through `pytest`, where continuous integration of MacOS, Windows, and Linux are handled by GitHub Actions. For each operating system, Python 3.7 and 3.8 are tested. These tests cover over fifty percent of the package according to `codecov`. Much of what is unaccounted for includes exception handling and redundant functions for alternative compilation through Numba and Cython.
+Initial EOS development and module verification has been achieved through replicating the thermodynamic and parameter fitting results for existing publications. Unit testing is available through `pytest`, where continuous integration of MacOS, Windows, and Linux are handled by GitHub Actions. For each operating system, Python 3.10, 3.11, and 3.12 are tested. These tests cover over fifty percent of the package according to `codecov`. Much of what is unaccounted for includes exception handling and redundant functions for alternative compilation through Numba and Cython.
 
 # Acknowledgements
 

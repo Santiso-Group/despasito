@@ -24,6 +24,7 @@ For this example we focus on carbon dioxide and water modeled with the SAFT-:mat
         "bead_configuration": [[["CO2", 1]], [["H2O", 1]]],
         "EOSgroup": "SAFTgroup.json",
         "EOScross": "SAFTcross.json",
+        "output_file": "out_vapor.txt",
         "calculation_type" : "vapor_properties",
         "Tlist" : [323.2],
         "yilist": [[0.9954, 0.0046]],
@@ -49,8 +50,8 @@ See :ref:`calculation-types` for a list of available types of thermodynamic calc
             "Sk": 0.84680,
             "Vks": 2,
             "mass": 0.04401,
-             "Nk-H": 1,
-             "Nk-a1": 1
+            "Nk-H": 1,
+            "Nk-a1": 1
         },
         "H2O": {
             "epsilon": 266.68,
@@ -83,7 +84,7 @@ After creating each of these files, go ahead and run the calculation with:
 
 It's that easy! The result will be two files. A log file, *despasito.log*, contains the details of the calculation at the verbosity level INFO. Although the log file contains the calculation results, a condensed, comma separated format output is also provided.
 
-`despasito_out.txt`::
+`out_vapor.txt`::
 
     # This data was generated in DESPASITO using the thermodynamic calculation: vapor_properties
     # P [Pa], T [K], yi1, yi2, rhov [mol/m^3], phiv1, phiv2, flagv,
@@ -94,7 +95,7 @@ Imported Library
 
 Calculations may also be completed by importing DESPASITO as a library, where additional equation of state quantities are accessible. Here is an example from the package ``examples`` directory.
 
-`hexane_heptane_test.txt`::
+`hexane_heptane_test.py`::
 
     import numpy as np
     
@@ -115,7 +116,7 @@ Calculations may also be completed by importing DESPASITO as a library, where ad
     
     output = thermo.thermo(
         Eos, 
-        calculation_type="vapor_properties", 
+        calculation_type="liquid_properties",
         Tlist=[320.0], 
         Plist=[1e+5], 
         xilist=np.array([[0.4, 0.6]]),
