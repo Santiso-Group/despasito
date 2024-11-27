@@ -239,7 +239,7 @@ def solve_root(func, args=(), method="bisect", x0=None, bounds=None, options={})
             func, x0, bounds=tuple(bnd_tmp), args=args, **outer_dict
         )
     elif method == "bisect":
-        outer_dict = {"maxiter": 100}
+        outer_dict = {"maxiter": 100, "rtol": 1e-12}
         for key, value in options.items():
             if key in ["xtol", "rtol", "maxiter", "full_output", "disp"]:
                 outer_dict[key] = value

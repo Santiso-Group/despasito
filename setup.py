@@ -7,7 +7,6 @@ import os
 from setuptools import find_packages, Extension, setup
 import versioneer
 import glob
-import numpy as np
 
 short_description = __doc__.split("\n")
 fpath = os.path.join("despasito", "equations_of_state", "saft", "compiled_modules")
@@ -23,6 +22,7 @@ except Exception:
     flag_cython = False
 
 if flag_cython:
+    import numpy as np
     cython_list = glob.glob(os.path.join(fpath, "*.pyx"))
     for cyext in cython_list:
         name = os.path.split(cyext)[-1].split(".")[-2]
