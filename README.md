@@ -11,7 +11,7 @@ DESPASITO: Determining Equilibrium State and Parametrization Application for SAF
 
 First open-source application for thermodynamic calculations and parameter fitting for the Statistical Associating Fluid Theory (SAFT) EOS and SAFT-𝛾-Mie coarse-grained simulations. This software has two primary facets. 
 
-The first facet is a means to evaluate implicit equations of state (EOS), such as the focus of this package, SAFT-𝛾-Mie. This framework allows easy implementation of more advanced thermodynamic calculations as well as additional forms of SAFT or other equations of state. Feel free to [inform of us issues](https://despasito.readthedocs.io/en/latest/contribute_issues.html) or [contribute](https://despasito.readthedocs.io/en/latest/contribute_intro.html)!
+The first facet is a means to evaluate implicit equations of state (EOS), such as the focus of this package, SAFT-𝛾-Mie. This framework allows easy implementation of more advanced thermodynamic calculations as well as additional forms of SAFT or other equations of state. Feel free to [inform us of issues](https://despasito.readthedocs.io/en/latest/contribute_issues.html) or [contribute](https://despasito.readthedocs.io/en/latest/contribute_intro.html)!
 
 The second facet is parameterization of equations of state (EOS), some of which are useful for coarse-grained (CG) simulations. The SAFT-𝛾-Mie formalism is an attractive source of simulation parameters as it offers a means to directly link the intermolecular potential with thermodynamic properties. This application has the ability to fit EOS parameters to experimental thermodynamic data in a top down approach for self and cross interaction parameters. 
 
