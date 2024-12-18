@@ -97,14 +97,10 @@ def solve_root(func, args=(), method="bisect", x0=None, bounds=None, options={})
         )
         method = "least_squares"
 
-    if (
-        np.size(x0) == 1
-        and np.any(bounds is not None)
-        and np.shape(x0) != np.shape(bounds)[0]
-    ):
-        bounds = tuple([bounds])
+    if not isiterable(bounds[0]):
+        bounds = [bounds]
 
-    if np.any(bounds is None) and method in ["brentq", "bisect"]:
+    if np.any([np.any(x is None) for x in bounds]) and method in ["brentq", "bisect"]:
         if x0 is None:
             raise ValueError(
                 "Optimization method, {}, requires bounds. ".format(method)
@@ -117,9 +113,11 @@ def solve_root(func, args=(), method="bisect", x0=None, bounds=None, options={})
             method = "hybr"
 
     if np.any(bounds is not None):
-        for bnd in bounds:
+        for i,bnd in enumerate(bounds):
             if len(bnd) != 2:
                 raise ValueError("bounds are not of length two")
+            else:
+                bounds[i] = tuple(bnd)
 
     # ################### Root Finding without Boundaries ###################
     if method in ["broyden1", "broyden2"]:

@@ -130,7 +130,7 @@ def _partial_density_wrapper(rhoi, T, func):
     rho = np.array([np.sum(rhoi)])
     xi = rhoi / rho
 
-    Ares = func(rho, T, xi)
+    Ares = func(rho, T, xi)[0]
 
     return Ares
 

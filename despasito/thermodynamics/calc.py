@@ -8,7 +8,7 @@ wrapper to handle the inputs and outputs of these functions.
 import numpy as np
 from scipy import interpolate
 import scipy.optimize as spo
-from scipy.ndimage.filters import gaussian_filter1d
+from scipy.ndimage import gaussian_filter1d
 import copy
 import logging
 

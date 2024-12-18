@@ -1,5 +1,5 @@
 import numpy as np
-import despasito
+from despasito.equations_of_state import initiate_eos
 
 beads = ["CH3", "CH2"]
 beads_per_molecule = np.array([[2.0, 8.0]])
@@ -24,7 +24,7 @@ bead_library = {
     },
 }
 cross_library = {"CH3": {"CH2": {"epsilon": 350.770}}}
-Eos = despasito.equations_of_state.initiate_eos(
+Eos = initiate_eos(
     eos="saft.gamma_mie",
     beads=beads,
     molecular_composition=beads_per_molecule,

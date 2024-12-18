@@ -529,6 +529,7 @@ def compute_obj(
     else:
         logger.info("One of provided parameters, {}, is NaN".format(beadparams))
         obj_total = np.inf
+        obj_function = np.nan
 
     if obj_total == 0.0 and np.isnan(np.sum(obj_function)):
         obj_total = np.inf

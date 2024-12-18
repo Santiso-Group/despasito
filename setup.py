@@ -2,10 +2,9 @@
 DESPASITO
 DESPASITO: Determining Equilibrium State and Parametrization Application for SAFT, Intended for Thermodynamic Output
 """
-import sys
+
 import os
-from setuptools import find_packages, Extension, setup
-import versioneer
+from setuptools import Extension, setup
 import glob
 import numpy as np
 
@@ -40,34 +39,4 @@ if flag_cython:
                     "boundscheck": True
                 }))
 
-# from https://github.com/pytest-dev/pytest-runner#conditional-requirement
-needs_pytest = {"pytest", "test", "ptr"}.intersection(sys.argv)
-pytest_runner = ["pytest-runner"] if needs_pytest else []
-
-setup(
-    name="despasito",
-    author="Jennifer A Clark",
-    author_email="jennifer.clark@gnarlyoak.com",
-    description=short_description[0],
-    long_description_content_type="text/markdown",
-    version=versioneer.get_version(),
-    cmdclass=versioneer.get_cmdclass(),
-    license="BSD-3-Clause",
-    packages=find_packages(),
-    include_package_data=True,
-    setup_requires=["numpy", "scipy",] + pytest_runner,
-    ext_package=fpath,
-    ext_modules=extensions,
-    extras_require={
-        "extra": ["cython"],
-        "tests": ["pytest"],
-    },
-    install_requires=[
-        "numpy",
-        "scipy",
-        "numba",
-        "flake8"
-    ],
-    python_requires=">=3.6",
-    zip_safe=False,
-)
+setup(ext_modules=extensions)

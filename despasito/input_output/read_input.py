@@ -332,7 +332,7 @@ def process_param_fit_inputs(thermo_dict):
             " an optimization_parameters dictionary with 'fit_bead' and "
             "'fit_parameter_names' must be provided."
         )
-
+        
     return new_thermo_dict
 
 
