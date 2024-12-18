@@ -131,6 +131,15 @@ def fit(
             if key not in exp_data[k2]:
                 exp_data[k2][key] = value
 
+    if not isinstance(optimization_parameters["fit_parameter_names"], list):
+        if isinstance(optimization_parameters["fit_parameter_names"], str):
+            optimization_parameters["fit_parameter_names"] = [
+                optimization_parameters["fit_parameter_names"]
+            ]
+        else:
+            raise ValueError(
+                f"'fit_parameter_names' must be a list not: {optimization_parameters["fit_parameter_names"]}")
+        
     # Generate initial guess and bounds for parameters if none was given
     optimization_parameters = ff.consolidate_bounds(optimization_parameters).copy()
     if "bounds" in optimization_parameters:

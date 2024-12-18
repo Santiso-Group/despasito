@@ -3,11 +3,11 @@ import numpy as np
 import despasito
 import despasito.input_output.read_input as io
 import despasito.thermodynamics as thermo
-import despasito.equations_of_state
+from despasito.equations_of_state import initiate_eos
 
 despasito.initiate_logger(console=True, verbose=10)
 
-Eos = despasito.equations_of_state.initiate_eos(
+Eos = initiate_eos(
     eos="saft.gamma_mie",
     beads=["CH3", "CH2"],
     molecular_composition=np.array([[2.0, 4.0], [2.0, 5.0]]),

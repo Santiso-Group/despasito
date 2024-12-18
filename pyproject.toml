@@ -1,0 +1,104 @@
+[build-system]
+requires = ["setuptools>=61.0", "versioningit~=2.0", "cython", "numpy"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "despasito"
+description = "Determining Equilibrium State and Parametrization Application for SAFT, Intended for Thermodynamic Output"
+dynamic = ["version"]
+readme = "README.md"
+
+authors = [
+    { name = "Jennifer A. Clark", email = "jennifer.clark@gnarlyoak.com" },
+    { name = "Nathan Duff" }
+]
+
+# See https://pypi.org/classifiers/
+classifiers = [
+    "License :: OSI Approved :: The 3-Clause BSD License (BSD-3-Clause)",
+    "Programming Language :: Python :: 3",
+]
+requires-python = ">=3.8"
+dependencies = [
+        "numpy",
+        "scipy",
+        "numba",
+        "flake8"
+]
+
+[project.optional-dependencies]
+test = ["pytest>=6.1.2"]
+docs = [
+  "sphinx",
+  "sphinx_rtd_theme",
+  "sphinx-argparse",
+  "m2r2",
+  "sphinxcontrib-napoleon",
+]
+
+# Update the urls once the hosting is set up.
+[project.urls]
+"GitHub Source" = "https://github.com/Santiso-Group/despasito"
+"Documentation" = "https://despasito.readthedocs.io/en/latest/"
+
+[tool.setuptools]
+zip-safe = false
+include-package-data = false
+license-files = ["LICENSES/*.md"]
+
+[tool.setuptools.packages.find]
+namespaces = false
+where = ["."]
+
+[tool.setuptools.package-data]
+despasito = [
+    "py.typed"
+]
+
+[tool.versioningit]
+default-version = "1+unknown"
+
+[tool.versioningit.format]
+distance = "{base_version}+{distance}.{vcs}{rev}"
+dirty = "{base_version}+{distance}.{vcs}{rev}.dirty"
+distance-dirty = "{base_version}+{distance}.{vcs}{rev}.dirty"
+
+[tool.versioningit.vcs]
+# The method key:
+method = "git"
+# Parameters to pass to the method:
+match = ["*"]
+default-tag = "1.0.0"
+
+[tool.versioningit.write]
+file = "src/despasito/_version.py"
+
+[tool.black]
+line-length = 120
+
+[tool.ruff]
+line-length = 120
+indent-width = 4
+exclude = [
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".ipynb_checkpoints",
+    ".mypy_cache",
+    ".pyenv",
+    ".pytest_cache",
+    ".pytype",
+    ".ruff_cache",
+    ".venv",
+    ".vscode",
+    "__pypackages__",
+    "_build",
+    "build",
+    "dist",
+    "site-packages",
+    "venv",
+]
+
+[tool.ruff.format]
+indent-style = "space"
+line-ending = "auto"

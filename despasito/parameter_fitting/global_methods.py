@@ -448,7 +448,6 @@ def grid_minimization(
             ]
 
     lx = len(x0_array)
-
     # Start computation
     if flag_use_mp_object:
         x0, results, fval = global_opts["MultiprocessingObject"].pool_job(
@@ -742,12 +741,7 @@ def _grid_minimization_wrapper(args):
         )
     except Exception:
         logger.info("Minimization Failed:", exc_info=True)
-        result = np.nan * np.ones(len(x0))
-
-    # Return NaN if the parameters didn't change
-    if np.sum(np.abs(result - x0)) < 1e-6:
-        logger.info("Minimization Failed:", exc_info=True)
-        result = np.nan * np.ones(len(x0))
+        result = np.nan * np.ones(len(x0)) if gtb.isiterable(x0) else np.nan
 
     logger.info("Starting parameters: {}, converged to: {}".format(x0, result))
 

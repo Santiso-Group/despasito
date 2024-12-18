@@ -7,14 +7,9 @@ Intended for Thermodynamic Output
 import os
 import logging
 import logging.handlers
+from importlib.metadata import version
 
-# Handle versioneer
-from ._version import get_versions
-
-versions = get_versions()
-__version__ = versions["version"]
-__git_revision__ = versions["full-revisionid"]
-del get_versions, versions
+__version__ = version("despasito")
 
 logger = logging.getLogger("despasito")
 logger.setLevel(30)
