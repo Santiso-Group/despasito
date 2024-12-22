@@ -8,7 +8,7 @@ Install Package
 
 **Prerequisites:**
   * **Python**: Available for python 3.6 to 3.8 (limited by current compatibility issues with Numba)
-  * `NumPy <https://numpy.org>`_: needed for running setup (distutils). Follow instructions outlined `here <https://docs.scipy.org/doc/numpy/user/install.html>`_ for installation.
+  * `NumPy <https://numpy.org>`_: If cython is used, numpy is needed for running setup (distutils). Follow instructions outlined `here <https://docs.scipy.org/doc/numpy/user/install.html>`_ for installation.
 
 **Option 1:** Install from pip: ``pip install despasito``
 

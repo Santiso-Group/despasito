@@ -7,7 +7,6 @@ import os
 import glob
 from setuptools import Extension, setup
 
-
 import numpy as np
 from Cython.Build import cythonize
 
