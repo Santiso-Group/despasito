@@ -7,9 +7,9 @@ Intended for Thermodynamic Output
 import os
 import logging
 import logging.handlers
-from importlib.metadata import version
+from pkg_resources import get_distribution
 
-__version__ = version("despasito")
+__version__ = get_distribution("despasito")._version
 
 logger = logging.getLogger("despasito")
 logger.setLevel(30)
