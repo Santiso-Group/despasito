@@ -25,9 +25,7 @@ class method_stat:
 
     def __str__(self):
 
-        string = "Compilation: numba {}, cython {}, python {}".format(
-            self.numba, self.cython, self.python
-        )
+        string = "Compilation: numba {}, cython {}, python {}".format(self.numba, self.cython, self.python)
 
         return string
 
@@ -35,9 +33,7 @@ class method_stat:
 logger = logging.getLogger(__name__)
 
 
-def initiate_eos(
-    eos="saft.gamma_mie", numba=True, cython=False, python=False, **kwargs
-):
+def initiate_eos(eos="saft.gamma_mie", numba=True, cython=False, python=False, **kwargs):
     """
     Interface between the user and our library of equations of state (EOS).
 
@@ -69,9 +65,7 @@ def initiate_eos(
 
     kwargs["method_stat"] = method_stat(numba=numba, cython=cython, python=python)
 
-    factory_families = [
-        "saft"
-    ]  # Eos families in this list have a general object with a factory to import
+    factory_families = ["saft"]  # Eos families in this list have a general object with a factory to import
     # relevant modules
 
     logger.info("Using EOS: {}".format(eos))
@@ -79,29 +73,21 @@ def initiate_eos(
     try:
         eos_fam, eos_type = eos.split(".")
     except Exception:
-        raise ValueError(
-            "Input should be in the form EOSfamily.EOSname (e.g. saft.gamme_mie)."
-        )
+        raise ValueError("Input should be in the form EOSfamily.EOSname (e.g. saft.gamme_mie).")
 
     class_name = "EosType"
     try:
         if eos_fam in factory_families:
-            eos_module = import_module(
-                "." + eos_fam, package="despasito.equations_of_state." + eos_fam
-            )
+            eos_module = import_module("." + eos_fam, package="despasito.equations_of_state." + eos_fam)
             kwargs["saft_name"] = eos_type
 
         else:
-            eos_module = import_module(
-                "." + eos_type, package="despasito.equations_of_state." + eos_fam
-            )
+            eos_module = import_module("." + eos_type, package="despasito.equations_of_state." + eos_fam)
         eos_class = getattr(eos_module, class_name)
     except AttributeError:
         raise ImportError(
             "Based on your input, '{}', we expect the class, {}, in a module, {},"
-            " found in the package, {}, which indicates the EOS family.".format(
-                eos, class_name, eos_type, eos_fam
-            )
+            " found in the package, {}, which indicates the EOS family.".format(eos, class_name, eos_type, eos_fam)
         )
     instance = eos_class(**kwargs)
 

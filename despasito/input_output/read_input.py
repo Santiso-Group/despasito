@@ -101,16 +101,12 @@ def extract_calc_data(input_fname, path=".", **thermo_dict):
     # Make bead data dictionary for EOS
     # process input file
     if "bead_configuration" in input_dict:
-        beads, molecular_composition = process_bead_data(
-            input_dict["bead_configuration"]
-        )
+        beads, molecular_composition = process_bead_data(input_dict["bead_configuration"])
         eos_dict = {"beads": beads, "molecular_composition": molecular_composition}
     elif "optimization_parameters" in input_dict:
         eos_dict = {}
     else:
-        raise ValueError(
-            "Bead configuration line is missing for thermodynamic calculation."
-        )
+        raise ValueError("Bead configuration line is missing for thermodynamic calculation.")
 
     # read EOS groups file
     eos_dict["bead_library"] = json_to_dict(input_dict["EOSgroup"])
@@ -320,19 +316,15 @@ def process_param_fit_inputs(thermo_dict):
         else:
             new_thermo_dict[key] = value
 
-    test1 = set(["exp_data", "optimization_parameters"]).issubset(
-        list(new_thermo_dict.keys())
-    )
-    test2 = set(["fit_bead", "fit_parameter_names"]).issubset(
-        list(new_thermo_dict["optimization_parameters"].keys())
-    )
+    test1 = set(["exp_data", "optimization_parameters"]).issubset(list(new_thermo_dict.keys()))
+    test2 = set(["fit_bead", "fit_parameter_names"]).issubset(list(new_thermo_dict["optimization_parameters"].keys()))
     if not all([test1, test2]):
         raise ValueError(
             "An exp_data dictionary (dictionary with 'data_class_type' key) as well as"
             " an optimization_parameters dictionary with 'fit_bead' and "
             "'fit_parameter_names' must be provided."
         )
-        
+
     return new_thermo_dict
 
 
@@ -412,13 +404,9 @@ def process_exp_data_file(fname):
     """
 
     try:
-        data = np.transpose(
-            np.genfromtxt(fname, delimiter=",", names=True, skip_header=1)
-        )
+        data = np.transpose(np.genfromtxt(fname, delimiter=",", names=True, skip_header=1))
     except Exception:
-        raise ValueError(
-            "Cannot import '{}', Check data file formatting.".format(fname)
-        )
+        raise ValueError("Cannot import '{}', Check data file formatting.".format(fname))
     file_dict = {name: data[name] for name in data.dtype.names}
 
     # Sort through properties

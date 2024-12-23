@@ -83,15 +83,9 @@ def calc_Xika(
                 for jnd in range(l_ind):
                     j, l, b = indices[jnd]
                     if l_K == 4:
-                        delta = (
-                            Fklab[k, l, a, b] * Kklab[k, l, a, b] * gr_assoc[r, i, j]
-                        )
+                        delta = Fklab[k, l, a, b] * Kklab[k, l, a, b] * gr_assoc[r, i, j]
                     elif l_K == 6:
-                        delta = (
-                            Fklab[k, l, a, b]
-                            * Kklab[i, j, k, l, a, b]
-                            * gr_assoc[r, i, j]
-                        )
+                        delta = Fklab[k, l, a, b] * Kklab[i, j, k, l, a, b] * gr_assoc[r, i, j]
 
                     Xika_elements_new[ind] += (
                         constants.molecule_per_nm3
@@ -110,9 +104,7 @@ def calc_Xika(
                 break
             else:
                 if obj / max(Xika_elements_old) > 1e3:
-                    Xika_elements_old = Xika_elements_old + damp * (
-                        Xika_elements_new - Xika_elements_old
-                    )
+                    Xika_elements_old = Xika_elements_old + damp * (Xika_elements_new - Xika_elements_old)
                 else:
                     Xika_elements_old = Xika_elements_new
 

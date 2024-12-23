@@ -120,9 +120,7 @@ class Data(ExpDataTemplate):
             self.thermodict["Psat"] = data_dict["P"]
             del data_dict["P"]
             if "P" in self.weights:
-                if gtb.isiterable(self.weights["P"]) and len(self.weights["P"]) != len(
-                    self.thermodict["Psat"]
-                ):
+                if gtb.isiterable(self.weights["P"]) and len(self.weights["P"]) != len(self.thermodict["Psat"]):
                     raise ValueError(
                         "Array of weights for '{}' values not equal to number of "
                         "experimental values given.".format("P")
@@ -144,35 +142,23 @@ class Data(ExpDataTemplate):
 
         if "xilist" not in self.thermodict and self.Eos.number_of_components > 1:
             raise ValueError(
-                "Ambiguous instructions. Include xi to define intended component to "
-                "obtain saturation properties"
+                "Ambiguous instructions. Include xi to define intended component to " "obtain saturation properties"
             )
         thermo_defaults = [
             np.array([[1.0] for x in range(self.npoints)]),
             constants.standard_temperature,
         ]
-        self.thermodict.update(
-            gtb.set_defaults(
-                self.thermodict, thermo_keys, thermo_defaults, lx=self.npoints
-            )
-        )
+        self.thermodict.update(gtb.set_defaults(self.thermodict, thermo_keys, thermo_defaults, lx=self.npoints))
 
-        self.weights.update(
-            gtb.check_length_dict(self.weights, self.result_keys, lx=self.npoints)
-        )
+        self.weights.update(gtb.check_length_dict(self.weights, self.result_keys, lx=self.npoints))
         self.weights.update(gtb.set_defaults(self.weights, self.result_keys, 1.0))
 
         if "Tlist" not in self.thermodict:
-            raise ImportError(
-                "Given saturation data, value(s) for T should have been provided."
-            )
+            raise ImportError("Given saturation data, value(s) for T should have been provided.")
 
         tmp = ["Psat", "rhol", "rhov"]
         if not any([x in self.thermodict for x in tmp]):
-            raise ImportError(
-                "Given saturation data, values for Psat, rhol, and/or rhov should have "
-                "been provided."
-            )
+            raise ImportError("Given saturation data, values for Psat, rhol, and/or rhov should have " "been provided.")
 
         logger.info(
             "Data type 'saturation_properties' initiated with calculation_type, {}, and"
@@ -230,24 +216,15 @@ class Data(ExpDataTemplate):
         obj_value = np.zeros(3)
         if "Psat" in self.thermodict:
             obj_value[0] = ff.obj_function_form(
-                phase_list[0],
-                self.thermodict["Psat"],
-                weights=self.weights["Psat"],
-                **self.obj_opts
+                phase_list[0], self.thermodict["Psat"], weights=self.weights["Psat"], **self.obj_opts
             )
         if "rhol" in self.thermodict:
             obj_value[1] = ff.obj_function_form(
-                phase_list[1],
-                self.thermodict["rhol"],
-                weights=self.weights["rhol"],
-                **self.obj_opts
+                phase_list[1], self.thermodict["rhol"], weights=self.weights["rhol"], **self.obj_opts
             )
         if "rhov" in self.thermodict:
             obj_value[2] = ff.obj_function_form(
-                phase_list[2],
-                self.thermodict["rhov"],
-                weights=self.weights["rhov"],
-                **self.obj_opts
+                phase_list[2], self.thermodict["rhov"], weights=self.weights["rhov"], **self.obj_opts
             )
 
         logger.info(

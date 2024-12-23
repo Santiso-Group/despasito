@@ -148,10 +148,7 @@ def initiate_assoc_matrices(beads, bead_library, molecular_composition):
             if key.startswith("Nk"):
                 tmp = key.split("-")
                 if len(tmp) < 2:
-                    raise ValueError(
-                        "Association site names should be defined with hyphens "
-                        + "(e.g. Nk-H)"
-                    )
+                    raise ValueError("Association site names should be defined with hyphens " + "(e.g. Nk-H)")
                 else:
                     _, site = tmp
 
@@ -163,11 +160,7 @@ def initiate_assoc_matrices(beads, bead_library, molecular_composition):
                 else:
                     ind = sitenames.index(site)
                     nk[i][ind] = value
-                logger.debug(
-                    "Bead {} has {} of the association site {}".format(
-                        bead, value, site
-                    )
-                )
+                logger.debug("Bead {} has {} of the association site {}".format(bead, value, site))
 
     indices = assoc_site_indices(nk, molecular_composition)
     if indices.size == 0:
@@ -176,9 +169,7 @@ def initiate_assoc_matrices(beads, bead_library, molecular_composition):
         flag_assoc = True
 
     if flag_assoc:
-        logger.info(
-            "The following association sites have been identified: {}".format(sitenames)
-        )
+        logger.info("The following association sites have been identified: {}".format(sitenames))
     else:
         logger.info("No association sites are used in this system.")
 
@@ -262,9 +253,7 @@ def calc_assoc_matrices(
 
     nbeads = len(beads)
     if np.any(sitenames is None) or np.any(nk is None):
-        sitenames, nk, _ = initiate_assoc_matrices(
-            bead_library, beads, molecular_composition
-        )
+        sitenames, nk, _ = initiate_assoc_matrices(bead_library, beads, molecular_composition)
     else:
         nsitesmax = len(sitenames)
     epsilonHB = np.zeros((nbeads, nbeads, nsitesmax, nsitesmax))
@@ -300,22 +289,21 @@ def calc_assoc_matrices(
                         rd_tmp = "-".join(["rd", site2, site1])
 
                     if epsilon_tmp in bead_library[bead1] and (
-                        K_tmp not in bead_library[bead1]
-                        and rc_tmp not in bead_library[bead1]
+                        K_tmp not in bead_library[bead1] and rc_tmp not in bead_library[bead1]
                     ):
                         raise ValueError(
                             "An association site energy parameter for {}-{}".format(
-                                site1, site2,
+                                site1,
+                                site2,
                             )
-                            + " was given for bead {}, but not the bonding".format(
-                                bead1
-                            )
+                            + " was given for bead {}, but not the bonding".format(bead1)
                             + " information. Either K-{}-{}/K-{}-{} or".format(
-                                site1, site2, site2, site1,
+                                site1,
+                                site2,
+                                site2,
+                                site1,
                             )
-                            + " rc-{}-{}/rc-{}-{} must be given.".format(
-                                site1, site2, site2, site1
-                            )
+                            + " rc-{}-{}/rc-{}-{} must be given.".format(site1, site2, site2, site1)
                         )
                     elif K_tmp in bead_library[bead1] and rc_tmp in bead_library[bead1]:
                         raise ValueError(
@@ -327,18 +315,14 @@ def calc_assoc_matrices(
                         K_tmp in bead_library[bead1] or rc_tmp in bead_library[bead1]
                     ):
                         raise ValueError(
-                            "An association site bonding information for {}".format(
-                                "{}-{}".format(site1, site2)
-                            )
+                            "An association site bonding information for {}".format("{}-{}".format(site1, site2))
                             + " was given for bead {}, but not the energy".format(bead1)
                             + " parameter. epsilonHB must be given."
                         )
 
                     if epsilon_tmp in bead_library[bead1]:
                         if a == b:
-                            epsilonHB[i, i, a, b] = -1 * np.abs(
-                                bead_library[bead1][epsilon_tmp]
-                            )
+                            epsilonHB[i, i, a, b] = -1 * np.abs(bead_library[bead1][epsilon_tmp])
                         else:
                             epsilonHB[i, i, a, b] = bead_library[bead1][epsilon_tmp]
                         epsilonHB[i, i, b, a] = epsilonHB[i, i, a, b]
@@ -446,45 +430,30 @@ def calc_assoc_matrices(
                             rd_klab[j, i, b, a] = rd_klab[i, j, a, b]
 
                     elif nk[j][b] != 0:
-                        sitea = epsilon_tmp = "-".join(
-                            ["epsilonHB", sitenames[a], sitenames[a]]
-                        )
-                        siteb = epsilon_tmp = "-".join(
-                            ["epsilonHB", sitenames[b], sitenames[b]]
-                        )
+                        sitea = epsilon_tmp = "-".join(["epsilonHB", sitenames[a], sitenames[a]])
+                        siteb = epsilon_tmp = "-".join(["epsilonHB", sitenames[b], sitenames[b]])
                         if (
                             epsilonHB[j, i, b, a] == 0.0
                             and sitea in bead_library[beads[i]]
                             and siteb in bead_library[beads[j]]
                         ):
-                            epsilonHB[i, j, a, b] = np.sqrt(
-                                epsilonHB[i, i, a, a] * epsilonHB[j, j, b, b]
-                            )
+                            epsilonHB[i, j, a, b] = np.sqrt(epsilonHB[i, i, a, a] * epsilonHB[j, j, b, b])
                             epsilonHB[i, j, a, b] *= -1 * np.sign(
-                                bead_library[beads[i]][sitea]
-                                * bead_library[beads[j]][siteb]
+                                bead_library[beads[i]][sitea] * bead_library[beads[j]][siteb]
                             )
                             epsilonHB[j, i, b, a] = epsilonHB[i, j, a, b]
                         if flag_Kklab and Kklab[i, j, a, b] == 0.0:
                             Kklab[i, j, a, b] = (
-                                (
-                                    (Kklab[i, i, a, a]) ** (1.0 / 3.0)
-                                    + (Kklab[j, j, b, b]) ** (1.0 / 3.0)
-                                )
-                                / 2.0
+                                ((Kklab[i, i, a, a]) ** (1.0 / 3.0) + (Kklab[j, j, b, b]) ** (1.0 / 3.0)) / 2.0
                             ) ** 3
                             Kklab[j, i, b, a] = Kklab[i, j, a, b]
 
                         if flag_rc_klab and rc_klab[i, j, a, b] == 0.0:
-                            rc_klab[i, j, a, b] = (
-                                rc_klab[i, i, a, a] + rc_klab[j, j, b, b]
-                            ) / 2
+                            rc_klab[i, j, a, b] = (rc_klab[i, i, a, a] + rc_klab[j, j, b, b]) / 2
                             rc_klab[j, i, b, a] = rc_klab[i, j, a, b]
 
                         if flag_rd_klab and rd_klab[i, j, a, b] == 0.0:
-                            rd_klab[i, j, a, b] = (
-                                rd_klab[i, i, a, a] + rd_klab[j, j, b, b]
-                            ) / 2
+                            rd_klab[i, j, a, b] = (rd_klab[i, i, a, a] + rd_klab[j, j, b, b]) / 2
                             rd_klab[j, i, b, a] = rd_klab[i, j, a, b]
 
     output = {"epsilonHB": epsilonHB}
@@ -497,13 +466,10 @@ def calc_assoc_matrices(
 
     if flag_Kklab and flag_rc_klab:
         raise ValueError(
-            "Both association site bonding volumes and cutoff distances were provided."
-            " This is redundant."
+            "Both association site bonding volumes and cutoff distances were provided." " This is redundant."
         )
     if flag_rd_klab and not flag_rc_klab:
-        raise ValueError(
-            "Association site position were provided, but not cutoff distances."
-        )
+        raise ValueError("Association site position were provided, but not cutoff distances.")
 
     return output
 
@@ -551,14 +517,8 @@ def calc_bonding_volume(rc_klab, dij_bar, rd_klab=None, reduction_ratio=0.25):
                                     rd = rd_klab[k, l, a, b]
 
                                 tmp0 = np.pi * dij_bar[i, j] ** 2 / (18 * rd**2)
-                                tmp11 = np.log(
-                                    (rc_klab[k, l, a, b] + 2 * rd) / dij_bar[i, j]
-                                )
-                                tmp12 = (
-                                    6 * rc_klab[k, l, a, b] ** 3
-                                    + 18 * rc_klab[k, l, a, b] ** 2 * rd
-                                    - 24 * rd**3
-                                )
+                                tmp11 = np.log((rc_klab[k, l, a, b] + 2 * rd) / dij_bar[i, j])
+                                tmp12 = 6 * rc_klab[k, l, a, b] ** 3 + 18 * rc_klab[k, l, a, b] ** 2 * rd - 24 * rd**3
                                 tmp21 = rc_klab[k, l, a, b] + 2 * rd - dij_bar[i, j]
                                 tmp22 = (
                                     22 * rd**2
@@ -569,8 +529,6 @@ def calc_bonding_volume(rc_klab, dij_bar, rd_klab=None, reduction_ratio=0.25):
                                     + dij_bar[i, j] ** 2
                                 )
 
-                                Kijklab[i, j, k, l, a, b] = tmp0 * (
-                                    tmp11 * tmp12 + tmp21 * tmp22
-                                )
+                                Kijklab[i, j, k, l, a, b] = tmp0 * (tmp11 * tmp12 + tmp21 * tmp22)
 
     return Kijklab

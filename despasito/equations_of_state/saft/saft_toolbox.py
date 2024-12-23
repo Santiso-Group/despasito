@@ -51,9 +51,7 @@ def calc_hard_sphere_matricies(T, sigmakl, bead_library, beads, Cprefactor_funci
     nbeads = np.size(beads)
     dkk = np.zeros(nbeads)
     for i in np.arange(nbeads):
-        prefactor = Cprefactor_funcion(
-            bead_library[beads[i]]["lambdar"], bead_library[beads[i]]["lambdaa"]
-        )
+        prefactor = Cprefactor_funcion(bead_library[beads[i]]["lambdar"], bead_library[beads[i]]["lambdaa"])
         dkk[i] = calc_dkk(
             bead_library[beads[i]]["epsilon"],
             bead_library[beads[i]]["sigma"],
@@ -97,9 +95,7 @@ def _dkk_int(r, Ce_kT, sigma, lambdar, lambdaa):
         Integrand used to calculate the hard sphere diameter
     """
 
-    dkk_int_tmp = 1.0 - np.exp(
-        -Ce_kT * (np.power(sigma / r, lambdar) - np.power(sigma / r, lambdaa))
-    )
+    dkk_int_tmp = 1.0 - np.exp(-Ce_kT * (np.power(sigma / r, lambdar) - np.power(sigma / r, lambdaa)))
 
     return dkk_int_tmp
 
@@ -228,9 +224,7 @@ def calc_dkk(epsilon, sigma, T, Cprefactor, lambdar, lambdaa=6.0):
     return dkk
 
 
-def calc_composition_dependent_variables(
-    xi, molecular_composition, bead_library, beads
-):
+def calc_composition_dependent_variables(xi, molecular_composition, bead_library, beads):
     r"""
     Calculate the factor for converting molar density to bead density and molecular
     mole fractions to bead fractions.
@@ -268,10 +262,7 @@ def calc_composition_dependent_variables(
     for i in range(np.size(xi)):
         for j in range(np.size(beads)):
             Cmol2seg += (
-                xi[i]
-                * molecular_composition[i, j]
-                * bead_library[beads[j]]["Vks"]
-                * bead_library[beads[j]]["Sk"]
+                xi[i] * molecular_composition[i, j] * bead_library[beads[j]]["Vks"] * bead_library[beads[j]]["Sk"]
             )
 
     # initialize variables and arrays
@@ -279,11 +270,7 @@ def calc_composition_dependent_variables(
     xsk = np.zeros(nbeads, float)
     # compute xsk
     for k in range(nbeads):
-        xsk[k] = (
-            np.sum(xi * molecular_composition[:, k])
-            * bead_library[beads[k]]["Vks"]
-            * bead_library[beads[k]]["Sk"]
-        )
+        xsk[k] = np.sum(xi * molecular_composition[:, k]) * bead_library[beads[k]]["Vks"] * bead_library[beads[k]]["Sk"]
     xsk /= Cmol2seg
 
     # calculate  xskl matrix
@@ -319,11 +306,7 @@ def calc_zetaxstar(rho, Cmol2seg, xskl, sigmakl):
     """
 
     # compute zetaxstar eq. 35
-    zetaxstar = (
-        rho
-        * Cmol2seg
-        * ((np.pi / 6.0) * np.sum(xskl * (sigmakl**3 * constants.molecule_per_nm3)))
-    )
+    zetaxstar = rho * Cmol2seg * ((np.pi / 6.0) * np.sum(xskl * (sigmakl**3 * constants.molecule_per_nm3)))
 
     return zetaxstar
 
@@ -351,11 +334,7 @@ def calc_zetax(rho, Cmol2seg, xskl, dkl):
         Matrix of hypothetical packing fraction based on hard sphere diameter for
         groups (k,l)
     """
-    zetax = (
-        rho
-        * Cmol2seg
-        * ((np.pi / 6.0) * np.sum(xskl * (dkl**3 * constants.molecule_per_nm3)))
-    )
+    zetax = rho * Cmol2seg * ((np.pi / 6.0) * np.sum(xskl * (dkl**3 * constants.molecule_per_nm3)))
 
     return zetax
 
@@ -377,8 +356,6 @@ def calc_KHS(zetax):
         (length of densities) isothermal compressibility of system with packing
         fraction zetax
     """
-    KHS = ((1.0 - zetax) ** 4) / (
-        1.0 + (4.0 * zetax) + (4.0 * (zetax**2)) - (4.0 * (zetax**3)) + (zetax**4)
-    )
+    KHS = ((1.0 - zetax) ** 4) / (1.0 + (4.0 * zetax) + (4.0 * (zetax**2)) - (4.0 * (zetax**3)) + (zetax**4))
 
     return KHS

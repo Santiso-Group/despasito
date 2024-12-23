@@ -126,22 +126,13 @@ class Data(ExpDataTemplate):
             np.array([[1.0] for x in range(self.npoints)]),
             constants.standard_temperature,
         ]
-        self.thermodict.update(
-            gtb.set_defaults(
-                self.thermodict, thermo_keys, thermo_defaults, lx=self.npoints
-            )
-        )
+        self.thermodict.update(gtb.set_defaults(self.thermodict, thermo_keys, thermo_defaults, lx=self.npoints))
 
-        self.weights.update(
-            gtb.check_length_dict(self.weights, self.result_keys, lx=self.npoints)
-        )
+        self.weights.update(gtb.check_length_dict(self.weights, self.result_keys, lx=self.npoints))
         self.weights.update(gtb.set_defaults(self.weights, self.result_keys, 1.0))
 
         if "Tlist" not in self.thermodict and "delta" not in self.thermodict:
-            raise ImportError(
-                "Given solubility data, value(s) for T and delta should have been "
-                "provided."
-            )
+            raise ImportError("Given solubility data, value(s) for T and delta should have been " "provided.")
 
         logger.info(
             "Data type 'solubility parameter' initiated with calculation_type, {}, and"
@@ -199,24 +190,14 @@ class Data(ExpDataTemplate):
         obj_value = np.zeros(2)
         if "delta" in self.thermodict:
             obj_value[0] = ff.obj_function_form(
-                phase_list[0],
-                self.thermodict["delta"],
-                weights=self.weights["delta"],
-                **self.obj_opts
+                phase_list[0], self.thermodict["delta"], weights=self.weights["delta"], **self.obj_opts
             )
         if "rhol" in self.thermodict:
             obj_value[1] = ff.obj_function_form(
-                phase_list[1],
-                self.thermodict["rhol"],
-                weights=self.weights["rhol"],
-                **self.obj_opts
+                phase_list[1], self.thermodict["rhol"], weights=self.weights["rhol"], **self.obj_opts
             )
 
-        logger.info(
-            "Obj. breakdown for {}: delta {}, rhol {}".format(
-                self.name, obj_value[0], obj_value[1]
-            )
-        )
+        logger.info("Obj. breakdown for {}: delta {}, rhol {}".format(self.name, obj_value[0], obj_value[1]))
 
         if all([(np.isnan(x) or x == 0.0) for x in obj_value]):
             obj_total = np.inf

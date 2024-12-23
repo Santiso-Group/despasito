@@ -187,9 +187,7 @@ class EosType(EosTemplate):
 
     """
 
-    def __init__(
-        self, saft_name="gamma_mie", Aideal_method=None, combining_rules=None, **kwargs
-    ):
+    def __init__(self, saft_name="gamma_mie", Aideal_method=None, combining_rules=None, **kwargs):
 
         super().__init__(**kwargs)
 
@@ -228,30 +226,20 @@ class EosType(EosTemplate):
                 else:
                     self.eos_dict[key] = tmp
             except Exception:
-                raise ValueError(
-                    "SAFT type, {}, is missing the variable {}.".format(saft_name, key)
-                )
+                raise ValueError("SAFT type, {}, is missing the variable {}.".format(saft_name, key))
 
         for res in self.eos_dict["residual_helmholtz_contributions"]:
             setattr(self, res, getattr(self.saft_source, res))
 
         if Aideal_method is not None:
-            logger.info(
-                "Switching Aideal method from {} to {}.".format(
-                    self.eos_dict["Aideal_method"], Aideal_method
-                )
-            )
+            logger.info("Switching Aideal method from {} to {}.".format(self.eos_dict["Aideal_method"], Aideal_method))
             self.eos_dict["Aideal_method"] = Aideal_method
 
         # Extract needed values from kwargs
         needed_attributes = ["bead_library", "molecular_composition", "beads"]
         for key in needed_attributes:
             if key not in kwargs:
-                raise ValueError(
-                    "The one of the following inputs is missing: {}".format(
-                        ", ".join(tmp)
-                    )
-                )
+                raise ValueError("The one of the following inputs is missing: {}".format(", ".join(tmp)))
 
             if key == "molecular_composition":
                 self.eos_dict[key] = kwargs[key]
@@ -273,10 +261,8 @@ class EosType(EosTemplate):
             self.eos_dict["reduction_ratio"] = kwargs["reduction_ratio"]
 
         # Initiate association site terms
-        self.eos_dict["sitenames"], self.eos_dict["nk"], self.eos_dict["flag_assoc"] = (
-            Aassoc.initiate_assoc_matrices(
-                self.beads, self.bead_library, self.eos_dict["molecular_composition"]
-            )
+        self.eos_dict["sitenames"], self.eos_dict["nk"], self.eos_dict["flag_assoc"] = Aassoc.initiate_assoc_matrices(
+            self.beads, self.bead_library, self.eos_dict["molecular_composition"]
         )
         assoc_output = Aassoc.calc_assoc_matrices(
             self.beads,
@@ -322,9 +308,7 @@ class EosType(EosTemplate):
         if len(xi) != self.number_of_components:
             raise ValueError(
                 "Number of components in mole fraction list, {}, ".format(len(xi))
-                + "doesn't match self.number_of_components, {}".format(
-                    self.number_of_components
-                )
+                + "doesn't match self.number_of_components, {}".format(self.number_of_components)
             )
 
         rho = self._check_density(rho)
@@ -364,16 +348,12 @@ class EosType(EosTemplate):
         if len(xi) != self.number_of_components:
             raise ValueError(
                 "Number of components in mole fraction list, {}, ".format(len(xi))
-                + "doesn't match self.number_of_components, {}".format(
-                    self.number_of_components
-                )
+                + "doesn't match self.number_of_components, {}".format(self.number_of_components)
             )
 
         rho = self._check_density(rho)
 
-        A = self.residual_helmholtz_energy(rho, T, xi) + self.Aideal(
-            rho, T, xi, method=self.eos_dict["Aideal_method"]
-        )
+        A = self.residual_helmholtz_energy(rho, T, xi) + self.Aideal(rho, T, xi, method=self.eos_dict["Aideal_method"])
 
         return A
 
@@ -405,16 +385,12 @@ class EosType(EosTemplate):
         if len(xi) != self.number_of_components:
             raise ValueError(
                 "Number of components in mole fraction list, {}, ".format(len(xi))
-                + "doesn't match self.number_of_components, {}".format(
-                    self.number_of_components
-                )
+                + "doesn't match self.number_of_components, {}".format(self.number_of_components)
             )
 
         rho = self._check_density(rho)
 
-        return Aideal.Aideal_contribution(
-            rho, T, xi, self.eos_dict["massi"], method=method
-        )
+        return Aideal.Aideal_contribution(rho, T, xi, self.eos_dict["massi"], method=method)
 
     def Aassoc(self, rho, T, xi):
         r"""
@@ -441,16 +417,12 @@ class EosType(EosTemplate):
             if len(xi) != self.number_of_components:
                 raise ValueError(
                     "Number of components in mole fraction list, {}, ".format(len(xi))
-                    + "doesn't match self.number_of_components, {}".format(
-                        self.number_of_components
-                    )
+                    + "doesn't match self.number_of_components, {}".format(self.number_of_components)
                 )
 
             rho = self._check_density(rho)
 
-            indices = Aassoc.assoc_site_indices(
-                self.eos_dict["nk"], self.eos_dict["molecular_composition"], xi=xi
-            )
+            indices = Aassoc.assoc_site_indices(self.eos_dict["nk"], self.eos_dict["molecular_composition"], xi=xi)
 
             # compute F_klab
             Fklab = np.exp(self.eos_dict["epsilonHB"] / T) - 1.0
@@ -461,9 +433,7 @@ class EosType(EosTemplate):
                     for key in keys:
                         if key in self.eos_dict:
                             opts[key] = self.eos_dict[key]
-                    self.eos_dict["Kijklab"] = self.saft_source.calc_Kijklab(
-                        T, self.eos_dict["rc_klab"], **opts
-                    )
+                    self.eos_dict["Kijklab"] = self.saft_source.calc_Kijklab(T, self.eos_dict["rc_klab"], **opts)
                     self.T = T
                 Kklab = self.eos_dict["Kijklab"]
                 Ktype = "ijklab"
@@ -493,10 +463,7 @@ class EosType(EosTemplate):
                 if self.eos_dict["nk"][k, a] != 0.0:
                     tmp = np.log(Xika[:, ind]) + ((1.0 - Xika[:, ind]) / 2.0)
                     Assoc_contribution += (
-                        xi[i]
-                        * self.eos_dict["molecular_composition"][i, k]
-                        * self.eos_dict["nk"][k, a]
-                        * tmp
+                        xi[i] * self.eos_dict["molecular_composition"][i, k] * self.eos_dict["nk"][k, a] * tmp
                     )
 
         else:
@@ -530,16 +497,12 @@ class EosType(EosTemplate):
         if len(xi) != self.number_of_components:
             raise ValueError(
                 "Number of components in mole fraction list, {}, ".format(len(xi))
-                + "doesn't match self.number_of_components, {}".format(
-                    self.number_of_components
-                )
+                + "doesn't match self.number_of_components, {}".format(self.number_of_components)
             )
 
         # derivative of Aideal_broglie here wrt to rho is 1/rho
         rho = self._check_density(rho)
-        P_tmp = gtb.central_difference(
-            rho, self.helmholtz_energy, args=(T, xi), step_size=step_size, relative=True
-        )
+        P_tmp = gtb.central_difference(rho, self.helmholtz_energy, args=(T, xi), step_size=step_size, relative=True)
         pressure = P_tmp * T * constants.R * rho**2
 
         return pressure
@@ -570,9 +533,7 @@ class EosType(EosTemplate):
         if len(xi) != self.number_of_components:
             raise ValueError(
                 "Number of components in mole fraction list, {}, ".format(len(xi))
-                + "doesn't match self.number_of_components, {}".format(
-                    self.number_of_components
-                )
+                + "doesn't match self.number_of_components, {}".format(self.number_of_components)
             )
 
         if gtb.isiterable(T):
@@ -623,9 +584,7 @@ class EosType(EosTemplate):
         if len(xi) != self.number_of_components:
             raise ValueError(
                 "Number of components in mole fraction list, {}, ".format(len(xi))
-                + "doesn't match self.number_of_components, {}".format(
-                    self.number_of_components
-                )
+                + "doesn't match self.number_of_components, {}".format(self.number_of_components)
             )
 
         max_density = self.saft_source.density_max(xi, T, maxpack=maxpack)
@@ -686,9 +645,7 @@ class EosType(EosTemplate):
         if len(parameter_list) > 1 and len(parameter_list[1:]) != 2:
             raise ValueError(
                 "Sitenames should be two different sites in the list:"
-                + " {}. You gave: {}".format(
-                    self.eos_dict["sitenames"], ", ".join(parameter_list[1:])
-                )
+                + " {}. You gave: {}".format(self.eos_dict["sitenames"], ", ".join(parameter_list[1:]))
             )
 
         super().update_parameter(param_name, bead_names, param_value)

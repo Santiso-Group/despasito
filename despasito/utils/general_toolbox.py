@@ -82,19 +82,11 @@ def solve_root(func, args=(), method="bisect", x0=None, bounds=None, options={})
                 " not provided, so problem cannot be solved.".format(method)
             )
         else:
-            logger.error(
-                "Optimization method, {}, requires x0, using bisect instead".format(
-                    method
-                )
-            )
+            logger.error("Optimization method, {}, requires x0, using bisect instead".format(method))
             method = "bisect"
 
     if np.size(x0) > 1 and method in ["brentq", "bisect"]:
-        logger.error(
-            "Optimization method, {}, is for scalar functions, using {}".format(
-                method, "least_squares"
-            )
-        )
+        logger.error("Optimization method, {}, is for scalar functions, using {}".format(method, "least_squares"))
         method = "least_squares"
 
     if not isiterable(bounds[0]):
@@ -107,13 +99,11 @@ def solve_root(func, args=(), method="bisect", x0=None, bounds=None, options={})
                 + "Because x0 was not provided, so problem cannot be solved."
             )
         else:
-            logger.error(
-                "Optimization method, {}, requires bounds, using hybr".format(method)
-            )
+            logger.error("Optimization method, {}, requires bounds, using hybr".format(method))
             method = "hybr"
 
     if np.any(bounds is not None):
-        for i,bnd in enumerate(bounds):
+        for i, bnd in enumerate(bounds):
             if len(bnd) != 2:
                 raise ValueError("bounds are not of length two")
             else:
@@ -128,21 +118,13 @@ def solve_root(func, args=(), method="bisect", x0=None, bounds=None, options={})
         }
         for key, value in options.items():
             outer_dict[key] = value
-        logger.debug(
-            "Using the method, {}, with the following options:\n{}".format(
-                method, outer_dict
-            )
-        )
+        logger.debug("Using the method, {}, with the following options:\n{}".format(method, outer_dict))
         sol = spo.root(func, x0, args=args, method=method, options=outer_dict)
     elif method == "anderson":
         outer_dict = {"fatol": 1e-5, "maxiter": 25}
         for key, value in options.items():
             outer_dict[key] = value
-        logger.debug(
-            "Using the method, {}, with the following options:\n{}".format(
-                method, outer_dict
-            )
-        )
+        logger.debug("Using the method, {}, with the following options:\n{}".format(method, outer_dict))
         sol = spo.root(func, x0, args=args, method=method, options=outer_dict)
     elif method in [
         "hybr",
@@ -156,11 +138,7 @@ def solve_root(func, args=(), method="bisect", x0=None, bounds=None, options={})
         outer_dict = {}
         for key, value in options.items():
             outer_dict[key] = value
-        logger.debug(
-            "Using the method, {}, with the following options:\n{}".format(
-                method, outer_dict
-            )
-        )
+        logger.debug("Using the method, {}, with the following options:\n{}".format(method, outer_dict))
         sol = spo.root(func, x0, args=args, method=method, options=outer_dict)
 
     # ################### Minimization Methods with Boundaries ###################
@@ -171,11 +149,7 @@ def solve_root(func, args=(), method="bisect", x0=None, bounds=None, options={})
         }
         for key, value in options.items():
             outer_dict[key] = value
-        logger.debug(
-            "Using the method, {}, with the following options:\n{}".format(
-                method, outer_dict
-            )
-        )
+        logger.debug("Using the method, {}, with the following options:\n{}".format(method, outer_dict))
         if len(bounds) == 2:
             sol = spo.minimize(
                 func,
@@ -191,11 +165,7 @@ def solve_root(func, args=(), method="bisect", x0=None, bounds=None, options={})
         outer_dict = {}
         for key, value in options.items():
             outer_dict[key] = value
-        logger.debug(
-            "Using the method, {}, with the following options:\n{}".format(
-                method, outer_dict
-            )
-        )
+        logger.debug("Using the method, {}, with the following options:\n{}".format(method, outer_dict))
         if len(bounds) == 2:
             sol = spo.minimize(
                 func,
@@ -214,48 +184,30 @@ def solve_root(func, args=(), method="bisect", x0=None, bounds=None, options={})
         for key, value in options.items():
             if key in ["xtol", "rtol", "maxiter", "full_output", "disp"]:
                 outer_dict[key] = value
-        logger.debug(
-            "Using the method, {}, with the following options:\n{}".format(
-                method, outer_dict
-            )
-        )
+        logger.debug("Using the method, {}, with the following options:\n{}".format(method, outer_dict))
         sol = spo.brentq(func, bounds[0][0], bounds[0][1], args=args, **outer_dict)
     elif method == "least_squares":
         outer_dict = {}
         for key, value in options.items():
             outer_dict[key] = value
-        logger.debug(
-            "Using the method, {}, with the following options:\n{}".format(
-                method, outer_dict
-            )
-        )
+        logger.debug("Using the method, {}, with the following options:\n{}".format(method, outer_dict))
         bnd_tmp = [[], []]
         for bnd in bounds:
             bnd_tmp[0].append(bnd[0])
             bnd_tmp[1].append(bnd[1])
-        sol = spo.least_squares(
-            func, x0, bounds=tuple(bnd_tmp), args=args, **outer_dict
-        )
+        sol = spo.least_squares(func, x0, bounds=tuple(bnd_tmp), args=args, **outer_dict)
     elif method == "bisect":
         outer_dict = {"maxiter": 100, "rtol": 1e-12}
         for key, value in options.items():
             if key in ["xtol", "rtol", "maxiter", "full_output", "disp"]:
                 outer_dict[key] = value
-        logger.debug(
-            "Using the method, {}, with the following options:\n{}".format(
-                method, outer_dict
-            )
-        )
+        logger.debug("Using the method, {}, with the following options:\n{}".format(method, outer_dict))
         sol = spo.bisect(func, bounds[0][0], bounds[0][1], args=args, **outer_dict)
 
     # Given final P estimate
     if method not in ["brentq", "bisect"]:
         solution = sol.x
-        logger.info(
-            "Optimization terminated successfully: {} {}".format(
-                sol.success, sol.message
-            )
-        )
+        logger.info("Optimization terminated successfully: {} {}".format(sol.success, sol.message))
     else:
         logger.info("Optimization terminated successfully: {}".format(sol))
         solution = sol
@@ -303,9 +255,7 @@ def central_difference(x, func, step_size=1e-5, relative=False, args=()):
         step = x * step_size
         if not isiterable(step):
             step = np.array([step])
-        step = np.array(
-            [2 * np.finfo(float).eps if xx < np.finfo(float).eps else xx for xx in step]
-        )
+        step = np.array([2 * np.finfo(float).eps if xx < np.finfo(float).eps else xx for xx in step])
     else:
         step = step_size
 
@@ -380,9 +330,7 @@ def check_length_dict(dictionary, keys, lx=None):
                 else:
                     lx_array.append(1)
         if not len(lx_array):
-            raise ValueError(
-                "None of the provided keys are found in the given dictionary"
-            )
+            raise ValueError("None of the provided keys are found in the given dictionary")
         lx = max(lx_array)
 
     new_dictionary = {}
@@ -396,9 +344,7 @@ def check_length_dict(dictionary, keys, lx=None):
                 elif l_tmp == lx:
                     new_dictionary[key] = np.array(tmp, float)
                 else:
-                    raise ValueError(
-                        "Entry, {}, should be length {}, not {}".format(key, lx, l_tmp)
-                    )
+                    raise ValueError("Entry, {}, should be length {}, not {}".format(key, lx, l_tmp))
             else:
                 new_dictionary[key] = np.array([tmp for x in range(lx)], float)
 
@@ -443,11 +389,7 @@ def set_defaults(dictionary, keys, values, lx=None):
             raise ValueError("Length of given keys and values must be equivalent.")
         elif not key_iterable:
             if len(values) != 1:
-                raise ValueError(
-                    "Multiple default values for given key, {}, is ambiguous".format(
-                        keys
-                    )
-                )
+                raise ValueError("Multiple default values for given key, {}, is ambiguous".format(keys))
             else:
                 keys = [keys]
 

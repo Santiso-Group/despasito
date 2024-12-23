@@ -17,9 +17,7 @@ import despasito.utils.general_toolbox as gtb
 logger = logging.getLogger(__name__)
 
 
-def single_objective(
-    parameters_guess, bounds, fit_bead, fit_parameter_names, exp_dict, global_opts={}
-):
+def single_objective(parameters_guess, bounds, fit_bead, fit_parameter_names, exp_dict, global_opts={}):
     r"""
     Evaluate parameter set for equation of state with given experimental data
 
@@ -52,13 +50,9 @@ def single_objective(
     """
 
     if len(global_opts) > 0:
-        logger.info(
-            "The fitting method 'single_objective' does not have further options"
-        )
+        logger.info("The fitting method 'single_objective' does not have further options")
 
-    obj_value = ff.compute_obj(
-        parameters_guess, fit_bead, fit_parameter_names, exp_dict, bounds
-    )
+    obj_value = ff.compute_obj(parameters_guess, fit_bead, fit_parameter_names, exp_dict, bounds)
 
     result = spo.OptimizeResult(
         x=parameters_guess,
@@ -141,14 +135,9 @@ def differential_evolution(
     else:
         filename = None
 
-    if (
-        "write_intermediate_file" in global_opts
-        and global_opts["write_intermediate_file"]
-    ):
+    if "write_intermediate_file" in global_opts and global_opts["write_intermediate_file"]:
         del global_opts["write_intermediate_file"]
-        global_opts["callback"] = _WriteParameterResults(
-            fit_parameter_names, obj_cut=obj_cut, filename=filename
-        )
+        global_opts["callback"] = _WriteParameterResults(fit_parameter_names, obj_cut=obj_cut, filename=filename)
 
     # Options for differential evolution, set defaults in new_global_opts
     new_global_opts = {"init": "random"}
@@ -157,11 +146,7 @@ def differential_evolution(
             if key == "MultiprocessingObject":
                 flag_workers = "workers" in global_opts and global_opts["workers"] > 1
                 if value.ncores > 1 and flag_workers:
-                    logger.info(
-                        "Differential Evolution algorithm is using {} workers.".format(
-                            value.ncores
-                        )
-                    )
+                    logger.info("Differential Evolution algorithm is using {} workers.".format(value.ncores))
                     new_global_opts["workers"] = value._pool.map
                     exp_dict = _del_Data_MultiprocessingObject(exp_dict)
             elif key not in obj_kwargs:
@@ -173,10 +158,7 @@ def differential_evolution(
     logger.info("Differential Evolution Options: {}".format(global_opts))
 
     result = spo.differential_evolution(
-        ff.compute_obj,
-        bounds,
-        args=(fit_bead, fit_parameter_names, exp_dict, bounds),
-        **global_opts
+        ff.compute_obj, bounds, args=(fit_bead, fit_parameter_names, exp_dict, bounds), **global_opts
     )
 
     return result
@@ -278,7 +260,7 @@ def shgo(
         bounds,
         args=(fit_bead, fit_parameter_names, exp_dict, bounds),
         minimizer_kwargs=minimizer_opts,
-        **global_opts
+        **global_opts,
     )
 
     return result
@@ -354,11 +336,7 @@ def grid_minimization(
         for key, value in global_opts.items():
             if key == "MultiprocessingObject":
                 if value.ncores > 1:
-                    logger.info(
-                        "Grid minimization algorithm is using {} workers.".format(
-                            value.ncores
-                        )
-                    )
+                    logger.info("Grid minimization algorithm is using {} workers.".format(value.ncores))
                     new_global_opts["MultiprocessingObject"] = value
                     flag_use_mp_object = True
                     exp_dict = _del_Data_MultiprocessingObject(exp_dict)
@@ -396,13 +374,9 @@ def grid_minimization(
             for x0 in x0_array:
                 tmp1 = x0[global_opts["split_grid_minimization"]:]
                 tmp2 = x0[: global_opts["split_grid_minimization"]]
-                inputs.append(
-                    (tmp1, (*args, tmp2), bounds, constraints, minimizer_opts)
-                )
+                inputs.append((tmp1, (*args, tmp2), bounds, constraints, minimizer_opts))
         else:
-            inputs = [
-                (x0, args, bounds, constraints, minimizer_opts) for x0 in x0_array
-            ]
+            inputs = [(x0, args, bounds, constraints, minimizer_opts) for x0 in x0_array]
 
     else:
         # Initialization based on implementation in scipy.optimize.brute
@@ -435,28 +409,17 @@ def grid_minimization(
             x0_array = np.reshape(x0_array, (inpt_shape[0], np.prod(inpt_shape[1:]))).T
 
         if global_opts["split_grid_minimization"] != 0:
-            min_parameters = list(
-                parameters_guess[global_opts["split_grid_minimization"]:]
-            )
-            inputs = [
-                (min_parameters, (*args, x0), bounds, constraints, minimizer_opts)
-                for x0 in x0_array
-            ]
+            min_parameters = list(parameters_guess[global_opts["split_grid_minimization"]:])
+            inputs = [(min_parameters, (*args, x0), bounds, constraints, minimizer_opts) for x0 in x0_array]
         else:
-            inputs = [
-                (x0, args, bounds, constraints, minimizer_opts) for x0 in x0_array
-            ]
+            inputs = [(x0, args, bounds, constraints, minimizer_opts) for x0 in x0_array]
 
     lx = len(x0_array)
     # Start computation
     if flag_use_mp_object:
-        x0, results, fval = global_opts["MultiprocessingObject"].pool_job(
-            _grid_minimization_wrapper, inputs
-        )
+        x0, results, fval = global_opts["MultiprocessingObject"].pool_job(_grid_minimization_wrapper, inputs)
     else:
-        x0, results, fval = MultiprocessingJob.serial_job(
-            _grid_minimization_wrapper, inputs
-        )
+        x0, results, fval = MultiprocessingJob.serial_job(_grid_minimization_wrapper, inputs)
 
     # Choose final output
     if global_opts["split_grid_minimization"] != 0:
@@ -469,8 +432,7 @@ def grid_minimization(
                 results_new[i] = np.array(list(x0_array[i]) + list(results[i]))
             else:
                 results_new[i] = np.array(
-                    list(x0_array[i][: global_opts["split_grid_minimization"]])
-                    + list(results[i])
+                    list(x0_array[i][: global_opts["split_grid_minimization"]]) + list(results[i])
                 )
         results = results_new
         if "initial_guesses" not in global_opts:
@@ -499,9 +461,7 @@ def grid_minimization(
     return result
 
 
-def brute(
-    parameters_guess, bounds, fit_bead, fit_parameter_names, exp_dict, global_opts={}
-):
+def brute(parameters_guess, bounds, fit_bead, fit_parameter_names, exp_dict, global_opts={}):
     r"""
     Fit defined parameters for equation of state object using scipy.optimize.brute with
     given experimental data.
@@ -544,9 +504,7 @@ def brute(
             if key == "MultiprocessingObject":
                 flag_workers = "workers" in global_opts and global_opts["workers"] > 1
                 if value.ncores > 1 and flag_workers:
-                    logger.info(
-                        "Brute algorithm is using {} workers.".format(value.ncores)
-                    )
+                    logger.info("Brute algorithm is using {} workers.".format(value.ncores))
                     new_global_opts["workers"] = value._pool.map
                     exp_dict = _del_Data_MultiprocessingObject(exp_dict)
             else:
@@ -556,10 +514,7 @@ def brute(
 
     logger.info("Brute Options: {}".format(global_opts))
     x0, fval, grid, Jount = spo.brute(
-        ff.compute_obj,
-        bounds,
-        args=(fit_bead, fit_parameter_names, exp_dict, bounds),
-        **global_opts
+        ff.compute_obj, bounds, args=(fit_bead, fit_parameter_names, exp_dict, bounds), **global_opts
     )
     result = spo.OptimizeResult(
         x=x0,
@@ -656,14 +611,9 @@ def basinhopping(
     else:
         filename = None
 
-    if (
-        "write_intermediate_file" in global_opts
-        and global_opts["write_intermediate_file"]
-    ):
+    if "write_intermediate_file" in global_opts and global_opts["write_intermediate_file"]:
         del global_opts["write_intermediate_file"]
-        global_opts["callback"] = _WriteParameterResults(
-            fit_parameter_names, obj_cut=obj_cut, filename=filename
-        )
+        global_opts["callback"] = _WriteParameterResults(fit_parameter_names, obj_cut=obj_cut, filename=filename)
 
     # Options for basin hopping
     new_global_opts = {"niter": 10, "T": 0.5, "niter_success": 3}
@@ -704,11 +654,7 @@ def basinhopping(
         minimizer_kwargs.update(global_opts["minimizer_kwargs"])
         del global_opts["minimizer_kwargs"]
     result = spo.basinhopping(
-        ff.compute_obj,
-        parameters_guess,
-        **global_opts,
-        accept_test=custombounds,
-        minimizer_kwargs=minimizer_kwargs
+        ff.compute_obj, parameters_guess, **global_opts, accept_test=custombounds, minimizer_kwargs=minimizer_kwargs
     )
 
     return result
@@ -721,9 +667,7 @@ def _grid_minimization_wrapper(args):
     x0, obj_args, bounds, constraints, opts = args
 
     if constraints is not None:
-        logger.warning(
-            "Constraints defined, but grid_minimization does not support their use."
-        )
+        logger.warning("Constraints defined, but grid_minimization does not support their use.")
 
     opts = opts.copy()
     if "method" in opts:
@@ -860,17 +804,9 @@ class _BasinBounds(object):
         feasible2 = not np.isnan(kwargs["f_new"])
 
         if tmax and tmin and feasible1 and feasible2:
-            logger.info(
-                "Accept parameters: {}, with obj. function: {}".format(
-                    x, kwargs["f_new"]
-                )
-            )
+            logger.info("Accept parameters: {}, with obj. function: {}".format(x, kwargs["f_new"]))
         else:
-            logger.info(
-                "Reject parameters: {}, with obj. function: {}".format(
-                    x, kwargs["f_new"]
-                )
-            )
+            logger.info("Reject parameters: {}, with obj. function: {}".format(x, kwargs["f_new"]))
 
         return tmax and tmin and feasible1 and feasible2
 
@@ -909,11 +845,7 @@ class _WriteParameterResults(object):
             for i in range(20):
                 filename = "{}_{}".format(i, old_fname)
                 if not os.path.isfile(filename):
-                    logger.info(
-                        "File '{}' already exists, using {}.".format(
-                            old_fname, filename
-                        )
-                    )
+                    logger.info("File '{}' already exists, using {}.".format(old_fname, filename))
                     break
 
         self.beadnames = beadnames
@@ -957,9 +889,7 @@ class _WriteParameterResults(object):
             if kwargs["convergence"] < self.obj_cut:
                 if not os.path.isfile(self.filename):
                     with open(self.filename, "w") as f:
-                        f.write(
-                            "# n, convergence, {}\n".format(", ".join(self.beadnames))
-                        )
+                        f.write("# n, convergence, {}\n".format(", ".join(self.beadnames)))
 
                 with open(self.filename, "a") as f:
                     tmp = [self.ninit, kwargs["convergence"]] + list(args[0])
@@ -969,11 +899,7 @@ class _WriteParameterResults(object):
             if args[2] or args[1] < self.obj_cut:
                 if not os.path.isfile(self.filename):
                     with open(self.filename, "w") as f:
-                        f.write(
-                            "# n, obj. value, accepted, {}\n".format(
-                                ", ".join(self.beadnames)
-                            )
-                        )
+                        f.write("# n, obj. value, accepted, {}\n".format(", ".join(self.beadnames)))
 
                 with open(self.filename, "a") as f:
                     tmp = [self.ninit, args[1], args[2]] + list(args[0])

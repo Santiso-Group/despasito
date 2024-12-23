@@ -94,25 +94,14 @@ class EosType(EosTemplate):
         self._test_critical = [False for _ in self.beads]
         self._test_parameters = [False for _ in self.beads]
         for i, bead in enumerate(self.beads):
-            if (
-                "omega" in self.bead_library[bead]
-                and "kappa" not in self.bead_library[bead]
-            ):
+            if "omega" in self.bead_library[bead] and "kappa" not in self.bead_library[bead]:
                 self._test_kappa[i] = True
 
-            self._test_critical[i] = (
-                "Tc" in self.bead_library[bead] and "Pc" in self.bead_library[bead]
-            )
-            self._test_parameters[i] = (
-                "ai" in self.bead_library[bead] and "bi" in self.bead_library[bead]
-            )
+            self._test_critical[i] = "Tc" in self.bead_library[bead] and "Pc" in self.bead_library[bead]
+            self._test_parameters[i] = "ai" in self.bead_library[bead] and "bi" in self.bead_library[bead]
 
             if not self._test_critical[i] and not self._test_parameters[i]:
-                raise ValueError(
-                    "Either 'Tc' or 'Pc' was not provided for component: {}".format(
-                        bead
-                    )
-                )
+                raise ValueError("Either 'Tc' or 'Pc' was not provided for component: {}".format(bead))
 
         # Cross interaction parameters
         if "cross_library" in kwargs:
@@ -155,9 +144,7 @@ class EosType(EosTemplate):
         for i, bead in enumerate(self.beads):
             if "kappa" in self.bead_library[bead]:
                 self.eos_dict["alpha"][i] = (
-                    1
-                    + self.bead_library[bead]["kappa"]
-                    * (1 - np.sqrt(T / self.bead_library[bead]["Tc"]))
+                    1 + self.bead_library[bead]["kappa"] * (1 - np.sqrt(T / self.bead_library[bead]["Tc"]))
                 ) ** 2
             else:
                 self.eos_dict["alpha"][i] = 1.0
@@ -235,11 +222,8 @@ class EosType(EosTemplate):
         elif not isinstance(rho, np.ndarray):
             rho = np.array(rho)
 
-        P = constants.R * self.T * rho / (
-            1 - self.eos_dict["bij"] * rho
-        ) - rho**2 * self.eos_dict["aij"] / (
-            (1 + self.eos_dict["bij"] * rho)
-            + rho * self.eos_dict["bij"] * (1 - self.eos_dict["bij"] * rho)
+        P = constants.R * self.T * rho / (1 - self.eos_dict["bij"] * rho) - rho**2 * self.eos_dict["aij"] / (
+            (1 + self.eos_dict["bij"] * rho) + rho * self.eos_dict["bij"] * (1 - self.eos_dict["bij"] * rho)
         )
 
         return P
@@ -296,11 +280,7 @@ class EosType(EosTemplate):
         A = self.eos_dict["aij"] * P / tmp_RT**2
 
         sqrt2 = np.sqrt(2.0)
-        tmp1 = (
-            A
-            / (2.0 * sqrt2 * B)
-            * np.log((Z + (1 + sqrt2) * B) / (Z + (1 - sqrt2) * B))
-        )
+        tmp1 = A / (2.0 * sqrt2 * B) * np.log((Z + (1 + sqrt2) * B) / (Z + (1 - sqrt2) * B))
         tmp3 = Bi * (Z - 1) / B - np.log(Z - B)
         tmp2 = np.zeros(len(xi))
 
@@ -363,15 +343,8 @@ class EosType(EosTemplate):
             Value of parameter
         """
 
-        if (
-            param_name in ["ai", "bi"]
-            and self._test_critical[self.beads.index(bead_names[0])]
-        ):
-            raise ValueError(
-                "Bead, {}, initialized with critical properties, not ai and bi".format(
-                    bead_names[0]
-                )
-            )
+        if param_name in ["ai", "bi"] and self._test_critical[self.beads.index(bead_names[0])]:
+            raise ValueError("Bead, {}, initialized with critical properties, not ai and bi".format(bead_names[0]))
         super().update_parameter(param_name, bead_names, param_value)
 
     def parameter_refresh(self):
@@ -384,10 +357,7 @@ class EosType(EosTemplate):
         """
 
         for i, bead in enumerate(self.beads):
-            if (
-                "omega" in self.bead_library[bead]
-                and "kappa" not in self.bead_library[bead]
-            ):
+            if "omega" in self.bead_library[bead] and "kappa" not in self.bead_library[bead]:
                 self.bead_library[bead]["kappa"] = (
                     0.37464
                     + 1.54226 * self.bead_library[bead]["omega"]
@@ -396,14 +366,10 @@ class EosType(EosTemplate):
 
             if self._test_critical[i] and not self._test_parameters[i]:
                 self.bead_library[bead]["ai"] = (
-                    0.45723553
-                    * (constants.R * self.bead_library[bead]["Tc"]) ** 2
-                    / self.bead_library[bead]["Pc"]
+                    0.45723553 * (constants.R * self.bead_library[bead]["Tc"]) ** 2 / self.bead_library[bead]["Pc"]
                 )
                 self.bead_library[bead]["bi"] = 0.07779607 * (
-                    constants.R
-                    * self.bead_library[bead]["Tc"]
-                    / self.bead_library[bead]["Pc"]
+                    constants.R * self.bead_library[bead]["Tc"] / self.bead_library[bead]["Pc"]
                 )
 
             parameters = ["ai", "bi"]

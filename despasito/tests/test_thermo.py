@@ -79,66 +79,54 @@ def test_thermo_import():
 def test_saturation_properties(Eos=Eos_co2_h2o, Tlist=Tlist):
 
     output = thermo.thermo(
-        Eos,
-        calculation_type="saturation_properties",
-        **{"Tlist": Tlist, "xilist": [np.array([0.0, 1.0])]}
+        Eos, calculation_type="saturation_properties", **{"Tlist": Tlist, "xilist": [np.array([0.0, 1.0])]}
     )
 
-    assert output["Psat"][0] == pytest.approx(46266.2, abs=1e1) and output["rhol"][
-        0
-    ] == pytest.approx(53883.63, abs=1e-1), output["rhol"][0] == pytest.approx(
-        2371.38970066, abs=1e-1
-    )
+    assert output["Psat"][0] == pytest.approx(46266.2, abs=1e1) and output["rhol"][0] == pytest.approx(
+        53883.63, abs=1e-1
+    ), output["rhol"][0] == pytest.approx(2371.38970066, abs=1e-1)
 
 
 def test_liquid_properties(Eos=Eos_co2_h2o, Tlist=Tlist, xilist=xilist, Plist=Plist):
 
     output = thermo.thermo(
-        Eos,
-        calculation_type="liquid_properties",
-        **{"Tlist": Tlist, "Plist": Plist, "xilist": xilist}
+        Eos, calculation_type="liquid_properties", **{"Tlist": Tlist, "Plist": Plist, "xilist": xilist}
     )
 
-    assert output["rhol"][0] == pytest.approx(53831.6, abs=1e-1) and output["phil"][
-        0
-    ] == pytest.approx(np.array([403.98, 6.8846e-03]), abs=1e-1)
+    assert output["rhol"][0] == pytest.approx(53831.6, abs=1e-1) and output["phil"][0] == pytest.approx(
+        np.array([403.98, 6.8846e-03]), abs=1e-1
+    )
 
 
 def test_vapor_properties(Eos=Eos_co2_h2o, Tlist=Tlist, yilist=yilist, Plist=Plist):
 
     output = thermo.thermo(
-        Eos,
-        calculation_type="vapor_properties",
-        **{"Tlist": Tlist, "Plist": Plist, "yilist": yilist}
+        Eos, calculation_type="vapor_properties", **{"Tlist": Tlist, "Plist": Plist, "yilist": yilist}
     )
 
-    assert output["rhov"][0] == pytest.approx(2938.3, abs=1e-1) and output["phiv"][
-        0
-    ] == pytest.approx(np.array([0.865397, 0.63848]), abs=1e-1)
+    assert output["rhov"][0] == pytest.approx(2938.3, abs=1e-1) and output["phiv"][0] == pytest.approx(
+        np.array([0.865397, 0.63848]), abs=1e-1
+    )
 
 
-def test_activity_coefficient(
-    Eos=Eos_h2o_hexane, Tlist=Tlist, xilist=xilist, yilist=yilist, Plist=Plist
-):
+def test_activity_coefficient(Eos=Eos_h2o_hexane, Tlist=Tlist, xilist=xilist, yilist=yilist, Plist=Plist):
 
     output = thermo.thermo(
         Eos,
         calculation_type="activity_coefficient",
-        **{"Tlist": Tlist, "Plist": Plist, "yilist": yilist, "xilist": xilist}
+        **{"Tlist": Tlist, "Plist": Plist, "yilist": yilist, "xilist": xilist},
     )
 
     print(output["gamma"])
-    assert output["gamma"][0] == pytest.approx(
-        np.array([7.23733364e04, 6.30243983e-01]), abs=1e-2
-    )
+    assert output["gamma"][0] == pytest.approx(np.array([7.23733364e04, 6.30243983e-01]), abs=1e-2)
 
 
 def test_bubble_pressure(Eos=Eos_co2_h2o, Tlist=Tlist, xilist=xilist):
     output = thermo.thermo(
         Eos,
         calculation_type="bubble_pressure",
-        **{"Tlist": Tlist, "xilist": xilist, "Pmin": [6900000], "Pmax": [7100000]}
+        **{"Tlist": Tlist, "xilist": xilist, "Pmin": [6900000], "Pmax": [7100000]},
     )
-    assert output["P"][0] == pytest.approx(7005198.6, abs=5e1) and output["yi"][
-        0
-    ] == pytest.approx([0.98779049, 0.01220951], abs=1e-4)
+    assert output["P"][0] == pytest.approx(7005198.6, abs=5e1) and output["yi"][0] == pytest.approx(
+        [0.98779049, 0.01220951], abs=1e-4
+    )

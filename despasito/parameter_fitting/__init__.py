@@ -26,7 +26,7 @@ def fit(
     global_opts={},
     minimizer_opts=None,
     MultiprocessingObject=None,
-    **kwargs
+    **kwargs,
 ):
     r"""
     Fit parameters for an equation of state object with given experimental data.
@@ -133,14 +133,12 @@ def fit(
 
     if not isinstance(optimization_parameters["fit_parameter_names"], list):
         if isinstance(optimization_parameters["fit_parameter_names"], str):
-            optimization_parameters["fit_parameter_names"] = [
-                optimization_parameters["fit_parameter_names"]
-            ]
+            optimization_parameters["fit_parameter_names"] = [optimization_parameters["fit_parameter_names"]]
         else:
             raise ValueError(
                 f"'fit_parameter_names' must be a list not: {optimization_parameters['fit_parameter_names']}"
             )
-        
+
     # Generate initial guess and bounds for parameters if none was given
     optimization_parameters = ff.consolidate_bounds(optimization_parameters).copy()
     if "bounds" in optimization_parameters:
@@ -156,10 +154,7 @@ def fit(
     if "parameters_guess" in optimization_parameters:
         parameters_guess = optimization_parameters["parameters_guess"]
         if len(parameters_guess) != len(optimization_parameters["fit_parameter_names"]):
-            raise ValueError(
-                "The number of initial parameters given isn't the same number of "
-                "parameters to be fit."
-            )
+            raise ValueError("The number of initial parameters given isn't the same number of " "parameters to be fit.")
     else:
         parameters_guess = ff.initial_guess(optimization_parameters, Eos)
     logger.info("Initial guess in parameters: {}".format(parameters_guess))
@@ -175,9 +170,7 @@ def fit(
     for key, data_dict in exp_data.items():
         fittype = data_dict["data_class_type"]
         try:
-            exp_module = import_module(
-                "." + fittype, package="despasito.parameter_fitting.data_classes"
-            )
+            exp_module = import_module("." + fittype, package="despasito.parameter_fitting.data_classes")
             data_class = getattr(exp_module, "Data")
         except Exception:
             if not type_list:
@@ -196,9 +189,7 @@ def fit(
             exp_dict[key] = instance
             logger.info("Initiated exp. data object: {}".format(instance.name))
         except Exception:
-            raise AttributeError(
-                "Data set, {}, did not properly initiate object".format(key)
-            )
+            raise AttributeError("Data set, {}, did not properly initiate object".format(key))
 
     # Check global optimization method
     if "method" in dicts["global_opts"]:
@@ -216,7 +207,7 @@ def fit(
             optimization_parameters["fit_bead"],
             optimization_parameters["fit_parameter_names"],
             exp_dict,
-            **dicts
+            **dicts,
         )
 
         logger.info("Fitting terminated:\n{}".format(result.message))

@@ -102,15 +102,11 @@ def check_parameter_bounds(optimization_parameters, Eos, bounds):
 
     """
 
-    new_bounds = [
-        (0, 0) for x in range(len(optimization_parameters["fit_parameter_names"]))
-    ]
+    new_bounds = [(0, 0) for x in range(len(optimization_parameters["fit_parameter_names"]))]
     # Check boundary parameters to be sure they're in a reasonable range
     for i, param in enumerate(optimization_parameters["fit_parameter_names"]):
         fit_parameter_names_list = param.split("_")
-        new_bounds[i] = tuple(
-            Eos.check_bounds(fit_parameter_names_list[0], param, bounds[i])
-        )
+        new_bounds[i] = tuple(Eos.check_bounds(fit_parameter_names_list[0], param, bounds[i]))
 
     return new_bounds
 
@@ -176,9 +172,7 @@ def consolidate_bounds(optimization_parameters):
         if "bounds" in key2:
             tmp = key2.replace("_bounds", "")
             if tmp in optimization_parameters["fit_parameter_names"]:
-                logger.info(
-                    "Accepted bounds for parameter, '{}': {}".format(tmp, value2)
-                )
+                logger.info("Accepted bounds for parameter, '{}': {}".format(tmp, value2))
                 ind = optimization_parameters["fit_parameter_names"].index(tmp)
                 new_optimization_parameters["bounds"][ind] = value2
             else:
@@ -313,20 +307,14 @@ def global_minimization(global_method, *args, **kwargs):
     """
 
     logger.info("Using global optimization method: {}".format(global_method))
-    calc_list = [
-        o[0]
-        for o in getmembers(global_methods_mod)
-        if (isfunction(o[1]) and o[0][0] != "_")
-    ]
+    calc_list = [o[0] for o in getmembers(global_methods_mod) if (isfunction(o[1]) and o[0][0] != "_")]
     try:
         func = getattr(global_methods_mod, global_method)
     except Exception:
         raise ImportError(
             "The global minimization type, '{}',".format(global_method)
             + " was not found\nThe following "
-            + "calculation types are supported: {}".format(
-                ", ".join(calc_list)
-            )
+            + "calculation types are supported: {}".format(", ".join(calc_list))
         )
 
     output = func(*args, **kwargs)
@@ -367,11 +355,7 @@ def initialize_constraints(constraints, constraint_type):
 
     """
 
-    calc_list = [
-        o[0]
-        for o in getmembers(constraints_mod)
-        if (isfunction(o[1]) and o[0][0] != "_")
-    ]
+    calc_list = [o[0] for o in getmembers(constraints_mod) if (isfunction(o[1]) and o[0][0] != "_")]
 
     new_constraints = []
     for const_type, kwargs in constraints.items():
@@ -389,11 +373,7 @@ def initialize_constraints(constraints, constraint_type):
             )
 
         if "args" not in kwargs:
-            raise ValueError(
-                "Constraint function, {}, is missing arguments".format(
-                    kwargs["function"]
-                )
-            )
+            raise ValueError("Constraint function, {}, is missing arguments".format(kwargs["function"]))
 
         if constraint_type == "class":
             if "type" not in kwargs or kwargs["type"] in ["linear", "nonlinear"]:
@@ -403,28 +383,19 @@ def initialize_constraints(constraints, constraint_type):
                 )
             if kwargs["type"] == "linear":
                 if "kwargs" not in kwargs:
-                    output = LinearConstraint(
-                        func, kwargs["args"][0], kwargs["args"][1]
-                    )
+                    output = LinearConstraint(func, kwargs["args"][0], kwargs["args"][1])
                 else:
-                    output = LinearConstraint(
-                        func, kwargs["args"][0], kwargs["args"][1], **kwargs
-                    )
+                    output = LinearConstraint(func, kwargs["args"][0], kwargs["args"][1], **kwargs)
             elif kwargs["type"] == "nonlinear":
                 if "kwargs" not in kwargs:
-                    output = NonlinearConstraint(
-                        func, kwargs["args"][0], kwargs["args"][1]
-                    )
+                    output = NonlinearConstraint(func, kwargs["args"][0], kwargs["args"][1])
                 else:
-                    output = NonlinearConstraint(
-                        func, kwargs["args"][0], kwargs["args"][1], **kwargs
-                    )
+                    output = NonlinearConstraint(func, kwargs["args"][0], kwargs["args"][1], **kwargs)
 
         elif constraint_type == "dict":
             if "type" not in kwargs or kwargs["type"] in ["eq", "ineq"]:
                 raise ValueError(
-                    "Constraint, {}, does not".format(kwargs["function"])
-                    + " have type. Type can be 'eq' or 'ineq'."
+                    "Constraint, {}, does not".format(kwargs["function"]) + " have type. Type can be 'eq' or 'ineq'."
                 )
             output = {"type": kwargs["type"], "function": func, "args": kwargs["args"]}
         else:
@@ -435,9 +406,7 @@ def initialize_constraints(constraints, constraint_type):
     return tuple(new_constraints)
 
 
-def compute_obj(
-    beadparams, fit_bead, fit_parameter_names, exp_dict, bounds, frozen_parameters=None
-):
+def compute_obj(beadparams, fit_bead, fit_parameter_names, exp_dict, bounds, frozen_parameters=None):
     r"""
     Fit defined parameters for equation of state object with given experimental data.
 
@@ -483,8 +452,7 @@ def compute_obj(
             beadparams = np.array(list(frozen_parameters) + list(beadparams))
         else:
             raise ValueError(
-                "The length of initial guess vector should be the same number of "
-                + "parameters to be fit."
+                "The length of initial guess vector should be the same number of " + "parameters to be fit."
             )
 
     logger.info(
@@ -501,11 +469,7 @@ def compute_obj(
                 data_obj.update_parameters(fit_bead, fit_parameter_names, beadparams)
                 obj_function.append(data_obj.objective())
             except Exception:
-                logger.exception(
-                    "Failed to evaluate objective function for {} of type {}.".format(
-                        key, data_obj.name
-                    )
-                )
+                logger.exception("Failed to evaluate objective function for {} of type {}.".format(key, data_obj.name))
                 obj_function.append(np.inf)
 
         obj_total = np.nansum(obj_function)
@@ -513,17 +477,11 @@ def compute_obj(
         # Add penalty for being out of bounds for the sake of inner minimization
         for i, param in enumerate(beadparams):
             if param < bounds[i][0]:
-                logger.debug(
-                    "Adding penalty to {} parameter for being lower than range".format(
-                        fit_parameter_names[i]
-                    )
-                )
+                logger.debug("Adding penalty to {} parameter for being lower than range".format(fit_parameter_names[i]))
                 obj_total += (1e3 * (param - bounds[i][0])) ** 8
             elif param > bounds[i][1]:
                 logger.debug(
-                    "Adding penalty to {} parameter for being higher than range".format(
-                        fit_parameter_names[i]
-                    )
+                    "Adding penalty to {} parameter for being higher than range".format(fit_parameter_names[i])
                 )
                 obj_total += (1e3 * (param - bounds[i][1])) ** 8
     else:
@@ -624,11 +582,7 @@ def obj_function_form(
     )
     if gtb.isiterable(weights):
         weight_tmp = np.array(
-            [
-                weights[i]
-                for i in range(len(data_test))
-                if not np.isnan((data_test[i] - data0[i]) / data0[i])
-            ]
+            [weights[i] for i in range(len(data_test)) if not np.isnan((data_test[i] - data0[i]) / data0[i])]
         )
     else:
         weight_tmp = weights
@@ -641,15 +595,11 @@ def obj_function_form(
 
     elif method == "sum-squared-deviation-boltz":
         data_min = np.min(data_tmp)
-        obj_value = np.sum(
-            data_tmp**2 * weight_tmp * np.exp((data_min - data_tmp) / np.abs(data_min))
-        )
+        obj_value = np.sum(data_tmp**2 * weight_tmp * np.exp((data_min - data_tmp) / np.abs(data_min)))
 
     elif method == "sum-deviation-boltz":
         data_min = np.min(data_tmp)
-        obj_value = np.sum(
-            data_tmp * weight_tmp * np.exp((data_min - data_tmp) / np.abs(data_min))
-        )
+        obj_value = np.sum(data_tmp * weight_tmp * np.exp((data_min - data_tmp) / np.abs(data_min)))
 
     elif method == "percent-absolute-average-deviation":
         obj_value = np.mean(np.abs(data_tmp) * weight_tmp) * 100

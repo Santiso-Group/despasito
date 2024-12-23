@@ -68,9 +68,7 @@ def test_saft_gamma_sw_class_assoc_P(T=T, xi=[1.0], Eos=Eos, density=density):
     assert P == pytest.approx(9447510.360679299, abs=1e3)
 
 
-def test_saft_gamma_sw_class_assoc_fugacity_coefficient(
-    P=P, xi=[1.0], T=T, Eos=Eos, density=density
-):
+def test_saft_gamma_sw_class_assoc_fugacity_coefficient(P=P, xi=[1.0], T=T, Eos=Eos, density=density):
     #   """Test ability to predict P with association sites"""
     phi = Eos.fugacity_coefficient(P, density, xi, T)
     assert phi == pytest.approx(np.array([0.8293442]), abs=1e-4)
@@ -85,9 +83,7 @@ Eos = despasito.equations_of_state.initiate_eos(
 )
 
 
-def test_saft_gamma_sw_class_assoc_P_numba(
-    T=T, xi=np.array([1.0]), Eos=Eos, density=density
-):
+def test_saft_gamma_sw_class_assoc_P_numba(T=T, xi=np.array([1.0]), Eos=Eos, density=density):
     #   """Test ability to predict P with association sites"""
     P = Eos.pressure(density, T, xi)[0]
     assert P == pytest.approx(9447510.360679299, abs=1e3)

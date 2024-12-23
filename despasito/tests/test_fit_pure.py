@@ -144,10 +144,7 @@ def test_solubility_so(Eos=Eos, thermo_dict=thermo_dict0.copy()):
     thermo_dict = ri.process_param_fit_inputs(thermo_dict)
     output = fit.fit(**thermo_dict)
 
-    assert (
-        output["parameters_final"][0] == pytest.approx(375.01, abs=1.0)
-        and output["objective_value"] < 1.1
-    )
+    assert output["parameters_final"][0] == pytest.approx(375.01, abs=1.0) and output["objective_value"] < 1.1
 
 
 thermo_dict_mix["exp_data"] = exp_data_density
@@ -158,10 +155,7 @@ def test_density_so(Eos=Eos_mix, thermo_dict=thermo_dict_mix.copy()):
     thermo_dict = ri.process_param_fit_inputs(thermo_dict)
     output = fit.fit(**thermo_dict)
 
-    assert (
-        output["parameters_final"][0] == pytest.approx(350.0, abs=1.0)
-        and output["objective_value"] < 1.5
-    )
+    assert output["parameters_final"][0] == pytest.approx(350.0, abs=1.0) and output["objective_value"] < 1.5
 
 
 thermo_dict0["exp_data"] = exp_data_sat

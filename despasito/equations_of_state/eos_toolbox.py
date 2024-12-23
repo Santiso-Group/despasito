@@ -40,9 +40,7 @@ def remove_insignificant_components(xi_old, massi_old):
     return xi_new, massi_new
 
 
-def partial_density_central_difference(
-    xi, rho, T, func, step_size=1e-2, log_method=False
-):
+def partial_density_central_difference(xi, rho, T, func, step_size=1e-2, log_method=False):
     """
     Take the derivative of a dependent variable calculated with a given function
     using the central difference method.
@@ -164,9 +162,7 @@ def calc_massi(molecular_composition, bead_library, beads):
             if "mass" in bead_library[bead]:
                 massi[i] += molecular_composition[i, k] * bead_library[bead]["mass"]
             else:
-                raise ValueError(
-                    "The mass for bead, {}, was not provided.".format(bead)
-                )
+                raise ValueError("The mass for bead, {}, was not provided.".format(bead))
 
     return massi
 
@@ -205,9 +201,7 @@ def extract_property(prop, bead_library, beads, default=None):
             prop_array[i] = bead_library[bead][prop]
         else:
             if default is None:
-                raise ValueError(
-                    "The property {} for bead, {}, was not provided.".format(prop, bead)
-                )
+                raise ValueError("The property {} for bead, {}, was not provided.".format(prop, bead))
             else:
                 prop_array[i] = default
 
@@ -249,8 +243,7 @@ def check_bead_parameters(bead_library0, parameter_defaults):
                     )
                 else:
                     raise ValueError(
-                        "Parameter, {}, should have been defined for parametrized "
-                        "group, {}.".format(parameter, bead)
+                        "Parameter, {}, should have been defined for parametrized " "group, {}.".format(parameter, bead)
                     )
 
     return bead_library
@@ -299,27 +292,14 @@ def cross_interaction_from_dict(beads, bead_library, combining_dict, cross_libra
         for j, beadname2 in enumerate(beads):
             if j > i:
                 for key in combining_dict:
-                    if (
-                        cross_library.get(beadname, {})
-                        .get(beadname2, {})
-                        .get(key, None)
-                        is not None
-                    ):
+                    if cross_library.get(beadname, {}).get(beadname2, {}).get(key, None) is not None:
                         output[key][i, j] = cross_library[beadname][beadname2][key]
-                    elif (
-                        cross_library.get(beadname2, {})
-                        .get(beadname, {})
-                        .get(key, None)
-                        is not None
-                    ):
+                    elif cross_library.get(beadname2, {}).get(beadname, {}).get(key, None) is not None:
                         output[key][i, j] = cross_library[beadname2][beadname][key]
                     else:
                         try:
                             tmp = combining_rules(
-                                bead_library[beadname],
-                                bead_library[beadname2],
-                                key,
-                                **combining_dict[key]
+                                bead_library[beadname], bead_library[beadname2], key, **combining_dict[key]
                             )
                         except Exception:
                             raise ValueError(
@@ -369,9 +349,7 @@ def construct_dummy_bead_library(input_dict, keys=None):
             keys = [str(x) for x in range(len(input_dict[parameter]))]
             flag = True
         if len(keys) != len(input_dict[parameter]):
-            raise ValueError(
-                "Number of keys is not equal to the number of quantities given"
-            )
+            raise ValueError("Number of keys is not equal to the number of quantities given")
 
         for i, bead in enumerate(keys):
             if bead not in output:

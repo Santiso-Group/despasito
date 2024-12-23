@@ -1,4 +1,3 @@
-
 import numpy as np
 
 import despasito
@@ -17,20 +16,20 @@ Eos = initiate_eos(
 
 fit.fit(
     optimization_parameters={
-        'fit_bead': 'CH3', 
-        'fit_parameter_names': ['epsilon_CH2'], 
-        'epsilon_CH2_bounds': [150.0, 600.0], 
-        'parameters_guess': [300.0]
+        "fit_bead": "CH3",
+        "fit_parameter_names": ["epsilon_CH2"],
+        "epsilon_CH2_bounds": [150.0, 600.0],
+        "parameters_guess": [300.0],
     },
     exp_data={
-        'Knovel': {
-            'data_class_type': 'liquid_density', 
+        "Knovel": {
+            "data_class_type": "liquid_density",
             "eos_obj": Eos,
-            "calculation_type": 'liquid_properties', 
-            "T": np.array([272.15, 323.15, 298.15]), 
-            "rhol": np.array([10357. , 10364.8, 10140. ]), 
-            "delta": np.array([14453., 13700., 14100.]),
+            "calculation_type": "liquid_properties",
+            "T": np.array([272.15, 323.15, 298.15]),
+            "rhol": np.array([10357.0, 10364.8, 10140.0]),
+            "delta": np.array([14453.0, 13700.0, 14100.0]),
         },
     },
-    global_opts={'method': 'grid_minimization', 'Ns': 3},
+    global_opts={"method": "grid_minimization", "Ns": 3},
 )

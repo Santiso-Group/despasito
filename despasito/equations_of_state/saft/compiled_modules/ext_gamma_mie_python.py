@@ -155,11 +155,9 @@ def calc_Bkl(rho, l_kl, Cmol2seg, dkl, epsilonkl, x0kl, zetax):
     # compute Ikl(l_kl), eq. 23
     Ikl = (1.0 - (x0kl ** (3.0 - l_kl))) / (l_kl - 3.0)
     # compute Jkl(l_kl), eq. 24
-    Jkl = (
-        1.0
-        - ((x0kl ** (4.0 - l_kl)) * (l_kl - 3.0))
-        + ((x0kl ** (3.0 - l_kl)) * (l_kl - 4.0))
-    ) / ((l_kl - 3.0) * (l_kl - 4.0))
+    Jkl = (1.0 - ((x0kl ** (4.0 - l_kl)) * (l_kl - 3.0)) + ((x0kl ** (3.0 - l_kl)) * (l_kl - 4.0))) / (
+        (l_kl - 3.0) * (l_kl - 4.0)
+    )
 
     tmp11 = rhos * (2.0 * np.pi)
     tmp12 = (dkl**3 * constants.molecule_per_nm3**2) * epsilonkl
@@ -287,10 +285,7 @@ def calc_a1s_eff(rho, Cmol2seg, l_ii_avg, zetax, epsilonii_avg, dii_avg):
         * 2.0
         * np.pi
         * Cmol2seg
-        * (
-            (epsilonii_avg * (dii_avg**3 * constants.molecule_per_nm3**2))
-            / (l_ii_avg - 3.0)
-        )
+        * ((epsilonii_avg * (dii_avg**3 * constants.molecule_per_nm3**2)) / (l_ii_avg - 3.0))
     )
 
     output = np.transpose(np.transpose(a1s) * rho)
@@ -337,9 +332,7 @@ def calc_Bkl_eff(rho, l_ii_avg, Cmol2seg, dii_avg, epsilonii_avg, x0ii, zetax):
     Iii_avg = (1.0 - (x0ii ** (3.0 - l_ii_avg))) / (l_ii_avg - 3.0)
     # compute Jii_avg(l_ii_avg), eq. 24
     Jii_avg = (
-        1.0
-        - ((x0ii ** (4.0 - l_ii_avg)) * (l_ii_avg - 3.0))
-        + ((x0ii ** (3.0 - l_ii_avg)) * (l_ii_avg - 4.0))
+        1.0 - ((x0ii ** (4.0 - l_ii_avg)) * (l_ii_avg - 3.0)) + ((x0ii ** (3.0 - l_ii_avg)) * (l_ii_avg - 4.0))
     ) / ((l_ii_avg - 3.0) * (l_ii_avg - 4.0))
 
     tmp11 = rhos * (2.0 * np.pi)
@@ -412,21 +405,12 @@ def calc_da1sii_drhos(rho, Cmol2seg, l_ii_avg, zetax, epsilonii_avg, dii_avg):
             ),
         )
         etaii_avg[:, k] = np.dot(zetax_pow, ciii_avg)
-        rhos_detaii_avg_drhos[:, k] = np.dot(
-            zetax_pow, ciii_avg * np.array([1.0, 2.0, 3.0, 4.0])
-        )
+        rhos_detaii_avg_drhos[:, k] = np.dot(zetax_pow, ciii_avg * np.array([1.0, 2.0, 3.0, 4.0]))
 
-    tmp1 = (1.0 - (etaii_avg / 2.0)) / ((1.0 - etaii_avg) ** 3) + (
-        5.0 - 2.0 * etaii_avg
-    ) / (2.0 * (1.0 - etaii_avg) ** 4) * rhos_detaii_avg_drhos
-    tmp2 = (
-        -2.0
-        * np.pi
-        * (
-            (epsilonii_avg * (dii_avg**3 * constants.molecule_per_nm3**2))
-            / (l_ii_avg - 3.0)
-        )
-    )
+    tmp1 = (1.0 - (etaii_avg / 2.0)) / ((1.0 - etaii_avg) ** 3) + (5.0 - 2.0 * etaii_avg) / (
+        2.0 * (1.0 - etaii_avg) ** 4
+    ) * rhos_detaii_avg_drhos
+    tmp2 = -2.0 * np.pi * ((epsilonii_avg * (dii_avg**3 * constants.molecule_per_nm3**2)) / (l_ii_avg - 3.0))
 
     da1s_drhos = tmp1 * tmp2
 
@@ -472,9 +456,7 @@ def calc_dBkl_drhos(l_ii_avg, dii_avg, epsilonii_avg, x0ii, zetax):
     Iii_avg = (1.0 - (x0ii ** (3.0 - l_ii_avg))) / (l_ii_avg - 3.0)
     # compute Jii_avg(l_ii_avg), eq. 24
     Jii_avg = (
-        1.0
-        - ((x0ii ** (4.0 - l_ii_avg)) * (l_ii_avg - 3.0))
-        + ((x0ii ** (3.0 - l_ii_avg)) * (l_ii_avg - 4.0))
+        1.0 - ((x0ii ** (4.0 - l_ii_avg)) * (l_ii_avg - 3.0)) + ((x0ii ** (3.0 - l_ii_avg)) * (l_ii_avg - 4.0))
     ) / ((l_ii_avg - 3.0) * (l_ii_avg - 4.0))
 
     tmp = 2.0 * np.pi * dii_avg**3 * epsilonii_avg
@@ -484,20 +466,15 @@ def calc_dBkl_drhos(l_ii_avg, dii_avg, epsilonii_avg, x0ii, zetax):
         tmp1[:, k] = ((1.0 - (zetax / 2.0)) / ((1.0 - zetax) ** 3) * Iii_avg[k]) - (
             ((9.0 * zetax * (1.0 + zetax)) / (2.0 * ((1 - zetax) ** 3))) * Jii_avg[k]
         )
-        tmp2[:, k] = (
-            (5.0 - 2.0 * zetax) * zetax / (2 * (1.0 - zetax) ** 4) * Iii_avg[k]
-        ) - (
-            ((9.0 * zetax * (zetax**2 + 4.0 * zetax + 1)) / (2.0 * ((1 - zetax) ** 4)))
-            * Jii_avg[k]
+        tmp2[:, k] = ((5.0 - 2.0 * zetax) * zetax / (2 * (1.0 - zetax) ** 4) * Iii_avg[k]) - (
+            ((9.0 * zetax * (zetax**2 + 4.0 * zetax + 1)) / (2.0 * ((1 - zetax) ** 4))) * Jii_avg[k]
         )
     dBkl_drhos = tmp * (tmp1 + tmp2) * constants.molecule_per_nm3**2
 
     return dBkl_drhos
 
 
-def calc_da1iidrhos(
-    rho, Cmol2seg, dii_eff, l_aii_avg, l_rii_avg, x0ii, epsilonii_avg, zetax
-):
+def calc_da1iidrhos(rho, Cmol2seg, dii_eff, l_aii_avg, l_rii_avg, x0ii, epsilonii_avg, zetax):
     r"""
     Compute derivative of the term,
     :math:`\bar{a}_{1,ii}` with respect to :math:`\rho_s`
@@ -535,27 +512,20 @@ def calc_da1iidrhos(
 
     Cii = prefactor(l_rii_avg, l_aii_avg)
 
-    das1_drhos_a = calc_da1sii_drhos(
-        rho, Cmol2seg, l_aii_avg, zetax, epsilonii_avg, dii_eff
-    )
-    das1_drhos_r = calc_da1sii_drhos(
-        rho, Cmol2seg, l_rii_avg, zetax, epsilonii_avg, dii_eff
-    )
+    das1_drhos_a = calc_da1sii_drhos(rho, Cmol2seg, l_aii_avg, zetax, epsilonii_avg, dii_eff)
+    das1_drhos_r = calc_da1sii_drhos(rho, Cmol2seg, l_rii_avg, zetax, epsilonii_avg, dii_eff)
 
     dB_drhos_a = calc_dBkl_drhos(l_aii_avg, dii_eff, epsilonii_avg, x0ii, zetax)
     dB_drhos_r = calc_dBkl_drhos(l_rii_avg, dii_eff, epsilonii_avg, x0ii, zetax)
 
     da1iidrhos = Cii * (
-        ((x0ii**l_aii_avg) * (das1_drhos_a + dB_drhos_a))
-        - ((x0ii**l_rii_avg) * (das1_drhos_r + dB_drhos_r))
+        ((x0ii**l_aii_avg) * (das1_drhos_a + dB_drhos_a)) - ((x0ii**l_rii_avg) * (das1_drhos_r + dB_drhos_r))
     )
 
     return da1iidrhos
 
 
-def calc_da2ii_1pchi_drhos(
-    rho, Cmol2seg, epsilonii_avg, dii_eff, x0ii, l_rii_avg, l_aii_avg, zetax
-):
+def calc_da2ii_1pchi_drhos(rho, Cmol2seg, epsilonii_avg, dii_eff, x0ii, l_rii_avg, l_aii_avg, zetax):
     r"""
     Compute derivative of the term, :math:`\frac{\bar{a}_{2,ii}}{1+\bar{\chi}_{ii}}`
     with respect to :math:`\rho_s`.
@@ -594,63 +564,35 @@ def calc_da2ii_1pchi_drhos(
     """
 
     # Calculate terms and derivatives used in derivative chain rule
-    KHS = ((1.0 - zetax) ** 4) / (
-        1.0 + (4.0 * zetax) + (4.0 * (zetax**2)) - (4.0 * (zetax**3)) + (zetax**4)
-    )
+    KHS = ((1.0 - zetax) ** 4) / (1.0 + (4.0 * zetax) + (4.0 * (zetax**2)) - (4.0 * (zetax**3)) + (zetax**4))
     dKHS_drhos = (
         (4.0 * (zetax**2 - 5.0 * zetax - 2.0) * (1.0 - zetax) ** 3)
         / (zetax**4 - 4.0 * zetax**3 + 4.0 * zetax**2 + 4.0 * zetax + 1.0) ** 2
         * (zetax / (rho * Cmol2seg))
     )
 
-    a1sii_2l_aii_avg = calc_a1s_eff(
-        rho, Cmol2seg, 2.0 * l_aii_avg, zetax, epsilonii_avg, dii_eff
-    )
-    a1sii_2l_rii_avg = calc_a1s_eff(
-        rho, Cmol2seg, 2.0 * l_rii_avg, zetax, epsilonii_avg, dii_eff
-    )
-    a1sii_l_rii_avgl_aii_avg = calc_a1s_eff(
-        rho, Cmol2seg, l_aii_avg + l_rii_avg, zetax, epsilonii_avg, dii_eff
-    )
+    a1sii_2l_aii_avg = calc_a1s_eff(rho, Cmol2seg, 2.0 * l_aii_avg, zetax, epsilonii_avg, dii_eff)
+    a1sii_2l_rii_avg = calc_a1s_eff(rho, Cmol2seg, 2.0 * l_rii_avg, zetax, epsilonii_avg, dii_eff)
+    a1sii_l_rii_avgl_aii_avg = calc_a1s_eff(rho, Cmol2seg, l_aii_avg + l_rii_avg, zetax, epsilonii_avg, dii_eff)
 
-    Bii_2l_aii_avg = calc_Bkl_eff(
-        rho, 2.0 * l_aii_avg, Cmol2seg, dii_eff, epsilonii_avg, x0ii, zetax
-    )
-    Bii_2l_rii_avg = calc_Bkl_eff(
-        rho, 2.0 * l_rii_avg, Cmol2seg, dii_eff, epsilonii_avg, x0ii, zetax
-    )
-    Bii_l_aii_avgl_rii_avg = calc_Bkl_eff(
-        rho, l_aii_avg + l_rii_avg, Cmol2seg, dii_eff, epsilonii_avg, x0ii, zetax
-    )
+    Bii_2l_aii_avg = calc_Bkl_eff(rho, 2.0 * l_aii_avg, Cmol2seg, dii_eff, epsilonii_avg, x0ii, zetax)
+    Bii_2l_rii_avg = calc_Bkl_eff(rho, 2.0 * l_rii_avg, Cmol2seg, dii_eff, epsilonii_avg, x0ii, zetax)
+    Bii_l_aii_avgl_rii_avg = calc_Bkl_eff(rho, l_aii_avg + l_rii_avg, Cmol2seg, dii_eff, epsilonii_avg, x0ii, zetax)
 
-    da1sii_2l_aii_avg = calc_da1sii_drhos(
-        rho, Cmol2seg, 2.0 * l_aii_avg, zetax, epsilonii_avg, dii_eff
-    )
-    da1sii_2l_rii_avg = calc_da1sii_drhos(
-        rho, Cmol2seg, 2.0 * l_rii_avg, zetax, epsilonii_avg, dii_eff
-    )
-    da1sii_l_rii_avgl_aii_avg = calc_da1sii_drhos(
-        rho, Cmol2seg, l_aii_avg + l_rii_avg, zetax, epsilonii_avg, dii_eff
-    )
+    da1sii_2l_aii_avg = calc_da1sii_drhos(rho, Cmol2seg, 2.0 * l_aii_avg, zetax, epsilonii_avg, dii_eff)
+    da1sii_2l_rii_avg = calc_da1sii_drhos(rho, Cmol2seg, 2.0 * l_rii_avg, zetax, epsilonii_avg, dii_eff)
+    da1sii_l_rii_avgl_aii_avg = calc_da1sii_drhos(rho, Cmol2seg, l_aii_avg + l_rii_avg, zetax, epsilonii_avg, dii_eff)
 
-    dBii_2l_aii_avg = calc_dBkl_drhos(
-        2.0 * l_aii_avg, dii_eff, epsilonii_avg, x0ii, zetax
-    )
-    dBii_2l_rii_avg = calc_dBkl_drhos(
-        2.0 * l_rii_avg, dii_eff, epsilonii_avg, x0ii, zetax
-    )
-    dBii_l_aii_avgl_rii_avg = calc_dBkl_drhos(
-        l_aii_avg + l_rii_avg, dii_eff, epsilonii_avg, x0ii, zetax
-    )
+    dBii_2l_aii_avg = calc_dBkl_drhos(2.0 * l_aii_avg, dii_eff, epsilonii_avg, x0ii, zetax)
+    dBii_2l_rii_avg = calc_dBkl_drhos(2.0 * l_rii_avg, dii_eff, epsilonii_avg, x0ii, zetax)
+    dBii_l_aii_avgl_rii_avg = calc_dBkl_drhos(l_aii_avg + l_rii_avg, dii_eff, epsilonii_avg, x0ii, zetax)
 
     # Calculate Derivative
     Cii = prefactor(l_rii_avg, l_aii_avg)
 
     B = (
         x0ii ** (2.0 * l_aii_avg) * (a1sii_2l_aii_avg + Bii_2l_aii_avg)
-        - 2.0
-        * x0ii ** (l_aii_avg + l_rii_avg)
-        * (a1sii_l_rii_avgl_aii_avg + Bii_l_aii_avgl_rii_avg)
+        - 2.0 * x0ii ** (l_aii_avg + l_rii_avg) * (a1sii_l_rii_avgl_aii_avg + Bii_l_aii_avgl_rii_avg)
         + x0ii ** (2.0 * l_rii_avg) * (a1sii_2l_rii_avg + Bii_2l_rii_avg)
     )
 
@@ -658,9 +600,7 @@ def calc_da2ii_1pchi_drhos(
 
     dB = (
         x0ii ** (2.0 * l_aii_avg) * (da1sii_2l_aii_avg + dBii_2l_aii_avg)
-        - 2.0
-        * x0ii ** (l_aii_avg + l_rii_avg)
-        * (da1sii_l_rii_avgl_aii_avg + dBii_l_aii_avgl_rii_avg)
+        - 2.0 * x0ii ** (l_aii_avg + l_rii_avg) * (da1sii_l_rii_avgl_aii_avg + dBii_l_aii_avgl_rii_avg)
         + x0ii ** (2.0 * l_rii_avg) * (da1sii_2l_rii_avg + dBii_2l_rii_avg)
     )
 
@@ -871,13 +811,9 @@ def calc_Iij(rho, T, xi, epsilonii_avg, sigmaii_avg, sigmakl, xskl):
             # Iij += np.einsum("i,jk->ijk", cij[p, q] * ((sigmax3 * rho)**p),
             # ((T / epsilonij)**q))
             if p == 0:
-                Iij += np.einsum(
-                    "i,jk->ijk", cij[p, q] * np.ones(len(rho)), ((T / epsilonij) ** q)
-                )
+                Iij += np.einsum("i,jk->ijk", cij[p, q] * np.ones(len(rho)), ((T / epsilonij) ** q))
             elif p == 1:
-                Iij += np.einsum(
-                    "i,jk->ijk", cij[p, q] * ((sigmax3 * rho)), ((T / epsilonij) ** q)
-                )
+                Iij += np.einsum("i,jk->ijk", cij[p, q] * ((sigmax3 * rho)), ((T / epsilonij) ** q))
             elif p == 2:
                 rho2 = rho**2
                 Iij += np.einsum(

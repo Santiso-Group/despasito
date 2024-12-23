@@ -49,9 +49,7 @@ def Aideal_contribution(rho, T, xi, massi, method="Abroglie"):
     if method in functions:
         function = functions[method]
     else:
-        raise ValueError(
-            "Method, {}, was not found to calculate Aideal.".format(method)
-        )
+        raise ValueError("Method, {}, was not found to calculate Aideal.".format(method))
 
     return function(rho, T, xi, massi)
 
