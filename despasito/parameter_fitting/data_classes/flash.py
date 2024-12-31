@@ -127,26 +127,16 @@ class Data(ExpDataTemplate):
         self.npoints = np.size(self.thermodict["Tlist"])
 
         thermo_defaults = [constants.standard_pressure, constants.standard_temperature]
-        self.thermodict.update(
-            gtb.set_defaults(
-                self.thermodict, thermo_keys, thermo_defaults, lx=self.npoints
-            )
-        )
+        self.thermodict.update(gtb.set_defaults(self.thermodict, thermo_keys, thermo_defaults, lx=self.npoints))
 
-        self.weights.update(
-            gtb.check_length_dict(self.weights, self.result_keys, lx=self.npoints)
-        )
+        self.weights.update(gtb.check_length_dict(self.weights, self.result_keys, lx=self.npoints))
         self.weights.update(gtb.set_defaults(self.weights, self.result_keys, 1.0))
 
         if "Plist" not in self.thermodict and "Tlist" not in self.thermodict:
-            raise ImportError(
-                "Given flash data, values for P and T should have been provided."
-            )
+            raise ImportError("Given flash data, values for P and T should have been provided.")
 
         if "xilist" not in self.thermodict or "yilist" not in self.thermodict:
-            raise ImportError(
-                "Given flash data, mole fractions should have been provided."
-            )
+            raise ImportError("Given flash data, mole fractions should have been provided.")
 
         logger.info(
             "Data type 'flash' initiated with calculation_type, {}, and data "
@@ -205,10 +195,7 @@ class Data(ExpDataTemplate):
             obj_value[0] = 0
             for i in range(len(yi)):
                 obj_value[0] += ff.obj_function_form(
-                    phase_list[i],
-                    yi[i],
-                    weights=self.weights["yilist"],
-                    **self.obj_opts
+                    phase_list[i], yi[i], weights=self.weights["yilist"], **self.obj_opts
                 )
 
         if "xilist" in self.thermodict:
@@ -219,14 +206,10 @@ class Data(ExpDataTemplate):
                     phase_list[self.Eos.number_of_components + i],
                     xi[i],
                     weights=self.weights["xilist"],
-                    **self.obj_opts
+                    **self.obj_opts,
                 )
 
-        logger.info(
-            "Obj. breakdown for {}: xi {}, yi {}".format(
-                self.name, obj_value[0], obj_value[1]
-            )
-        )
+        logger.info("Obj. breakdown for {}: xi {}, yi {}".format(self.name, obj_value[0], obj_value[1]))
 
         if all([(np.isnan(x) or x == 0.0) for x in obj_value]):
             obj_total = np.inf

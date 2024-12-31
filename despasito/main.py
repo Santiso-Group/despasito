@@ -47,10 +47,7 @@ def get_parser():
         "--verbose",
         action="count",
         default=0,
-        help=(
-            "Verbose level: repeat up to three times for Warning, Info, or Debug "
-            + "levels."
-        ),
+        help=("Verbose level: repeat up to three times for Warning, Info, or Debug " + "levels."),
     )
     parser.add_argument(
         "--log",
@@ -64,20 +61,14 @@ def get_parser():
         "--ncores",
         dest="ncores",
         type=int,
-        help=(
-            "Set the number of cores used. A value of -1 will request all possible "
-            + "resources."
-        ),
+        help=("Set the number of cores used. A value of -1 will request all possible " + "resources."),
         default=1,
     )
     parser.add_argument(
         "-p",
         "--path",
         default=".",
-        help=(
-            "Set the location of the data/library files (e.g. SAFTcross, etc.) where"
-            + " despasito will look."
-        ),
+        help=("Set the location of the data/library files (e.g. SAFTcross, etc.) where" + " despasito will look."),
     )
     parser.add_argument(
         "-c",
@@ -124,9 +115,7 @@ def run(filename="input.json", path=".", **kwargs):
 
     # read input file (need to add command line specification)
     logger.info("Begin processing input file: %s" % filename)
-    eos_dict, thermo_dict, output_file = read_input.extract_calc_data(
-        filename, path, **kwargs
-    )
+    eos_dict, thermo_dict, output_file = read_input.extract_calc_data(filename, path, **kwargs)
 
     thermo_dict["MultiprocessingObject"] = kwargs["MultiprocessingObject"]
 
@@ -160,9 +149,7 @@ def run(filename="input.json", path=".", **kwargs):
         output_dict.update(
             {
                 "fit_bead": thermo_dict["optimization_parameters"]["fit_bead"],
-                "fit_parameter_names": thermo_dict["optimization_parameters"][
-                    "fit_parameter_names"
-                ],
+                "fit_parameter_names": thermo_dict["optimization_parameters"]["fit_parameter_names"],
             }
         )
         logger.info("Finished parametrization")
@@ -173,9 +160,7 @@ def run(filename="input.json", path=".", **kwargs):
         output_dict = thermo(Eos, **thermo_dict.copy())
         logger.info("Finished thermodynamic calculation")
         try:
-            write_output.writeout_thermo_dict(
-                output_dict, thermo_dict["calculation_type"], **file_dict
-            )
+            write_output.writeout_thermo_dict(output_dict, thermo_dict["calculation_type"], **file_dict)
         except Exception:
             logger.info("Final Output: {}".format(output_dict))
 

@@ -56,13 +56,9 @@ def calc_Xika(indices, rho, xi, molecular_composition, nk, Fklab, Kklab, gr_asso
     rho, xi, molecular_composition, nk, Fklab, Kklab, gr_assoc = tmp_array
 
     if l_K == 4:
-        Xika_final, err_array = calc_Xika_4(
-            indices, rho, xi, molecular_composition, nk, Fklab, Kklab, gr_assoc
-        )
+        Xika_final, err_array = calc_Xika_4(indices, rho, xi, molecular_composition, nk, Fklab, Kklab, gr_assoc)
     if l_K == 6:
-        Xika_final, err_array = calc_Xika_6(
-            indices, rho, xi, molecular_composition, nk, Fklab, Kklab, gr_assoc
-        )
+        Xika_final, err_array = calc_Xika_6(indices, rho, xi, molecular_composition, nk, Fklab, Kklab, gr_assoc)
 
     return Xika_final, err_array
 
@@ -164,9 +160,7 @@ def calc_Xika_4(
                 break
             else:
                 if obj / np.max(Xika_elements) > 1e3:
-                    Xika_elements = Xika_elements + damp * (
-                        Xika_elements_new - Xika_elements
-                    )
+                    Xika_elements = Xika_elements + damp * (Xika_elements_new - Xika_elements)
                 else:
                     Xika_elements = Xika_elements_new
 
@@ -253,9 +247,7 @@ def calc_Xika_6(
                 jnd = 0
                 for jjnd in range(l_ind):
                     j, l, b = indices[jjnd]
-                    delta = (
-                        Fklab[k, l, a, b] * Kklab[i, j, k, l, a, b] * gr_assoc[r, i, j]
-                    )
+                    delta = Fklab[k, l, a, b] * Kklab[i, j, k, l, a, b] * gr_assoc[r, i, j]
                     Xika_elements_new[ind] += (
                         constants.molecule_per_nm3
                         * rho[r]
@@ -275,9 +267,7 @@ def calc_Xika_6(
                 break
             else:
                 if obj / np.max(Xika_elements) > 1e3:
-                    Xika_elements = Xika_elements + damp * (
-                        Xika_elements_new - Xika_elements
-                    )
+                    Xika_elements = Xika_elements + damp * (Xika_elements_new - Xika_elements)
                 else:
                     Xika_elements = Xika_elements_new
 

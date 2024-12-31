@@ -7,14 +7,7 @@ Intended for Thermodynamic Output
 import os
 import logging
 import logging.handlers
-
-# Handle versioneer
-from ._version import get_versions
-
-versions = get_versions()
-__version__ = versions["version"]
-__git_revision__ = versions["full-revisionid"]
-del get_versions, versions
+from ._version import __version__ as __version__
 
 logger = logging.getLogger("despasito")
 logger.setLevel(30)
@@ -60,9 +53,7 @@ def initiate_logger(console=None, log_file=None, verbose=30):
     # Set up logging to console
     if console and handler_console is None:
         console_handler = logging.StreamHandler()  # sys.stderr
-        console_handler.setFormatter(
-            logging.Formatter("[%(levelname)s](%(name)s): %(message)s")
-        )
+        console_handler.setFormatter(logging.Formatter("[%(levelname)s](%(name)s): %(message)s"))
         console_handler.setLevel(verbose)
         logger.addHandler(console_handler)
     elif console:
@@ -82,10 +73,7 @@ def initiate_logger(console=None, log_file=None, verbose=30):
 
         log_file_handler = logging.handlers.RotatingFileHandler(log_file)
         log_file_handler.setFormatter(
-            logging.Formatter(
-                "%(asctime)s [%(levelname)s](%(name)s:%(funcName)s:%(lineno)d): "
-                + "%(message)s"
-            )
+            logging.Formatter("%(asctime)s [%(levelname)s](%(name)s:%(funcName)s:%(lineno)d): " + "%(message)s")
         )
         log_file_handler.setLevel(verbose)
         logger.addHandler(log_file_handler)

@@ -120,9 +120,7 @@ class ExpDataTemplate(ABC):
                 bead_names.append(fit_parameter_names_list[1])
 
             if len(fit_parameter_names_list) == 1:
-                self.Eos.update_parameter(
-                    fit_parameter_names_list[0], [fit_bead], param_values[i]
-                )
+                self.Eos.update_parameter(fit_parameter_names_list[0], [fit_bead], param_values[i])
             elif len(fit_parameter_names_list) == 2:
                 self.Eos.update_parameter(
                     fit_parameter_names_list[0],
@@ -147,10 +145,7 @@ class ExpDataTemplate(ABC):
 
     def __str__(self):
 
-        string = (
-            "Data Set Object\nName: {}\nCalculation_type: {}\nNumber of "
-            "Points: {}".format(
-                self.name, self.thermodict["calculation_type"], self.npoints
-            )
+        string = "Data Set Object\nName: {}\nCalculation_type: {}\nNumber of " "Points: {}".format(
+            self.name, self.thermodict["calculation_type"], self.npoints
         )
         return string

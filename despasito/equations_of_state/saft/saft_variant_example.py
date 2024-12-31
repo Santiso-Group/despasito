@@ -151,11 +151,7 @@ class SaftType:
         needed_attributes = ["molecular_composition", "beads", "bead_library"]
         for key in needed_attributes:
             if key not in kwargs:
-                raise ValueError(
-                    "The one of the following inputs is missing: {}".format(
-                        ", ".join(needed_attributes)
-                    )
-                )
+                raise ValueError("The one of the following inputs is missing: {}".format(", ".join(needed_attributes)))
             elif key == "molecular_composition":
                 if "molecular_composition" not in self.eos_dict:
                     self.eos_dict[key] = kwargs[key]
@@ -172,9 +168,7 @@ class SaftType:
             "Sk": 1.0,
             "Vks": 1.0,
         }
-        self.bead_library = tb.check_bead_parameters(
-            self.bead_library, self._parameter_defaults
-        )
+        self.bead_library = tb.check_bead_parameters(self.bead_library, self._parameter_defaults)
 
         if "cross_library" not in kwargs:
             self.cross_library = {}
@@ -214,13 +208,9 @@ class SaftType:
         # "eos_somekeyword"
         if "num_rings" in kwargs:
             self.eos_dict["num_rings"] = kwargs["num_rings"]
-            logger.info(
-                "Accepted component ring structure: {}".format(kwargs["num_rings"])
-            )
+            logger.info("Accepted component ring structure: {}".format(kwargs["num_rings"]))
         else:
-            self.eos_dict["num_rings"] = np.zeros(
-                len(self.eos_dict["molecular_composition"])
-            )
+            self.eos_dict["num_rings"] = np.zeros(len(self.eos_dict["molecular_composition"]))
 
     def Amonomer(self, rho, T, xi):
         r"""
@@ -294,11 +284,7 @@ class SaftType:
         max_density = (
             maxpack
             * 6.0
-            / (
-                self.eos_dict["Cmol2seg"]
-                * np.pi
-                * np.sum(self.eos_dict["xskl"] * (self.eos_dict["sigma_kl"] ** 3))
-            )
+            / (self.eos_dict["Cmol2seg"] * np.pi * np.sum(self.eos_dict["xskl"] * (self.eos_dict["sigma_kl"] ** 3)))
             / constants.molecule_per_nm3
         )
 
@@ -368,13 +354,9 @@ class SaftType:
         dij_bar = np.zeros((self.ncomp, self.ncomp))
         for i in range(self.ncomp):
             for j in range(self.ncomp):
-                dij_bar[i, j] = np.mean(
-                    [self.eos_dict["sigma_ij"][i], self.eos_dict["sigma_ij"][j]]
-                )
+                dij_bar[i, j] = np.mean([self.eos_dict["sigma_ij"][i], self.eos_dict["sigma_ij"][j]])
 
-        Kijklab = Aassoc.calc_bonding_volume(
-            rc_klab, dij_bar, rd_klab=rd_klab, reduction_ratio=reduction_ratio
-        )
+        Kijklab = Aassoc.calc_bonding_volume(rc_klab, dij_bar, rd_klab=rd_klab, reduction_ratio=reduction_ratio)
 
         return Kijklab
 
@@ -423,13 +405,11 @@ class SaftType:
         self.calc_component_averaged_properties()
 
         if not np.any(np.isnan(self.xi)):
-            self.eos_dict["Cmol2seg"], self.eos_dict["xskl"] = (
-                stb.calc_composition_dependent_variables(
-                    self.xi,
-                    self.eos_dict["molecular_composition"],
-                    self.bead_library,
-                    self.beads,
-                )
+            self.eos_dict["Cmol2seg"], self.eos_dict["xskl"] = stb.calc_composition_dependent_variables(
+                self.xi,
+                self.eos_dict["molecular_composition"],
+                self.bead_library,
+                self.beads,
             )
         self.alphakl = (
             2.0

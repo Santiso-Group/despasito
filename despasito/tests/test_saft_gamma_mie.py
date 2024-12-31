@@ -98,9 +98,7 @@ bead_library_co2_h2o = {
         "Nk-a1": 1,
     },
 }
-cross_library_co2_h2o = {
-    "CO2": {"H2O": {"epsilon": 226.38, "epsilonHB-H-e1": 2200.0, "K-H-e1": 9.1419e-2}}
-}
+cross_library_co2_h2o = {"CO2": {"H2O": {"epsilon": 226.38, "epsilonHB-H-e1": 2200.0, "K-H-e1": 9.1419e-2}}}
 epsilonHB_co2_h2o = np.array(
     [
         [
@@ -204,8 +202,7 @@ def test_saft_gamma_mie_class_assoc_fugacity_coeff(
 
 
 def test_numba_available():
-    assert (path + ".ext_Aassoc_numba" in sys.modules
-            and path + ".ext_gamma_mie_numba" in sys.modules)
+    assert path + ".ext_Aassoc_numba" in sys.modules and path + ".ext_gamma_mie_numba" in sys.modules
 
 
 def test_saft_gamma_mie_class_assoc_P_numba(
@@ -233,17 +230,12 @@ def test_saft_gamma_mie_class_assoc_P_numba(
     assert P == pytest.approx(15727315.77, abs=1e3)
 
 
-@pytest.mark.skipif(
-    not flag_cython, reason="Cython is not installed with this version of python."
-)
+@pytest.mark.skipif(not flag_cython, reason="Cython is not installed with this version of python.")
 def test_cython_available():
-    assert (path + ".ext_Aassoc_cython" in sys.modules
-            and path + ".ext_gamma_mie_cython" in sys.modules)
+    assert path + ".ext_Aassoc_cython" in sys.modules and path + ".ext_gamma_mie_cython" in sys.modules
 
 
-@pytest.mark.skipif(
-    not flag_cython, reason="Cython is not installed with this version of python."
-)
+@pytest.mark.skipif(not flag_cython, reason="Cython is not installed with this version of python.")
 def test_saft_gamma_mie_class_assoc_P_cython(
     T=T,
     xi=xi_co2_h2o,

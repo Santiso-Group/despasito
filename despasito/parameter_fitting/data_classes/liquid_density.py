@@ -128,22 +128,13 @@ class Data(ExpDataTemplate):
             np.array([[1.0] for x in range(self.npoints)]),
             constants.standard_temperature,
         ]
-        self.thermodict.update(
-            gtb.set_defaults(
-                self.thermodict, thermo_keys, thermo_defaults, lx=self.npoints
-            )
-        )
+        self.thermodict.update(gtb.set_defaults(self.thermodict, thermo_keys, thermo_defaults, lx=self.npoints))
 
-        self.weights.update(
-            gtb.check_length_dict(self.weights, self.result_keys, lx=self.npoints)
-        )
+        self.weights.update(gtb.check_length_dict(self.weights, self.result_keys, lx=self.npoints))
         self.weights.update(gtb.set_defaults(self.weights, self.result_keys, 1.0))
 
         if "Tlist" not in self.thermodict and "rhol" not in self.thermodict:
-            raise ImportError(
-                "Given liquid property data, values for T, xi, and rhol should have"
-                " been provided."
-            )
+            raise ImportError("Given liquid property data, values for T, xi, and rhol should have" " been provided.")
 
         logger.info(
             "Data type 'liquid_properties' initiated with calculation_type, {}, and "
@@ -197,10 +188,7 @@ class Data(ExpDataTemplate):
 
         # objective function
         obj_value = ff.obj_function_form(
-            phase_list,
-            self.thermodict["rhol"],
-            weights=self.weights["rhol"],
-            **self.obj_opts
+            phase_list, self.thermodict["rhol"], weights=self.weights["rhol"], **self.obj_opts
         )
 
         logger.info("Obj. breakdown for {}: rhol {}".format(self.name, obj_value))

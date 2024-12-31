@@ -24,9 +24,7 @@ def write_EOSparameters(library, filename):
 
     # sort and write SAFT dict
     for i in library:
-        library[i] = collections.OrderedDict(
-            sorted(list(library[i].items()), key=lambda tup: tup[0].lower())
-        )
+        library[i] = collections.OrderedDict(sorted(list(library[i].items()), key=lambda tup: tup[0].lower()))
     f = open(filename, "w")
     json.dump(library, f, indent=4)
 
@@ -119,8 +117,7 @@ def writeout_fit_dict(output_dict, output_file="fit_output.txt"):
 
     header = (
         "DESPASITO was used to fit parameters for the bead {} Obj. Value:"
-        " {}\n".format(output_dict["fit_bead"], output_dict["objective_value"])
-        + "Parameter, Value\n"
+        " {}\n".format(output_dict["fit_bead"], output_dict["objective_value"]) + "Parameter, Value\n"
     )
     with open(output_file, "w") as f:
         f.write(header)

@@ -27,9 +27,7 @@ if os.path.isfile(args.logFile):
     os.remove(args.logFile)
 log_file_handler = logging.handlers.RotatingFileHandler(args.logFile)
 log_file_handler.setFormatter(
-    logging.Formatter(
-        "%(asctime)s [%(levelname)s](%(name)s:%(funcName)s:%(lineno)d): %(message)s"
-    )
+    logging.Formatter("%(asctime)s [%(levelname)s](%(name)s:%(funcName)s:%(lineno)d): %(message)s")
 )
 log_file_handler.setLevel(args.verbose)
 logger.addHandler(log_file_handler)
@@ -37,9 +35,7 @@ logger.addHandler(log_file_handler)
 if args.console:
     # Set up logging to console
     console_handler = logging.StreamHandler()  # sys.stderr
-    console_handler.setFormatter(
-        logging.Formatter("[%(levelname)s](%(name)s): %(message)s")
-    )
+    console_handler.setFormatter(logging.Formatter("[%(levelname)s](%(name)s): %(message)s"))
     console_handler.setLevel(args.verbose)
     logger.addHandler(console_handler)
 

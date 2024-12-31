@@ -16,12 +16,8 @@ from despasito.equations_of_state import constants
 import despasito.equations_of_state.saft.saft_toolbox as stb
 from despasito.equations_of_state.saft import Aassoc
 from .compiled_modules.ext_gamma_mie_python import prefactor, calc_Iij
-from despasito.equations_of_state.saft.compiled_modules import (
-    ext_gamma_mie_numba as ext_numba
-)
-from despasito.equations_of_state.saft.compiled_modules import (
-    ext_gamma_mie_python as ext_python
-)
+from despasito.equations_of_state.saft.compiled_modules import ext_gamma_mie_numba as ext_numba
+from despasito.equations_of_state.saft.compiled_modules import ext_gamma_mie_python as ext_python
 
 logger = logging.getLogger(__name__)
 if "cython" not in sys.modules:
@@ -30,9 +26,7 @@ if "cython" not in sys.modules:
 else:
     flag_cython = False
     try:
-        from despasito.equations_of_state.saft.compiled_modules import (
-            ext_gamma_mie_cython as ext_cython
-        )
+        from despasito.equations_of_state.saft.compiled_modules import ext_gamma_mie_cython as ext_cython
     except ImportError:
         raise ImportError(
             "Cython package is available but module: "
@@ -231,19 +225,13 @@ class SaftType:
         needed_attributes = ["molecular_composition", "beads", "bead_library"]
         for key in needed_attributes:
             if key not in kwargs:
-                raise ValueError(
-                    "The one of the following inputs is missing: {}".format(
-                        ", ".join(needed_attributes)
-                    )
-                )
+                raise ValueError("The one of the following inputs is missing: {}".format(", ".join(needed_attributes)))
             elif key == "molecular_composition":
                 self.eos_dict[key] = kwargs[key]
             elif not hasattr(self, key):
                 setattr(self, key, kwargs[key])
 
-        self.bead_library = tb.check_bead_parameters(
-            self.bead_library, self._parameter_defaults
-        )
+        self.bead_library = tb.check_bead_parameters(self.bead_library, self._parameter_defaults)
 
         if "cross_library" not in kwargs:
             self.cross_library = {}
@@ -251,13 +239,9 @@ class SaftType:
             self.cross_library = kwargs["cross_library"]
 
         if "Vks" not in self.eos_dict:
-            self.eos_dict["Vks"] = tb.extract_property(
-                "Vks", self.bead_library, self.beads, default=1.0
-            )
+            self.eos_dict["Vks"] = tb.extract_property("Vks", self.bead_library, self.beads, default=1.0)
         if "Sk" not in self.eos_dict:
-            self.eos_dict["Sk"] = tb.extract_property(
-                "Sk", self.bead_library, self.beads, default=1.0
-            )
+            self.eos_dict["Sk"] = tb.extract_property("Sk", self.bead_library, self.beads, default=1.0)
 
         # Initialize temperature attribute
         if not hasattr(self, "T"):
@@ -281,12 +265,9 @@ class SaftType:
         self.eos_dict["lambdarkl"] = output["lambdar"]
 
         # compute alphakl eq. 33
-        self.eos_dict["Ckl"] = prefactor(
-            self.eos_dict["lambdarkl"], self.eos_dict["lambdaakl"]
-        )
+        self.eos_dict["Ckl"] = prefactor(self.eos_dict["lambdarkl"], self.eos_dict["lambdaakl"])
         self.eos_dict["alphakl"] = self.eos_dict["Ckl"] * (
-            (1.0 / (self.eos_dict["lambdaakl"] - 3.0))
-            - (1.0 / (self.eos_dict["lambdarkl"] - 3.0))
+            (1.0 / (self.eos_dict["lambdaakl"] - 3.0)) - (1.0 / (self.eos_dict["lambdarkl"] - 3.0))
         )
 
         # Initiate average interaction terms
@@ -294,13 +275,9 @@ class SaftType:
 
         if "num_rings" in kwargs:
             self.eos_dict["num_rings"] = kwargs["num_rings"]
-            logger.info(
-                "Accepted component ring structure: {}".format(kwargs["num_rings"])
-            )
+            logger.info("Accepted component ring structure: {}".format(kwargs["num_rings"]))
         else:
-            self.eos_dict["num_rings"] = np.zeros(
-                len(self.eos_dict["molecular_composition"])
-            )
+            self.eos_dict["num_rings"] = np.zeros(len(self.eos_dict["molecular_composition"]))
 
     def calc_component_averaged_properties(self):
         r"""
@@ -335,9 +312,7 @@ class SaftType:
         for i in range(self.ncomp):
             for k in range(self.nbeads):
                 zki[i, k] = (
-                    self.eos_dict["molecular_composition"][i, k]
-                    * self.eos_dict["Vks"][k]
-                    * self.eos_dict["Sk"][k]
+                    self.eos_dict["molecular_composition"][i, k] * self.eos_dict["Vks"][k] * self.eos_dict["Sk"][k]
                 )
                 zkinorm[i] += zki[i, k]
 
@@ -348,18 +323,10 @@ class SaftType:
         for i in range(self.ncomp):
             for k in range(self.nbeads):
                 for l in range(self.nbeads):
-                    output["sigmaii_avg"][i] += (
-                        zki[i, k] * zki[i, l] * self.eos_dict["sigmakl"][k, l] ** 3
-                    )
-                    output["epsilonii_avg"][i] += (
-                        zki[i, k] * zki[i, l] * self.eos_dict["epsilonkl"][k, l]
-                    )
-                    output["lambdarii_avg"][i] += (
-                        zki[i, k] * zki[i, l] * self.eos_dict["lambdarkl"][k, l]
-                    )
-                    output["lambdaaii_avg"][i] += (
-                        zki[i, k] * zki[i, l] * self.eos_dict["lambdaakl"][k, l]
-                    )
+                    output["sigmaii_avg"][i] += zki[i, k] * zki[i, l] * self.eos_dict["sigmakl"][k, l] ** 3
+                    output["epsilonii_avg"][i] += zki[i, k] * zki[i, l] * self.eos_dict["epsilonkl"][k, l]
+                    output["lambdarii_avg"][i] += zki[i, k] * zki[i, l] * self.eos_dict["lambdarkl"][k, l]
+                    output["lambdaaii_avg"][i] += zki[i, k] * zki[i, l] * self.eos_dict["lambdaakl"][k, l]
             output["sigmaii_avg"][i] = output["sigmaii_avg"][i] ** (1 / 3.0)
 
         self.eos_dict.update(output)
@@ -394,10 +361,7 @@ class SaftType:
                 * constants.molecule_per_nm3
                 * self.eos_dict["Cmol2seg"]
                 * (
-                    np.sum(
-                        np.sqrt(np.diag(self.eos_dict["xskl"]))
-                        * (np.diag(self.eos_dict["dkl"]) ** m)
-                    )
+                    np.sum(np.sqrt(np.diag(self.eos_dict["xskl"])) * (np.diag(self.eos_dict["dkl"]) ** m))
                     * (np.pi / 6.0)
                 )
             )
@@ -406,9 +370,7 @@ class SaftType:
         if self.ncomp == 1:
             tmp1 = 0
         else:
-            tmp1 = np.log1p(-eta[:, 3]) * (
-                eta[:, 2] ** 3 / (eta[:, 3] ** 2) - eta[:, 0]
-            )
+            tmp1 = np.log1p(-eta[:, 3]) * (eta[:, 2] ** 3 / (eta[:, 3] ** 2) - eta[:, 0])
         tmp2 = 3.0 * eta[:, 2] / (1 - eta[:, 3]) * eta[:, 1]
         tmp3 = eta[:, 2] ** 3 / (eta[:, 3] * ((1.0 - eta[:, 3]) ** 2))
 
@@ -630,11 +592,7 @@ class SaftType:
             * (a1s_2la + B_2la)
             / constants.molecule_per_nm3
             - (
-                (
-                    2.0
-                    * self.eos_dict["x0kl"]
-                    ** (self.eos_dict["lambdaakl"] + self.eos_dict["lambdarkl"])
-                )
+                (2.0 * self.eos_dict["x0kl"] ** (self.eos_dict["lambdaakl"] + self.eos_dict["lambdarkl"]))
                 * (a1s_lalr + B_lalr)
                 / constants.molecule_per_nm3
             )
@@ -644,9 +602,7 @@ class SaftType:
                 / constants.molecule_per_nm3
             )
         )
-        a2kl *= (
-            (1.0 + chikl) * self.eos_dict["epsilonkl"] * (self.eos_dict["Ckl"] ** 2)
-        )  # *(KHS/2.0)
+        a2kl *= (1.0 + chikl) * self.eos_dict["epsilonkl"] * (self.eos_dict["Ckl"] ** 2)  # *(KHS/2.0)
 
         a2kl = np.einsum("i,ijk->ijk", KHS / 2.0, a2kl)
 
@@ -693,11 +649,8 @@ class SaftType:
         # compute a3kl
         fmlist456 = self.calc_fm(self.eos_dict["alphakl"], np.array([4, 5, 6]))
 
-        a3kl = np.einsum(
-            "i,jk", zetaxstar, -(self.eos_dict["epsilonkl"] ** 3) * fmlist456[0]
-        ) * np.exp(
-            np.einsum("i,jk", zetaxstar, fmlist456[1])
-            + np.einsum("i,jk", zetaxstar**2, fmlist456[2])
+        a3kl = np.einsum("i,jk", zetaxstar, -(self.eos_dict["epsilonkl"] ** 3) * fmlist456[0]) * np.exp(
+            np.einsum("i,jk", zetaxstar, fmlist456[1]) + np.einsum("i,jk", zetaxstar**2, fmlist456[2])
         )
 
         # eq. 37
@@ -741,9 +694,7 @@ class SaftType:
         self._check_temperature_dependent_parameters(T)
         self._check_composition_dependent_parameters(xi)
 
-        zetax = stb.calc_zetax(
-            rho, self.eos_dict["Cmol2seg"], self.eos_dict["xskl"], self.eos_dict["dkl"]
-        )
+        zetax = stb.calc_zetax(rho, self.eos_dict["Cmol2seg"], self.eos_dict["xskl"], self.eos_dict["dkl"])
         zetaxstar = stb.calc_zetaxstar(
             rho,
             self.eos_dict["Cmol2seg"],
@@ -799,16 +750,12 @@ class SaftType:
         km = np.zeros((np.size(rho), 4))
         gdHS = np.zeros((np.size(rho), np.size(xi)))
 
-        km[:, 0] = -np.log(1.0 - zetax) + (
-            42.0 * zetax - 39.0 * zetax**2 + 9.0 * zetax**3 - 2.0 * zetax**4
-        ) / (6.0 * (1.0 - zetax) ** 3)
-        km[:, 1] = (zetax**4 + 6.0 * zetax**2 - 12.0 * zetax) / (
-            2.0 * (1.0 - zetax) ** 3
-        )
-        km[:, 2] = -3.0 * zetax**2 / (8.0 * (1.0 - zetax) ** 2)
-        km[:, 3] = (-(zetax**4) + 3.0 * zetax**2 + 3.0 * zetax) / (
+        km[:, 0] = -np.log(1.0 - zetax) + (42.0 * zetax - 39.0 * zetax**2 + 9.0 * zetax**3 - 2.0 * zetax**4) / (
             6.0 * (1.0 - zetax) ** 3
         )
+        km[:, 1] = (zetax**4 + 6.0 * zetax**2 - 12.0 * zetax) / (2.0 * (1.0 - zetax) ** 3)
+        km[:, 2] = -3.0 * zetax**2 / (8.0 * (1.0 - zetax) ** 2)
+        km[:, 3] = (-(zetax**4) + 3.0 * zetax**2 + 3.0 * zetax) / (6.0 * (1.0 - zetax) ** 3)
 
         for i in range(self.ncomp):
             gdHS[:, i] = np.exp(
@@ -938,28 +885,16 @@ class SaftType:
         Cii = prefactor(self.eos_dict["lambdarii_avg"], self.eos_dict["lambdaaii_avg"])
 
         tmp1 = 1.0 / (
-            2.0
-            * np.pi
-            * self.eos_dict["epsilonii_avg"]
-            * self.eos_dict["dii_eff"] ** 3
-            * constants.molecule_per_nm3**2
+            2.0 * np.pi * self.eos_dict["epsilonii_avg"] * self.eos_dict["dii_eff"] ** 3 * constants.molecule_per_nm3**2
         )
         tmp11 = 3.0 * da1iidrhos
-        tmp21 = (
-            Cii
-            * self.eos_dict["lambdaaii_avg"]
-            * (self.eos_dict["x0ii"] ** self.eos_dict["lambdaaii_avg"])
-        )
+        tmp21 = Cii * self.eos_dict["lambdaaii_avg"] * (self.eos_dict["x0ii"] ** self.eos_dict["lambdaaii_avg"])
         tmp22 = np.einsum(
             "ij,i->ij",
             (a1sii_lambdaaii_avg + Bii_lambdaaii_avg),
             1.0 / (rho * self.eos_dict["Cmol2seg"]),
         )
-        tmp31 = (
-            Cii
-            * self.eos_dict["lambdarii_avg"]
-            * (self.eos_dict["x0ii"] ** self.eos_dict["lambdarii_avg"])
-        )
+        tmp31 = Cii * self.eos_dict["lambdarii_avg"] * (self.eos_dict["x0ii"] ** self.eos_dict["lambdarii_avg"])
         tmp32 = np.einsum(
             "ij,i->ij",
             (a1sii_lambdarii_avg + Bii_lambdarii_avg),
@@ -1016,8 +951,7 @@ class SaftType:
 
         phi7 = np.array([10.0, 10.0, 0.57, -6.7, -8.0])
         alphaii = Cii * (
-            (1.0 / (self.eos_dict["lambdaaii_avg"] - 3.0))
-            - (1.0 / (self.eos_dict["lambdarii_avg"] - 3.0))
+            (1.0 / (self.eos_dict["lambdaaii_avg"] - 3.0)) - (1.0 / (self.eos_dict["lambdarii_avg"] - 3.0))
         )
         theta = np.exp(self.eos_dict["epsilonii_avg"] / T) - 1.0
 
@@ -1166,10 +1100,7 @@ class SaftType:
             * (a1sii_2lambdarii_avg + Bii_2lambdarii_avg)
             + eKC2
             * (self.eos_dict["lambdarii_avg"] + self.eos_dict["lambdaaii_avg"])
-            * (
-                self.eos_dict["x0ii"]
-                ** (self.eos_dict["lambdarii_avg"] + self.eos_dict["lambdaaii_avg"])
-            )
+            * (self.eos_dict["x0ii"] ** (self.eos_dict["lambdarii_avg"] + self.eos_dict["lambdaaii_avg"]))
             * (a1sii_lambdarii_avglambdaaii_avg + Bii_lambdaaii_avglambdarii_avg)
             - eKC2
             * self.eos_dict["lambdaaii_avg"]
@@ -1204,9 +1135,7 @@ class SaftType:
         self._check_temperature_dependent_parameters(T)
         self._check_composition_dependent_parameters(xi)
 
-        zetax = stb.calc_zetax(
-            rho, self.eos_dict["Cmol2seg"], self.eos_dict["xskl"], self.eos_dict["dkl"]
-        )
+        zetax = stb.calc_zetax(rho, self.eos_dict["Cmol2seg"], self.eos_dict["xskl"], self.eos_dict["dkl"])
         gdHS = self.gdHS(rho, T, xi, zetax=zetax)
         g1 = self.g1(rho, T, xi, zetax=zetax)
         g2 = self.g2(rho, T, xi, zetax=zetax)
@@ -1221,9 +1150,7 @@ class SaftType:
             beadsum = -1.0 + self.eos_dict["num_rings"][i]
             for k in range(self.nbeads):
                 beadsum += (
-                    self.eos_dict["molecular_composition"][i, k]
-                    * self.eos_dict["Vks"][k]
-                    * self.eos_dict["Sk"][k]
+                    self.eos_dict["molecular_composition"][i, k] * self.eos_dict["Vks"][k] * self.eos_dict["Sk"][k]
                 )
             Achain -= xi[i] * beadsum * np.log(gii[:, i])
 
@@ -1260,11 +1187,7 @@ class SaftType:
         max_density = (
             maxpack
             * 6.0
-            / (
-                self.eos_dict["Cmol2seg"]
-                * np.pi
-                * np.sum(self.eos_dict["xskl"] * (self.eos_dict["dkl"] ** 3))
-            )
+            / (self.eos_dict["Cmol2seg"] * np.pi * np.sum(self.eos_dict["xskl"] * (self.eos_dict["dkl"] ** 3)))
             / constants.molecule_per_nm3
         )
 
@@ -1294,9 +1217,7 @@ class SaftType:
         """
 
         if np.size(np.shape(alphakl)) == 2:
-            fmlist = np.zeros(
-                (np.size(mlist), np.size(alphakl, axis=0), np.size(alphakl, axis=0))
-            )
+            fmlist = np.zeros((np.size(mlist), np.size(alphakl, axis=0), np.size(alphakl, axis=0)))
         elif np.size(np.shape(alphakl)) == 1:
             fmlist = np.zeros((np.size(mlist), np.size(alphakl, axis=0)))
         else:
@@ -1427,9 +1348,7 @@ class SaftType:
         elif Ktype == "ijklab":
             gr = self.calc_gdHS_assoc(rho, T, xi)
         else:
-            raise ValueError(
-                "Ktype does not indicate a known gr_assoc for this saft type."
-            )
+            raise ValueError("Ktype does not indicate a known gr_assoc for this saft type.")
 
         return gr
 
@@ -1466,10 +1385,7 @@ class SaftType:
                 * constants.molecule_per_nm3
                 * self.eos_dict["Cmol2seg"]
                 * (
-                    np.sum(
-                        np.sqrt(np.diag(self.eos_dict["xskl"]))
-                        * (np.diag(self.eos_dict["dkl"]) ** m)
-                    )
+                    np.sum(np.sqrt(np.diag(self.eos_dict["xskl"])) * (np.diag(self.eos_dict["dkl"]) ** m))
                     * (np.pi / 6.0)
                 )
             )
@@ -1521,13 +1437,9 @@ class SaftType:
         dij_bar = np.zeros((self.ncomp, self.ncomp))
         for i in range(self.ncomp):
             for j in range(self.ncomp):
-                dij_bar[i, j] = np.mean(
-                    [self.eos_dict["dii_eff"][i], self.eos_dict["dii_eff"][j]]
-                )
+                dij_bar[i, j] = np.mean([self.eos_dict["dii_eff"][i], self.eos_dict["dii_eff"][j]])
 
-        Kijklab = Aassoc.calc_bonding_volume(
-            rc_klab, dij_bar, rd_klab=rd_klab, reduction_ratio=reduction_ratio
-        )
+        Kijklab = Aassoc.calc_bonding_volume(rc_klab, dij_bar, rd_klab=rd_klab, reduction_ratio=reduction_ratio)
 
         return Kijklab
 
@@ -1566,9 +1478,7 @@ class SaftType:
         self.bead_library.update(bead_library)
         self.cross_library.update(cross_library)
 
-        self.eos_dict["Sk"] = tb.extract_property(
-            "Sk", self.bead_library, self.beads, default=1.0
-        )
+        self.eos_dict["Sk"] = tb.extract_property("Sk", self.bead_library, self.beads, default=1.0)
 
         output = tb.cross_interaction_from_dict(
             self.beads,
@@ -1591,21 +1501,16 @@ class SaftType:
         self.calc_component_averaged_properties()
 
         if not np.any(np.isnan(self.xi)):
-            self.eos_dict["Cmol2seg"], self.eos_dict["xskl"] = (
-                stb.calc_composition_dependent_variables(
-                    self.xi,
-                    self.eos_dict["molecular_composition"],
-                    self.bead_library,
-                    self.beads,
-                )
+            self.eos_dict["Cmol2seg"], self.eos_dict["xskl"] = stb.calc_composition_dependent_variables(
+                self.xi,
+                self.eos_dict["molecular_composition"],
+                self.bead_library,
+                self.beads,
             )
 
-        self.eos_dict["Ckl"] = prefactor(
-            self.eos_dict["lambdarkl"], self.eos_dict["lambdaakl"]
-        )
+        self.eos_dict["Ckl"] = prefactor(self.eos_dict["lambdarkl"], self.eos_dict["lambdaakl"])
         self.eos_dict["alphakl"] = self.eos_dict["Ckl"] * (
-            (1.0 / (self.eos_dict["lambdaakl"] - 3.0))
-            - (1.0 / (self.eos_dict["lambdarkl"] - 3.0))
+            (1.0 / (self.eos_dict["lambdaakl"] - 3.0)) - (1.0 / (self.eos_dict["lambdarkl"] - 3.0))
         )
 
     def _check_density(self, rho):
@@ -1697,23 +1602,18 @@ class SaftType:
                 self.eos_dict["lambdarkl"] = output["lambdar"]
 
                 # compute alphakl eq. 33
-                self.eos_dict["Ckl"] = prefactor(
-                    self.eos_dict["lambdarkl"], self.eos_dict["lambdaakl"]
-                )
+                self.eos_dict["Ckl"] = prefactor(self.eos_dict["lambdarkl"], self.eos_dict["lambdaakl"])
                 self.eos_dict["alphakl"] = self.eos_dict["Ckl"] * (
-                    (1.0 / (self.eos_dict["lambdaakl"] - 3.0))
-                    - (1.0 / (self.eos_dict["lambdarkl"] - 3.0))
+                    (1.0 / (self.eos_dict["lambdaakl"] - 3.0)) - (1.0 / (self.eos_dict["lambdarkl"] - 3.0))
                 )
                 self.calc_component_averaged_properties()
 
-            self.eos_dict["dkl"], self.eos_dict["x0kl"] = (
-                stb.calc_hard_sphere_matricies(
-                    T,
-                    self.eos_dict["sigmakl"],
-                    self.bead_library,
-                    self.beads,
-                    prefactor,
-                )
+            self.eos_dict["dkl"], self.eos_dict["x0kl"] = stb.calc_hard_sphere_matricies(
+                T,
+                self.eos_dict["sigmakl"],
+                self.bead_library,
+                self.beads,
+                prefactor,
             )
             self._update_chain_temperature_dependent_variables(T)
 
@@ -1742,13 +1642,11 @@ class SaftType:
         """
         xi = np.array(xi)
         if not np.all(self.xi == xi):
-            self.eos_dict["Cmol2seg"], self.eos_dict["xskl"] = (
-                stb.calc_composition_dependent_variables(
-                    xi,
-                    self.eos_dict["molecular_composition"],
-                    self.bead_library,
-                    self.beads,
-                )
+            self.eos_dict["Cmol2seg"], self.eos_dict["xskl"] = stb.calc_composition_dependent_variables(
+                xi,
+                self.eos_dict["molecular_composition"],
+                self.bead_library,
+                self.beads,
             )
             self.xi = xi
 
@@ -1784,9 +1682,7 @@ class SaftType:
         for i in range(self.ncomp):
             for k in range(self.nbeads):
                 zki[i, k] = (
-                    self.eos_dict["molecular_composition"][i, k]
-                    * self.eos_dict["Vks"][k]
-                    * self.eos_dict["Sk"][k]
+                    self.eos_dict["molecular_composition"][i, k] * self.eos_dict["Vks"][k] * self.eos_dict["Sk"][k]
                 )
                 zkinorm[i] += zki[i, k]
 
@@ -1797,9 +1693,7 @@ class SaftType:
         for i in range(self.ncomp):
             for k in range(self.nbeads):
                 for l in range(self.nbeads):
-                    dii_eff[i] += (
-                        zki[i, k] * zki[i, l] * self.eos_dict["dkl"][k, l] ** 3
-                    )
+                    dii_eff[i] += zki[i, k] * zki[i, l] * self.eos_dict["dkl"][k, l] ** 3
             dii_eff[i] = dii_eff[i] ** (1 / 3.0)
         self.eos_dict["dii_eff"] = dii_eff
 

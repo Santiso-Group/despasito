@@ -132,36 +132,23 @@ class Data(ExpDataTemplate):
             )
         )
 
-        self.weights.update(
-            gtb.check_length_dict(self.weights, self.result_keys, lx=self.npoints)
-        )
+        self.weights.update(gtb.check_length_dict(self.weights, self.result_keys, lx=self.npoints))
         self.weights.update(gtb.set_defaults(self.weights, self.result_keys, 1.0))
 
         if "Tlist" not in self.thermodict:
-            raise ImportError(
-                "Given TLVE data, values for T should have been provided."
-            )
+            raise ImportError("Given TLVE data, values for T should have been provided.")
 
         thermo_keys = ["xilist", "yilist", "Plist"]
         if not any([key in self.thermodict for key in thermo_keys]):
-            raise ImportError(
-                "Given TLVE data, mole fractions and/or pressure should have been "
-                "provided."
-            )
+            raise ImportError("Given TLVE data, mole fractions and/or pressure should have been " "provided.")
 
         if self.thermodict["calculation_type"] is None:
             if self.thermodict["xilist"]:
                 self.thermodict["calculation_type"] = "bubble_pressure"
-                logger.warning(
-                    "No calculation type has been provided. Assume a calculation type "
-                    "of bubble_pressure"
-                )
+                logger.warning("No calculation type has been provided. Assume a calculation type " "of bubble_pressure")
             elif self.thermodict["yilist"]:
                 self.thermodict["calculation_type"] = "dew_pressure"
-                logger.warning(
-                    "No calculation type has been provided. Assume a calculation type"
-                    " of dew_pressure"
-                )
+                logger.warning("No calculation type has been provided. Assume a calculation type" " of dew_pressure")
             else:
                 raise ValueError("Unknown calculation instructions")
 
@@ -234,10 +221,7 @@ class Data(ExpDataTemplate):
 
         if "Plist" in self.thermodict:
             obj_value[0] = ff.obj_function_form(
-                phase_list[0],
-                self.thermodict["Plist"],
-                weights=self.weights["Plist"],
-                **self.obj_opts
+                phase_list[0], self.thermodict["Plist"], weights=self.weights["Plist"], **self.obj_opts
             )
 
         if self.thermodict["calculation_type"] == "bubble_pressure":
@@ -246,10 +230,7 @@ class Data(ExpDataTemplate):
                 obj_value[1] = 0
                 for i in range(len(yi)):
                     obj_value[1] += ff.obj_function_form(
-                        phase_list[1 + i],
-                        yi[i],
-                        weights=self.weights["yilist"],
-                        **self.obj_opts
+                        phase_list[1 + i], yi[i], weights=self.weights["yilist"], **self.obj_opts
                     )
         elif self.thermodict["calculation_type"] == "dew_pressure":
             if "xilist" in self.thermodict:
@@ -257,17 +238,10 @@ class Data(ExpDataTemplate):
                 obj_value[1] = 0
                 for i in range(len(xi)):
                     obj_value[1] += ff.obj_function_form(
-                        phase_list[1 + i],
-                        xi[i],
-                        weights=self.weights["xilist"],
-                        **self.obj_opts
+                        phase_list[1 + i], xi[i], weights=self.weights["xilist"], **self.obj_opts
                     )
 
-        logger.info(
-            "Obj. breakdown for {}: P {}, zi {}".format(
-                self.name, obj_value[0], obj_value[1]
-            )
-        )
+        logger.info("Obj. breakdown for {}: P {}, zi {}".format(self.name, obj_value[0], obj_value[1]))
 
         if all([(np.isnan(x) or x == 0.0) for x in obj_value]):
             obj_total = np.inf

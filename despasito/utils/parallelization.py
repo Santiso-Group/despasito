@@ -41,9 +41,7 @@ class MultiprocessingJob:
             logger.info("Number of cores set to {}".format(ncores))
         elif ncores == 1:
             self.flag_use_mp = False
-            logger.info(
-                "Number of cores set to 1, bypassing mp and using serial methods"
-            )
+            logger.info("Number of cores set to 1, bypassing mp and using serial methods")
         else:
             raise ValueError("Number of cores cannot be zero or negative.")
 
@@ -248,9 +246,7 @@ def batch_jobs(func, inputs, ncores=1, logger=None):
             level = handler.level
     logging.root.handlers = []
 
-    pool = multiprocessing.Pool(
-        ncores, initializer=initialize_mp_handler, initargs=(level, logformat)
-    )
+    pool = multiprocessing.Pool(ncores, initializer=initialize_mp_handler, initargs=(level, logformat))
 
     output = zip(*pool.map(func, inputs))
 

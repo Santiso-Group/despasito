@@ -82,11 +82,7 @@ def volumetric_geometric_mean(beadA, beadB, parameter, weighting_parameters=[]):
 
     tmp1 = np.sqrt(beadA[parameter] * beadB[parameter])
     param2 = weighting_parameters[0]
-    tmp2 = (
-        np.sqrt((beadA[param2] ** 3) * (beadB[param2] ** 3))
-        * 8
-        / ((beadA[param2] + beadB[param2]) ** 3)
-    )
+    tmp2 = np.sqrt((beadA[param2] ** 3) * (beadB[param2] ** 3)) * 8 / ((beadA[param2] + beadB[param2]) ** 3)
     return tmp1 * tmp2
 
 
@@ -115,9 +111,9 @@ def weighted_mean(beadA, beadB, parameter, weighting_parameters=[]):
     """
 
     param2 = weighting_parameters[0]
-    parameter12 = (
-        beadA[parameter] * beadA[param2] + beadB[parameter] * beadB[param2]
-    ) / (beadA[param2] + beadB[param2])
+    parameter12 = (beadA[parameter] * beadA[param2] + beadB[parameter] * beadB[param2]) / (
+        beadA[param2] + beadB[param2]
+    )
 
     return parameter12
 
@@ -173,23 +169,15 @@ def square_well_berthelot(beadA, beadB, parameter, weighting_parameters=[]):
     param2, param3 = weighting_parameters[0], weighting_parameters[1]
 
     tmp1 = np.sqrt(beadA[parameter] * beadB[parameter])
-    tmp2 = (
-        np.sqrt((beadA[param2] ** 3) * (beadB[param2] ** 3))
-        * 8
-        / ((beadA[param2] + beadB[param2]) ** 3)
-    )
+    tmp2 = np.sqrt((beadA[param2] ** 3) * (beadB[param2] ** 3)) * 8 / ((beadA[param2] + beadB[param2]) ** 3)
 
     param3_12 = weighted_mean(beadA, beadB, param3, weighting_parameters=[param2])
-    tmp3 = np.sqrt((beadA[param3] ** 3 - 1) * (beadB[param3] ** 3 - 1)) / (
-        param3_12**3 - 1
-    )
+    tmp3 = np.sqrt((beadA[param3] ** 3 - 1) * (beadB[param3] ** 3 - 1)) / (param3_12**3 - 1)
 
     return tmp1 * tmp2 * tmp3
 
 
-def multipole(
-    beadA, beadB, parameter, temperature=None, mode="curve fit", scaled=False
-):
+def multipole(beadA, beadB, parameter, temperature=None, mode="curve fit", scaled=False):
     r"""
     Calculates cross interaction parameter with the multipole combining rules from
     the plug-in `MAPSCI <https://github.com/jaclark5/mapsci>`_.
@@ -239,17 +227,13 @@ def multipole(
             tmp[key]["sigma"] = value["sigma"] * 10  # convert from nm to angstroms
 
         if mode == "curve fit":
-            dict_cross, _ = mr.extended_combining_rules_fitting(
-                tmp, temperature, shape_factor_scale=shape_factor_scale
-            )
+            dict_cross, _ = mr.extended_combining_rules_fitting(tmp, temperature, shape_factor_scale=shape_factor_scale)
         elif mode == "analytical":
             dict_cross, _ = mr.extended_combining_rules_analytical(
                 tmp, temperature, shape_factor_scale=shape_factor_scale
             )
         else:
-            raise ValueError(
-                "Multipole mixing rule must be either 'curve fit' or 'analytical'."
-            )
+            raise ValueError("Multipole mixing rule must be either 'curve fit' or 'analytical'.")
         output = dict_cross["beadA"]["beadB"]
     else:
         logger.warning("Temperature is None, using geometric mean.")

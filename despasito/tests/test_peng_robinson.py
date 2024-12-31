@@ -55,10 +55,8 @@ def test_PR_coefficients(
         Eos_class.bead_library[beads[1]]["kappa"],
     ]
     assert (
-        Eos_class.eos_dict["ai"]
-        == pytest.approx(np.array([1.73993846, 1.66217026]), abs=1e-4)
-        and Eos_class.eos_dict["bi"]
-        == pytest.approx(np.array([7.00758212e-05, 6.34118233e-05]), abs=1e-9)
+        Eos_class.eos_dict["ai"] == pytest.approx(np.array([1.73993846, 1.66217026]), abs=1e-4)
+        and Eos_class.eos_dict["bi"] == pytest.approx(np.array([7.00758212e-05, 6.34118233e-05]), abs=1e-9)
         and tmp == pytest.approx(np.array([0.81854211, 0.70357958]), abs=1e-4)
     )
 

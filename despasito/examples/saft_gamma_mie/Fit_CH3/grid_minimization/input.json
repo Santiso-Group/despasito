@@ -2,10 +2,8 @@
     "EOSgroup": "SAFTgroup.json",
     "optimization_parameters": {
         "fit_bead" : "CH3",
-        "fit_parameter_names": ["epsilon", "sigma", "lambdar", "Sk"],
+        "fit_parameter_names": ["sigma", "lambdar"],
         "lambdar_bounds" : [8.0, 60.0],
-        "epsilon_bounds" : [150.0, 1000.0],
-        "epsilon_CH3CH2_bounds" : [150.0, 1000.0],
         "sigma_bounds" : [2.5e-1, 5.5e-1]
     },
     "Ethane": {
@@ -17,6 +15,7 @@
     },
     "global_opts": {
         "method": "grid_minimization",
-        "Ns": 4
-    }
+        "Ns": 2
+    },
+    "minimizer_opts": {"xtol": 1e-4}
 }
