@@ -7,6 +7,7 @@ name = "despasito"
 description = "Determining Equilibrium State and Parametrization Application for SAFT, Intended for Thermodynamic Output"
 dynamic = ["version"]
 readme = "README.md"
+license = { text = "BSD-3-Clause" }
 
 authors = [
     { name = "Jennifer A. Clark", email = "jennifer.clark@gnarlyoak.com" },
@@ -15,7 +16,6 @@ authors = [
 
 # See https://pypi.org/classifiers/
 classifiers = [
-    "License :: OSI Approved :: The 3-Clause BSD License (BSD-3-Clause)",
     "Programming Language :: Python :: 3",
 ]
 requires-python = ">=3.8"
