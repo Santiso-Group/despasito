@@ -15,7 +15,7 @@ authors:
     orcid: 0000-0003-4070-8989 
     affiliation: 1
   - name: Andrew Abi-Mansour
-    orchid: 0009-0003-9026-5415
+    orcid: 0009-0003-9026-5415
     affiliation: 2
   - given-names: Erik E. Santiso
     orcid: 0000-0003-1768-8414
