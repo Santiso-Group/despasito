@@ -17,7 +17,7 @@ authors:
   - name: Andrew Abi-Mansour
     orcid: 0009-0003-9026-5415
     affiliation: 2
-  - given-names: Erik E. Santiso
+  - names: Erik E. Santiso
     orcid: 0000-0003-1768-8414
     corresponding: true
     affiliation: 1
